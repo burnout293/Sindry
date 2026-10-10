@@ -13,11 +13,8 @@
     <!-- data-tauri-drag-region rend la barre saisissable : la decoration
          native est desactivee, c'est nous qui fournissons tout le chrome. -->
     <header class="titlebar" data-tauri-drag-region>
-      <span class="brand-mark">
-        <svg class="ico i17" style="stroke-width:2.4" aria-hidden="true">
-          <use href="#logo" />
-        </svg>
-      </span>
+      <!-- La marque : l'icone de Sindry (engrenage dans les flammes). -->
+      <img class="brand-mark" src="marque.png" alt="" draggable="false">
       <span class="brand-name" data-tauri-drag-region>WinTool</span>
       <span class="brand-ver" id="version">…</span>
 
@@ -55,6 +52,10 @@
           <span id="adminPillText"></span>
         </button>
 
+        <!-- Le journal s'ouvre toujours, meme vide, en Simple comme en Expert. -->
+        <button class="iconbtn" id="btnJournal" type="button" aria-pressed="false">
+          <svg class="ico i17" aria-hidden="true"><use href="#sec-execution" /></svg>
+        </button>
         <button class="iconbtn" id="themeBtn" type="button">
           <svg class="ico i17" aria-hidden="true"><use href="#sun" /></svg>
         </button>
@@ -82,8 +83,14 @@
       <svg class="water fond" viewBox="0 0 2360 760" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="eau" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="var(--acc)" />
-            <stop offset="1" stop-color="var(--acc-2)" />
+            <stop offset="0" style="stop-color: var(--eau-a)" />
+            <stop offset="1" style="stop-color: var(--eau-b)" />
+          </linearGradient>
+          <!-- Contour d'engrenage des graphiques de l'analyse (§17) : l'anneau,
+               la jauge a dents, la double couronne. -->
+          <linearGradient id="an-rouage" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style="stop-color: var(--rouage-a)" />
+            <stop offset="1" style="stop-color: var(--rouage-b)" />
           </linearGradient>
         </defs>
         <path d="M0,486 C147.5,436 442.5,536 590,486 C737.5,436 1032.5,536 1180,486 C1327.5,436 1622.5,536 1770,486 C1917.5,436 2212.5,536 2360,486 L2360,760 L0,760 Z"
@@ -373,11 +380,8 @@
                 <div class="setrow" data-num="1.8">
                   <span class="setrow-txt"><span class="num">1.8</span><span class="rg-libelle"><b id="setAccentLabel"></b><span class="desc" data-i18n="reglages.d_accent"></span></span></span>
                   <div class="accents" id="setAccentChoix" role="radiogroup">
-                    <button type="button" role="radio" class="accent-pastille" data-set-accent="orange"></button>
-                    <button type="button" role="radio" class="accent-pastille" data-set-accent="tide"></button>
-                    <button type="button" role="radio" class="accent-pastille" data-set-accent="blue"></button>
-                    <button type="button" role="radio" class="accent-pastille" data-set-accent="violet"></button>
-                    <button type="button" role="radio" class="accent-pastille" data-set-accent="pink"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="ardente"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="crepuscule"></button>
                   </div>
                 </div>
                 <div class="setrow" data-num="1.2">
@@ -412,11 +416,12 @@
                   <span class="setrow-txt"><span class="num">1.7</span><span class="rg-libelle"><b id="setGrapheLabel"></b><span class="desc" data-i18n="reglages.d_graphique"></span></span></span>
                   <select class="cat-select" id="setGrapheSelect">
                     <option value="donut"></option>
+                    <option value="crown"></option>
+                    <option value="gauge"></option>
                     <option value="bar"></option>
                     <option value="rows"></option>
                     <option value="treemap"></option>
                     <option value="waffle"></option>
-                    <option value="gauge"></option>
                   </select>
                 </div>
                 <div class="setrow" data-num="1.6">
@@ -688,7 +693,7 @@
        fois par session, avec un « ne plus afficher » respecte definitivement. -->
   <div class="backdrop" id="rappelCatalogue" hidden>
     <div class="onb-card">
-      <div class="onb-mark"><svg class="ico i28" aria-hidden="true"><use href="#logo" /></svg></div>
+      <img class="onb-logo" src="marque.png" alt="" draggable="false">
       <h1 id="rappelTitre"></h1>
       <p class="onb-text" id="rappelTexte"></p>
       <label class="rappel-case"><input type="checkbox" id="rappelNePlus" /> <span id="rappelNePlusLabel"></span></label>

@@ -26,30 +26,61 @@ const ECHAPPE = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ECHAPPE[c]);
 const ico = (nom, classe = '') => `<svg class="ico ${classe}" aria-hidden="true"><use href="#${nom}" /></svg>`;
 
-/** Couleurs des postes, dans l'ordre : assez distinctes entre voisines. */
-/** Couleurs des series. La premiere est l'accent choisi (reglage 1.8) ; on
- *  ecarte des autres celles qui lui ressemblent trop, pour que deux postes
- *  voisins ne se confondent pas. */
-const SERIES = ['#35C8E8', '#8B7CF6', '#22D39A', '#F472B6', '#60A5FA', '#A3E635', '#FB7185', '#F5A524', '#2DD4BF', '#C084FC', '#FBBF24', '#94A3B8'];
-function teinte(hex) {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-  if (!d) return -1;
-  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return (h * 60 + 360) % 360;
-}
+/** Couleurs des series : les six du theme (`--serie-1` a `--serie-6`, tirees
+ *  de l'icone), puis quelques autres au-dela, pour qu'un long resume ne
+ *  repete pas ses couleurs trop tot. Relues quand la variante ou le theme
+ *  changent. */
+const SERIES_EN_PLUS = ['#2DD4BF', '#A3E635', '#F472B6', '#60A5FA', '#94A3B8', '#C084FC'];
 let paletteMemo = { cle: null, couleurs: [] };
 function palette() {
-  const cle = document.documentElement.dataset.accent || 'orange';
+  const r = document.documentElement;
+  const cle = `${r.dataset.accent || ''}|${r.dataset.theme || ''}|${matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (paletteMemo.cle !== cle) {
-    const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#FF8A1F';
-    const h = teinte(acc);
-    const loin = (c) => { const d = Math.abs(teinte(c) - h); return teinte(c) < 0 || Math.min(d, 360 - d) > 24; };
-    paletteMemo = { cle, couleurs: [acc, ...SERIES.filter(loin)] };
+    const cs = getComputedStyle(r);
+    const lues = [1, 2, 3, 4, 5, 6].map((i) => cs.getPropertyValue(`--serie-${i}`).trim()).filter((c) => /^#[0-9a-f]{6}$/i.test(c));
+    paletteMemo = { cle, couleurs: [...lues, ...SERIES_EN_PLUS] };
   }
   return paletteMemo.couleurs;
 }
 const serie = (i) => { const p = palette(); return p[i % p.length]; };
+
+/** La couleur d'une flamme a la position t (0 : premiere serie, 1 : troisieme) :
+ *  les dents de la jauge s'allument de l'or au magenta. */
+function flamme(t) {
+  const [a, b, c] = palette();
+  const melange = (h1, h2, u) => {
+    const v = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [x, y] = [v(h1), v(h2)];
+    return `#${x.map((k, i) => Math.round(k + (y[i] - k) * u).toString(16).padStart(2, '0')).join('')}`;
+  };
+  return t < 0.5 ? melange(a, b, t * 2) : melange(b, c, (t - 0.5) * 2);
+}
+
+/* --- Geometrie des graphiques a engrenages (1.6) -------------------------- */
+
+/** Un engrenage : `dents` dents, rayon exterieur r1, interieur r2. */
+function engrenage(cx, cy, r1, r2, dents) {
+  const pas = (Math.PI * 2) / dents, pts = [];
+  for (let i = 0; i < dents; i++) {
+    const a = i * pas;
+    for (const [ang, r] of [[a - pas * 0.22, r2], [a - pas * 0.14, r1], [a + pas * 0.14, r1], [a + pas * 0.22, r2]]) {
+      pts.push(`${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`);
+    }
+  }
+  return `M${pts.join('L')}Z`;
+}
+/** Une dent seule (trapeze), la i-eme sur n, en partant du haut. */
+function dent(cx, cy, r1, r2, i, n) {
+  const pas = (Math.PI * 2) / n, a = -Math.PI / 2 + i * pas;
+  return `M${[[a - pas * 0.3, r2], [a - pas * 0.19, r1], [a + pas * 0.19, r1], [a + pas * 0.3, r2]]
+    .map(([ang, r]) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`).join('L')}Z`;
+}
+/** Un arc de couronne, de l'angle a a l'angle b (radians), d'epaisseur e. */
+function arcCouronne(cx, cy, r, a, b, e) {
+  const ri = r - e / 2, re = r + e / 2, grand = b - a > Math.PI ? 1 : 0;
+  const P = (rr, u) => `${(cx + rr * Math.cos(u)).toFixed(1)},${(cy + rr * Math.sin(u)).toFixed(1)}`;
+  return `M${P(re, a)}A${re},${re} 0 ${grand} 1 ${P(re, b)}L${P(ri, b)}A${ri},${ri} 0 ${grand} 0 ${P(ri, a)}Z`;
+}
 
 /** Graphiques du resume Simple : la cle du reglage, l'ordre de la liste. */
 export const GRAPHIQUES = ['donut', 'bar', 'rows', 'treemap', 'waffle', 'gauge'];
@@ -526,17 +557,52 @@ function vueBarres(m, k, mode) {
       <span class="an-t"><b>${esc(libChoix(m.entree, o.def, c))}</b>${f.count ? `<span>${esc(pl('an.n_fichiers', Number(f.count)))}</span>` : ''}</span><span class="an-v">${taille(f.size)}</span></label>`).join('')}</div>`;
 }
 
+/** L'anneau-engrenage (1.6) : un arc a bouts arrondis par entree, sur une
+ *  piste, dans un contour d'engrenage. Une entree decochee reste, eteinte. */
 function anneau(entrees, couleurs, centre, taillePx = 220) {
   const total = entrees.reduce((a, e) => a + e.taille, 0) || 1;
-  const r = 80, C = 2 * Math.PI * r;
+  const r = 78, C = 2 * Math.PI * r;
   let cumul = 0;
   const arcs = entrees.map((e, i) => {
     const l = (e.taille / total) * C;
-    const arc = `<circle r="${r}" cx="110" cy="110" stroke="${couleurs[i]}" stroke-dasharray="${Math.max(0.5, l - 2)} ${C}" stroke-dashoffset="${-cumul}" opacity="${e.coche || e.partiel ? 1 : 0.18}"></circle>`;
+    const arc = `<circle r="${r}" cx="110" cy="110" stroke="${couleurs[i]}" stroke-dasharray="${Math.max(0.5, l - 3)} ${C}" stroke-dashoffset="${-cumul}" opacity="${e.coche || e.partiel ? 1 : 0.22}"></circle>`;
     cumul += l;
     return arc;
   }).join('');
-  return `<div class="an-anneau" style="width:${taillePx}px;height:${taillePx}px"><svg viewBox="0 0 220 220">${arcs}</svg><div class="an-centre">${centre}</div></div>`;
+  return `<div class="an-anneau" style="width:${taillePx}px;height:${taillePx}px"><svg viewBox="0 0 220 220">
+      <path class="an-dents" d="${engrenage(110, 110, 108, 98, 14)}"/><circle class="an-piste" r="${r}" cx="110" cy="110"></circle>${arcs}</svg><div class="an-centre">${centre}</div></div>`;
+}
+
+/** La jauge a dents (1.6) : une seule valeur ; ses dents s'allument une a
+ *  une, aux couleurs de la flamme — ou d'une seule, pour un etat de sante. */
+function jaugeDents(fraction, centre, taillePx = 220, couleur = null) {
+  const n = 28, allumees = Math.round(Math.max(0, Math.min(1, fraction)) * n);
+  const dents = Array.from({ length: n }, (_, i) => `<path d="${dent(110, 110, 106, 86, i, n)}" style="fill:${i < allumees ? couleur || flamme(i / (n - 1)) : 'var(--surface-3)'}"/>`).join('');
+  return `<div class="an-jd" style="width:${taillePx}px;height:${taillePx}px"><svg viewBox="0 0 220 220">${dents}
+      <circle class="an-jd-cercle" cx="110" cy="110" r="79"></circle><circle class="an-jd-coeur" cx="110" cy="110" r="67"></circle></svg><div class="an-centre">${centre}</div></div>`;
+}
+
+/** La double couronne (1.6) : au centre les postes, autour ce qui compose
+ *  chacun — on voit d'un coup un poste et son detail. */
+function couronne(postes, couleurs, centre, taillePx = 240) {
+  const total = postes.reduce((a, p) => a + p.taille, 0) || 1;
+  let a = -Math.PI / 2, interieur = '', exterieur = '';
+  postes.forEach((p, i) => {
+    const da = (p.taille / total) * Math.PI * 2;
+    const allume = p.coche || p.partiel;
+    interieur += `<path d="${arcCouronne(110, 110, 54, a + 0.02, a + da - 0.02, 22)}" style="fill:${couleurs[i]}" opacity="${allume ? 1 : 0.22}"/>`;
+    const parts = (p.parts || []).filter((x) => x.taille > 0 && !x.cache);
+    const somme = parts.reduce((s2, x) => s2 + x.taille, 0);
+    let b = a;
+    (somme ? parts : [{ taille: 1, get: () => allume }]).forEach((x, j) => {
+      const db = (x.taille / (somme || 1)) * da;
+      exterieur += `<path d="${arcCouronne(110, 110, 81, b + 0.025, b + db - 0.025, 17)}" style="fill:${couleurs[i]}" opacity="${x.get() ? (j % 2 ? 0.62 : 0.88) : 0.16}"/>`;
+      b += db;
+    });
+    a += da;
+  });
+  return `<div class="an-jd" style="width:${taillePx}px;height:${taillePx}px"><svg viewBox="0 0 220 220">
+      <path class="an-dents" d="${engrenage(110, 110, 108, 99, 18)}"/>${exterieur}${interieur}</svg><div class="an-centre">${centre}</div></div>`;
 }
 
 function vueAnneau(m, k, mode) {
@@ -703,7 +769,7 @@ function vueJauge(m, mode) {
   const h = JETONS.health[x.health] || JETONS.health.ok;
   const couleur = { ok: 'var(--ok)', warn: 'var(--warn)', crit: 'var(--err)' }[h[1]];
   const valeur = (UNITES[x.unit] || nb)(x.value);
-  return `<div class="an-jauge-seule">${anneau([{ taille: Number(x.value), coche: true }, { taille: Math.max(0, Number(x.max) - Number(x.value)), coche: false }], [couleur, 'var(--border-2)'], `<b>${esc(valeur)}</b><span>${esc(rapport(m.entree, x.cle)?.label || x.cle)}</span>`)}
+  return `<div class="an-jauge-seule">${jaugeDents(Number(x.value) / Number(x.max), `<b>${esc(valeur)}</b><span>${esc(rapport(m.entree, x.cle)?.label || x.cle)}</span>`, 220, couleur)}
     <span class="badge ${h[1] === 'ok' ? 'low' : h[1] === 'warn' ? 'med' : 'high'}">${esc(t(h[0]))}</span></div>`;
 }
 
@@ -953,10 +1019,13 @@ export function resume(modeles, { graphe = 'donut', ouverts = new Set(), detailJ
       graphique = `${entete}<div class="an-gaufre-zone"><div class="an-gaufre">${cases}</div>${liste(pesants)}</div>`;
     } else if (graphe === 'gauge') {
       const tout = pesants.every((p) => p.coche);
-      graphique = `<div class="an-jauge-seule">${anneau([{ taille: choisi || 0.0001, coche: true }, { taille: Math.max(0, total - choisi), coche: false }], ['var(--acc)', 'var(--border-2)'], `<b>${taille(choisi)}</b><span>${esc(t('an.a_liberer'))}</span>`)}
+      graphique = `<div class="an-jauge-seule">${jaugeDents(choisi / total, `<b>${taille(choisi)}</b><span>${esc(t('an.a_liberer'))}</span><span>${esc(t('an.sur', { taille: taille(total) }))}</span>`)}
         <span class="an-interrupteur">${esc(t('an.tout_liberer', { taille: taille(total) }))}<button class="switch" type="button" role="switch" aria-checked="${tout}" data-a-tout-postes></button></span>
         <button class="an-lien" type="button" data-a-jauge-detail>${esc(t(detailJauge ? 'an.masquer_detail' : 'an.voir_detail'))}</button></div>
         ${detailJauge ? liste(pesants) : ''}`;
+    } else if (graphe === 'crown') {
+      graphique = `<div class="an-anneau-zone">${couronne(pesants, pesants.map((p) => couleurs.get(p.cle)), `<b>${taille(choisi)}</b><span>${esc(t('an.a_liberer'))}</span>`)}
+        <div>${liste(pesants)}</div></div>`;
     } else {
       graphique = `<div class="an-anneau-zone">${anneau(pesants.map((p) => ({ taille: p.taille, coche: p.coche, partiel: p.partiel })), pesants.map((p) => couleurs.get(p.cle)), `<b>${taille(choisi)}</b><span>${esc(t('an.a_liberer'))}</span><span>${esc(t('an.sur', { taille: taille(total) }))}</span>`)}
         <div>${liste(pesants)}</div></div>`;

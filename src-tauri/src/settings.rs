@@ -162,20 +162,22 @@ pub struct Settings {
     #[serde(default)]
     pub sources_exclus: BTreeMap<String, Vec<String>>,
     /// Graphique du resume de l'analyse en mode Simple (§17) : `donut`, `bar`,
-    /// `rows`, `treemap`, `waffle` ou `gauge`. Vide : l'anneau.
+    /// `rows`, `treemap`, `waffle`, `gauge` ou `crown`. Vide : l'anneau.
     #[serde(default)]
     pub analysis_chart: String,
-    /// Couleur d'accent de l'interface (§15.4) : une de [`ACCENTS`]. Vide :
-    /// l'orange, couleur par defaut depuis la 1.5.
+    /// Variante de couleurs de l'interface (§15.4) : une de [`ACCENTS`]. Vide,
+    /// ou une valeur d'avant la 1.6 (orange, maree…) : Ardente.
     #[serde(default)]
     pub accent: String,
 }
 
-/// Couleurs d'accent proposees ; `tide` est la couleur d'origine (« Maree »).
-pub const ACCENTS: [&str; 5] = ["orange", "tide", "blue", "violet", "pink"];
+/// Variantes de couleurs du theme Braise : Ardente (defaut) et Crepuscule.
+pub const ACCENTS: [&str; 2] = ["ardente", "crepuscule"];
 
 /// Graphiques proposes pour le resume de l'analyse.
-pub const GRAPHIQUES_ANALYSE: [&str; 6] = ["donut", "bar", "rows", "treemap", "waffle", "gauge"];
+pub const GRAPHIQUES_ANALYSE: [&str; 7] = [
+    "donut", "crown", "gauge", "bar", "rows", "treemap", "waffle",
+];
 
 /// Valeurs admises pour `catalogue_source` une fois la decision prise.
 pub const SOURCES_CATALOGUE: [&str; 2] = ["official", "none"];

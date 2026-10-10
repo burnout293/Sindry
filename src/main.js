@@ -86,12 +86,14 @@ function appliquerTheme(valeur, persister = true) {
   if (persister) invoke('set_theme', { theme: valeur }).catch((e) => console.error('set_theme a echoue :', e));
 }
 
-/** Couleur d'accent (reglage 1.8). L'orange est celle des tokens : aucun
- *  attribut. Les autres posent `data-accent`, que la feuille surcharge. */
-const ACCENTS = ['orange', 'tide', 'blue', 'violet', 'pink'];
+/** Couleurs de Braise (reglage 1.8). Ardente est celle des tokens : aucun
+ *  attribut. Crepuscule pose `data-accent`, que la feuille surcharge. Une
+ *  valeur d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
+const ACCENTS = ['ardente', 'crepuscule'];
+const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'ardente');
 function appliquerAccent(valeur) {
-  const v = ACCENTS.includes(valeur) ? valeur : 'orange';
-  if (v === 'orange') delete document.documentElement.dataset.accent;
+  const v = accentValide(valeur);
+  if (v === 'ardente') delete document.documentElement.dataset.accent;
   else document.documentElement.dataset.accent = v;
 }
 
@@ -483,63 +485,48 @@ function moteurManquant(meta) {
 }
 
 /**
- * Etiquettes d'un script : le jeu COMPLET, toujours dans le meme ordre.
- *
- * Auparavant seules les etiquettes applicables etaient rendues, et la ligne
- * changeait de composition d'un script a l'autre : on ne pouvait pas comparer
- * deux scripts d'un coup d'oeil, ni savoir si une etiquette absente signifiait
- * « non » ou « pas renseigne ». Ici la grille est fixe, chaque case est
- * toujours a la meme place, et c'est la couleur qui porte l'information.
- *
- * Deux exceptions assumees a la regle « griser ce qui ne s'applique pas » :
- * « non reversible » et « non interruptible » s'allument en ambre au lieu
- * d'etre grisees. Ce sont des mises en garde, et une mise en garde qui se
- * signale par une ABSENCE de couleur ne se voit pas.
+ * Les faits d'une fiche (1.6) : une icone neutre et une valeur, sans cadre.
+ * Les pilules d'avant ressemblaient a des boutons, affichaient toutes les
+ * valeurs possibles (« Faible, Moyen, Eleve » pour dire « Faible ») et
+ * mettaient de la couleur partout. Ici, une seule valeur par information, et
+ * la couleur reservee a ce qui demande l'attention.
  */
-function etiquette(texte, ton, allumee, titre) {
-  const classes = ['badge', allumee ? ton : 'off'].filter(Boolean).join(' ');
-  const info = titre ? ` title="${esc(titre)}"` : '';
-  return `<span class="${classes}"${info}>${esc(texte)}</span>`;
-}
-
 function rendreEtiquettes(entree) {
   const m = entree.meta;
-
-  // Echelles : une seule valeur vraie parmi N, les autres grisees.
-  const risques = ['low', 'medium', 'high']
-    .map((n) => etiquette(t(`risque.${n}`), CLASSE_RISQUE[n], m.risk === n))
-    .join('');
-  const durees = ['fast', 'medium', 'slow']
-    .map((n) => etiquette(t(`duree.${n}`), 'neutre', m.duration === n))
-    .join('');
-
-  const booleens = [
+  const ic = (n) => `<svg class="ico i14" aria-hidden="true"><use href="#${n}"/></svg>`;
+  const fait = (icone, texte, { ton = '', titre = '' } = {}) =>
+    `<span class="fait${ton ? ` ${ton}` : ''}"${titre ? ` title="${esc(titre)}"` : ''}>${icone}${esc(texte)}</span>`;
+  const niveau = { low: 1, medium: 2, high: 3 }[m.risk] || 1;
+  const metre = `<span class="metre n${niveau}" aria-hidden="true"><i></i><i></i><i></i></span>`;
+  const faits = [
+    fait(metre, t(`risque.${m.risk || 'low'}`), { ton: niveau === 3 ? 'grave' : niveau === 2 ? 'att' : '' }),
+    fait(ic('clock'), t(`fait.duree.${m.duration || 'fast'}`)),
     m.reversible
-      ? etiquette(t('badge.reversible'), 'acc', true)
-      : etiquette(t('badge.non_reversible'), 'med', true, t('badge.non_reversible_tip')),
-    m.interruptible
-      ? etiquette(t('badge.interruptible'), 'neutre', true)
-      : etiquette(t('badge.non_interruptible'), 'med', true, t('badge.non_interruptible_tip')),
-    etiquette(t('badge.redemarrage'), 'med', !!m.reboot),
-    etiquette(t('badge.admin_requis'), 'neutre', !!m.admin),
-    // La provenance n'est pas decorative (§16.4/16.6) : un script officiel
-    // conforme a l'index signe s'execute sans approbation ; modifie, ou depose
-    // a la main, il la demande.
-    entree.origin === 'official'
-      ? entree.verified
-        ? etiquette(t('badge.officiel'), 'acc', true, t('badge.officiel_tip'))
-        : etiquette(t('badge.modifie'), 'med', true, t('badge.modifie_tip'))
-      : entree.origin === 'tierce'
-        ? etiquette(nomSource(entree.source), 'med', true, t('badge.tierce_tip'))
-        : etiquette(t('badge.perso'), 'neutre', true),
-    etiquette(libelleFait(derniereExecution(entree.id)), 'neutre', !!derniereExecution(entree.id)),
-    entree.declared_id ? '' : etiquette(t('badge.sans_id'), 'med', true),
-  ]
-    .filter(Boolean)
-    .join('');
+      ? fait(ic('sec-histo'), t('badge.reversible'))
+      : fait(ic('sec-histo'), t('fait.irreversible'), { ton: 'att', titre: t('badge.non_reversible_tip') }),
+    m.interruptible ? '' : fait(ic('x'), t('fait.ne_pas_interrompre'), { ton: 'att', titre: t('badge.non_interruptible_tip') }),
+    m.reboot ? fait(ic('power'), t('badge.redemarrage'), { ton: 'att' }) : '',
+    m.admin ? fait(ic('shield'), t('fait.admin')) : '',
+    fait(ic('check'), libelleFait(derniereExecution(entree.id))),
+    entree.declared_id ? '' : fait(ic('warn'), t('badge.sans_id'), { ton: 'att' }),
+  ];
+  return `<div class="faits">${faits.filter(Boolean).join('')}</div>`;
+}
 
-  return `<div class="badges-row">${risques}<i class="badges-sep"></i>${durees}</div>
-          <div class="badges-row">${booleens}</div>`;
+/** La provenance, a cote du titre : elle signe l'action (§16.4/16.6). Un
+ *  script officiel conforme a l'index signe s'execute sans approbation ;
+ *  modifie, ou depose a la main, il la demande. */
+function rendreProvenance(entree) {
+  const ic = (n) => `<svg class="ico i14" aria-hidden="true"><use href="#${n}"/></svg>`;
+  if (entree.origin === 'official') {
+    return entree.verified
+      ? `<span class="prov" title="${esc(t('badge.officiel_tip'))}">${ic('shield-check')}${esc(t('badge.officiel'))}</span>`
+      : `<span class="prov att" title="${esc(t('badge.modifie_tip'))}">${ic('warn')}${esc(t('fait.modifie'))}</span>`;
+  }
+  if (entree.origin === 'tierce') {
+    return `<span class="prov neutre" title="${esc(t('badge.tierce_tip'))}">${ic('globe')}${esc(nomSource(entree.source))}</span>`;
+  }
+  return `<span class="prov neutre">${ic('folder')}${esc(t('an.origine_perso'))}</span>`;
 }
 
 async function rendreCarte(entree, { sousBadges = '' } = {}) {
@@ -565,7 +552,7 @@ async function rendreCarte(entree, { sousBadges = '' } = {}) {
       <div class="card-top">
         <div class="card-icon">${icone}</div>
         <div class="card-ident">
-          <div class="card-title">${esc(titre)}</div>
+          <div class="card-title">${esc(titre)}${rendreProvenance(entree)}</div>
           ${desc ? `<div class="card-desc">${esc(desc)}</div>` : ''}
           <div class="card-path">${esc(entree.path)} · v${esc(m.version || '?')} · ${esc(entree.hash.slice(0, 8))}</div>
         </div>
@@ -1203,6 +1190,7 @@ function rendreFiltresJournal() {
  *  persiste, chaque lancement repart de Compact. */
 function basculerConsole(mode) {
   document.body.dataset.console = mode;
+  requestAnimationFrame(majBoutonJournal);
   document.querySelectorAll('#consoleSeg [data-console-mode]').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.consoleMode === mode));
   });
@@ -2220,10 +2208,41 @@ function afficherJournal(visible) {
   if (!term.panneau) return;
   term.panneau.hidden = !visible;
   synchroniserBoutonDetail();
+  majBoutonJournal();
 }
 
 function fermerJournal() {
+  // En Expert, le journal ferme redevient l'apercu de la colonne : sans le
+  // retour en « Compact », l'apercu restait masque lui aussi.
+  if (modeCourant === 'expert') basculerConsole('compact');
   afficherJournal(false);
+}
+
+/** Le journal est-il a l'ecran ? En Expert, « Compact » ne montre que
+ *  l'apercu de la colonne : le panneau, lui, est masque. */
+function journalOuvert() {
+  if (!term.panneau || term.panneau.hidden) return false;
+  return modeCourant !== 'expert' || document.body.dataset.console !== 'compact';
+}
+
+function majBoutonJournal() {
+  document.getElementById('btnJournal')?.setAttribute('aria-pressed', String(journalOuvert()));
+}
+
+/** Ouvre ou ferme le journal, qu'il y ait quelque chose dedans ou non (1.6) :
+ *  avant, il ne s'ouvrait qu'avec une execution, et rien ne permettait de
+ *  relire ce qui s'etait passe une fois l'ecran quitte. */
+function basculerJournal() {
+  if (journalOuvert()) return void fermerJournal();
+  if (modeCourant === 'expert' && document.body.dataset.console === 'compact') basculerConsole('etendu');
+  afficherJournal(true);
+  // Rien ne tourne : le panneau se referme aussi par son propre bouton.
+  if (!course && term.fermer) {
+    term.stop.hidden = true;
+    term.fermer.hidden = false;
+    etiqueterFermerJournal();
+  }
+  majBoutonJournal();
 }
 
 function synchroniserBoutonDetail() {
@@ -2246,12 +2265,23 @@ function cablerConsole() {
   // Sans aucune ligne, basculer en « Étendu » faisait disparaitre l'apercu
   // pour ouvrir un panneau lui-meme vide et masque : tout s'effacait d'un
   // clic. Tant qu'il n'y a rien a lire, l'apercu ne mene nulle part.
+  // Meme vide : le panneau ouvert dit alors qu'aucune execution n'a eu lieu,
+  // au lieu de ne rien faire (1.6).
   if (compact) {
     compact.onclick = () => {
-      const vide = document.getElementById('ljBody')?.classList.contains('vide');
-      if (!vide) basculerConsole('etendu');
+      basculerConsole('etendu');
+      afficherJournal(true);
+      if (!course) {
+        term.stop.hidden = true;
+        term.fermer.hidden = false;
+        etiqueterFermerJournal();
+      }
     };
   }
+  document.getElementById('btnJournal').onclick = basculerJournal;
+  if (term.corps) term.corps.dataset.vide = t('console.aucune_execution');
+  if (term.titre && term.titre.textContent === '…') term.titre.textContent = '';
+  if (term.sous && term.sous.textContent === '…') term.sous.textContent = '';
   document.getElementById('ljKicker').textContent = t('console.journal');
   viderJournalCompact();
   basculerConsole('compact');
@@ -2764,6 +2794,8 @@ function appliquerTraductionsStatiques() {
   };
   cible('themeBtn', t('chrome.basculer_theme'));
   cible('btnSettings', t('reglages.titre'));
+  cible('btnJournal', t('console.journal_tip'));
+  if (term.corps) term.corps.dataset.vide = t('console.aucune_execution');
   cible('btnMin', t('chrome.reduire'));
   cible('btnMax', t('chrome.agrandir'));
   cible('btnClose', t('chrome.fermer_fenetre'));
@@ -4720,7 +4752,7 @@ function remplirFormulaireReglages(reglages) {
   document.getElementById('setMajSelect').value = reglages.update_policy;
   document.getElementById('setGrapheSelect').value = reglages.analysis_chart || 'donut';
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
-    b.setAttribute('aria-checked', String(b.dataset.setAccent === (reglages.accent || 'orange')));
+    b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
   document.getElementById('setCatalogueSelect').value = reglages.catalogue_check || 'startup';
   rendreReglagesCatalogue();
@@ -5210,7 +5242,7 @@ async function rendreVisite() {
     const choix = (attr, valeur, actuelle, libelle) =>
       `<button type="button" data-${attr}="${valeur}" aria-pressed="${valeur === actuelle}">${esc(libelle)}</button>`;
     page.innerHTML = `
-      <div class="onb-mark"><svg class="ico i28" aria-hidden="true"><use href="#logo" /></svg></div>
+      <img class="onb-logo" src="marque.png" alt="" draggable="false">
       <h1 id="onbTitre">${esc(textePresentation(donnees.titre))}</h1>
       <p class="onb-text">${esc(textePresentation(donnees.texte))}</p>
       <div class="onb-choices">
