@@ -181,14 +181,16 @@ pub struct Settings {
     #[serde(default)]
     pub sources_exclus: BTreeMap<String, Vec<String>>,
     /// Variante de couleurs de l'interface (§15.4) : une de [`ACCENTS`]. Vide,
-    /// ou une valeur d'avant la 1.6 (orange, maree…) : Ardente.
+    /// ou une valeur d'avant la 1.6 (orange, maree…) : Plan, l'ambiance par
+    /// defaut depuis la 1.8.
     #[serde(default)]
     pub accent: String,
 }
 
 /// Ambiances (reglage 1.8) : Braise — Ardente (defaut) et Crepuscule — et les
 /// themes d'ambiance de la 1.7. Terminal et Aurore n'existent qu'en sombre.
-pub const ACCENTS: [&str; 8] = [
+pub const ACCENTS: [&str; 9] = [
+    "plan",
     "ardente",
     "crepuscule",
     "synthwave",

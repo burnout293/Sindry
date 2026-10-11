@@ -93,10 +93,12 @@ function appliquerTheme(valeur, persister = true) {
  *  thèmes d'ambiance de la 1.7. Ardente est celle des tokens : aucun attribut.
  *  Les autres posent `data-accent`, que la feuille surcharge. Une valeur
  *  d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
-const ACCENTS = ['ardente', 'crepuscule', 'synthwave', 'spatial', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
+const ACCENTS = ['plan', 'ardente', 'crepuscule', 'synthwave', 'spatial', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
 /** Celles qui n'existent qu'en sombre : le reglage clair / sombre n'a pas de prise. */
 const SOMBRE_SEUL = new Set(['terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe']);
-const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'ardente');
+// Plan est l'ambiance par defaut depuis la 1.8 : un reglage vide (jamais choisi)
+// ou inconnu y mene. Qui avait choisi Braise ardente la garde.
+const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'plan');
 function appliquerAccent(valeur) {
   const v = accentValide(valeur);
   if (v === 'ardente') delete document.documentElement.dataset.accent;

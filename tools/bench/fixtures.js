@@ -616,7 +616,7 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '1.7.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '1.8.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
     // Sans parametre, WinTool est a jour.
@@ -625,7 +625,7 @@
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
       if (!maj) return null;
       const version = maj === 'signature' ? '1.5.1' : maj;
-      return { version, actuelle: '1.7.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '1.8.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');

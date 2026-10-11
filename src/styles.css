@@ -475,6 +475,135 @@
   --sh: 0 2px 10px rgba(0, 0, 0, .4);
   --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
 }
+/* Plan (1.8, maquette M23 B) : l'ambiance par defaut. Un plan technique —
+   grille fine, roues au trait, cotes — en clair et en sombre, qui suit le
+   reglage 1.1. `--grille` : les lignes de la grille. */
+:root[data-accent="plan"] {
+  --bg: #F6F4EF;
+  --surface: #FFFFFF;
+  --surface-2: #EFECE5;
+  --surface-3: #E4E0D6;
+  --border: #DCD7CC;
+  --border-2: #B6AE9F;
+  --text: #141A24;
+  --text-2: #5C6778;
+  --text-3: #5F6A7B;
+  --ink: #1A0B06;
+  --ok: #0E7550;
+  --warn: #8F5D0C;
+  --err: #C0263F;
+  --ok-s: #E6F5EC;
+  --warn-s: #FBF3E2;
+  --err-s: #FBEAEC;
+  --acc: #E2640F;
+  --acc-2: #F0782A;
+  --acc-on: #A84A08;
+  --surface-soft: #FAF9F6;
+  --acc-soft: #FCEBDD;
+  --knob-off: #8E96A3;
+  --serie-1: #E2640F;
+  --serie-2: #1C7FD0;
+  --serie-3: #0E9F6E;
+  --serie-4: #7A5AF8;
+  --serie-5: #D9A400;
+  --serie-6: #D6336C;
+  --rouage-a: #E2640F;
+  --rouage-b: #F0782A;
+  --eau-a: #E2640F;
+  --eau-b: #B6AE9F;
+  --eau-fond: 0;
+  --eau-surface: 0;
+  --grille: #E6E2D9;
+  --term-bg: #141A24;
+  --term-text: #E3EAF2;
+  --term-dim: #8FA0B4;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="plan"]:not([data-theme="light"]) {
+    --bg: #0B0F16;
+    --surface: #0F1520;
+    --surface-2: #141C2A;
+    --surface-3: #1B2536;
+    --border: #2A3445;
+    --border-2: #42506A;
+    --text: #E9EEF5;
+    --text-2: #8C9AAE;
+    --text-3: #8190A5;
+    --ink: #1A0B06;
+    --ok: #3FD69B;
+    --warn: #FFC24D;
+    --err: #FF6B7A;
+    --ok-s: #0C2620;
+    --warn-s: #2A2210;
+    --err-s: #2E141C;
+    --acc: #FD7D26;
+    --acc-2: #FF9447;
+    --acc-on: #FF9A55;
+    --surface-soft: #0D121B;
+    --acc-soft: #2A1A10;
+    --knob-off: #56647A;
+    --serie-1: #FD7D26;
+    --serie-2: #4AB2E7;
+    --serie-3: #3FD69B;
+    --serie-4: #B48CFF;
+    --serie-5: #FFC24D;
+    --serie-6: #FF6B9A;
+    --rouage-a: #FD7D26;
+    --rouage-b: #FF9447;
+    --eau-a: #FD7D26;
+    --eau-b: #42506A;
+    --eau-fond: 0;
+    --eau-surface: 0;
+    --grille: #1C2533;
+    --term-bg: #070A10;
+    --term-text: #D6E0EC;
+    --term-dim: #7D8BA0;
+    --sh: 0 2px 10px rgba(0, 0, 0, .4);
+    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+  }
+}
+:root[data-theme="dark"][data-accent="plan"] {
+  --bg: #0B0F16;
+  --surface: #0F1520;
+  --surface-2: #141C2A;
+  --surface-3: #1B2536;
+  --border: #2A3445;
+  --border-2: #42506A;
+  --text: #E9EEF5;
+  --text-2: #8C9AAE;
+  --text-3: #8190A5;
+  --ink: #1A0B06;
+  --ok: #3FD69B;
+  --warn: #FFC24D;
+  --err: #FF6B7A;
+  --ok-s: #0C2620;
+  --warn-s: #2A2210;
+  --err-s: #2E141C;
+  --acc: #FD7D26;
+  --acc-2: #FF9447;
+  --acc-on: #FF9A55;
+  --surface-soft: #0D121B;
+  --acc-soft: #2A1A10;
+  --knob-off: #56647A;
+  --serie-1: #FD7D26;
+  --serie-2: #4AB2E7;
+  --serie-3: #3FD69B;
+  --serie-4: #B48CFF;
+  --serie-5: #FFC24D;
+  --serie-6: #FF6B9A;
+  --rouage-a: #FD7D26;
+  --rouage-b: #FF9447;
+  --eau-a: #FD7D26;
+  --eau-b: #42506A;
+  --eau-fond: 0;
+  --eau-surface: 0;
+  --grille: #1C2533;
+  --term-bg: #070A10;
+  --term-text: #D6E0EC;
+  --term-dim: #7D8BA0;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
 :root[data-accent="terminal-vert"]:not([data-theme="light"]),
 :root[data-accent="terminal-vert"][data-theme="light"] {
   color-scheme: dark;
@@ -823,7 +952,8 @@ body[data-mode="expert"] .water { display: none; }
 .ambiance > div { display: none; position: absolute; inset: 0; }
 :root[data-accent="synthwave"] .amb-synthwave,
 :root[data-accent^="aurore"] .amb-aurore,
-:root[data-accent="spatial"] .amb-spatial { display: block; }
+:root[data-accent="spatial"] .amb-spatial,
+:root[data-accent="plan"] .amb-plan { display: block; }
 body[data-mode="expert"] .ambiance { display: none; }
 body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ambiance *, .ambiance *::before { animation: none !important; } }
@@ -906,6 +1036,31 @@ body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-st
 :root[data-accent="spatial"] .reco[aria-current="true"]::after { bottom: -7px; right: -7px; border-left: none; border-top: none; }
 :root[data-accent="spatial"] .btn.primary.big { border-radius: 3px; text-transform: uppercase; letter-spacing: .16em; font-size: 13.5px;
   box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 40%, transparent); }
+
+/* Plan : une grille fine qui s'estompe vers les bords, deux roues tracees au
+   trait qui s'engrenent, leurs cotes, et la ligne d'eau devenue une courbe
+   d'epure. Les bouees sont des cartouches a coins serres. */
+.pl-grille { position: absolute; inset: 0;
+  background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px);
+  background-size: 32px 32px; background-position: center bottom;
+  -webkit-mask: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 80%); mask: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 80%); }
+.pl-roue { position: absolute; fill: none; stroke: var(--acc); opacity: .28; }
+.pl-roue.g { left: calc(50% - 330px); top: 150px; width: 420px; height: 420px; animation: pl-tourne 50s linear infinite; }
+.pl-roue.p { left: calc(50% + 60px); top: 280px; width: 240px; height: 240px; animation: pl-tourne 30s linear infinite reverse; }
+@keyframes pl-tourne { to { transform: rotate(360deg); } }
+.pl-cote { position: absolute; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--acc-on); opacity: .75; }
+.pl-cote::before { content: ''; position: absolute; top: 50%; right: calc(100% + 6px); width: 46px; border-top: 1px dashed var(--acc); }
+.pl-cote.g { left: calc(50% + 120px); top: 560px; }
+.pl-cote.p { left: calc(50% + 310px); top: 410px; }
+:root[data-accent="plan"] .water.surface path:last-child { stroke: var(--acc); stroke-width: 1.5; opacity: .7; }
+:root[data-accent="plan"] #s1Titre { font-weight: 650; letter-spacing: -1px; }
+:root[data-accent="plan"] .reco { border-radius: 10px; border-width: 1px; }
+:root[data-accent="plan"] .reco[aria-current="true"] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--acc) 14%, transparent); }
+:root[data-accent="plan"] .reco .ri { border-radius: 8px; background: var(--acc); }
+:root[data-accent="plan"] .buoy .bi { border-radius: 12px; border-width: 1px; }
+:root[data-accent="plan"] .buoy .blabel { border-radius: 8px; }
+:root[data-accent="plan"] .buoy .bd { font-family: var(--mono); font-size: 10.5px; }
+:root[data-accent="plan"] .btn.primary.big { border-radius: 10px; }
 
 /* Terminal : tout en chasse fixe (jetons), lignes de balayage et lueur du
    phosphore sur tout l'écran, une ligne d'eau en pointillés, un curseur. */
@@ -2934,6 +3089,7 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .accent-pastille::before { content: ''; width: 24px; height: 24px; border-radius: 50%; background: var(--pal); flex-shrink: 0; }
 .accent-pastille:hover { border-color: var(--text-3); color: var(--text); }
 .accent-pastille[aria-checked="true"] { border-color: var(--acc); color: var(--text); box-shadow: 0 0 0 1px var(--acc); }
+.accent-pastille[data-set-accent="plan"]            { --pal: linear-gradient(135deg, #0B0F16 0 48%, #FD7D26 48% 56%, #F6F4EF 56%); }
 .accent-pastille[data-set-accent="ardente"]         { --pal: linear-gradient(135deg, #FEC923, #FD5632); }
 .accent-pastille[data-set-accent="crepuscule"]      { --pal: linear-gradient(135deg, #FF7A45, #DC1178); }
 .accent-pastille[data-set-accent="synthwave"]       { --pal: linear-gradient(135deg, #FF2BD6, #00E5FF); }

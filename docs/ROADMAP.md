@@ -29,7 +29,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — faits des fiches en icônes et valeurs, provenance à côté du titre (§2) | Fait |
 | | — journal toujours ouvrable, même vide, en Simple comme en Expert (§2) | Fait |
 | | — nouvelle icône (Sindry) ; le nom reste WinTool jusqu'à la 2.0 | Fait |
-| **1.7** | Pré-version (tag `v1.7.0-beta`) | Pré-version |
+| **1.7** | Pré-version (tag `v1.7.0-beta`) | Pré-version, publiée le 11/10/2026 |
 | | — vagues : la pause suit la fenêtre réduite, plus le focus ; l'eau et les bouées s'arrêtent ensemble (§15.3) | Fait |
 | | — réglages par script : « Actif » et « Nécessite un redémarrage » retirés (§4.2) | Fait |
 | | — la balise sur « Droits limités » ; encart et guide à la lampe torche quand une action a besoin des droits administrateur (§15.6) | Fait |
@@ -42,7 +42,8 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | **1.8** | Bouées de la deuxième rangée recalées sur leur vague ; installeur : « Mettre à jour » et « Réparer » au lieu de désinstaller ; versions bêta au choix (réglage 1.4 « Mises à jour »), réglages rangés par numéro ; plus de vitesse à l'étape « Vérifier », le nombre d'actions au lieu des minutes | Fait |
 | | — catalogues : ajouter, modifier, retirer dans les deux modes ; retirer efface la copie téléchargée, l'officiel compris, qui se réinstalle de zéro | Fait |
 | | — choix multiples : une liste à cocher lisible, compteur, « Tout / Aucun » (maquette M22 B) | Fait |
-| | — refonte de Braise ardente : la Forge (M20, M21), en version moderne (M23) | À décider |
+| | — **Plan** devient l'ambiance par défaut : grille, roues au trait, cotes (maquette M23 B) | Fait |
+| | Publiée comme dernière version stable (tag `v1.8.0`) | Prête |
 | plus tard | Thèmes exportables et importables, en un seul fichier, pour les partager | Quand il le demandera |
 | **2.0** | WinTool devient **Sindry** | Prévue |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
