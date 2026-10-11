@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindry — attirer l'œil</title>
+<!--
+  Deux ébauches liées.
+  1. Un effet qui attire l'œil sur un élément (ici « Droits limités »), à garder
+     pour le réutiliser partout où quelque chose demande l'attention.
+  2. Un mode guide : mettre en avant un élément quand c'est nécessaire — pour une
+     visite guidée, ou une alerte (« cette action a besoin des droits
+     administrateur »). Cinq formes, jouables sur une réplique de l'écran Expert.
+  Thème Braise, variantes Ardente et Crépuscule, clair et sombre.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+body {
+  --or: #FEC923; --ambre: #FD9E21; --vermillon: #FD5632; --magenta: #DC1178; --orchidee: #CA28B1;
+}
+body[data-v="ardente"][data-mode="sombre"] {
+  --bg: #0F0A14; --surface: #18111F; --surface-2: #211829; --surface-3: #2B2034;
+  --border: #2C2236; --border-2: #3D3049; --text: #F7F1FA; --text-2: #B9A9C6; --text-3: #94849F;
+  --acc-a: var(--or); --acc-b: var(--vermillon); --acc-on: #FFB35C; --on-acc: #1A0B12; --acc-soft: #2A1A14;
+  --ok: #3FD69B; --warn: #FFB340; --err: #FF6B7A; --ok-s: #0F2A21; --warn-s: #2C2113; --err-s: #2E1720;
+  --voile: rgba(6, 3, 10, .74); --brillance: rgba(255, 236, 200, .45);
+}
+body[data-v="ardente"][data-mode="clair"] {
+  --bg: #FBF6F2; --surface: #FFFFFF; --surface-2: #F6EEE8; --surface-3: #EFE4DB;
+  --border: #EADFD6; --border-2: #DCCBBE; --text: #1F1426; --text-2: #6A5873; --text-3: #76637F;
+  --acc-a: var(--ambre); --acc-b: var(--vermillon); --acc-on: #B23A0C; --on-acc: #1A0B12; --acc-soft: #FFF0E4;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F; --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC;
+  --voile: rgba(31, 20, 38, .58); --brillance: rgba(255, 255, 255, .85);
+}
+body[data-v="crepuscule"][data-mode="sombre"] {
+  --bg: #110A1C; --surface: #1A1128; --surface-2: #231833; --surface-3: #2E2042;
+  --border: #2D2140; --border-2: #423058; --text: #F8F0FC; --text-2: #BCA9D0; --text-3: #9783AC;
+  --acc-a: #FF7A45; --acc-b: #F0428E; --acc-on: #FF86B0; --on-acc: #1C0614; --acc-soft: #2C1229;
+  --ok: #45DCA3; --warn: #FFBF57; --err: #FF6B8F; --ok-s: #10291F; --warn-s: #2D2115; --err-s: #2F1424;
+  --voile: rgba(8, 3, 14, .74); --brillance: rgba(255, 228, 240, .45);
+}
+body[data-v="crepuscule"][data-mode="clair"] {
+  --bg: #FBF5FA; --surface: #FFFFFF; --surface-2: #F5ECF5; --surface-3: #EDE0EE;
+  --border: #EAD9EA; --border-2: #D9C2DB; --text: #22102C; --text-2: #6B5378; --text-3: #78607F;
+  --acc-a: #FF7A45; --acc-b: #F0428E; --acc-on: #B0145F; --on-acc: #1C0614; --acc-soft: #FCE8F1;
+  --ok: #0E7550; --warn: #8C5B0E; --err: #C0214A; --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEF;
+  --voile: rgba(34, 16, 44, .56); --brillance: rgba(255, 255, 255, .85);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5;
+       padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+.page-h { max-width: 1180px; margin: 0 auto 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 560px; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; flex-wrap: wrap; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+
+.partie { max-width: 1180px; margin: 0 auto 34px; }
+.partie > h2 { font-size: 21px; letter-spacing: -.4px; }
+.partie > p { color: #B4AECA; font-size: 13.5px; margin: 4px 0 14px; max-width: 900px; line-height: 1.55; }
+
+/* --- Partie 1 : les effets ------------------------------------------------- */
+.effets { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.effet { background: #121019; border: 1px solid #221F2C; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
+.effet .scene { background: var(--bg); padding: 26px 18px; display: flex; justify-content: center; align-items: center; gap: 9px; border-bottom: 1px solid #221F2C; }
+.effet .txt { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.effet h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.effet h3 .num { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #170A12; background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.effet p { color: #C9C3D8; font-size: 13px; line-height: 1.5; }
+.effet .quand { color: #A49DB6; font-size: 12.5px; }
+.effet .quand b { color: #DCD6EA; font-weight: 650; }
+.jauge { display: inline-flex; gap: 3px; vertical-align: -1px; margin-left: 4px; }
+.jauge i { width: 14px; height: 6px; border-radius: 3px; background: #2E2A3A; }
+.jauge.n1 i:nth-child(1), .jauge.n2 i:nth-child(-n+2), .jauge.n3 i { background: linear-gradient(90deg, var(--acc-a), var(--acc-b)); }
+
+/* La barre de titre, en miniature : ce qui entoure la pastille. */
+.mini-iconbtn { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); background: var(--surface); }
+.pill {
+  position: relative; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 650; padding: 5px 11px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid var(--border); color: var(--text-2); background: var(--surface-2);
+}
+.pill.off { opacity: .55; }
+.pill.manquant { color: var(--warn); background: var(--warn-s); border-color: color-mix(in srgb, var(--warn) 42%, transparent); cursor: pointer; }
+.pill svg.i { width: 14px; height: 14px; }
+
+/* 1. Halo : un anneau qui s'élargit et s'éteint, comme une onde. */
+.fx-halo::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  animation: fx-halo 2.2s cubic-bezier(.2, .6, .4, 1) infinite;
+}
+@keyframes fx-halo {
+  0%       { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--warn) 0%, transparent); }
+}
+/* 2. Respiration : la pastille s'illumine et s'éteint doucement. */
+.fx-respire { animation: fx-respire 2.8s ease-in-out infinite; }
+@keyframes fx-respire {
+  50% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--warn) 50%, transparent);
+        background: color-mix(in srgb, var(--warn) 24%, var(--warn-s)); }
+}
+/* 3. Balise : un point dans le coin, qui émet des ondes ; la pastille ne bouge pas. */
+.fx-balise .balise { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--warn); box-shadow: 0 0 0 2px var(--bg); }
+.fx-balise .balise::before, .fx-balise .balise::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--warn);
+  animation: fx-sonar 2s ease-out infinite;
+}
+.fx-balise .balise::after { animation-delay: 1s; }
+@keyframes fx-sonar { from { transform: scale(1); opacity: .8; } to { transform: scale(3.4); opacity: 0; } }
+/* 4. Braise : une lueur qui fait le tour du bord, aux couleurs de la flamme. */
+.fx-braise { box-shadow: 0 0 14px -2px color-mix(in srgb, var(--vermillon) 45%, transparent); }
+.fx-braise::before {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit; padding: 2px; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0 50%, var(--or) 68%, var(--vermillon) 84%, var(--magenta) 94%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: fx-tour 2.4s linear infinite;
+}
+@keyframes fx-tour { to { --ang: 360deg; } }
+/* 5. Coup d'épaule : immobile, puis une brève secousse toutes les 4,5 s. */
+.fx-epaule { animation: fx-epaule 4.5s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes fx-epaule {
+  0%, 82%, 100% { transform: none; }
+  85% { transform: rotate(-5deg) translateX(-1px); }
+  88% { transform: rotate(5deg) translateX(1px); }
+  91% { transform: rotate(-3deg); }
+  94% { transform: rotate(2deg); }
+}
+/* 6. Reflet : un éclat de lumière balaie la pastille. */
+.fx-reflet { overflow: hidden; }
+.fx-reflet::after {
+  content: ''; position: absolute; top: -2px; bottom: -2px; width: 45%; left: -70%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, var(--brillance), transparent);
+  animation: fx-reflet 3.4s ease-in-out infinite;
+}
+@keyframes fx-reflet { 0%, 50% { left: -70%; } 100% { left: 130%; } }
+
+/* Mouvement réduit (réglage Windows) : aucun effet ne bouge ; un double contour
+   fixe garde l'élément repérable. */
+body.calme .fx-halo::after, body.calme .fx-respire, body.calme .fx-balise .balise::before, body.calme .fx-balise .balise::after,
+body.calme .fx-braise::before, body.calme .fx-epaule, body.calme .fx-reflet::after, body.calme .anneau { animation: none !important; }
+body.calme .fx-reflet::after, body.calme .fx-braise::before { display: none; }
+body.calme :is(.fx-halo, .fx-respire, .fx-balise, .fx-braise, .fx-epaule, .fx-reflet) {
+  outline: 2px solid color-mix(in srgb, var(--warn) 70%, transparent); outline-offset: 3px;
+}
+
+/* --- Partie 2 : le mode guide --------------------------------------------- */
+.commandes { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 12px; }
+.commandes .lbl { font-size: 12.5px; color: #A49DB6; font-weight: 650; }
+.btn-demo { padding: 9px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 650; background: #1B1824; border: 1px solid #2D2938; color: #EDEAF5; display: inline-flex; gap: 8px; align-items: center; }
+.btn-demo:hover { border-color: #4A4458; }
+.fiche-style { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 22px; }
+.fiche-style h3 { grid-column: 1 / -1; font-size: 16px; }
+.fiche-style div { font-size: 13px; color: #C9C3D8; line-height: 1.5; }
+.fiche-style div b { display: block; color: #A49DB6; font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+@media (max-width: 760px) { .fiche-style { grid-template-columns: 1fr; } }
+
+/* La réplique de WinTool, écran Expert. */
+.app { position: relative; background: var(--bg); color: var(--text); border: 1px solid var(--border-2); border-radius: 16px; overflow: hidden; height: 500px; display: flex; flex-direction: column; }
+.tb { height: 54px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tb img { width: 26px; height: 26px; }
+.tb .nom { font-weight: 800; font-size: 14.5px; letter-spacing: -.2px; }
+.tb .ver { font-family: Consolas, monospace; font-size: 11px; color: var(--text-3); }
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); margin-left: 14px; }
+.seg span { padding: 5px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.seg span.on { color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.tb .droite { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.corps { flex: 1; display: grid; grid-template-columns: 230px 1fr; min-height: 0; }
+.liste { border-right: 1px solid var(--border); padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+.liste .rub { font-size: 10.5px; font-weight: 750; letter-spacing: .8px; color: var(--text-3); text-transform: uppercase; padding: 10px 8px 4px; }
+.liste .it { font-size: 13px; padding: 8px 10px; border-radius: 9px; color: var(--text-2); font-weight: 550; display: flex; gap: 8px; }
+.liste .it small { font-family: Consolas, monospace; color: var(--text-3); font-size: 11px; }
+.liste .it.on { background: var(--acc-soft); color: var(--text); box-shadow: inset 3px 0 0 var(--acc-b); }
+.detail { padding: 18px 22px; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+.dh { display: flex; gap: 14px; align-items: flex-start; }
+.dh .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); flex-shrink: 0; }
+.dh .ic svg { width: 22px; height: 22px; }
+.dh h4 { font-size: 19px; letter-spacing: -.3px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dh .prov { font-size: 12px; font-weight: 600; color: var(--text-3); display: inline-flex; gap: 4px; align-items: center; }
+.dh .prov svg { color: var(--ok); width: 14px; height: 14px; }
+.dh p { color: var(--text-2); font-size: 13px; margin-top: 3px; }
+.dh .actions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; }
+.b { padding: 9px 16px; border-radius: 11px; font-size: 13px; font-weight: 700; border: 1px solid var(--border-2); background: var(--surface); color: var(--text); }
+.b.primaire { border: none; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); display: inline-flex; gap: 7px; align-items: center; }
+.faits { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--text-2); }
+.faits span { display: inline-flex; gap: 6px; align-items: center; }
+.faits svg { color: var(--text-3); width: 14px; height: 14px; }
+.faits .att, .faits .att svg { color: var(--warn); }
+.metre { display: inline-flex; gap: 2px; align-items: flex-end; }
+.metre i { width: 4px; border-radius: 2px; background: var(--surface-3); }
+.metre i:nth-child(1) { height: 6px; } .metre i:nth-child(2) { height: 9px; } .metre i:nth-child(3) { height: 12px; }
+.metre.n2 i:nth-child(-n+2) { background: var(--warn); }
+.carte { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 6px 16px; }
+.carte .ln { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.carte .ln:last-child { border-bottom: none; }
+.carte .ln small { display: block; color: var(--text-3); font-size: 11.5px; margin-top: 2px; }
+.inter { width: 36px; height: 20px; border-radius: 999px; background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); position: relative; flex-shrink: 0; }
+.inter::after { content: ''; position: absolute; top: 3px; right: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.inter.off { background: var(--surface-3); }
+.inter.off::after { right: auto; left: 3px; background: var(--text-3); }
+@media (max-width: 760px) { .corps { grid-template-columns: 1fr; } .liste { display: none; } .tb .ver, .seg { display: none; } }
+
+/* L'encart (forme E) : il vit dans la fiche, sans rien recouvrir. */
+.encart { display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 12px; font-size: 13px;
+  background: var(--warn-s); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--text); }
+.encart > svg { color: var(--warn); width: 18px; height: 18px; }
+.encart p { flex: 1; color: var(--text-2); }
+.encart p b { color: var(--text); }
+.encart .b { padding: 7px 12px; font-size: 12.5px; }
+
+/* --- Le calque du guide ----------------------------------------------------- */
+.calque { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+/* Projecteur : un trou arrondi, assombri autour par une ombre immense. Le trou
+   glisse d'un élément à l'autre pendant une visite. */
+.trou { position: absolute; border-radius: 14px; box-shadow: 0 0 0 200vmax var(--voile);
+  transition: top .45s cubic-bezier(.4, 0, .2, 1), left .45s cubic-bezier(.4, 0, .2, 1), width .45s cubic-bezier(.4, 0, .2, 1), height .45s cubic-bezier(.4, 0, .2, 1); }
+.anneau { position: absolute; inset: -3px; border-radius: inherit; border: 2px solid var(--acc-a);
+  animation: fx-halo-acc 2.2s cubic-bezier(.2, .6, .4, 1) infinite; }
+@keyframes fx-halo-acc {
+  0%        { box-shadow: 0 0 0 0 color-mix(in srgb, var(--acc-a) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--acc-a) 0%, transparent); }
+}
+/* Ce qui intercepte les clics : tout sauf le trou (clip-path évidé). */
+.capte { position: absolute; inset: 0; pointer-events: auto; }
+.flou { position: absolute; inset: 0; backdrop-filter: blur(3px) saturate(.7); }
+.torche { position: absolute; inset: 0; transition: background .45s; }
+.calque.entre .trou, .calque.entre .torche, .calque.entre .flou { animation: entree .35s ease-out; }
+@keyframes entree { from { opacity: 0; } }
+
+.bulle { position: absolute; width: 350px; max-width: calc(100% - 24px); pointer-events: auto; z-index: 3;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border-2); border-radius: 16px;
+  padding: 14px 16px 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  transition: top .45s cubic-bezier(.4, 0, .2, 1), left .45s cubic-bezier(.4, 0, .2, 1); animation: bulle .3s ease-out; }
+@keyframes bulle { from { opacity: 0; transform: translateY(6px); } }
+.bulle .fleche { position: absolute; width: 14px; height: 14px; background: var(--surface); border: 1px solid var(--border-2);
+  transform: rotate(45deg); transition: left .45s cubic-bezier(.4, 0, .2, 1); }
+.bulle.dessous .fleche { top: -8px; border-right: none; border-bottom: none; }
+.bulle.dessus .fleche { bottom: -8px; border-left: none; border-top: none; }
+.bulle .kick { font-size: 11px; font-weight: 750; letter-spacing: .7px; text-transform: uppercase; color: var(--acc-on); display: flex; gap: 6px; align-items: center; }
+.bulle.alerte .kick { color: var(--warn); }
+.bulle h5 { font-size: 15.5px; margin: 6px 0 4px; letter-spacing: -.2px; }
+.bulle p { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.bulle .bas { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+.bulle .bas .b { white-space: nowrap; }
+.bulle .points { display: flex; gap: 5px; margin-right: auto; }
+.bulle .points i { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); }
+.bulle .points i.on { background: var(--acc-b); width: 16px; border-radius: 3px; }
+.bulle .b { padding: 7px 12px; font-size: 12.5px; }
+.bulle .b.lien { border: none; background: none; color: var(--text-3); padding: 7px 6px; }
+.bulle .fermer { position: absolute; top: 10px; right: 10px; color: var(--text-3); width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; }
+.bulle .fermer:hover { background: var(--surface-2); }
+
+.toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 30; background: var(--text); color: var(--bg);
+  font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 10px; animation: bulle .25s ease-out; }
+
+body.calme .trou, body.calme .bulle, body.calme .fleche, body.calme .torche { transition: none; }
+body.calme .bulle, body.calme .calque.entre * { animation: none; }
+
+.reco { max-width: 1180px; margin: 0 auto; background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 16px 22px; }
+.reco h2 { font-size: 17px; }
+.reco ul { margin-top: 8px; padding-left: 18px; color: #C9C3D8; font-size: 13.5px; line-height: 1.7; }
+</style>
+</head>
+<body data-v="ardente" data-mode="sombre">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="histo" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="relancer" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Attirer l'œil</h1>
+    <p>Six effets pour « Droits limités », puis cinq formes de mode guide à essayer sur une réplique de l'écran Expert.</p>
+  </div>
+  <div class="choix">
+    <div class="pseg" id="choixV"><button data-v="ardente" aria-pressed="true">Ardente</button><button data-v="crepuscule" aria-pressed="false">Crépuscule</button></div>
+    <div class="pseg" id="choixMode"><button data-mode="sombre" aria-pressed="true">Sombre</button><button data-mode="clair" aria-pressed="false">Clair</button></div>
+    <div class="pseg" id="choixCalme"><button data-calme="0" aria-pressed="true">Animé</button><button data-calme="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+
+<!-- ======================================================================= -->
+<section class="partie">
+  <h2>1. Un effet pour attirer l'œil</h2>
+  <p>Chaque effet est posé sur la vraie pastille, dans son voisinage de la barre de titre. On en garde un, qui servira
+     partout : la pastille des droits, l'élément mis en avant par le guide, un réglage à revoir. « Mouvement réduit »
+     (en haut) montre ce qu'il devient quand Windows demande moins d'animations : un double contour fixe.</p>
+  <div class="effets" id="effets"></div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="partie">
+  <h2>2. Le mode guide</h2>
+  <p>Cliquez sur <b>Exécuter</b> dans la réplique : l'action demande les droits administrateur, et WinTool tourne avec
+     des droits limités. Changez la forme pour comparer. « Visite guidée » enchaîne quatre étapes avec la même forme.
+     Échap ferme, les flèches avancent et reculent.</p>
+  <div class="commandes">
+    <span class="lbl">Forme</span>
+    <div class="pseg" id="choixGuide">
+      <button data-g="projecteur" aria-pressed="true">A · Projecteur</button>
+      <button data-g="flou" aria-pressed="false">B · Projecteur flouté</button>
+      <button data-g="torche" aria-pressed="false">C · Lampe torche</button>
+      <button data-g="bulle" aria-pressed="false">D · Bulle seule</button>
+      <button data-g="encart" aria-pressed="false">E · Encart, puis projecteur</button>
+    </div>
+    <button class="btn-demo" id="demoAlerte"><svg class="i"><use href="#warn"/></svg>Alerte droits</button>
+    <button class="btn-demo" id="demoVisite"><svg class="i"><use href="#sparkles"/></svg>Visite guidée</button>
+  </div>
+  <div class="fiche-style" id="ficheStyle"></div>
+
+  <div class="app" id="app">
+    <div class="tb">
+      <img src="../../src/marque.png" alt="">
+      <span class="nom">WinTool</span><span class="ver">1.7.0</span>
+      <div class="seg" id="cMode"><span>Simple</span><span class="on">Expert</span></div>
+      <div class="droite">
+        <span class="pill off"><svg class="i"><use href="#shield"/></svg>Simulation</span>
+        <button class="pill manquant" id="cDroits"><svg class="i"><use href="#shield"/></svg>Droits limités</button>
+        <button class="mini-iconbtn" id="cJournal"><svg class="i"><use href="#terminal"/></svg></button>
+        <button class="mini-iconbtn"><svg class="i"><use href="#sun"/></svg></button>
+        <button class="mini-iconbtn"><svg class="i"><use href="#settings"/></svg></button>
+      </div>
+    </div>
+    <div class="corps">
+      <div class="liste">
+        <div class="rub">Vie privée</div>
+        <div class="it on"><small>106</small>Réduire la télémétrie</div>
+        <div class="it"><small>107</small>Désactiver le suivi publicitaire</div>
+        <div class="it"><small>115</small>Protéger ma vie privée</div>
+        <div class="rub">Nettoyage</div>
+        <div class="it"><small>102</small>Nettoyer les fichiers temporaires</div>
+        <div class="it"><small>103</small>Vider les caches des navigateurs</div>
+        <div class="it"><small>112</small>Faire de la place</div>
+      </div>
+      <div class="detail">
+        <div class="dh">
+          <div class="ic"><svg class="i"><use href="#eye-off"/></svg></div>
+          <div>
+            <h4>Réduire la télémétrie <span class="prov"><svg class="i"><use href="#shield-check"/></svg>Officiel</span></h4>
+            <p>Limite ce que Windows envoie à Microsoft.</p>
+          </div>
+          <div class="actions">
+            <button class="b">Vérifier</button>
+            <button class="b primaire" id="cExec"><svg class="i"><use href="#play"/></svg>Exécuter</button>
+          </div>
+        </div>
+        <div class="faits">
+          <span class="att"><span class="metre n2"><i></i><i></i><i></i></span>Risque moyen</span>
+          <span><svg class="i"><use href="#clock"/></svg>Quelques secondes</span>
+          <span><svg class="i"><use href="#histo"/></svg>Réversible</span>
+          <span class="att"><svg class="i"><use href="#shield"/></svg>Administrateur</span>
+        </div>
+        <div id="zoneEncart"></div>
+        <div class="carte">
+          <div class="ln"><div>Désactiver le service de télémétrie<small>DiagTrack, arrêté et désactivé</small></div><span class="inter"></span></div>
+          <div class="ln"><div>Bloquer les rapports d'erreurs<small>Windows Error Reporting</small></div><span class="inter"></span></div>
+          <div class="ln"><div>Niveau de diagnostic minimal<small>Stratégie AllowTelemetry = 0</small></div><span class="inter off"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="calque" id="calque"></div>
+  </div>
+</section>
+
+<section class="reco">
+  <h2>Ma recommandation</h2>
+  <ul>
+    <li><b>Effet : la Balise (3)</b> pour signaler un état qui dure (droits limités, mise à jour disponible) : elle se voit
+        sans rien déplacer ni recolorer, et se pose sur n'importe quel élément. Le <b>Halo (1)</b> sert au guide, sur l'élément mis en avant.</li>
+    <li><b>Guide : trois niveaux, une seule mécanique.</b> L'<b>Encart (E)</b> pour une alerte liée à une action (il ne
+        bloque rien, et « Me montrer » ouvre le projecteur) ; le <b>Projecteur (A)</b> pour la visite du premier démarrage
+        et une alerte qui bloque ; la <b>Bulle seule (D)</b> pour une astuce qu'on peut ignorer.</li>
+    <li>Le projecteur ne s'ouvre jamais seul en plein travail : à l'ouverture d'une fiche, au clic sur « Exécuter », ou à la demande.
+        Chaque bulle a sa case « ne plus me le montrer ».</li>
+  </ul>
+</section>
+
+<script>
+const EFFETS = [
+  { cls: 'fx-halo', nom: 'Halo', txt: "Un anneau s'élargit autour de la pastille et s'éteint, toutes les deux secondes, comme une onde.", quand: "Un élément qu'on doit trouver maintenant : la cible du guide.", n: 2 },
+  { cls: 'fx-respire', nom: 'Respiration', txt: "La pastille s'illumine puis s'éteint doucement. Rien ne bouge, seule la lumière varie.", quand: "Un état durable, discret, qui ne doit pas déranger.", n: 1 },
+  { cls: 'fx-balise', nom: 'Balise', txt: "Un point dans le coin émet des ondes, comme un sonar. La pastille elle-même reste immobile.", quand: "N'importe quel bouton : il ne change ni de taille ni de couleur.", n: 2, balise: true },
+  { cls: 'fx-braise', nom: 'Braise', txt: "Une lueur aux couleurs de la flamme fait le tour du bord. La plus « Sindry » des six.", quand: "Mettre en valeur ce qu'on recommande plutôt qu'avertir.", n: 2 },
+  { cls: 'fx-epaule', nom: "Coup d'épaule", txt: "Immobile la plupart du temps, puis une brève secousse toutes les quatre secondes et demie.", quand: "Une alerte qu'on a ignorée : à réserver, elle agace vite.", n: 3 },
+  { cls: 'fx-reflet', nom: 'Reflet', txt: "Un éclat de lumière balaie la pastille de gauche à droite.", quand: "Une nouveauté, une mise à jour disponible.", n: 1 },
+];
+const jauge = (n) => `<span class="jauge n${n}"><i></i><i></i><i></i></span>`;
+document.getElementById('effets').innerHTML = EFFETS.map((e, i) => `
+  <article class="effet">
+    <div class="scene">
+      <span class="pill off"><svg class="i"><use href="#shield"/></svg>Simulation</span>
+      <button class="pill manquant ${e.cls}">${e.balise ? '<span class="balise"></span>' : ''}<svg class="i"><use href="#shield"/></svg>Droits limités</button>
+      <span class="mini-iconbtn"><svg class="i"><use href="#terminal"/></svg></span>
+      <span class="mini-iconbtn"><svg class="i"><use href="#sun"/></svg></span>
+    </div>
+    <div class="txt">
+      <h3><span class="num">${i + 1}</span>${e.nom}</h3>
+      <p>${e.txt}</p>
+      <div class="quand"><b>Pour :</b> ${e.quand}</div>
+      <div class="quand"><b>Intensité</b>${jauge(e.n)}</div>
+    </div>
+  </article>`).join('');
+
+/* --- Choix du thème ------------------------------------------------------- */
+function bascule(groupe, attr, f) {
+  document.getElementById(groupe).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    document.querySelectorAll(`#${groupe} button`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    f(b.dataset[attr]);
+  });
+}
+bascule('choixV', 'v', (v) => { document.body.dataset.v = v; replacer(); });
+bascule('choixMode', 'mode', (m) => { document.body.dataset.mode = m; replacer(); });
+bascule('choixCalme', 'calme', (c) => document.body.classList.toggle('calme', c === '1'));
+
+/* --- Le guide --------------------------------------------------------------- */
+const FORMES = {
+  projecteur: { titre: 'A · Projecteur', quoi: "Tout s'assombrit sauf l'élément, entouré d'un halo. Une bulle explique. Le reste ne répond plus tant que la bulle est ouverte.", pour: "La visite du premier démarrage ; une alerte qu'on ne doit pas manquer.", contre: "Interrompt : à ne jamais déclencher en plein travail sans raison." },
+  flou: { titre: 'B · Projecteur flouté', quoi: "Comme A, mais l'arrière-plan est aussi flouté : rien d'autre ne se lit, le regard n'a qu'un endroit où aller.", pour: "Une étape importante d'une visite.", contre: "Le plus coûteux à l'affichage ; on perd le contexte autour." },
+  torche: { titre: 'C · Lampe torche', quoi: "Un cercle de lumière aux bords doux, comme une lampe braquée sur l'élément. Plus chaleureux, moins « logiciel ».", pour: "Une visite détendue, pour débutants.", contre: "Moins net sur un élément allongé ; les voisins proches restent à demi éclairés." },
+  bulle: { titre: 'D · Bulle seule', quoi: "Pas d'assombrissement : l'élément s'anime (halo) et une bulle s'y accroche. On peut continuer à travailler.", pour: "Une astuce, un conseil qu'on peut ignorer.", contre: "Facile à manquer — c'est le but." },
+  encart: { titre: 'E · Encart, puis projecteur', quoi: "Un encart s'insère dans la fiche, là où l'on regarde déjà. « Me montrer » ouvre ensuite le projecteur sur la pastille.", pour: "Une alerte liée à une action, comme les droits administrateur.", contre: "Deux temps au lieu d'un, mais rien n'est imposé." },
+};
+let forme = 'projecteur';
+let courant = null; // { etapes, i }
+
+function majFiche() {
+  const f = FORMES[forme];
+  document.getElementById('ficheStyle').innerHTML = `<h3>${f.titre}</h3><div><b>Ce que c'est</b>${f.quoi}</div><div><b>Pour</b>${f.pour}</div><div><b>Limite</b>${f.contre}</div>`;
+}
+majFiche();
+bascule('choixGuide', 'g', (g) => { forme = g; majFiche(); fermer(); retirerEncart(); });
+
+const app = document.getElementById('app');
+const calque = document.getElementById('calque');
+const el = (id) => document.getElementById(id);
+
+const ALERTE = [{
+  cible: 'cDroits', alerte: true, kick: 'Droits administrateur',
+  titre: 'Cette action a besoin des droits administrateur',
+  texte: "WinTool tourne avec des droits limités : « Réduire la télémétrie » risque d'échouer. Relancez WinTool en administrateur — Windows vous le demandera une fois.",
+  primaire: 'Relancer en administrateur', secondaire: 'Plus tard',
+}];
+const VISITE = [
+  { cible: 'cMode', kick: 'Visite', titre: 'Deux façons de travailler', texte: "Simple vous guide pas à pas. Expert vous laisse tout régler, action par action." },
+  { cible: 'cJournal', kick: 'Visite', titre: 'Le journal', texte: "Tout ce que font les actions s'écrit ici. Il s'ouvre à tout moment, même vide." },
+  { cible: 'cDroits', kick: 'Visite', titre: 'Vos droits', texte: "En orange, WinTool tourne avec des droits limités : certaines actions demanderont de le relancer en administrateur." },
+  { cible: 'cExec', kick: 'Visite', titre: 'Lancer une action', texte: "« Exécuter » passe d'abord par l'analyse : rien n'est modifié sans votre accord." },
+];
+
+function rect(id) {
+  const a = app.getBoundingClientRect(), r = el(id).getBoundingClientRect();
+  return { x: r.left - a.left, y: r.top - a.top, w: r.width, h: r.height };
+}
+/* Un rectangle arrondi évidé dans le calque : tout sauf le trou. */
+function cheminEvide(t, W, H) {
+  const r = Math.min(14, t.h / 2), x = t.x, y = t.y, w = t.w, h = t.h;
+  return `path(evenodd, "M0 0H${W}V${H}H0Z M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z")`;
+}
+
+function montrer(etapes, styleForce) {
+  courant = { etapes, i: 0, style: styleForce || forme };
+  calque.innerHTML = '';
+  calque.classList.add('entre');
+  setTimeout(() => calque.classList.remove('entre'), 400);
+  dessiner();
+}
+
+function dessiner() {
+  if (!courant) return;
+  const { etapes, i, style } = courant;
+  const e = etapes[i];
+  const W = app.clientWidth, H = app.clientHeight;
+  const m = 6;
+  const r0 = rect(e.cible);
+  const t = { x: r0.x - m, y: r0.y - m, w: r0.w + 2 * m, h: r0.h + 2 * m };
+
+  document.querySelectorAll('.app .fx-halo').forEach((x) => x.classList.remove('fx-halo'));
+  const modal = style !== 'bulle';
+
+  // Le voile, selon la forme.
+  let voile = calque.querySelector('.voile');
+  if (!voile) { voile = document.createElement('div'); voile.className = 'voile'; calque.prepend(voile); }
+  if (style === 'projecteur' || style === 'flou') {
+    voile.innerHTML = `${style === 'flou' ? '<div class="flou"></div>' : ''}<div class="trou"><div class="anneau"></div></div>`;
+    const trou = voile.querySelector('.trou');
+    Object.assign(trou.style, { left: `${t.x}px`, top: `${t.y}px`, width: `${t.w}px`, height: `${t.h}px`, borderRadius: `${Math.min(14, t.h / 2)}px` });
+    const flou = voile.querySelector('.flou');
+    if (flou) flou.style.clipPath = cheminEvide(t, W, H);
+  } else if (style === 'torche') {
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2, rr = Math.max(t.w, t.h) / 2 + 10;
+    voile.innerHTML = `<div class="torche"></div>`;
+    voile.firstChild.style.background = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rr}px, var(--voile) ${rr + 70}px)`;
+  } else {
+    voile.innerHTML = '';
+    el(e.cible).classList.add('fx-halo');
+  }
+
+  // Ce qui capte les clics hors du trou (formes modales).
+  let capte = calque.querySelector('.capte');
+  if (modal) {
+    if (!capte) { capte = document.createElement('div'); capte.className = 'capte'; calque.appendChild(capte); capte.onclick = () => toast("Hors de l'élément : la bulle reste ouverte (Échap ou « Plus tard » pour fermer)"); }
+    capte.style.clipPath = cheminEvide(t, W, H);
+  } else if (capte) capte.remove();
+
+  // La bulle.
+  let bulle = calque.querySelector('.bulle');
+  if (!bulle) { bulle = document.createElement('div'); bulle.className = 'bulle'; calque.appendChild(bulle); }
+  const n = etapes.length, visite = n > 1;
+  bulle.classList.toggle('alerte', !!e.alerte);
+  bulle.innerHTML = `<span class="fleche"></span>
+    <button class="fermer" data-act="fermer" aria-label="Fermer"><svg class="i"><use href="#x"/></svg></button>
+    <div class="kick"><svg class="i"><use href="#${e.alerte ? 'warn' : 'sparkles'}"/></svg>${e.kick}${visite ? ` · ${i + 1} sur ${n}` : ''}</div>
+    <h5>${e.titre}</h5><p>${e.texte}</p>
+    <div class="bas">
+      ${visite ? `<span class="points">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span>` : '<span class="points"></span>'}
+      ${visite ? `<button class="b lien" data-act="fermer">Passer</button>${i > 0 ? '<button class="b" data-act="prec">Précédent</button>' : ''}<button class="b primaire" data-act="suiv">${i === n - 1 ? 'Terminer' : 'Suivant'}</button>`
+               : `<button class="b" data-act="fermer">${e.secondaire}</button><button class="b primaire" data-act="admin"><svg class="i"><use href="#relancer"/></svg>${e.primaire}</button>`}
+    </div>`;
+  const bw = Math.min(350, W - 24), bh = bulle.offsetHeight;
+  const dessous = t.y + t.h + 14 + bh < H - 8;
+  bulle.classList.toggle('dessous', dessous);
+  bulle.classList.toggle('dessus', !dessous);
+  const cx = t.x + t.w / 2;
+  const left = Math.max(12, Math.min(W - bw - 12, cx - bw / 2));
+  bulle.style.left = `${left}px`;
+  bulle.style.top = `${dessous ? t.y + t.h + 14 : t.y - 14 - bh}px`;
+  bulle.querySelector('.fleche').style.left = `${Math.max(16, Math.min(bw - 30, cx - left - 7))}px`;
+}
+
+function fermer() {
+  courant = null;
+  calque.innerHTML = '';
+  document.querySelectorAll('.app .fx-halo').forEach((x) => x.classList.remove('fx-halo'));
+}
+function replacer() { if (courant) requestAnimationFrame(dessiner); }
+addEventListener('resize', replacer);
+
+calque.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-act]'); if (!b || !courant) return;
+  const a = b.dataset.act;
+  if (a === 'fermer') fermer();
+  else if (a === 'admin') { fermer(); toast('→ WinTool se relancerait en administrateur (invite Windows)'); }
+  else if (a === 'suiv') { if (courant.i < courant.etapes.length - 1) { courant.i++; dessiner(); } else fermer(); }
+  else if (a === 'prec') { courant.i = Math.max(0, courant.i - 1); dessiner(); }
+});
+addEventListener('keydown', (ev) => {
+  if (!courant) return;
+  if (ev.key === 'Escape') fermer();
+  else if (ev.key === 'ArrowRight' && courant.etapes.length > 1) { if (courant.i < courant.etapes.length - 1) { courant.i++; dessiner(); } else fermer(); }
+  else if (ev.key === 'ArrowLeft' && courant.etapes.length > 1) { courant.i = Math.max(0, courant.i - 1); dessiner(); }
+});
+
+function toast(txt) {
+  app.querySelector('.toast')?.remove();
+  const d = document.createElement('div'); d.className = 'toast'; d.textContent = txt; app.appendChild(d);
+  setTimeout(() => d.remove(), 2600);
+}
+
+function retirerEncart() { el('zoneEncart').innerHTML = ''; }
+function alerteDroits() {
+  if (forme === 'encart') {
+    el('zoneEncart').innerHTML = `<div class="encart"><svg class="i"><use href="#warn"/></svg>
+      <p><b>Cette action a besoin des droits administrateur.</b> WinTool tourne avec des droits limités : elle risque d'échouer.</p>
+      <button class="b" id="cMontrer">Me montrer</button></div>`;
+    el('cMontrer').onclick = () => montrer(ALERTE, 'projecteur');
+    return;
+  }
+  montrer(ALERTE);
+}
+el('cExec').onclick = alerteDroits;
+el('demoAlerte').onclick = alerteDroits;
+el('demoVisite').onclick = () => { retirerEncart(); montrer(VISITE, forme === 'encart' ? 'projecteur' : forme); };
+el('cDroits').onclick = () => { if (!courant) toast('→ ouvrirait la fenêtre des droits'); else { fermer(); toast('→ ouvrirait la fenêtre des droits'); } };
+</script>
+</body>
+</html>

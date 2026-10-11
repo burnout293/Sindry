@@ -364,7 +364,10 @@ svg { display: block; }
   .water { animation: none !important; }
   .buoy.houle { animation: none !important; }
 }
-body.inactive .water { animation-play-state: paused; }
+/* L'eau et les bouees s'arretent ENSEMBLE : chaque bouee est calee sur la
+   vague sous elle (retardHoule) ; arreter l'une sans l'autre les decale pour
+   de bon. */
+body.inactive .water, body.inactive .buoy.houle { animation-play-state: paused; }
 body[data-mode="expert"] .water { display: none; }
 
 /* --- Utilitaires ----------------------------------------------------------- */
@@ -1860,7 +1863,7 @@ button.etat:disabled { cursor: not-allowed; opacity: .6; }
 /* --- Premier demarrage : la visite (specification §13) ----------------------
    Gros caracteres, phrases courtes, une icone par phrase : lisible a 9 ans comme
    a 80. Les illustrations sont du HTML et du CSS ; elles s'arretent quand la
-   fenetre n'est pas active, et quand Windows demande moins d'animations. */
+   fenetre est reduite, et quand Windows demande moins d'animations. */
 .onb-visite { max-width: 640px; max-height: calc(92vh / var(--echelle, 1)); overflow-y: auto; text-align: left; }
 .onb-visite .onb-mark { margin: 6px auto 16px; }
 .onb-visite h1 { font-size: 23px; text-align: center; margin-top: 4px; outline: none; }

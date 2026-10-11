@@ -1163,9 +1163,13 @@ de la vague.
 Deux obligations :
 
 - **`prefers-reduced-motion: reduce` coupe toute animation.** Non négociable.
-- **L'animation se met en pause quand la fenêtre passe en arrière-plan.** Une animation
-  permanente sollicite le processeur graphique pour rien, sur un outil qu'on laisse
-  parfois ouvert longtemps (une vérification SFC dure un quart d'heure).
+- **L'animation se met en pause quand la fenêtre n'est plus affichée** — réduite ou
+  masquée. Une animation permanente sollicite le processeur graphique pour rien, sur un
+  outil qu'on laisse parfois ouvert longtemps (une vérification SFC dure un quart
+  d'heure). Une fenêtre **visible mais inactive continue de s'animer** : jusqu'à la
+  1.6.0, la pause suivait le focus, et l'eau se figeait dès qu'on cliquait ailleurs, sous
+  des bouées qui, elles, ondulaient encore. L'eau et les bouées s'arrêtent ensemble, pour
+  rester calées l'une sur l'autre.
 
 ### 15.4 Couleur
 

@@ -917,6 +917,8 @@
     minimize: async () => {}, toggleMaximize: async () => {}, close: async () => {},
     show: async () => { document.documentElement.dataset.benchVisible = '1'; },
     onFocusChanged: async () => () => {},
+    onResized: async () => () => {},
+    isMinimized: async () => false,
   };
 
   window.__TAURI__ = {

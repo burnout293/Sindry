@@ -5577,21 +5577,33 @@ function cablerInfobulles() {
 }
 
 /**
- * Obligation de la specification 15.3 : l'eau se met en pause quand la fenetre
- * passe en arriere-plan. Une animation permanente sollicite le processeur
- * graphique pour rien sur un outil qu'on laisse parfois ouvert longtemps.
+ * Obligation de la specification 15.3 : les animations s'arretent quand la
+ * fenetre n'est plus sous les yeux — reduite ou masquee. Une animation
+ * permanente sollicite le processeur graphique pour rien sur un outil qu'on
+ * laisse parfois ouvert longtemps.
+ *
+ * Jusqu'a la 1.6.0, la pause suivait le FOCUS : l'eau se figeait des qu'on
+ * cliquait dans une autre fenetre, alors que WinTool restait affiche — et les
+ * bouees, elles, continuaient d'onduler sur une eau immobile. Une fenetre
+ * visible mais inactive s'anime donc desormais.
+ *
+ * WebView2 ne signale pas une fenetre reduite : la page y reste « visible » et
+ * continue de calculer ses images (mesure du 11/10/2026). On le demande donc a
+ * la fenetre, a chaque changement de taille — reduire en est un.
  */
 async function cablerPauseAnimation() {
-  document.addEventListener('visibilitychange', () => {
-    document.body.classList.toggle('inactive', document.hidden);
-  });
+  let reduite = false;
+  const maj = () => document.body.classList.toggle('inactive', document.hidden || reduite);
+  document.addEventListener('visibilitychange', maj);
   try {
-    await laFenetre.onFocusChanged(({ payload: focus }) => {
-      document.body.classList.toggle('inactive', !focus);
+    await laFenetre.onResized(async () => {
+      reduite = await laFenetre.isMinimized();
+      maj();
     });
   } catch (e) {
-    console.warn('Suivi du focus indisponible :', e.message);
+    console.warn('Suivi de la fenetre reduite indisponible :', e.message);
   }
+  maj();
 }
 
 async function demarrer() {
