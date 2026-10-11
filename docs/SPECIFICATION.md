@@ -74,6 +74,21 @@ Colonne gauche filtrable à deux onglets, détail à droite, journal ancré en b
 L'onglet choisi est retenu d'une session à l'autre. La fiche d'une action dit sa catégorie
 et les lots qui la contiennent.
 
+**Les faits d'une fiche (1.6).** Sous la description, une ligne de faits : une icône neutre
+et **une seule valeur** par information — le risque (un indicateur à trois barres et
+« Risque faible »), la durée (« Quelques secondes »), « Réversible » ou « Irréversible »,
+« Ne pas interrompre », « Redémarrage », « Administrateur », la dernière exécution. Ni
+cadre ni fond : rien qui ressemble à un bouton. La couleur est réservée à ce qui demande
+l'attention (orangé, rouge pour un risque élevé). La **provenance** — officiel, modifié sur
+ce PC, source tierce, script personnel — se lit à côté du titre, parce qu'elle signe
+l'action (§16). Les pilules d'avant affichaient toutes les valeurs possibles (« Faible,
+Moyen, Élevé » pour dire « Faible ») et ressemblaient à des commandes.
+
+**Le journal s'ouvre toujours (1.6)**, même vide, en Simple comme en Expert : un bouton de
+la barre de titre l'ouvre et le ferme. Vide, il le dit (« Aucune exécution pour l'instant »). Avant, il ne
+s'ouvrait qu'avec une exécution, et rien ne permettait de relire ce qui s'était passé une
+fois l'écran quitté.
+
 ---
 
 ## 3. Règles de langage du mode Simple — non négociables
@@ -620,8 +635,8 @@ réellement.
 | Thème (clair / sombre / Windows) | **partout**, icône engrenage |
 | Langue | **partout** |
 | Comportement des mises à jour | **partout** |
-| Couleur d'accent (1.8) : orange par défaut, Marée, bleu, violet, framboise (§15.4) | **partout** |
-| Graphique de l'analyse (1.7) : l'anneau, la barre d'espace, le fond des lignes, les rectangles, la gaufre ou la jauge seule (§17.2) | **partout** |
+| Couleurs (1.8) : Braise Ardente par défaut, ou Crépuscule (§15.4) | **partout** |
+| Graphique de l'analyse (1.7) : l'anneau-engrenage, la double couronne, la jauge à dents, la barre d'espace, le fond des lignes, les rectangles ou la gaufre (§17.2) | **partout** |
 | Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
 | Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2) | Expert |
 | Comportement en cas d'échec | Expert |
@@ -1155,14 +1170,26 @@ Deux obligations :
 ### 15.4 Couleur
 
 Un **accent unique** pour tout ce qui est interactif, actif ou sélectionné — boutons,
-repères, marée. Depuis la 1.5, il se **choisit** (réglage 1.8) : orange par défaut
-(`#FF8A1F` → `#FFB547`), Marée (`#22D39A` → `#35C8E8`, l'accent d'origine), bleu, violet
-ou framboise. Un seul accent à la fois ; changer de couleur ne change rien d'autre.
-Chaque couleur proposée est un jeu complet — accent, texte d'accent pour le thème clair
-et le sombre, fond doux, fond du journal — mesuré au seuil ci-dessous, et la première
-couleur des graphiques de l'analyse suit l'accent. Trois couleurs sémantiques qui ne disent **qu'un état** : réussi,
-attention, échec. Rien d'autre n'est coloré : une icône de lot reste neutre tant
-qu'elle n'est pas choisie.
+repères, marée.
+
+**Thème Braise (1.6).** La palette vient de l'icône de Sindry, le nom de la 2.0 : la
+flamme — or, ambre, vermillon, magenta — pour ce qui agit ; l'engrenage — ciel, roi,
+violet, orchidée — pour le contour des graphiques. Deux variantes au choix (réglage 1.8),
+chacune en clair et en sombre :
+
+| Variante | Accent (clair) | Accent (sombre) | Fond (clair / sombre) |
+|---|---|---|---|
+| **Ardente** (défaut) | `#FD9E21` → `#FD5632` | `#FEC923` → `#FD5632` | `#FBF6F2` / `#0F0A14` |
+| **Crépuscule** | `#FF7A45` → `#F0428E` | `#FF7A45` → `#F0428E` | `#FBF5FA` / `#110A1C` |
+
+La houle de l'eau prend la couleur de la braise. Une variante est un jeu complet — fonds,
+textes, accent, texte d'accent, états, séries des graphiques (`--serie-1` à `--serie-6`),
+contour d'engrenage, journal — mesuré au seuil ci-dessous ; changer de variante ne change
+rien d'autre. Les couleurs de la 1.5 (orange, Marée, bleu, violet, framboise) sont
+retirées : un réglage qui en désignait une revient à Ardente.
+
+Trois couleurs sémantiques qui ne disent **qu'un état** : réussi, attention, échec. Rien
+d'autre n'est coloré : une icône de lot reste neutre tant qu'elle n'est pas choisie.
 
 Le code couleur par domaine (une teinte par catégorie) a été **essayé puis rejeté** :
 quand tout est coloré, plus rien ne ressort, et le vert « nettoyage » entrait en
@@ -1500,8 +1527,11 @@ analyser, et elle est sautée sinon.
    - un lot d'**une seule** action analysable qui déclare une vue s'affiche dans cette vue ;
    - sinon, **le résumé** : un poste par groupe, chacun avec sa case et sa taille, et un
      chevron qui déplie son détail en arborescence ; le graphique choisi dans les réglages
-     (1.7 : l'anneau par défaut, la barre d'espace, le fond des lignes, les rectangles, la
-     gaufre, ou la jauge seule avec « Voir le détail ») ; un total (« À libérer : 1,1 Go »).
+     (1.7 : l'anneau-engrenage par défaut ; la double couronne, qui montre autour de chaque
+     poste ce qui le compose ; la jauge à dents seule, avec « Voir le détail » ; la barre
+     d'espace, le fond des lignes, les rectangles ou la gaufre) ; un total (« À libérer :
+     1,1 Go »). La vue `gauge` d'un script (une mesure avec un maximum) est elle aussi une
+     jauge à dents, à la couleur de son état.
    - Les actions du lot qui ne savent pas analyser sont listées à part : elles
      « s'appliqueront telles quelles ».
    - Une action dont l'analyse a échoué est signalée, et ne sera pas lancée.

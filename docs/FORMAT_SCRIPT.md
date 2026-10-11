@@ -729,7 +729,7 @@ en donne une autre à l'Expert : `## view : gauge expert=table`.
 | `compare` | des `[bool]` avec `state=` | Aujourd'hui → après, réglage par réglage |
 | `chart` | un `[select]` dont les choix ont un `ms=` | Des colonnes à comparer : plus bas, plus rapide |
 | `light` | des `[METRIC]` avec `health=` | Un feu : tout va bien, un point à surveiller, un problème |
-| `gauge` | une `[METRIC]` avec `max=` | Une jauge seule |
+| `gauge` | une `[METRIC]` avec `max=` | Une jauge à dents, à la couleur de son état |
 | `history` | rien : WinTool garde le `[FREED]` de chaque action | Ce que l'action a libéré, passage après passage |
 
 **Une vue ne fait jamais disparaître une case.** Ce qu'elle ne montre pas suit dessous, en

@@ -1,6 +1,7 @@
 # Publication d'une version.
 #
 #   git tag v4.0.1 && git push origin v4.0.1
+#   git tag v1.6.0-beta && git push origin v1.6.0-beta   (pre-version)
 #
 # Produit l'installeur NSIS, publie la Release et y joint l'empreinte SHA-256 :
 # l'executable n'etant pas signe, c'est le seul moyen offert a quelqu'un de
@@ -97,7 +98,12 @@ jobs:
           # brouillon, personne ne recoit la mise a jour. Publier le brouillon,
           # c'est la livrer.
           includeUpdaterJson: true
-          prerelease: false
+          # Un tag avec un suffixe (v1.6.0-beta) donne une PRE-VERSION : GitHub
+          # ne la compte pas dans releases/latest, l'adresse que l'updater
+          # interroge. Les installations ne la recoivent donc pas ; on
+          # l'installe a la main. Decocher « pre-release » sur GitHub suffit
+          # ensuite a la livrer a tous, sans reconstruire.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           releaseBody: |
             ## Installation
 
