@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge moderne</title>
+<!--
+  Maquette 23. La Forge de M21 « fait années 2000 » : rivets, biseaux et
+  métal brossé, c'est le skeuomorphisme d'alors. On garde ce qui plaît — la
+  roue qui tourne en fond — et on la porte dans quatre langages d'aujourd'hui :
+  le verre, le plan technique, la matrice de points, l'acier doux.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.page-h { max-width: 1240px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 680px; line-height: 1.5; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; flex-wrap: wrap; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.onglets { max-width: 1240px; margin: 0 auto 14px; }
+.vue { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+@media (max-width: 1000px) { .vue { grid-template-columns: 1fr; } }
+.cadre { width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid #26232F; }
+.panneau { background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.panneau h2 { font-size: 21px; } .panneau .tag { color: #C9C3D8; font-size: 13.5px; line-height: 1.55; }
+.panneau h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #8C86A0; margin-top: 4px; }
+.panneau ul { padding-left: 18px; color: #C9C3D8; font-size: 13px; line-height: 1.6; }
+.grille-h { max-width: 1240px; margin: 30px auto 12px; font-size: 19px; }
+.vignettes { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.vignette { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 10px; text-align: left; }
+.vignette[aria-pressed="true"] { border-color: #FD9E21; }
+.vignette .mini { border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 10; position: relative; }
+.vignette .mini > .ecran { position: absolute; top: 0; left: 0; }
+.vignette b { display: block; margin: 10px 4px 2px; font-size: 14.5px; } .vignette small { display: block; margin: 0 4px 4px; color: #A49DB6; font-size: 12.5px; }
+
+/* --- L'ecran commun : 960 x 600 ---------------------------------------------------- */
+.ecran { position: relative; width: 960px; height: 600px; overflow: hidden; background: var(--fond); color: var(--text); font-family: var(--police, 'Inter'), 'Segoe UI', sans-serif; }
+.decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.roue { position: absolute; }
+.roue.g { animation: tourne 50s linear infinite; } .roue.p { animation: tourne 30s linear infinite reverse; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+.tb img { width: 24px; height: 24px; } .tb .nom { font-weight: 750; font-size: 14px; }
+.tb .droite { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; }
+.seg span { padding: 5px 13px; font-size: 12px; font-weight: 650; }
+.ib { width: 32px; height: 32px; display: grid; place-items: center; }
+.ib svg.i { width: 16px; height: 16px; }
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 32px; }
+.contenu h1 { font-size: 31px; letter-spacing: -.8px; font-weight: 750; }
+.contenu > p { font-size: 14px; margin-top: 8px; color: var(--text-2); }
+.reco { margin: 24px auto 0; width: 420px; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 18px; }
+.reco .ri { width: 46px; height: 46px; display: grid; place-items: center; flex-shrink: 0; }
+.reco b { font-size: 16px; display: flex; align-items: center; gap: 8px; } .reco b em { font-style: normal; font-size: 10.5px; font-weight: 700; padding: 3px 8px; }
+.reco span { display: block; color: var(--text-2); font-size: 13px; margin-top: 2px; }
+.sect { margin-top: 20px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.bouee { position: absolute; z-index: 2; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; animation: flotte 5s ease-in-out infinite alternate; }
+@keyframes flotte { from { translate: 0 -4px; } to { translate: 0 4px; } }
+.flotteur { width: 52px; height: 52px; display: grid; place-items: center; }
+.lbl { padding: 6px 12px; text-align: center; font-size: 12.5px; font-weight: 650; white-space: nowrap; }
+.lbl small { display: block; font-size: 11px; font-weight: 500; color: var(--text-2); }
+.barre { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 70px; display: flex; align-items: center; justify-content: center; gap: 20px; font-size: 13px; color: var(--text-2); }
+.barre b { color: var(--text); }
+.primaire { display: inline-flex; align-items: center; gap: 10px; padding: 13px 28px; font-size: 14.5px; font-weight: 700; }
+
+/* A. Verre : des roues lumineuses floues derriere des panneaux de verre depoli. */
+.ecran[data-p="verre"][data-m="sombre"] { --fond: radial-gradient(ellipse at 20% 0%, #3B1530 0%, transparent 55%), radial-gradient(ellipse at 90% 100%, #4A1A0E 0%, transparent 55%), #0E0A12;
+  --text: #FBF6FA; --text-2: #C9B9C8; --verre: rgba(255, 255, 255, .06); --verre-bord: rgba(255, 255, 255, .14); }
+.ecran[data-p="verre"][data-m="clair"] { --fond: radial-gradient(ellipse at 20% 0%, #FFD9E8 0%, transparent 55%), radial-gradient(ellipse at 90% 100%, #FFD3B8 0%, transparent 55%), #FBF6F3;
+  --text: #22151E; --text-2: #6C5866; --verre: rgba(255, 255, 255, .55); --verre-bord: rgba(255, 255, 255, .9); }
+.ecran[data-p="verre"] .roue path, .ecran[data-p="verre"] .roue circle { fill: none; stroke: url(#gFlamme); }
+.ecran[data-p="verre"] .roue { filter: blur(2px) drop-shadow(0 0 30px #FD5632); opacity: .55; }
+.ecran[data-p="verre"] .seg, .ecran[data-p="verre"] .ib, .ecran[data-p="verre"] .reco, .ecran[data-p="verre"] .lbl, .ecran[data-p="verre"] .flotteur {
+  background: var(--verre); border: 1px solid var(--verre-bord); backdrop-filter: blur(18px) saturate(1.4); }
+.ecran[data-p="verre"] .seg { border-radius: 12px; } .ecran[data-p="verre"] .seg span { border-radius: 9px; color: var(--text-2); }
+.ecran[data-p="verre"] .seg span.on, .ecran[data-p="verre"] .reco .ri, .ecran[data-p="verre"] .primaire { color: #1A0B12; background: linear-gradient(135deg, #FEC923, #FD5632 60%, #DC1178); }
+.ecran[data-p="verre"] .ib { border-radius: 10px; color: var(--text-2); }
+.ecran[data-p="verre"] .reco { border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
+.ecran[data-p="verre"] .reco .ri { border-radius: 14px; } .ecran[data-p="verre"] .reco b em { border-radius: 999px; background: rgba(253, 86, 50, .18); color: #FD7D26; }
+.ecran[data-p="verre"] .flotteur { border-radius: 50%; } .ecran[data-p="verre"] .lbl { border-radius: 12px; }
+.ecran[data-p="verre"] .primaire { border-radius: 999px; box-shadow: 0 10px 30px rgba(253, 86, 50, .45); }
+.ecran[data-p="verre"] .ligne-feu { position: absolute; left: -10%; right: -10%; bottom: 120px; height: 200px; border-radius: 50%; filter: blur(40px);
+  background: linear-gradient(90deg, transparent, #FD5632, #DC1178, transparent); opacity: .35; animation: glisse 10s ease-in-out infinite alternate; }
+@keyframes glisse { to { transform: translateX(80px) scaleY(1.2); } }
+
+/* B. Plan : un plan technique — grille fine, roues en trait, cotes et reperes. */
+.ecran[data-p="plan"][data-m="sombre"] { --fond: #0B0F16; --text: #E9EEF5; --text-2: #8C9AAE; --trait: #2A3445; --trait-fort: #42506A; --plan: #FD7D26; --carte: #0F1520; }
+.ecran[data-p="plan"][data-m="clair"] { --fond: #F6F4EF; --text: #141A24; --text-2: #5C6778; --trait: #DCD7CC; --trait-fort: #B6AE9F; --plan: #E2640F; --carte: #FFFFFF; }
+.ecran[data-p="plan"] { --police: 'Inter'; }
+.ecran[data-p="plan"] .decor { background-image: linear-gradient(var(--trait) 1px, transparent 1px), linear-gradient(90deg, var(--trait) 1px, transparent 1px); background-size: 32px 32px; background-position: -1px -1px; }
+.ecran[data-p="plan"] .decor::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 30%, var(--fond) 85%); }
+.ecran[data-p="plan"] .roue path, .ecran[data-p="plan"] .roue circle { fill: none; stroke: var(--plan); }
+.ecran[data-p="plan"] .roue { opacity: .55; }
+.cote { position: absolute; font-family: 'Cascadia Mono', Consolas, monospace; font-size: 10.5px; color: var(--plan); letter-spacing: .04em; }
+.cote::before { content: ''; position: absolute; top: 50%; right: calc(100% + 6px); width: 46px; border-top: 1px dashed var(--plan); }
+.ecran[data-p="plan"] .seg { border: 1px solid var(--trait-fort); border-radius: 6px; background: var(--carte); }
+.ecran[data-p="plan"] .seg span { border-radius: 4px; color: var(--text-2); font-family: 'Cascadia Mono', Consolas, monospace; font-size: 11px; text-transform: uppercase; }
+.ecran[data-p="plan"] .seg span.on { color: #fff; background: var(--plan); }
+.ecran[data-p="plan"] .ib { border: 1px solid var(--trait-fort); border-radius: 6px; background: var(--carte); color: var(--text-2); }
+.ecran[data-p="plan"] .contenu h1 { font-weight: 650; letter-spacing: -1px; }
+.ecran[data-p="plan"] .reco, .ecran[data-p="plan"] .lbl { background: var(--carte); border: 1px solid var(--trait-fort); border-radius: 8px; }
+.ecran[data-p="plan"] .reco { border-color: var(--plan); box-shadow: 0 0 0 4px color-mix(in srgb, var(--plan) 12%, transparent); }
+.ecran[data-p="plan"] .reco .ri { border-radius: 6px; background: var(--plan); color: #fff; }
+.ecran[data-p="plan"] .reco b em { font-family: 'Cascadia Mono', Consolas, monospace; text-transform: uppercase; color: var(--plan); border: 1px solid var(--plan); border-radius: 4px; }
+.ecran[data-p="plan"] .flotteur { background: var(--carte); border: 1px solid var(--trait-fort); border-radius: 10px; color: var(--text); }
+.ecran[data-p="plan"] .lbl small { font-family: 'Cascadia Mono', Consolas, monospace; }
+.ecran[data-p="plan"] .primaire { border-radius: 8px; color: #fff; background: var(--plan); }
+.ecran[data-p="plan"] .barre { border-top: 1px solid var(--trait-fort); background: var(--carte); }
+.ecran[data-p="plan"] .ligne-plan { position: absolute; left: 0; right: 0; bottom: 230px; border-top: 1px solid var(--plan); opacity: .5; }
+.ecran[data-p="plan"] .ligne-plan::after { content: 'NIVEAU 0 — 308'; position: absolute; right: 18px; top: -16px; font: 10px 'Cascadia Mono', Consolas, monospace; color: var(--plan); }
+
+/* C. Points : une matrice de points, monochrome et un seul rouge-orange. */
+.ecran[data-p="points"][data-m="sombre"] { --fond: #000; --text: #F2F2F2; --text-2: #8A8A8A; --carte: #111; --bord: #262626; --rouge: #FF4D1F; --point: #3A3A3A; }
+.ecran[data-p="points"][data-m="clair"] { --fond: #F2F2F0; --text: #0A0A0A; --text-2: #6A6A6A; --carte: #FFFFFF; --bord: #DADAD6; --rouge: #E8400F; --point: #C9C9C4; }
+.ecran[data-p="points"] .decor { background-image: radial-gradient(var(--point) 1.2px, transparent 1.4px); background-size: 16px 16px; }
+.ecran[data-p="points"] .roue path, .ecran[data-p="points"] .roue circle { fill: none; stroke: var(--rouge); stroke-dasharray: 0 9; stroke-linecap: round; }
+.ecran[data-p="points"] .roue.p path, .ecran[data-p="points"] .roue.p circle { stroke: var(--text); }
+.ecran[data-p="points"] .contenu h1 { font-family: 'Cascadia Mono', Consolas, monospace; font-weight: 700; letter-spacing: -.5px; text-transform: uppercase; font-size: 28px; }
+.ecran[data-p="points"] .seg { background: var(--carte); border: 1px solid var(--bord); border-radius: 999px; }
+.ecran[data-p="points"] .seg span { border-radius: 999px; color: var(--text-2); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+.ecran[data-p="points"] .seg span.on { background: var(--text); color: var(--fond); }
+.ecran[data-p="points"] .ib { background: var(--carte); border: 1px solid var(--bord); border-radius: 50%; color: var(--text-2); }
+.ecran[data-p="points"] .reco, .ecran[data-p="points"] .lbl { background: var(--carte); border: 1px solid var(--bord); border-radius: 22px; }
+.ecran[data-p="points"] .reco .ri { border-radius: 50%; background: var(--rouge); color: #fff; }
+.ecran[data-p="points"] .reco b em { color: var(--rouge); text-transform: uppercase; letter-spacing: .1em; padding: 0; }
+.ecran[data-p="points"] .reco b em::before { content: '● '; }
+.ecran[data-p="points"] .flotteur { background: var(--carte); border: 1px solid var(--bord); border-radius: 50%; color: var(--text); }
+.ecran[data-p="points"] .lbl { border-radius: 999px; } .ecran[data-p="points"] .lbl small { text-transform: uppercase; letter-spacing: .08em; font-size: 9.5px; }
+.ecran[data-p="points"] .primaire { border-radius: 999px; background: var(--rouge); color: #fff; text-transform: uppercase; letter-spacing: .08em; font-size: 13px; }
+.ecran[data-p="points"] .ligne-points { position: absolute; left: 0; right: 0; bottom: 226px; height: 2px; background-image: radial-gradient(var(--rouge) 1.6px, transparent 1.8px); background-size: 10px 2px; opacity: .8; }
+
+/* D. Acier doux : une roue pleine en acier (degrade conique), ombres douces, grandes cartes. */
+.ecran[data-p="acier"][data-m="sombre"] { --fond: linear-gradient(160deg, #1D1A1F, #120F14); --text: #F5F1F0; --text-2: #A79D9C; --carte: #24202A; --carte-2: #2E2933; --ombre: rgba(0, 0, 0, .5); --braise: #FF7A1F; }
+.ecran[data-p="acier"][data-m="clair"] { --fond: linear-gradient(160deg, #F1EEEA, #E3DED8); --text: #1E1A1A; --text-2: #6E6462; --carte: #FFFFFF; --carte-2: #F4F1ED; --ombre: rgba(70, 50, 40, .14); --braise: #F06A12; }
+.ecran[data-p="acier"] .roue path { fill: url(#gAcier); stroke: none; }
+.ecran[data-p="acier"] .roue circle { fill: var(--carte-2); stroke: none; }
+.ecran[data-p="acier"] .roue { filter: drop-shadow(0 30px 40px var(--ombre)); opacity: .9; }
+.ecran[data-p="acier"] .roue.p { opacity: .75; }
+.ecran[data-p="acier"] .seg { background: var(--carte); border-radius: 14px; box-shadow: 0 4px 14px var(--ombre); }
+.ecran[data-p="acier"] .seg span { border-radius: 11px; color: var(--text-2); }
+.ecran[data-p="acier"] .seg span.on { background: var(--text); color: var(--carte); }
+.ecran[data-p="acier"] .ib { background: var(--carte); border-radius: 12px; box-shadow: 0 4px 14px var(--ombre); color: var(--text-2); }
+.ecran[data-p="acier"] .reco, .ecran[data-p="acier"] .lbl { background: var(--carte); border-radius: 24px; box-shadow: 0 18px 40px var(--ombre); }
+.ecran[data-p="acier"] .reco { border: 2px solid var(--braise); }
+.ecran[data-p="acier"] .reco .ri { border-radius: 16px; background: linear-gradient(145deg, #FFB067, var(--braise) 50%, #D9431F); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+.ecran[data-p="acier"] .reco b em { border-radius: 999px; background: color-mix(in srgb, var(--braise) 14%, transparent); color: var(--braise); }
+.ecran[data-p="acier"] .flotteur { background: var(--carte); border-radius: 18px; box-shadow: 0 10px 24px var(--ombre); color: var(--text); }
+.ecran[data-p="acier"] .lbl { border-radius: 14px; }
+.ecran[data-p="acier"] .primaire { border-radius: 16px; color: #fff; background: linear-gradient(145deg, #FFB067, var(--braise) 50%, #D9431F); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 14px 30px color-mix(in srgb, var(--braise) 40%, transparent); }
+.ecran[data-p="acier"] .lueur { position: absolute; left: 50%; bottom: -240px; width: 900px; height: 420px; margin-left: -450px; border-radius: 50%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--braise) 35%, transparent), transparent 70%); }
+
+body.calme .ecran *, body.calme .ecran *::after { animation: none !important; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gFlamme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FEC923"/><stop offset=".5" stop-color="#FD5632"/><stop offset="1" stop-color="#DC1178"/></linearGradient>
+    <linearGradient id="gAcier" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F2F0"/><stop offset=".35" stop-color="#A8A2A0"/><stop offset=".55" stop-color="#E6E2DF"/><stop offset=".8" stop-color="#8E8785"/><stop offset="1" stop-color="#CFCAC6"/></linearGradient>
+  </defs>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div><h1>Forge moderne</h1>
+    <p>Rivets, biseaux et métal brossé : c'est le style des années 2000. On garde la roue qui tourne, et on la porte dans quatre langages d'aujourd'hui.</p></div>
+  <div class="choix">
+    <div class="pseg" id="choixMode"><button data-m="sombre" aria-pressed="true">Sombre</button><button data-m="clair" aria-pressed="false">Clair</button></div>
+    <div class="pseg" id="choixCalme"><button data-c="0" aria-pressed="true">Animé</button><button data-c="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+<div class="onglets"><div class="pseg" id="choixP"></div></div>
+<div class="vue"><div class="cadre" id="cadre"></div><aside class="panneau" id="panneau"></aside></div>
+<h2 class="grille-h">Les quatre côte à côte</h2>
+<div class="vignettes" id="vignettes"></div>
+
+<script>
+const P = {
+  verre: { nom: 'A · Verre', tag: "Les roues deviennent des anneaux de lumière flous, aux couleurs de la flamme ; par-dessus, des panneaux de verre dépoli. Le langage de Windows 11 et de macOS aujourd'hui.",
+    change: ['Panneaux translucides, bords clairs d\'un pixel', 'Une traînée de feu floue qui glisse en bas', 'Boutons en dégradé or → magenta, très arrondis'] },
+  plan: { nom: 'B · Plan', tag: "Un plan technique : grille fine, roues tracées au trait orange, cotes et repères. Net, précis — l'esthétique des outils de développeurs (Linear, Vercel).",
+    change: ['Grille de 32 px qui s\'estompe vers les bords', 'Roues au trait, cotes « Ø 400 · Z 20 »', 'Coins à 6–8 px, une seule couleur, des chiffres en chasse fixe'] },
+  points: { nom: 'C · Points', tag: "Une matrice de points, en noir et blanc, et un seul rouge-orange. Les roues sont tracées en pointillés ronds. Rappelle Nothing ou Teenage Engineering.",
+    change: ['Fond pointillé, roues en points', 'Titres en chasse fixe, capitales', 'Tout en pilules, un témoin « ● » rouge'] },
+  acier: { nom: 'D · Acier doux', tag: "Une roue pleine, en acier poli, flottant sur une ombre douce ; de grandes cartes blanches aux ombres légères. Une page de produit Apple, mais pour WinTool.",
+    change: ['La roue en volume (dégradé d\'acier), plus en trait', 'Ombres larges et douces, coins à 16–24 px', 'Le meilleur en clair'] },
+};
+const IDS = Object.keys(P);
+const B = [
+  { x: 14, b: 196, ic: 'trash', t: 'Faire le ménage', d: '3 actions' }, { x: 38, b: 214, ic: 'zap', t: 'Performance', d: '3 actions' },
+  { x: 62, b: 204, ic: 'shield', t: 'Vie privée', d: '3 actions' }, { x: 86, b: 192, ic: 'app', t: 'Applications', d: '1 action' },
+  { x: 27, b: 100, ic: 'pulse', t: 'Santé', d: '3 actions' }, { x: 73, b: 104, ic: 'wrench', t: 'Outillage', d: '1 action' },
+];
+function roue(n, r1, r2, moyeu, plein) {
+  let d = '';
+  for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2, p = Math.PI / n;
+    const Q = (r, t) => `${(110 + r * Math.cos(t)).toFixed(1)} ${(110 + r * Math.sin(t)).toFixed(1)}`;
+    d += `${k ? 'L' : 'M'}${Q(r2, a - p * .55)} L${Q(r1, a - p * .3)} L${Q(r1, a + p * .3)} L${Q(r2, a + p * .55)} `; }
+  if (plein) return `<path d="${d}Z"/><circle cx="110" cy="110" r="${moyeu}"/>`;
+  return `<path d="${d}Z" style="stroke-width:3"/><circle cx="110" cy="110" r="${r2 - 16}" style="stroke-width:2"/><circle cx="110" cy="110" r="${moyeu}" style="stroke-width:3"/>`;
+}
+function decor(p) {
+  const plein = p === 'acier';
+  const roues = `<svg class="roue g" viewBox="0 0 220 220" style="left:150px;top:-10px;width:420px;height:420px">${roue(20, 108, 94, 30, plein)}</svg>
+    <svg class="roue p" viewBox="0 0 220 220" style="left:540px;top:120px;width:240px;height:240px">${roue(12, 108, 90, 26, plein)}</svg>`;
+  if (p === 'verre') return `${roues}<div class="ligne-feu"></div>`;
+  if (p === 'plan') return `${roues}<span class="cote" style="left:640px;top:24px">Ø 400 · Z 20</span><span class="cote" style="left:790px;top:250px">Ø 240 · Z 12</span><div class="ligne-plan"></div>`;
+  if (p === 'points') return `${roues}<div class="ligne-points"></div>`;
+  return `<div class="lueur"></div>${roues}`;
+}
+function ecran(p, m) {
+  return `<div class="ecran" data-p="${p}" data-m="${m}"><div class="decor">${decor(p)}</div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+      <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div><span class="ib"><svg class="i"><use href="#terminal"/></svg></span><span class="ib"><svg class="i"><use href="#settings"/></svg></span></div></div>
+    <div class="contenu"><h1>Que souhaitez-vous faire ?</h1><p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span><div><b>Entretien complet <em>Recommandé</em></b><span>On s'occupe de tout — 11 actions</span></div></div>
+      <div class="sect">Ou choisissez un domaine précis</div></div>
+    ${B.map((b, i) => `<div class="bouee" style="left:${b.x}%;bottom:${b.b}px;animation-delay:-${i * .9}s"><span class="flotteur"><svg class="i"><use href="#${b.ic}"/></svg></span><span class="lbl">${b.t}<small>${b.d}</small></span></div>`).join('')}
+    <div class="barre"><span>Choisi : <b>Entretien complet</b> · 11 actions</span><span class="primaire">Continuer <svg class="i"><use href="#arrow"/></svg></span></div></div>`;
+}
+let prop = 'verre', mode = 'sombre';
+const cadre = document.getElementById('cadre');
+function ajuster() { const e = cadre.firstElementChild; if (e) { const z = cadre.clientWidth / 960; e.style.zoom = z; cadre.style.height = `${600 * z}px`; }
+  document.querySelectorAll('.vignette .mini').forEach((m) => { m.firstElementChild.style.zoom = m.clientWidth / 960; }); }
+function rendre() {
+  cadre.innerHTML = ecran(prop, mode);
+  document.getElementById('choixP').innerHTML = IDS.map((id) => `<button data-p="${id}" aria-pressed="${id === prop}">${P[id].nom}</button>`).join('');
+  document.getElementById('panneau').innerHTML = `<h2>${P[prop].nom}</h2><p class="tag">${P[prop].tag}</p><h3>Ce qui change</h3><ul>${P[prop].change.map((c) => `<li>${c}</li>`).join('')}</ul>`;
+  document.getElementById('vignettes').innerHTML = IDS.map((id) => `<button class="vignette" data-p="${id}" aria-pressed="${id === prop}"><div class="mini">${ecran(id, mode)}</div><b>${P[id].nom}</b><small>${P[id].tag.split(' : ')[0].split(';')[0].split('.')[0]}</small></button>`).join('');
+  ajuster();
+}
+document.addEventListener('click', (ev) => {
+  const p = ev.target.closest('[data-p]:not(.ecran)'); if (p) { prop = p.dataset.p; rendre(); return; }
+  const m = ev.target.closest('[data-m]:not(.ecran)'); if (m) { mode = m.dataset.m; document.querySelectorAll('#choixMode button').forEach((b) => b.setAttribute('aria-pressed', String(b === m))); rendre(); return; }
+  const c = ev.target.closest('[data-c]'); if (c) { document.body.classList.toggle('calme', c.dataset.c === '1'); document.querySelectorAll('#choixCalme button').forEach((b) => b.setAttribute('aria-pressed', String(b === c))); }
+});
+addEventListener('resize', ajuster); rendre();
+</script>
+</body>
+</html>

@@ -327,15 +327,27 @@ function rendreCommande(entree, opt) {
   }
 
   if (k === 'multi') {
+    // Une liste a cocher (1.8, maquette M22) : une vraie case par choix, en
+    // texte lisible, sur autant de colonnes que la place le permet. Les puces
+    // en chasse fixe de 10 px d'avant se lisaient mal, et l'on distinguait a
+    // peine ce qui etait coche.
     const actifs = Array.isArray(v) ? v : [];
-    const puces = opt.choices
+    const lignes = opt.choices
       .map((c) => {
         const on = actifs.includes(c.value);
-        return `<button class="chip" type="button" data-value="${esc(c.value)}"
-                 aria-pressed="${on}" title="${esc(c.desc || '')}">${esc(libelleChoix(entree, opt, c))}</button>`;
+        return `<button class="choix" type="button" role="checkbox" data-value="${esc(c.value)}"
+                 aria-pressed="${on}" aria-checked="${on}" title="${esc(c.desc || '')}">
+                 <span class="case"><svg class="ico" aria-hidden="true"><use href="#check" /></svg></span>
+                 <span>${esc(libelleChoix(entree, opt, c))}</span></button>`;
       })
       .join('');
-    return `<div class="opt-choices" data-opt="${esc(opt.key)}" data-kind="multi">${puces}</div>`;
+    const n = opt.choices.length;
+    const coches = opt.choices.filter((c) => actifs.includes(c.value)).length;
+    return `<div class="multi">
+      <div class="opt-choices liste" data-opt="${esc(opt.key)}" data-kind="multi">${lignes}</div>
+      <div class="choix-pied"><span class="choix-compte">${esc(t('opt.n_sur', { n: coches, total: n }))}</span>${
+        n >= 5 ? `<button type="button" data-multi="tout">${esc(t('opt.tout'))}</button><button type="button" data-multi="aucun">${esc(t('opt.aucun'))}</button>` : ''}</div>
+    </div>`;
   }
 
   // string, et tout type inconnu : le texte libre ne perd aucune information.
@@ -1054,6 +1066,26 @@ async function chargerLots() {
    l'interface ne pretend pas le contraire.
    ------------------------------------------------------------------------- */
 /** Valeur portee par un seul controle, dans le type attendu par le script. */
+/** Un clic dans une liste a cocher : une case, ou « Tout » / « Aucun ». Met a
+ *  jour les cases et le compteur, et rend la liste a enregistrer — `null` si le
+ *  clic n'y etait pas. */
+function basculerChoixMulti(cible) {
+  const bloc = cible.closest('.multi');
+  if (!bloc) return null;
+  const liste = bloc.querySelector('.opt-choices');
+  const cases = [...liste.querySelectorAll('.choix')];
+  const tous = cible.closest('[data-multi]')?.dataset.multi;
+  const une = cible.closest('.choix');
+  if (!tous && !une) return null;
+  const poser = (b, on) => { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-checked', String(on)); };
+  if (tous) cases.forEach((b) => poser(b, tous === 'tout'));
+  else poser(une, une.getAttribute('aria-pressed') !== 'true');
+  const coches = cases.filter((b) => b.getAttribute('aria-pressed') === 'true').length;
+  const compte = bloc.querySelector('.choix-compte');
+  if (compte) compte.textContent = t('opt.n_sur', { n: coches, total: cases.length });
+  return liste;
+}
+
 function valeurControle(el) {
   switch (el.dataset.kind) {
     case 'bool':
@@ -1670,11 +1702,14 @@ function carteSource(x, modifiable) {
   const agir = x.officielle
     ? `<button class="btn compact" type="button" id="btnCatalogue"${x.active ? '' : ' disabled'}></button>`
     : `<button class="btn compact" type="button" data-source-agir="${id}"${indisponible ? ' disabled' : ''}>${esc(t(libelleAgirSource(x)))}</button>`;
-  const gerer =
-    !x.officielle && modifiable
-      ? `<button class="btn compact only-expert" type="button" data-source-modifier="${id}">${esc(t('cat.modifier'))}</button>
-         <button class="btn compact danger only-expert" type="button" data-source-retirer="${id}">${esc(t('cat.retirer'))}</button>`
-      : '';
+  // Ajouter, modifier, retirer : dans les deux modes depuis la 1.8, toujours en
+  // administrateur. Le catalogue officiel se retire aussi — pour le
+  // reinstaller de zero —, mais ne se modifie pas.
+  const installe = x.officielle ? !!etatCatalogue?.installe : true;
+  const gerer = modifiable
+    ? `${x.officielle ? '' : `<button class="btn compact" type="button" data-source-modifier="${id}">${esc(t('cat.modifier'))}</button>`}
+       ${installe ? `<button class="btn compact danger" type="button" data-source-retirer="${id}">${esc(t('cat.retirer'))}</button>` : ''}`
+    : '';
   return `<div class="setrow source-carte${x.active ? '' : ' inactive'}" data-num="2.1" data-source="${id}">
     <span class="rg-bouclier"><svg class="ico i20" aria-hidden="true"><use href="#${x.officielle ? 'shield-check' : 'sec-catalogue'}" /></svg></span>
     <span class="setrow-txt"><span class="num">2.1</span><span class="rg-libelle">
@@ -1915,7 +1950,8 @@ async function validerFormulaireSource(ev) {
 }
 
 async function retirerSource(id) {
-  if (!confirm(t('cat.confirmer_retrait', { nom: nomSource(id) }))) return;
+  const officielle = etatSources?.sources.find((s) => s.id === id)?.officielle;
+  if (!confirm(t(officielle ? 'cat.confirmer_retrait_officiel' : 'cat.confirmer_retrait', { nom: nomSource(id) }))) return;
   try {
     await invoke('remove_source', { id });
     bilansSources.delete(id);
@@ -1926,6 +1962,7 @@ async function retirerSource(id) {
     return;
   }
   reglagesActuels = await invoke('get_settings');
+  etatCatalogue = await invoke('catalogue_state').catch(() => etatCatalogue);
   await chargerSources();
   await chargerLots();
   rendreBandeauCatalogue();
@@ -3219,11 +3256,8 @@ function cablerInteractions() {
       return void persisterReglage(inter);
     }
 
-    const puce = ev.target.closest('.opt-choices[data-kind="multi"] .chip');
-    if (puce) {
-      puce.setAttribute('aria-pressed', puce.getAttribute('aria-pressed') !== 'true');
-      return void persisterReglage(puce.closest('[data-opt]'));
-    }
+    const choix = basculerChoixMulti(ev.target);
+    if (choix) return void persisterReglage(choix);
 
     const scriptDuLot = ev.target.closest('#scriptsDuLot .row.script');
     if (scriptDuLot) return void selectionner('script', scriptDuLot.dataset.script);
@@ -3897,11 +3931,8 @@ function cablerReglagesSimples() {
       return void persisterReglageSimple(inter);
     }
 
-    const puce = ev.target.closest('.sreg .opt-choices .chip');
-    if (puce) {
-      puce.setAttribute('aria-pressed', puce.getAttribute('aria-pressed') !== 'true');
-      return void persisterReglageSimple(puce);
-    }
+    const choix = basculerChoixMulti(ev.target);
+    if (choix) return void persisterReglageSimple(choix);
   });
 
   simple.addEventListener('change', (ev) => {

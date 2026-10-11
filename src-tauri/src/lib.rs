@@ -1188,17 +1188,28 @@ async fn update_source(id: String, nom: String, depot: String, cle: String) -> R
     })
 }
 
-/// Retire une source tierce. Ses scripts restent sur le disque — WinTool ne
-/// supprime jamais un script — mais n'apparaissent plus.
+/// Retire un catalogue (1.8) : sa copie telechargee — index et scripts — est
+/// effacee ; une source tierce quitte aussi la liste. Le catalogue officiel
+/// reste propose, a reinstaller : c'est le moyen de repartir de zero, par
+/// exemple apres une release publiee avec un numero de version qui recule.
+/// Les scripts personnels de l'utilisateur ne sont jamais touches.
 #[tauri::command]
-fn remove_source(app: tauri::AppHandle, id: String) -> Result<(), String> {
+fn remove_source(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<runner::Runner>>,
+    id: String,
+) -> Result<(), String> {
     if !is_elevated() {
         return Err(SOURCES_SANS_DROITS.to_string());
     }
-    if source_connue(&id)?.officielle {
-        return Err(format!("{SOURCE_INCONNUE}: {id}"));
+    if state.snapshot().is_some() {
+        return Err(CATALOGUE_PENDANT_EXECUTION.to_string());
     }
-    sources::retirer(&id)?;
+    let source = source_connue(&id)?;
+    catalogue::effacer_copie(&catalogue::dossier_source(&app, &id)?)?;
+    if !source.officielle {
+        sources::retirer(&id)?;
+    }
     with_settings(&app, |s| {
         s.sources_inactives.retain(|i| *i != id);
         s.sources_exclus.remove(&id);

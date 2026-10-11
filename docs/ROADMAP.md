@@ -40,7 +40,9 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — icône de l'installeur et du désinstalleur (celle de NSIS jusqu'ici) | Fait |
 | | — un thème Star Wars, style Nouvelle République | Plus tard |
 | **1.8** | Bouées de la deuxième rangée recalées sur leur vague ; installeur : « Mettre à jour » et « Réparer » au lieu de désinstaller ; versions bêta au choix (réglage 1.4 « Mises à jour »), réglages rangés par numéro ; plus de vitesse à l'étape « Vérifier », le nombre d'actions au lieu des minutes | Fait |
-| | — refonte de Braise ardente (maquette M20) | À décider |
+| | — catalogues : ajouter, modifier, retirer dans les deux modes ; retirer efface la copie téléchargée, l'officiel compris, qui se réinstalle de zéro | Fait |
+| | — choix multiples : une liste à cocher lisible, compteur, « Tout / Aucun » (maquette M22 B) | Fait |
+| | — refonte de Braise ardente : la Forge (M20, M21), en version moderne (M23) | À décider |
 | plus tard | Thèmes exportables et importables, en un seul fichier, pour les partager | Quand il le demandera |
 | **2.0** | WinTool devient **Sindry** | Prévue |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |

@@ -472,6 +472,36 @@ fn lire_borne(chemin: &Path, max: u64) -> Result<Vec<u8>, String> {
     fs::read(chemin).map_err(|e| format!("{} : {e}", chemin.display()))
 }
 
+/// Efface la copie telechargee d'une source : son index, sa signature et ses
+/// scripts — les fichiers poses a plat dans son dossier, rien d'autre. Pas de
+/// suppression recursive : un dossier ou une jonction glissee la par un autre
+/// programme n'est jamais parcouru. Rend le nombre de fichiers effaces.
+///
+/// C'est aussi ce qui remet a zero la protection contre le retour en arriere
+/// (`refuser_retour_arriere`) : sans index local, la prochaine installation
+/// accepte la version publiee, quelle qu'elle soit. Seul un geste explicite
+/// de l'utilisateur, en administrateur, y mene.
+pub fn effacer_copie(dossier: &Path) -> Result<usize, String> {
+    let Ok(entrees) = fs::read_dir(dossier) else {
+        return Ok(0);
+    };
+    let mut n = 0;
+    for entree in entrees.flatten() {
+        let Ok(meta) = fs::symlink_metadata(entree.path()) else {
+            continue;
+        };
+        let nom = entree.file_name().to_string_lossy().to_ascii_lowercase();
+        let a_effacer = nom == INDEX || nom == SIGNATURE || nom.ends_with(".ps1");
+        if meta.is_file() && a_effacer {
+            fs::remove_file(entree.path()).map_err(|e| format!("{nom} : {e}"))?;
+            n += 1;
+        }
+    }
+    // Vide, le dossier part aussi ; sinon il reste, avec ce qui n'est pas a nous.
+    let _ = fs::remove_dir(dossier);
+    Ok(n)
+}
+
 /// L'index installe, **re-verifie** a chaque lecture. `Ok(None)` : rien
 /// d'installe. `Err` : un index est la, mais ne se verifie pas — ses scripts
 /// perdent alors tous leur approbation implicite.
@@ -1093,6 +1123,43 @@ mod tests {
 
     const CLE: &str = include_str!("../fixtures/catalogue/cle-essai.pub");
     const AUTRE_CLE: &str = include_str!("../fixtures/catalogue/cle-autre.pub");
+
+    #[test]
+    fn effacer_la_copie_ne_touche_qu_a_l_index_et_aux_scripts_a_plat() {
+        let d = std::env::temp_dir().join(format!("wintool-effacer-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(d.join("sous-dossier")).unwrap();
+        for f in [
+            "index.json",
+            "index.json.sig",
+            "100_A.ps1",
+            "101_B.PS1",
+            "notes.txt",
+        ] {
+            fs::write(d.join(f), b"x").unwrap();
+        }
+        fs::write(d.join("sous-dossier").join("200_C.ps1"), b"x").unwrap();
+
+        assert_eq!(effacer_copie(&d).unwrap(), 4);
+        assert!(
+            d.join("notes.txt").exists(),
+            "ce qui n'est pas au catalogue reste"
+        );
+        assert!(
+            d.join("sous-dossier").join("200_C.ps1").exists(),
+            "rien n'est parcouru en profondeur"
+        );
+        assert!(!d.join("index.json").exists() && !d.join("100_A.ps1").exists());
+        // Plus d'index : la protection contre le retour en arriere repart de zero.
+        assert!(index_local_avec(CLE, &d).unwrap().is_none());
+
+        let _ = fs::remove_dir_all(&d);
+        assert_eq!(
+            effacer_copie(&d).unwrap(),
+            0,
+            "un dossier absent n'est pas une erreur"
+        );
+    }
     const I090: &[u8] = include_bytes!("../fixtures/catalogue/index-0.9.0.json");
     const S090: &[u8] = include_bytes!("../fixtures/catalogue/index-0.9.0.json.sig");
     const I100: &[u8] = include_bytes!("../fixtures/catalogue/index-1.0.0.json");
