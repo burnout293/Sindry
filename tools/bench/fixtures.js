@@ -883,6 +883,7 @@
       return JSON.parse(JSON.stringify(reglages));
     },
     set_ui_scale: (a) => { reglages.ui_scale = a.value; return JSON.parse(JSON.stringify(reglages)); },
+    set_update_beta: (a) => { reglages.update_beta = a.value; return JSON.parse(JSON.stringify(reglages)); },
     relaunch_elevated: () => null,
     simulation_state: () => bilanSimulation(),
     set_simulation_all: (a) => {

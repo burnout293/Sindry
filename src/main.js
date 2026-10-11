@@ -3383,12 +3383,9 @@ function afficherEtapeSimple(n) {
  *  fait naturellement une deuxieme ligne au-dela). Un lot vide est
  *  masque en mode Simple (specification 14). Un clic selectionne ; Continuer
  *  fait avancer. */
-/** Duree grossiere d'un lot, dans les mots de la specification 7 : un ordre de
- *  grandeur, jamais une promesse. */
-function minutesLot(groupe) {
-  const total = scriptsSimples(groupe).reduce((n, s) => n + (MINUTES_PAR_DUREE[s.meta.duration] || 2), 0);
-  return Math.max(1, total);
-}
+/* Les lots ne disent plus leur duree a l'ecran « Choisir » (1.7) : une somme
+   d'ordres de grandeur ne valait pas une promesse, et « 38 minutes » faisait
+   fuir. Ils disent combien d'actions seront lancees. */
 
 async function rendreEtapeChoisir() {
   document.getElementById('s1Titre').textContent = t('s1.titre');
@@ -3432,7 +3429,7 @@ async function rendreEtapeChoisir() {
       <div class="ri">${iconeReco}</div>
       <div>
         <div class="rt">${esc(nomLot(epinglee.lot))} <span class="badge acc">${esc(t('simple.recommande'))}</span></div>
-        <div class="rd">${esc(epinglee.lot.description || t('simple.on_s_occupe_de_tout'))} — ${esc(PLURIEL('simple.duree_estimee', minutesLot(epinglee)))}</div>
+        <div class="rd">${esc(epinglee.lot.description || t('simple.on_s_occupe_de_tout'))} — ${esc(PLURIEL('simple.n_actions', scriptsSimples(epinglee).length))}</div>
       </div>
     </div>`;
 
@@ -3448,7 +3445,7 @@ async function rendreEtapeChoisir() {
           <span class="bi">${icone}</span>
           <span class="blabel">
             <span class="bt">${esc(nomLot(g.lot))}</span>
-            <span class="bd">${esc(t('simple.duree_courte', { n: minutesLot(g) }))}</span>
+            <span class="bd">${esc(PLURIEL('simple.n_actions', scriptsSimples(g).length))}</span>
           </span>
         </button>`;
     })
@@ -3460,7 +3457,7 @@ async function rendreEtapeChoisir() {
   const choisi = dispo.find((g) => g.lot.id === selectionSimpleId) || epinglee;
   document.getElementById('s1Choisi').innerHTML =
     `${esc(t('s1.choisi'))} <b>${esc(nomLot(choisi.lot))}</b> · ` +
-    esc(t('simple.duree_courte', { n: minutesLot(choisi) }));
+    esc(PLURIEL('simple.n_actions', scriptsSimples(choisi).length));
   barre.hidden = false;
 }
 
@@ -3587,6 +3584,29 @@ function retirerVaguesArriere() {
  * de la vague a l'instant ou la bouee est posee : les deux horloges sont alignees
  * meme si la bouee est redessinee bien apres le depart de la vague.
  */
+/**
+ * Recale une bouee deja en mouvement sur la vague sous elle (1.7).
+ *
+ * `--retard` suppose que l'animation de la bouee demarre au moment du calcul.
+ * C'est vrai a la premiere pose, plus ensuite : une animation en cours garde son
+ * heure de depart, et changer son `animation-delay` ne la fait pas repartir. A
+ * chaque redimensionnement — et a chaque nappe arriere creee apres coup, qui
+ * part de zero —, les bouees de la deuxieme rangee se decalaient de leur vague.
+ * On fixe donc directement le temps de l'animation de la bouee, d'apres celui
+ * de la vague, par l'API des animations.
+ */
+function calerBouee(b, x, lambda, periode, vague) {
+  const tVague = vague?.currentTime;
+  if (tVague == null) return; // la vague n'a pas encore demarre : --retard suffit
+  b.style.setProperty('--retard', '0s');
+  getComputedStyle(b).animationDelay; // applique le retard nul avant de recaler
+  const bouee = b.getAnimations().find((a) => a.animationName === 'houle');
+  if (!bouee) return;
+  // Meme phase que retardHoule : crete quand frac(x / lambda + t / T) = 1/4.
+  const phase = ((((x / lambda + tVague / 1000 / periode - 0.25) % 1) + 1) % 1);
+  bouee.currentTime = phase * periode * 1000;
+}
+
 function retardHoule(x, lambda, periode, tVague) {
   let p = (0.25 - x / lambda - tVague / periode) % 1;
   if (p < 0) p += 1;
@@ -3673,6 +3693,7 @@ function positionnerBouees() {
         b.style.setProperty('--amp', `${amplitude}px`);
         b.style.setProperty('--demi', `${periode / 2}s`);
         b.style.setProperty('--retard', `${retardHoule(x, lambda, periode, tVague)}s`);
+        calerBouee(b, x, lambda, periode, anim);
       }
     }
   });
@@ -3923,7 +3944,6 @@ async function rendreEtapeVerifier(groupe) {
                    aria-label="${esc(t('simple.retenir', { titre }))}">
             <div class="ri">${icone}</div>
             <div class="rt">${esc(titre)}${marqueSimulation(s)}</div>
-            <span class="badge">${esc(t(`duree.${s.meta.duration}`))}</span>
           </label>
           ${reglables.length
             ? `<button class="rrow-plus" type="button" data-deplier="${esc(s.id)}"
@@ -4866,6 +4886,7 @@ function appliquerTraductionsReglages() {
   document.querySelector('#setThemeSeg [data-set-theme="system"]').textContent = t('onb.theme_systeme');
   document.getElementById('setLangueLabel').textContent = t('reglages.langue');
   document.getElementById('setMajLabel').textContent = t('reglages.maj_comportement');
+  document.getElementById('setBetaLabel').textContent = t('reglages.beta');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
@@ -4945,6 +4966,7 @@ function remplirFormulaireReglages(reglages) {
     b.setAttribute('aria-pressed', String(b.dataset.setLang === reglages.lang));
   });
   document.getElementById('setMajSelect').value = reglages.update_policy;
+  document.getElementById('setBetaToggle').setAttribute('aria-checked', String(!!reglages.update_beta));
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
@@ -5664,6 +5686,12 @@ function cablerReglages() {
   document.getElementById('btnProtegesDroits').onclick = () => {
     fermerReglages();
     ouvrirFenetreDroits();
+  };
+  // Les versions de test (1.7) : la prochaine verification en tient compte.
+  document.getElementById('setBetaToggle').onclick = async (ev) => {
+    const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
+    ev.currentTarget.setAttribute('aria-checked', String(actif));
+    reglagesActuels = await invoke('set_update_beta', { value: actif });
   };
   document.getElementById('setNumerosToggle').onclick = async (ev) => {
     const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';

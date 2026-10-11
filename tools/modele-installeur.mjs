@@ -58,7 +58,7 @@ if (!modele.includes('Section Uninstall') || !modele.includes('{{#if installer_h
   echec(`modele NSIS de la CLI ${version} incomplet ou meconnaissable`);
 }
 
-// --- Les deux remplacements -------------------------------------------------
+// --- Les remplacements ---------------------------------------------------------
 function remplacer(nom, avant, apres) {
   const n = modele.split(avant).length - 1;
   if (n !== 1) {
@@ -94,6 +94,31 @@ remplacer(
   '    RmDir /r "$APPDATA\\${BUNDLEID}"\n    RmDir /r "$LOCALAPPDATA\\${BUNDLEID}"\n',
   '    !insertmacro WINTOOL_EFFACER_ARBRE "$APPDATA\\${BUNDLEID}"\n' +
     '    !insertmacro WINTOOL_EFFACER_ARBRE "$LOCALAPPDATA\\${BUNDLEID}"\n',
+);
+
+// 3. La page « deja installe » (1.7). Pour une version plus ancienne, Tauri
+//    coche d'office « Desinstaller avant d'installer » : l'utilisateur passait
+//    par la page de desinstallation pour une simple mise a jour. Le premier
+//    choix, coche, devient « Mettre a jour » (on installe par-dessus, reglages
+//    et scripts intacts) ; la meme version propose « Reparer ». Textes fr/en :
+//    installeur/crochets.nsh.
+remplacer(
+  'choix de la meme version',
+  '    StrCpy $R2 "$(addOrReinstall)"\n    StrCpy $R3 "$(uninstallApp)"\n',
+  '    !insertmacro WINTOOL_TEXTES_REPARATION\n',
+);
+remplacer(
+  'choix d une version plus ancienne',
+  '    StrCpy $R2 "$(uninstallBeforeInstalling)"\n    StrCpy $R3 "$(dontUninstall)"\n    !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"\n  ; Downgrading',
+  '    !insertmacro WINTOOL_TEXTES_MISE_A_JOUR\n    !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"\n  ; Downgrading',
+);
+remplacer(
+  'effet du choix pour une version plus ancienne',
+  '  ${ElseIf} $R0 = 1 ; Upgrading\n    ${If} $R1 = 1              ; User chose to uninstall\n      Goto reinst_uninstall\n    ${Else}\n      Goto reinst_done         ; User chose NOT to uninstall\n    ${EndIf}\n',
+  '  ${ElseIf} $R0 = 1 ; Upgrading\n' +
+    '    ; WinTool : le premier choix met a jour sans desinstaller — et en mode\n' +
+    '    ; silencieux (/P), comme le faisait Tauri.\n' +
+    '    ${If} $R1 = 1\n    ${OrIf} $PassiveMode = 1\n      Goto reinst_done\n    ${Else}\n      Goto reinst_uninstall\n    ${EndIf}\n',
 );
 
 // Plus aucune suppression recursive ne doit subsister.

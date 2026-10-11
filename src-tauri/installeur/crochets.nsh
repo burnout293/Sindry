@@ -118,6 +118,18 @@ FunctionEnd
   Pop ${VAR}
 !macroend
 
+; La page « déjà installé » (1.7) : $R2 est le premier choix, coché d'office ;
+; $R3 le second. Insérées par le modèle dérivé (tools/modele-installeur.mjs).
+!macro WINTOOL_TEXTES_MISE_A_JOUR
+  !insertmacro WT_TEXTE $R2 "Mettre à jour (recommandé) — vos réglages et vos scripts sont conservés" "Update (recommended) — your settings and scripts are kept"
+  !insertmacro WT_TEXTE $R3 "Désinstaller d'abord, puis installer" "Uninstall first, then install"
+!macroend
+
+!macro WINTOOL_TEXTES_REPARATION
+  !insertmacro WT_TEXTE $R2 "Réparer — réinstaller les fichiers de WinTool, sans toucher à vos réglages" "Repair — reinstall WinTool's files, without touching your settings"
+  !insertmacro WT_TEXTE $R3 "Désinstaller WinTool" "Uninstall WinTool"
+!macroend
+
 ; Insérée par le modèle dérivé à la place de la page de confirmation de Tauri,
 ; APRÈS la déclaration de ses variables ($PassiveMode, $UpdateMode,
 ; $DeleteAppDataCheckboxState) : c'est ce qui permet de les utiliser ici.

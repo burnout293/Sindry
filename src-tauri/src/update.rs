@@ -19,10 +19,21 @@
 //!
 //! Ce module ne fait qu'exposer ce greffon a l'interface, dans le respect du
 //! §11 : detecter et proposer, rien d'installe sans un clic.
+//!
+//! **Les versions de test (1.7).** L'adresse du manifeste, `releases/latest`,
+//! ignore les pre-versions : c'est voulu, elles ne doivent pas atteindre tout
+//! le monde. Qui coche « Proposer les versions de test » interroge plutot la
+//! liste des releases publiees (API de GitHub, sans compte : la requete ne
+//! porte que l'en-tete User-Agent « WinTool ») et prend le manifeste de la plus
+//! recente, pre-version ou non. La verification de la signature ne change pas :
+//! une pre-version est signee avec la meme cle.
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Runtime};
-use tauri_plugin_updater::UpdaterExt;
+use tauri::{AppHandle, Emitter, Runtime, Url};
+use tauri_plugin_updater::{Updater, UpdaterExt};
+
+/// Le depot des releases de WinTool.
+const DEPOT: &str = "burnout293/WinTool";
 
 /// Une version plus recente, telle que l'interface la presente.
 #[derive(Debug, Clone, Serialize)]
@@ -48,11 +59,60 @@ pub fn politique_valide(p: &str) -> bool {
     POLITIQUES.contains(&p)
 }
 
+/// Dans une liste de releases (API de GitHub), l'adresse du `latest.json` de la
+/// plus recente qui soit publiee. Les brouillons ne comptent pas : publier,
+/// c'est livrer.
+fn manifeste_le_plus_recent(releases: &serde_json::Value) -> Option<String> {
+    releases.as_array()?.iter().find_map(|r| {
+        if r["draft"].as_bool().unwrap_or(true) {
+            return None;
+        }
+        r["assets"].as_array()?.iter().find_map(|a| {
+            (a["name"] == "latest.json")
+                .then(|| a["browser_download_url"].as_str().map(str::to_string))
+                .flatten()
+        })
+    })
+}
+
+async fn manifeste_beta() -> Result<Option<Url>, String> {
+    let reponse = crate::catalogue::client()?
+        .get(format!(
+            "https://api.github.com/repos/{DEPOT}/releases?per_page=10"
+        ))
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !reponse.status().is_success() {
+        return Err(format!("liste des versions : HTTP {}", reponse.status()));
+    }
+    let releases: serde_json::Value = reponse.json().await.map_err(|e| e.to_string())?;
+    manifeste_le_plus_recent(&releases)
+        .map(|u| Url::parse(&u).map_err(|e| e.to_string()))
+        .transpose()
+}
+
+/// Le greffon, sur le bon canal : l'adresse de `tauri.conf.json`, ou le
+/// manifeste de la release la plus recente si les versions de test sont
+/// proposees.
+async fn greffon<R: Runtime>(app: &AppHandle<R>, beta: bool) -> Result<Updater, String> {
+    let mut b = app.updater_builder();
+    if beta {
+        if let Some(url) = manifeste_beta().await? {
+            b = b.endpoints(vec![url]).map_err(|e| e.to_string())?;
+        }
+    }
+    b.build().map_err(|e| e.to_string())
+}
+
 /// Interroge la derniere release publiee. `None` : WinTool est a jour.
-pub async fn verifier<R: Runtime>(app: &AppHandle<R>) -> Result<Option<Disponible>, String> {
-    let maj = app
-        .updater()
-        .map_err(|e| e.to_string())?
+pub async fn verifier<R: Runtime>(
+    app: &AppHandle<R>,
+    beta: bool,
+) -> Result<Option<Disponible>, String> {
+    let maj = greffon(app, beta)
+        .await?
         .check()
         .await
         .map_err(|e| e.to_string())?;
@@ -71,10 +131,9 @@ pub async fn verifier<R: Runtime>(app: &AppHandle<R>) -> Result<Option<Disponibl
 /// On re-interroge le manifeste plutot que de reutiliser le resultat de
 /// `verifier` : entre les deux, l'utilisateur a pu laisser l'application
 /// ouverte des heures, et c'est la release publiee *maintenant* qu'on installe.
-pub async fn installer<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
-    let maj = app
-        .updater()
-        .map_err(|e| e.to_string())?
+pub async fn installer<R: Runtime>(app: &AppHandle<R>, beta: bool) -> Result<(), String> {
+    let maj = greffon(app, beta)
+        .await?
         .check()
         .await
         .map_err(|e| e.to_string())?
@@ -106,5 +165,20 @@ mod tests {
         assert!(!politique_valide("auto"));
         assert!(!politique_valide(""));
         assert!(!politique_valide("Propose"));
+    }
+
+    #[test]
+    fn le_canal_de_test_prend_la_release_publiee_la_plus_recente() {
+        let r = serde_json::json!([
+            { "draft": true, "assets": [{ "name": "latest.json", "browser_download_url": "https://x/brouillon" }] },
+            { "draft": false, "assets": [{ "name": "notes.txt", "browser_download_url": "https://x/notes" }] },
+            { "draft": false, "prerelease": true, "assets": [{ "name": "latest.json", "browser_download_url": "https://x/beta" }] },
+            { "draft": false, "assets": [{ "name": "latest.json", "browser_download_url": "https://x/stable" }] }
+        ]);
+        assert_eq!(
+            manifeste_le_plus_recent(&r).as_deref(),
+            Some("https://x/beta")
+        );
+        assert_eq!(manifeste_le_plus_recent(&serde_json::json!([])), None);
     }
 }

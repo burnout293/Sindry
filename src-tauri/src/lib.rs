@@ -900,7 +900,8 @@ const MAJ_PENDANT_EXECUTION: &str = "MAJ_PENDANT_EXECUTION";
 /// Interroge la derniere release publiee. `None` : a jour.
 #[tauri::command]
 async fn check_update(app: tauri::AppHandle) -> Result<Option<update::Disponible>, String> {
-    update::verifier(&app).await
+    let beta = settings::load(&app)?.update_beta;
+    update::verifier(&app, beta).await
 }
 
 /// Telecharge, verifie la signature, installe. Refuse pendant une execution :
@@ -915,7 +916,17 @@ async fn install_update(
     if state.snapshot().is_some() {
         return Err(MAJ_PENDANT_EXECUTION.to_string());
     }
-    update::installer(&app).await
+    let beta = settings::load(&app)?.update_beta;
+    update::installer(&app, beta).await
+}
+
+/// Proposer aussi les versions de test (1.7, §11).
+#[tauri::command]
+fn set_update_beta(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
+    with_settings(&app, |s| {
+        s.update_beta = value;
+        Ok(())
+    })
 }
 
 #[tauri::command]
@@ -1510,6 +1521,7 @@ pub fn run() {
             set_failure_policy,
             set_show_setting_numbers,
             set_ui_scale,
+            set_update_beta,
             set_exec_policy,
             set_log_cap,
             protected_paths,

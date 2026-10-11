@@ -39,6 +39,9 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — le graphique du résumé se déclare dans le script (`## chart`) ; le réglage 1.7 disparaît (§17.2) | Fait |
 | | — icône de l'installeur et du désinstalleur (celle de NSIS jusqu'ici) | Fait |
 | | — un thème Star Wars, style Nouvelle République | Plus tard |
+| **1.8** | Bouées de la deuxième rangée recalées sur leur vague ; installeur : « Mettre à jour » et « Réparer » au lieu de désinstaller ; versions de test au choix (réglage 1.7) ; plus de vitesse à l'étape « Vérifier », le nombre d'actions au lieu des minutes | Fait |
+| | — refonte de Braise ardente (maquette M20) | À décider |
+| plus tard | Thèmes exportables et importables, en un seul fichier, pour les partager | Quand il le demandera |
 | **2.0** | WinTool devient **Sindry** | Prévue |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

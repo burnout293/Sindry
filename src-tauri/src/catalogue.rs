@@ -739,7 +739,7 @@ pub fn appliquer(
 /// Aucun identifiant ne voyage (§16.7) : pas meme le numero de version, que
 /// l'en-tete User-Agent pourrait porter. La source apprend qu'une adresse a
 /// demande un fichier public, rien de plus.
-fn client() -> Result<reqwest::Client, String> {
+pub(crate) fn client() -> Result<reqwest::Client, String> {
     if rustls::crypto::CryptoProvider::get_default().is_none() {
         let _ = rustls::crypto::ring::default_provider().install_default();
     }

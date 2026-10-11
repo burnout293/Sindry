@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Braise ardente : refonte</title>
+<!--
+  Maquette 20. Braise ardente, le thème par défaut, est devenu le moins
+  travaillé : sa houle est une simple eau colorée, quand Synthwave, Spatial,
+  Terminal et Aurore ont chacun un décor. Quatre refontes, sur l'accueil du
+  mode Simple, en sombre et en clair. Les couleurs restent celles de l'icône.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.page-h { max-width: 1240px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 640px; line-height: 1.5; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; flex-wrap: wrap; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.onglets { max-width: 1240px; margin: 0 auto 14px; }
+.vue { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+@media (max-width: 1000px) { .vue { grid-template-columns: 1fr; } }
+.cadre { width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid #26232F; }
+.panneau { background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.panneau h2 { font-size: 21px; } .panneau .tag { color: #C9C3D8; font-size: 13.5px; line-height: 1.55; }
+.panneau h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #8C86A0; margin-top: 4px; }
+.panneau ul { padding-left: 18px; color: #C9C3D8; font-size: 13px; line-height: 1.6; }
+.grille-h { max-width: 1240px; margin: 30px auto 12px; font-size: 19px; }
+.vignettes { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.vignette { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 10px; text-align: left; }
+.vignette[aria-pressed="true"] { border-color: #FD9E21; }
+.vignette .mini { border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 10; position: relative; }
+.vignette .mini > .ecran { position: absolute; top: 0; left: 0; }
+.vignette b { display: block; margin: 10px 4px 2px; font-size: 14.5px; } .vignette small { display: block; margin: 0 4px 4px; color: #A49DB6; font-size: 12.5px; }
+
+/* --- L'ecran : 960 x 600 ------------------------------------------------------ */
+.ecran { position: relative; width: 960px; height: 600px; overflow: hidden; background: var(--fond); color: var(--text); }
+.ecran[data-m="sombre"] { --fond: radial-gradient(ellipse at 50% 110%, #2A0E12 0%, #120A14 55%, #0B070E 100%);
+  --surface: #18111F; --surface-2: #2B2034; --border: #3D3049; --text: #F7F1FA; --text-2: #B9A9C6;
+  --acc-a: #FEC923; --acc-b: #FD5632; --acc-on: #FFB35C; --on-acc: #1A0B12; --nuit: 1; }
+.ecran[data-m="clair"] { --fond: linear-gradient(#FFF7EE 0%, #FBEDE2 60%, #F6DCCB 100%);
+  --surface: #FFFFFF; --surface-2: #EFE4DB; --border: #E2CFC2; --text: #1F1426; --text-2: #6A5873;
+  --acc-a: #FD9E21; --acc-b: #FD5632; --acc-on: #B23A0C; --on-acc: #1A0B12; --nuit: 0; }
+.decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 14px; }
+.tb img { width: 26px; height: 26px; } .tb .nom { font-weight: 800; font-size: 15px; }
+.tb .droite { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.seg span { padding: 5px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.seg span.on { color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.ib { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); background: var(--surface); }
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 30px; }
+.contenu h1 { font-size: 30px; letter-spacing: -.6px; font-weight: 800; }
+.contenu > p { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+.reco { margin: 22px auto 0; width: 410px; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 18px; border-radius: 22px;
+  background: var(--surface); border: 2px solid var(--acc-a); box-shadow: 0 14px 34px color-mix(in srgb, var(--acc-b) 25%, transparent); }
+.reco .ri { width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.reco b { font-size: 17px; } .reco span { display: block; color: var(--text-2); font-size: 13px; }
+.sect { margin-top: 20px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.bouee { position: absolute; z-index: 2; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; animation: flotte 5s ease-in-out infinite alternate; }
+@keyframes flotte { from { translate: 0 -5px; } to { translate: 0 5px; } }
+.flotteur { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: var(--text); background: var(--surface); border: 2px solid var(--border); }
+.lbl { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px; text-align: center; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.lbl small { display: block; font-size: 11px; font-weight: 500; color: var(--text-2); }
+.barre { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 70px; display: flex; align-items: center; justify-content: center; gap: 20px; font-size: 13.5px; color: var(--text-2); }
+.barre b { color: var(--text); }
+.primaire { display: inline-flex; align-items: center; gap: 10px; padding: 13px 30px; border-radius: 999px; font-size: 15px; font-weight: 750; color: var(--on-acc);
+  background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); box-shadow: 0 10px 26px color-mix(in srgb, var(--acc-b) 40%, transparent); }
+
+/* --- Elements communs : la houle --------------------------------------------- */
+.houle { position: absolute; left: 0; bottom: 0; width: 200%; height: 330px; animation: derive 26s linear infinite; }
+.houle.loin { height: 380px; animation-duration: 40s; }
+@keyframes derive { to { transform: translateX(-50%); } }
+
+/* A. Brasier : une houle de lave, crete incandescente, etincelles qui montent. */
+.ecran[data-p="brasier"] .houle path.n { fill: url(#gLave); }
+.ecran[data-p="brasier"] .houle path.c { fill: none; stroke: url(#gCrete); stroke-width: 4; filter: drop-shadow(0 0 6px #FD7D26) drop-shadow(0 0 14px #FD5632); }
+.ecran[data-p="brasier"] .houle.loin { opacity: .6; }
+.ecran[data-p="brasier"][data-m="clair"] .houle path.n { opacity: .55; }
+.etincelle { position: absolute; bottom: 180px; width: 4px; height: 4px; border-radius: 50%; background: #FFD27A;
+  box-shadow: 0 0 6px 2px #FD7D26; animation: monte linear infinite; }
+@keyframes monte { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 70% { opacity: .8; } 100% { transform: translate(var(--dx), -320px) scale(.3); opacity: 0; } }
+.fumee { position: absolute; left: 0; right: 0; top: 0; height: 260px; background: radial-gradient(ellipse at 30% 0%, rgba(120, 90, 110, .14), transparent 60%), radial-gradient(ellipse at 75% 10%, rgba(120, 90, 110, .1), transparent 55%); }
+.ecran[data-m="clair"] .fumee { opacity: .5; }
+
+/* B. Forge : le rouage de l'icone tourne derriere le titre ; gerbes d'etincelles sur la crete ; metal en fusion. */
+.rouage { position: absolute; left: 50%; top: 40px; width: 420px; height: 420px; margin-left: -210px; opacity: .14; animation: tourne 60s linear infinite; }
+.rouage path { fill: none; stroke: url(#gRouage); stroke-width: 10; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.ecran[data-m="clair"] .rouage { opacity: .12; }
+.ecran[data-p="forge"] .houle path.n { fill: url(#gMetal); }
+.ecran[data-p="forge"] .houle path.c { fill: none; stroke: #FFD27A; stroke-width: 3; filter: drop-shadow(0 0 8px #FD9E21); }
+.gerbe { position: absolute; width: 2px; height: 14px; border-radius: 2px; background: linear-gradient(#FFF3C4, #FD9E21); transform-origin: bottom;
+  animation: gerbe 1.6s ease-out infinite; opacity: 0; }
+@keyframes gerbe { 0% { opacity: 0; transform: rotate(var(--a)) translateY(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-90px); } }
+.ecran[data-p="forge"] .flotteur { border-color: #8A6A5A; background: linear-gradient(160deg, color-mix(in srgb, var(--surface) 80%, #FFD27A), var(--surface)); }
+
+/* C. Foyer : chaleureux, presque doux ; des braises flottent comme des lucioles au-dessus de flammes stylisees. */
+.flammes { position: absolute; left: 0; bottom: 0; width: 200%; height: 300px; }
+.flammes path { animation: lecher 3.2s ease-in-out infinite alternate; transform-origin: bottom; transform-box: fill-box; }
+.flammes path:nth-child(2) { animation-duration: 2.6s; animation-delay: -1s; }
+.flammes path:nth-child(3) { animation-duration: 3.8s; animation-delay: -2s; }
+@keyframes lecher { from { transform: scaleY(.92); } to { transform: scaleY(1.06); } }
+.luciole { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #FFC24D; box-shadow: 0 0 10px 3px rgba(253, 158, 33, .6);
+  animation: flotteL 7s ease-in-out infinite alternate, scintille 2.2s ease-in-out infinite; }
+@keyframes flotteL { from { translate: 0 0; } to { translate: var(--dx) var(--dy); } }
+@keyframes scintille { 50% { opacity: .3; } }
+.halo-foyer { position: absolute; left: 50%; bottom: -200px; width: 1100px; height: 520px; margin-left: -550px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(253, 86, 50, .35), rgba(253, 158, 33, .12) 45%, transparent 70%); animation: respire 4s ease-in-out infinite alternate; }
+@keyframes respire { to { opacity: .7; transform: scale(1.04); } }
+.ecran[data-p="foyer"] .reco { border-radius: 26px; }
+.ecran[data-p="foyer"] .flotteur { box-shadow: 0 0 18px rgba(253, 158, 33, .35); }
+
+/* D. Coulee : de la pierre craquelee ou la lave pulse dans les fissures, a la place de l'eau. */
+.roche { position: absolute; left: 0; right: 0; bottom: 0; height: 300px; }
+.roche .pierre { fill: url(#gPierre); }
+.roche .fissure { fill: none; stroke: #FD7D26; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px #FD5632);
+  animation: pulse 3s ease-in-out infinite; }
+.roche .fissure:nth-of-type(2n) { animation-delay: -1.2s; } .roche .fissure:nth-of-type(3n) { animation-delay: -2s; }
+@keyframes pulse { 50% { stroke: #FFD27A; opacity: .65; } }
+.ecran[data-p="coulee"] .flotteur { border-radius: 16px; border-color: #5C4652; }
+.ecran[data-p="coulee"][data-m="clair"] .roche .pierre { opacity: .85; }
+
+body.calme .ecran *, body.calme .ecran *::before { animation: none !important; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gLave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FD5632"/><stop offset=".25" stop-color="#B8213A"/><stop offset="1" stop-color="#2A0A16"/></linearGradient>
+    <linearGradient id="gCrete" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FEC923"/><stop offset=".5" stop-color="#FD7D26"/><stop offset="1" stop-color="#FEC923"/></linearGradient>
+    <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FD9E21"/><stop offset=".12" stop-color="#C2410C"/><stop offset=".4" stop-color="#3A2230"/><stop offset="1" stop-color="#140C14"/></linearGradient>
+    <linearGradient id="gRouage" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4AB2E7"/><stop offset=".5" stop-color="#775FD7"/><stop offset="1" stop-color="#CA28B1"/></linearGradient>
+    <linearGradient id="gFlamme" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#DC1178"/><stop offset=".45" stop-color="#FD5632"/><stop offset="1" stop-color="#FEC923"/></linearGradient>
+    <linearGradient id="gPierre" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2A34"/><stop offset="1" stop-color="#140C12"/></linearGradient>
+  </defs>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Braise ardente : refonte</h1>
+    <p>Le thème par défaut est devenu le moins travaillé : une eau colorée, quand les autres ont un vrai décor. Quatre refontes, sur l'accueil du mode Simple, aux couleurs de l'icône.</p>
+  </div>
+  <div class="choix">
+    <div class="pseg" id="choixMode"><button data-m="sombre" aria-pressed="true">Sombre</button><button data-m="clair" aria-pressed="false">Clair</button></div>
+    <div class="pseg" id="choixCalme"><button data-c="0" aria-pressed="true">Animé</button><button data-c="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+<div class="onglets"><div class="pseg" id="choixP"></div></div>
+<div class="vue"><div class="cadre" id="cadre"></div><aside class="panneau" id="panneau"></aside></div>
+<h2 class="grille-h">Les quatre côte à côte</h2>
+<div class="vignettes" id="vignettes"></div>
+
+<script>
+const P = {
+  brasier: { nom: 'A · Brasier', tag: "La houle devient une coulée de lave : une crête incandescente, des étincelles qui montent et s'éteignent, un voile de fumée en haut.",
+    change: ['Garde la houle — la marée de WinTool — mais en feu', 'Crête dorée lumineuse, nappes de lave rouge sombre', 'Étincelles : douze à la fois, jamais plus'] },
+  forge: { nom: 'B · Forge', tag: "Le rouage de l'icône tourne lentement derrière le titre ; la houle est du métal en fusion, des gerbes d'étincelles jaillissent de la crête.",
+    change: ["Relie la flamme et l'engrenage de l'icône", 'Bouées en métal chauffé', 'Gerbes sur la crête, comme sous le marteau'] },
+  foyer: { nom: 'C · Foyer', tag: "Le plus chaleureux : des flammes stylisées qui lèchent le bas de l'écran, un halo qui respire, des braises qui flottent comme des lucioles.",
+    change: ["Plus doux, presque cosy — le plus lisible en clair", 'Flammes en trois couches, aux couleurs de l\'icône', 'Pas de houle : les bouées flottent au-dessus du feu'] },
+  coulee: { nom: 'D · Coulée', tag: "De la pierre volcanique à la place de l'eau ; la lave pulse dans les fissures. Le plus graphique, le plus sombre.",
+    change: ['Bouées en pierre, coins plus carrés', 'Fissures qui s\'allument tour à tour', 'Très typé : moins « marée », plus « volcan »'] },
+};
+const IDS = Object.keys(P);
+const B = [
+  { x: 14, b: 196, ic: 'trash', t: 'Faire le ménage', d: '3 actions' }, { x: 38, b: 214, ic: 'zap', t: 'Performance', d: '3 actions' },
+  { x: 62, b: 204, ic: 'shield', t: 'Vie privée', d: '3 actions' }, { x: 86, b: 192, ic: 'app', t: 'Applications', d: '1 action' },
+  { x: 27, b: 100, ic: 'pulse', t: 'Santé', d: '3 actions' }, { x: 73, b: 104, ic: 'wrench', t: 'Outillage', d: '1 action' },
+];
+const vague = (amp, y, L) => { let d = `M0 ${y}`; for (let x = 0; x <= L; x += 40) d += ` L${x} ${(y - amp * Math.sin((2 * Math.PI * x) / (L / 4))).toFixed(1)}`; return d; };
+const hasard = (g) => { let s = g; return () => (s = (s * 9301 + 49297) % 233280) / 233280; };
+const houle = () => { const d1 = vague(26, 80, 1920), d2 = vague(18, 60, 1920);
+  return `<svg class="houle loin" viewBox="0 0 1920 380" preserveAspectRatio="none"><path class="n" d="${d2} L1920 380 L0 380Z"/><path class="c" d="${d2}"/></svg>
+          <svg class="houle" viewBox="0 0 1920 330" preserveAspectRatio="none"><path class="n" d="${d1} L1920 330 L0 330Z"/><path class="c" d="${d1}"/></svg>`; };
+function decor(p) {
+  const r = hasard(p.length * 7 + 3);
+  if (p === 'brasier') return `<div class="fumee"></div>${houle()}${Array.from({ length: 12 }, (_, i) =>
+    `<i class="etincelle" style="left:${Math.round(r() * 940)}px;--dx:${Math.round(r() * 80 - 40)}px;animation-duration:${(4 + r() * 4).toFixed(1)}s;animation-delay:-${(r() * 8).toFixed(1)}s"></i>`).join('')}`;
+  if (p === 'forge') {
+    let g = ''; for (let k = 0; k < 14; k++) { const n = 14, a = (k / n) * Math.PI * 2; g += `M${110 + 100 * Math.cos(a - .12)} ${110 + 100 * Math.sin(a - .12)} L${110 + 112 * Math.cos(a - .07)} ${110 + 112 * Math.sin(a - .07)} L${110 + 112 * Math.cos(a + .07)} ${110 + 112 * Math.sin(a + .07)} L${110 + 100 * Math.cos(a + .12)} ${110 + 100 * Math.sin(a + .12)} `; }
+    const gerbes = [180, 470, 760].map((x, j) => Array.from({ length: 7 }, (_, k) => `<i class="gerbe" style="left:${x}px;bottom:${255 + (j % 2) * 20}px;--a:${-50 + k * 16}deg;animation-delay:-${(r() * 1.6).toFixed(2)}s"></i>`).join('')).join('');
+    return `<svg class="rouage" viewBox="0 0 220 220"><path d="${g}"/><circle cx="110" cy="110" r="100" style="fill:none;stroke:url(#gRouage);stroke-width:8"/><circle cx="110" cy="110" r="46" style="fill:none;stroke:url(#gRouage);stroke-width:10"/></svg>${houle()}${gerbes}`;
+  }
+  if (p === 'foyer') {
+    const flamme = (h, o) => { let d = 'M0 300'; for (let x = 0; x <= 1920; x += 60) d += ` Q${x + 30} ${300 - h - r() * h * .8} ${x + 60} ${300 - h * .35}`; return `<path d="${d} L1920 300Z" fill="url(#gFlamme)" opacity="${o}"/>`; };
+    return `<div class="halo-foyer"></div><svg class="flammes" viewBox="0 0 1920 300" preserveAspectRatio="none">${flamme(120, .35)}${flamme(85, .55)}${flamme(55, .9)}</svg>
+      ${Array.from({ length: 14 }, () => `<i class="luciole" style="left:${Math.round(r() * 940)}px;top:${Math.round(150 + r() * 260)}px;--dx:${Math.round(r() * 60 - 30)}px;--dy:${Math.round(r() * 40 - 20)}px;animation-delay:-${(r() * 7).toFixed(1)}s, -${(r() * 2).toFixed(1)}s"></i>`).join('')}`;
+  }
+  if (p === 'coulee') {
+    const top = vague(10, 70, 960).replace('M0 70', 'M0 70');
+    let f = ''; for (let k = 0; k < 9; k++) { let x = r() * 960, y = 90 + r() * 40, d = `M${x.toFixed(0)} ${y.toFixed(0)}`; for (let s = 0; s < 6; s++) { x += r() * 70 - 20; y += 18 + r() * 22; d += ` L${x.toFixed(0)} ${y.toFixed(0)}`; } f += `<path class="fissure" d="${d}"/>`; }
+    return `<svg class="roche" viewBox="0 0 960 300" preserveAspectRatio="none"><path class="pierre" d="${top} L960 300 L0 300Z"/><path d="${top}" style="fill:none;stroke:#FD7D26;stroke-width:2.5;filter:drop-shadow(0 0 6px #FD5632)"/>${f}</svg>`;
+  }
+  return '';
+}
+function ecran(p, m) {
+  return `<div class="ecran" data-p="${p}" data-m="${m}"><div class="decor">${decor(p)}</div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+      <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div><span class="ib"><svg class="i"><use href="#terminal"/></svg></span></div></div>
+    <div class="contenu"><h1>Que souhaitez-vous faire ?</h1><p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span><div><b>Entretien complet</b><span>On s'occupe de tout — 11 actions</span></div></div>
+      <div class="sect">Ou choisissez un domaine précis</div></div>
+    ${B.map((b, i) => `<div class="bouee" style="left:${b.x}%;bottom:${b.b}px;animation-delay:-${i * .9}s"><span class="flotteur"><svg class="i"><use href="#${b.ic}"/></svg></span><span class="lbl">${b.t}<small>${b.d}</small></span></div>`).join('')}
+    <div class="barre"><span>Choisi : <b>Entretien complet</b> · 11 actions</span><span class="primaire">Continuer <svg class="i"><use href="#arrow"/></svg></span></div></div>`;
+}
+let prop = 'brasier', mode = 'sombre';
+const cadre = document.getElementById('cadre');
+function ajuster() { const e = cadre.firstElementChild; if (e) { const z = cadre.clientWidth / 960; e.style.zoom = z; cadre.style.height = `${600 * z}px`; }
+  document.querySelectorAll('.vignette .mini').forEach((m) => { m.firstElementChild.style.zoom = m.clientWidth / 960; }); }
+function rendre() {
+  cadre.innerHTML = ecran(prop, mode);
+  document.getElementById('choixP').innerHTML = IDS.map((id) => `<button data-p="${id}" aria-pressed="${id === prop}">${P[id].nom}</button>`).join('');
+  document.getElementById('panneau').innerHTML = `<h2>${P[prop].nom}</h2><p class="tag">${P[prop].tag}</p><h3>Ce qui change</h3><ul>${P[prop].change.map((c) => `<li>${c}</li>`).join('')}</ul>`;
+  document.getElementById('vignettes').innerHTML = IDS.map((id) => `<button class="vignette" data-p="${id}" aria-pressed="${id === prop}"><div class="mini">${ecran(id, mode)}</div><b>${P[id].nom}</b><small>${P[id].tag.split(' : ')[0].split(';')[0]}</small></button>`).join('');
+  ajuster();
+}
+document.addEventListener('click', (ev) => {
+  const p = ev.target.closest('[data-p]:not(.ecran)'); if (p) { prop = p.dataset.p; rendre(); return; }
+  const m = ev.target.closest('[data-m]:not(.ecran)'); if (m) { mode = m.dataset.m; document.querySelectorAll('#choixMode button').forEach((b) => b.setAttribute('aria-pressed', String(b === m))); rendre(); return; }
+  const c = ev.target.closest('[data-c]'); if (c) { document.body.classList.toggle('calme', c.dataset.c === '1'); document.querySelectorAll('#choixCalme button').forEach((b) => b.setAttribute('aria-pressed', String(b === c))); }
+});
+addEventListener('resize', ajuster); rendre();
+</script>
+</body>
+</html>
