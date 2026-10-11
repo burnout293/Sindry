@@ -33,7 +33,9 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — vagues : la pause suit la fenêtre réduite, plus le focus ; l'eau et les bouées s'arrêtent ensemble (§15.3) | Fait |
 | | — réglages par script : « Actif » et « Nécessite un redémarrage » retirés (§4.2) | Fait |
 | | — la balise sur « Droits limités » ; encart et guide à la lampe torche quand une action a besoin des droits administrateur (§15.6) | Fait |
-| | — système de guide : visite, astuces, centre d'aide (maquette M18) ; thèmes d'ambiance (maquette M17) | À décider |
+| | — ambiances Synthwave, Terminal et Aurore, avec leur décor (§15.4, maquette M17) | Fait |
+| | — bienvenue en cinq pages (réglages d'abord, visite proposée à la fin), visites de l'accueil et de l'Expert, centre d'aide « ? », contenu dans `src/guide.json` vérifié en CI (§13, maquette M18) | Fait |
+| | — thème Star Wars « Escadron », style Nouvelle République (maquette M19) | À décider |
 | **2.0** | WinTool devient **Sindry** | Prévue |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

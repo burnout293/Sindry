@@ -9,8 +9,8 @@
         "en": "Welcome to WinTool"
       },
       "texte": {
-        "fr": "Quatre petites pages pour bien démarrer. Choisissez d’abord votre langue et l’apparence.",
-        "en": "Four short pages to get started. First, choose your language and look."
+        "fr": "Cinq petites pages pour bien démarrer. D’abord, réglez WinTool à votre goût : la langue, l’ambiance et la taille.",
+        "en": "Five short pages to get started. First, make WinTool your own: language, look and size."
       }
     },
     {
@@ -178,6 +178,19 @@
           "en": "WinTool collects nothing about you, and sends nothing."
         }
       ]
+    },
+    {
+      "id": "pret",
+      "type": "pret",
+      "icone": "map",
+      "titre": {
+        "fr": "Vous êtes prêt",
+        "en": "You’re all set"
+      },
+      "texte": {
+        "fr": "Voulez-vous qu’on vous montre où sont les choses ? Une minute, sur l’écran que vous allez utiliser. La visite reste ensuite dans le bouton « ? », en haut.",
+        "en": "Would you like a quick look at where things are? One minute, on the screen you are about to use. The tour then stays in the “?” button, at the top."
+      }
     }
   ]
 }

@@ -208,6 +208,317 @@
   --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #73628A;
 }
 
+/* --- Thèmes d'ambiance (1.7) --------------------------------------------------
+   Des thèmes qui changent l'ambiance entière (maquette M17) : leurs jetons
+   ci-dessous, leur décor plus bas (« Le décor des ambiances »). Valeur du
+   réglage 1.8 (`accent`), posée en `data-accent`. Chaque jeu est mesuré comme
+   Braise : textes, accent, états et journal au-dessus de 4,5:1.
+
+   Synthwave suit le réglage clair / sombre comme Braise : Miami en clair, Nuit
+   en sombre. Terminal et Aurore n'existent qu'en SOMBRE : leurs sélecteurs
+   couvrent les trois cas de `data-theme` (absent, clair, sombre) avec une
+   spécificité de (0,3,0), égale à celle du sombre de Braise sous la @media
+   et déclarée après lui — elle l'emporte donc toujours.
+   ------------------------------------------------------------------------- */
+:root[data-accent="synthwave"] {
+  --bg: #FFF2F9;
+  --surface: #FFFFFF;
+  --surface-2: #FFE6F3;
+  --surface-3: #FFD3EA;
+  --border: #F6CFE4;
+  --border-2: #EBA9CD;
+  --text: #2A0B3D;
+  --text-2: #6E4A82;
+  --text-3: #7A5690;
+  --ink: #2A0B3D;
+  --ok: #0E7550;
+  --warn: #8C5B0E;
+  --err: #C0214A;
+  --ok-s: #E6F5EC;
+  --warn-s: #FBF3E2;
+  --err-s: #FBEAEF;
+  --acc: #FF3EA5;
+  --acc-2: #00B8D4;
+  --acc-on: #B0106A;
+  --surface-soft: #FFF8FC;
+  --acc-soft: #FFE1F1;
+  --knob-off: #9B7AA8;
+  --serie-1: #FF3EA5;
+  --serie-2: #00A9C4;
+  --serie-3: #FFB020;
+  --serie-4: #9A4DFF;
+  --serie-5: #FF6A3D;
+  --serie-6: #12A37A;
+  --rouage-a: #00B8D4;
+  --rouage-b: #FF3EA5;
+  --eau-a: #FF8CC8;
+  --eau-b: #00B8D4;
+  --eau-fond: .16;
+  --eau-surface: .24;
+  --term-bg: #2A0B3D;
+  --term-text: #FBE8FF;
+  --term-dim: #BFA0D2;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="synthwave"]:not([data-theme="light"]) {
+    --bg: #120326;
+    --surface: #1C0838;
+    --surface-2: #260D4A;
+    --surface-3: #33145E;
+    --border: #3A1A66;
+    --border-2: #52267F;
+    --text: #FBF0FF;
+    --text-2: #CDB6EE;
+    --text-3: #A98DD2;
+    --ink: #12001F;
+    --ok: #3DF5A6;
+    --warn: #FFD24D;
+    --err: #FF6B95;
+    --ok-s: #0C2A2A;
+    --warn-s: #2E2410;
+    --err-s: #3A0D2A;
+    --acc: #FF2BD6;
+    --acc-2: #00E5FF;
+    --acc-on: #FF8BEA;
+    --surface-soft: #170530;
+    --acc-soft: #2E0B45;
+    --knob-off: #7A5C9E;
+    --serie-1: #FF2BD6;
+    --serie-2: #00E5FF;
+    --serie-3: #FFD24D;
+    --serie-4: #B26BFF;
+    --serie-5: #FF7A45;
+    --serie-6: #3DF5A6;
+    --rouage-a: #00E5FF;
+    --rouage-b: #FF2BD6;
+    --eau-a: #FF2BD6;
+    --eau-b: #00E5FF;
+    --eau-fond: .10;
+    --eau-surface: .16;
+    --term-bg: #0A0118;
+    --term-text: #F2DDFF;
+    --term-dim: #A58BCB;
+    --sh: 0 2px 10px rgba(0, 0, 0, .4);
+    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+  }
+}
+:root[data-theme="dark"][data-accent="synthwave"] {
+  --bg: #120326;
+  --surface: #1C0838;
+  --surface-2: #260D4A;
+  --surface-3: #33145E;
+  --border: #3A1A66;
+  --border-2: #52267F;
+  --text: #FBF0FF;
+  --text-2: #CDB6EE;
+  --text-3: #A98DD2;
+  --ink: #12001F;
+  --ok: #3DF5A6;
+  --warn: #FFD24D;
+  --err: #FF6B95;
+  --ok-s: #0C2A2A;
+  --warn-s: #2E2410;
+  --err-s: #3A0D2A;
+  --acc: #FF2BD6;
+  --acc-2: #00E5FF;
+  --acc-on: #FF8BEA;
+  --surface-soft: #170530;
+  --acc-soft: #2E0B45;
+  --knob-off: #7A5C9E;
+  --serie-1: #FF2BD6;
+  --serie-2: #00E5FF;
+  --serie-3: #FFD24D;
+  --serie-4: #B26BFF;
+  --serie-5: #FF7A45;
+  --serie-6: #3DF5A6;
+  --rouage-a: #00E5FF;
+  --rouage-b: #FF2BD6;
+  --eau-a: #FF2BD6;
+  --eau-b: #00E5FF;
+  --eau-fond: .10;
+  --eau-surface: .16;
+  --term-bg: #0A0118;
+  --term-text: #F2DDFF;
+  --term-dim: #A58BCB;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
+:root[data-accent="terminal-vert"]:not([data-theme="light"]),
+:root[data-accent="terminal-vert"][data-theme="light"] {
+  color-scheme: dark;
+  --ui: var(--mono);
+  --bg: #020A04;
+  --surface: #06140A;
+  --surface-2: #0B1F10;
+  --surface-3: #123018;
+  --border: #164A24;
+  --border-2: #1F6A33;
+  --text: #6CFF94;
+  --text-2: #4CCF72;
+  --text-3: #3BB15E;
+  --ink: #021006;
+  --ok: #9DFFB9;
+  --warn: #FFD84D;
+  --err: #FF7070;
+  --ok-s: #0B2A14;
+  --warn-s: #2A2408;
+  --err-s: #2E0E0E;
+  --acc: #6CFF94;
+  --acc-2: #2EE86A;
+  --acc-on: #8DFFAD;
+  --surface-soft: #041007;
+  --acc-soft: #0E2A16;
+  --knob-off: #2E6B40;
+  --serie-1: #6CFF94;
+  --serie-2: #2EC4B6;
+  --serie-3: #FFD84D;
+  --serie-4: #B8FF6C;
+  --serie-5: #4DA3FF;
+  --serie-6: #FF9F5A;
+  --rouage-a: #2EE86A;
+  --rouage-b: #6CFF94;
+  --eau-a: #2EE86A;
+  --eau-b: #0B3D1A;
+  --eau-fond: 0;
+  --eau-surface: 0;
+  --term-bg: #000700;
+  --term-text: #8DFFAD;
+  --term-dim: #45AE66;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
+:root[data-accent="terminal-ambre"]:not([data-theme="light"]),
+:root[data-accent="terminal-ambre"][data-theme="light"] {
+  color-scheme: dark;
+  --ui: var(--mono);
+  --bg: #0C0700;
+  --surface: #160D02;
+  --surface-2: #211405;
+  --surface-3: #2E1C08;
+  --border: #4A3010;
+  --border-2: #6B4716;
+  --text: #FFC14D;
+  --text-2: #E0A23A;
+  --text-3: #C38A2C;
+  --ink: #140C00;
+  --ok: #A8F07A;
+  --warn: #FFE45C;
+  --err: #FF7A66;
+  --ok-s: #16260C;
+  --warn-s: #2C2608;
+  --err-s: #2E100A;
+  --acc: #FFB000;
+  --acc-2: #FFC94D;
+  --acc-on: #FFD27A;
+  --surface-soft: #110A01;
+  --acc-soft: #2E1E06;
+  --knob-off: #7A5A22;
+  --serie-1: #FFB000;
+  --serie-2: #FF7A33;
+  --serie-3: #FFE45C;
+  --serie-4: #A8F07A;
+  --serie-5: #5AC8FF;
+  --serie-6: #E07AFF;
+  --rouage-a: #FFB000;
+  --rouage-b: #FFC94D;
+  --eau-a: #FFB000;
+  --eau-b: #3D2A06;
+  --eau-fond: 0;
+  --eau-surface: 0;
+  --term-bg: #070400;
+  --term-text: #FFD27A;
+  --term-dim: #C08A30;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
+:root[data-accent="aurore-boreale"]:not([data-theme="light"]),
+:root[data-accent="aurore-boreale"][data-theme="light"] {
+  color-scheme: dark;
+  --bg: #06101E;
+  --surface: #0D1B2E;
+  --surface-2: #13263D;
+  --surface-3: #1B3350;
+  --border: #1F3550;
+  --border-2: #2C4A6B;
+  --text: #EAF6FF;
+  --text-2: #A9C4D8;
+  --text-3: #8AA6BD;
+  --ink: #02121A;
+  --ok: #4BE3A0;
+  --warn: #FFC85A;
+  --err: #FF7A8A;
+  --ok-s: #0C2A24;
+  --warn-s: #2A2312;
+  --err-s: #2E1420;
+  --acc: #3CFFB4;
+  --acc-2: #38C6FF;
+  --acc-on: #7DFFD0;
+  --surface-soft: #0A1626;
+  --acc-soft: #0F2A33;
+  --knob-off: #5A7590;
+  --serie-1: #3CFFB4;
+  --serie-2: #38C6FF;
+  --serie-3: #8E6BFF;
+  --serie-4: #FF6FB5;
+  --serie-5: #FFC85A;
+  --serie-6: #7DE3FF;
+  --rouage-a: #38C6FF;
+  --rouage-b: #8E6BFF;
+  --eau-a: #1E6E8A;
+  --eau-b: #0A2238;
+  --eau-fond: .45;
+  --eau-surface: .55;
+  --term-bg: #030A14;
+  --term-text: #D6EAF8;
+  --term-dim: #7894AB;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
+:root[data-accent="aurore-australe"]:not([data-theme="light"]),
+:root[data-accent="aurore-australe"][data-theme="light"] {
+  color-scheme: dark;
+  --bg: #0E0820;
+  --surface: #170F2E;
+  --surface-2: #20163D;
+  --surface-3: #2B1E50;
+  --border: #2E2150;
+  --border-2: #44306E;
+  --text: #F9EEFF;
+  --text-2: #C7B3DB;
+  --text-3: #A890C2;
+  --ink: #1A0620;
+  --ok: #4BE3A0;
+  --warn: #FFC85A;
+  --err: #FF7A9A;
+  --ok-s: #0E2A26;
+  --warn-s: #2C2214;
+  --err-s: #301428;
+  --acc: #FF6FB5;
+  --acc-2: #B48CFF;
+  --acc-on: #FF9CCB;
+  --surface-soft: #120B26;
+  --acc-soft: #2E1236;
+  --knob-off: #6E5A8E;
+  --serie-1: #FF6FB5;
+  --serie-2: #B48CFF;
+  --serie-3: #6FD3FF;
+  --serie-4: #4BE3A0;
+  --serie-5: #FFC85A;
+  --serie-6: #FF9C6F;
+  --rouage-a: #B48CFF;
+  --rouage-b: #FF6FB5;
+  --eau-a: #5A2A7A;
+  --eau-b: #1C0E33;
+  --eau-fond: .45;
+  --eau-surface: .55;
+  --term-bg: #08041A;
+  --term-text: #EADCF8;
+  --term-dim: #9583B3;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
+
+
 /* ========================================================================== */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -369,6 +680,79 @@ svg { display: block; }
    de bon. */
 body.inactive .water, body.inactive .buoy.houle { animation-play-state: paused; }
 body[data-mode="expert"] .water { display: none; }
+
+/* --- Le décor des ambiances (1.7) ----------------------------------------------
+   Chaque thème d'ambiance pose son décor derrière la houle, à l'accueil du
+   mode Simple : ancré en bas sur 760 px comme l'eau, il suit la marée
+   (--maree) quand le champ de bouées défile. L'eau reste — les bouées sont
+   calées sur elle (retardHoule) — mais chaque thème l'habille. L'Expert n'a
+   pas de décor : on y lit des listes et des journaux. */
+.ambiance { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; pointer-events: none; translate: 0 var(--maree, 0px); }
+.ambiance > div { display: none; position: absolute; inset: 0; }
+:root[data-accent="synthwave"] .amb-synthwave,
+:root[data-accent^="aurore"] .amb-aurore { display: block; }
+body[data-mode="expert"] .ambiance { display: none; }
+body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ambiance *, .ambiance *::before { animation: none !important; } }
+
+/* Synthwave : un soleil rayé posé sur l'horizon, des montagnes, une grille de
+   néon qui défile vers soi. La ligne d'eau devient un trait de néon. */
+.sw-ciel { position: absolute; left: 0; right: 0; top: 0; height: 446px;
+  background: linear-gradient(transparent 35%, color-mix(in srgb, var(--acc) 26%, transparent)); }
+.sw-soleil { position: absolute; left: 50%; top: 236px; width: 230px; height: 230px; margin-left: -115px; border-radius: 50%;
+  background: linear-gradient(#FFE14D, #FF2B8A 78%);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 48% no-repeat, repeating-linear-gradient(#000 0 9px, transparent 9px 15px) bottom / 100% 52% no-repeat;
+  mask: linear-gradient(#000 0 0) top / 100% 48% no-repeat, repeating-linear-gradient(#000 0 9px, transparent 9px 15px) bottom / 100% 52% no-repeat;
+  filter: drop-shadow(0 0 28px #FF2B8A); }
+.sw-montagnes { position: absolute; left: 0; width: 100%; top: 396px; height: 52px; }
+.sw-montagnes path { fill: color-mix(in srgb, var(--surface-3) 80%, #000); }
+.sw-sol-cadre { position: absolute; left: 0; right: 0; top: 446px; bottom: 0; perspective: 300px; perspective-origin: 50% 0; overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 85%, #000); }
+.sw-sol { position: absolute; left: -60%; right: -60%; top: 0; height: 250px; transform-origin: 50% 0; transform: rotateX(72deg);
+  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--acc-2) 70%, transparent) 0 2px, transparent 2px 64px),
+                    repeating-linear-gradient(0deg, color-mix(in srgb, var(--acc-2) 70%, transparent) 0 2px, transparent 2px 36px);
+  animation: sw-sol 1.2s linear infinite; }
+@keyframes sw-sol { to { background-position: 0 0, 0 36px; } }
+:root[data-accent="synthwave"] .water.surface path:last-child { stroke: var(--acc-2); filter: drop-shadow(0 0 6px var(--acc-2)); opacity: .9; }
+:root[data-accent="synthwave"] #s1Titre { text-transform: uppercase; font-style: italic; letter-spacing: .02em;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--acc) 75%, transparent); }
+:root[data-accent="synthwave"] .buoy .bi { border-color: var(--acc-2); box-shadow: 0 0 14px color-mix(in srgb, var(--acc-2) 50%, transparent); }
+:root[data-accent="synthwave"] .buoy .blabel { border-color: color-mix(in srgb, var(--acc) 60%, transparent); }
+:root[data-accent="synthwave"] .buoy .bt { text-transform: uppercase; letter-spacing: .05em; font-style: italic; }
+:root[data-accent="synthwave"] .btn.primary { box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent); }
+/* Le libelle du champ passe devant le soleil : un halo du fond le detache. */
+:root[data-accent="synthwave"] .sect-champ { text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg); color: var(--text); }
+
+/* Terminal : tout en chasse fixe (jetons), lignes de balayage et lueur du
+   phosphore sur tout l'écran, une ligne d'eau en pointillés, un curseur. */
+/* La chasse fixe est plus large : un rien de resserrement garde les libelles entiers. */
+:root[data-accent^="terminal"] body { text-shadow: 0 0 3px color-mix(in srgb, currentColor 35%, transparent); letter-spacing: -.02em; }
+:root[data-accent^="terminal"] body::after {
+  content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 3px);
+}
+:root[data-accent^="terminal"] .water.surface path:last-child { stroke-dasharray: 2 8; opacity: .8; }
+:root[data-accent^="terminal"] #s1Titre::before { content: '> '; color: var(--text-2); }
+:root[data-accent^="terminal"] #s1Titre::after { content: '_'; animation: curseur 1s steps(1) infinite; }
+@keyframes curseur { 50% { opacity: 0; } }
+:root[data-accent^="terminal"] .buoy .bi { border-radius: 0; border-style: dashed; box-shadow: none; }
+:root[data-accent^="terminal"] .buoy .blabel, :root[data-accent^="terminal"] .reco, :root[data-accent^="terminal"] .reco .ri { border-radius: 0; }
+@media (prefers-reduced-motion: reduce) { :root[data-accent^="terminal"] #s1Titre::after { animation: none; } }
+
+/* Aurore : des voiles de lumière au-dessus de collines, un lac sombre ; bouées
+   et carte en verre dépoli. */
+.au-voile { position: absolute; height: 150px; border-radius: 50%; filter: blur(28px); opacity: .42; mix-blend-mode: screen;
+  animation: au-ondule 14s ease-in-out infinite alternate; }
+.au-voile.v1 { left: -10%; width: 70%; top: 70px; background: linear-gradient(90deg, transparent, var(--acc), transparent); transform: skewY(-8deg); }
+.au-voile.v2 { left: 30%; width: 75%; top: 30px; background: linear-gradient(90deg, transparent, var(--acc-2), transparent); transform: skewY(6deg); animation-duration: 18s; }
+.au-voile.v3 { left: 8%; width: 60%; top: 170px; background: linear-gradient(90deg, transparent, var(--serie-3), transparent); transform: skewY(-3deg); animation-duration: 22s; opacity: .28; }
+@keyframes au-ondule { from { translate: -40px 0; scale: 1 .8; } to { translate: 40px 12px; scale: 1.1 1.15; } }
+.au-collines { position: absolute; left: 0; width: 100%; top: 330px; height: 140px; }
+.au-collines path { fill: color-mix(in srgb, var(--bg) 55%, #000); }
+.au-collines path + path { fill: color-mix(in srgb, var(--bg) 30%, #000); }
+:root[data-accent^="aurore"] .buoy .bi, :root[data-accent^="aurore"] .buoy .blabel, :root[data-accent^="aurore"] .reco {
+  background: color-mix(in srgb, var(--surface) 62%, transparent); backdrop-filter: blur(10px) saturate(1.2);
+}
 
 /* --- Utilitaires ----------------------------------------------------------- */
 .mono { font-family: var(--mono); font-size: 11.5px; }
@@ -1279,6 +1663,11 @@ body.inactive .rise-crest { animation-play-state: paused; }
 .grp { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .grp .lbl { font-size: 12.5px; font-weight: 650; color: var(--text-2); }
 .grp .seg { flex-shrink: 0; }
+/* La bienvenue (1.7) : l'ambiance se choisit sur la premiere page, en puces
+   comme au reglage 1.8, sur toute la largeur. */
+.grp.large { flex-direction: column; align-items: stretch; }
+.grp.large .accents { justify-content: flex-start; max-width: none; }
+.grp .seg button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* --- Reglages : une page de WinTool (specification §8) ------------------------
    Pas une fenetre posee dessus : la page couvre la scene, sous la barre de
@@ -1742,7 +2131,7 @@ body.inactive .balise::before, body.inactive .balise::after { animation-play-sta
    Un cercle de lumiere aux bords doux sur l'element, le reste dans l'ombre, et
    une bulle. Ce qui est hors du cercle n'est plus cliquable (.guide-capte,
    evide) ; l'element eclaire, si. Voir src/guide.js. */
-.guide { position: fixed; inset: 0; z-index: 40; --guide-voile: color-mix(in srgb, var(--ink) 68%, transparent); }
+.guide { position: fixed; inset: 0; z-index: 60; --guide-voile: color-mix(in srgb, var(--ink) 68%, transparent); }
 .guide-torche, .guide-capte { position: absolute; inset: 0; }
 .guide-torche { animation: guide-entree .3s ease-out; }
 @keyframes guide-entree { from { opacity: 0; } }
@@ -1767,6 +2156,27 @@ body.inactive .balise::before, body.inactive .balise::after { animation-play-sta
 .guide-bulle p { font-size: 13px; color: var(--text-2); line-height: 1.5; margin: 0; }
 .guide-bas { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .guide-bas .btn { white-space: nowrap; }
+.guide-bas .btn.lien { border: none; background: none; color: var(--text-3); padding-left: 6px; padding-right: 6px; }
+.guide-bas .btn.lien:hover { color: var(--text); }
+.guide-points { display: flex; gap: 5px; margin-right: auto; align-self: center; }
+.guide-points i { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); }
+.guide-points i.on { width: 16px; border-radius: 3px; background: var(--acc-2); }
+
+/* --- Le centre d'aide (1.7) ------------------------------------------------------
+   Sous le bouton « ? » : les visites et les guides de src/guide.json, et la
+   bienvenue. */
+.menu-aide {
+  position: fixed; z-index: 55; width: 320px; padding: 8px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border-2); box-shadow: var(--sh-2);
+}
+.menu-aide h3 { font-size: 11px; font-weight: 750; letter-spacing: .8px; text-transform: uppercase; color: var(--text-3); padding: 8px 10px 4px; margin: 0; }
+.menu-aide button { width: 100%; display: flex; gap: 12px; align-items: center; text-align: left; padding: 9px 10px; border-radius: 10px; color: var(--text); }
+.menu-aide button:hover, .menu-aide button:focus-visible { background: var(--surface-2); }
+.menu-aide button .ico { color: var(--acc-on); flex-shrink: 0; }
+.menu-aide button b { display: block; font-size: 13px; font-weight: 650; }
+.menu-aide button small { display: block; font-size: 11.5px; color: var(--text-3); margin-top: 1px; }
+.menu-aide hr { border: none; border-top: 1px solid var(--border); margin: 6px 4px; }
+#btnAide[aria-expanded="true"] { color: var(--acc-on); background: var(--acc-soft); }
 @media (prefers-reduced-motion: reduce) { .guide-torche, .guide-bulle { animation: none; } }
 
 /* --- Echelle de rendu -------------------------------------------------------
@@ -2306,14 +2716,22 @@ body.inactive .onb-illu * { animation-play-state: paused; }
   .an-prog-barre i, .an-pile i, .an-plier .ico, .an-plier-poste .ico, .an-anneau circle, .an-tm-case, .an-gaufre i { transition: none; }
 }
 
-/* --- Reglage 1.8 : la couleur d'accent ------------------------------------ */
-.accents { display: flex; gap: 10px; flex-wrap: wrap; }
+/* --- Reglage 1.8 : l'ambiance ----------------------------------------------
+   Une puce par ambiance : sa pastille, telle qu'elle sera, et son nom — sept
+   ronds sans nom ne se distingueraient plus. */
+.accents { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 460px; }
 .accent-pastille {
-  width: 34px; height: 34px; border-radius: 50%; position: relative;
-  border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border-2);
-  transition: transform .15s ease, box-shadow .15s ease;
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 6px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border-2); color: var(--text-2);
+  font-size: 12.5px; font-weight: 650; white-space: nowrap; transition: border-color .15s, color .15s;
 }
-.accent-pastille:hover { transform: scale(1.08); }
-.accent-pastille[aria-checked="true"] { box-shadow: 0 0 0 2px var(--text); }
-.accent-pastille[data-set-accent="ardente"]    { background: var(--pal-ardente); }
-.accent-pastille[data-set-accent="crepuscule"] { background: var(--pal-crepuscule); }
+.accent-pastille::before { content: ''; width: 24px; height: 24px; border-radius: 50%; background: var(--pal); flex-shrink: 0; }
+.accent-pastille:hover { border-color: var(--text-3); color: var(--text); }
+.accent-pastille[aria-checked="true"] { border-color: var(--acc); color: var(--text); box-shadow: 0 0 0 1px var(--acc); }
+.accent-pastille[data-set-accent="ardente"]         { --pal: linear-gradient(135deg, #FEC923, #FD5632); }
+.accent-pastille[data-set-accent="crepuscule"]      { --pal: linear-gradient(135deg, #FF7A45, #DC1178); }
+.accent-pastille[data-set-accent="synthwave"]       { --pal: linear-gradient(135deg, #FF2BD6, #00E5FF); }
+.accent-pastille[data-set-accent="terminal-vert"]   { --pal: radial-gradient(circle, #6CFF94 0 35%, #020A04 75%); }
+.accent-pastille[data-set-accent="terminal-ambre"]  { --pal: radial-gradient(circle, #FFB000 0 35%, #0C0700 75%); }
+.accent-pastille[data-set-accent="aurore-boreale"]  { --pal: linear-gradient(135deg, #3CFFB4, #38C6FF 55%, #06101E); }
+.accent-pastille[data-set-accent="aurore-australe"] { --pal: linear-gradient(135deg, #FF6FB5, #B48CFF 55%, #0E0820); }

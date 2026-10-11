@@ -1,0 +1,131 @@
+{
+  "format": 1,
+  "visites": [
+    {
+      "id": "accueil",
+      "ecran": "simple",
+      "titre": { "fr": "Visite de l’accueil", "en": "Tour of the home screen" },
+      "resume": { "fr": "6 étapes, une minute", "en": "6 steps, one minute" },
+      "etapes": [
+        {
+          "cible": "mode",
+          "titre": { "fr": "Deux façons de travailler", "en": "Two ways to work" },
+          "texte": {
+            "fr": "Simple vous guide pas à pas, une décision à la fois. Expert montre tout : chaque action, ses réglages, le journal. Ce que vous réglez en Expert, le mode Simple l’utilise.",
+            "en": "Simple guides you step by step, one decision at a time. Expert shows everything: every action, its settings, the log. What you set up in Expert, Simple mode uses."
+          }
+        },
+        {
+          "cible": "recommande",
+          "titre": { "fr": "Le plus simple", "en": "The easiest" },
+          "texte": {
+            "fr": "« Entretien complet » s’occupe de tout. C’est le choix recommandé.",
+            "en": "“Full maintenance” takes care of everything. It is the recommended choice."
+          }
+        },
+        {
+          "cible": "bouees",
+          "titre": { "fr": "Ou un domaine précis", "en": "Or one area" },
+          "texte": {
+            "fr": "Chaque bouée regroupe des actions : faire le ménage, accélérer le PC, protéger votre vie privée… Rien n’est lancé tout de suite : vous verrez d’abord ce qui va être fait.",
+            "en": "Each buoy groups actions: clean up, speed up the PC, protect your privacy… Nothing starts right away: you will first see what is going to be done."
+          }
+        },
+        {
+          "cible": "simulation",
+          "titre": { "fr": "Essayer sans risque", "en": "Try without risk" },
+          "texte": {
+            "fr": "La simulation montre ce qui serait fait, sans rien modifier sur votre PC.",
+            "en": "Simulation shows what would be done, without changing anything on your PC."
+          }
+        },
+        {
+          "cible": "journal",
+          "titre": { "fr": "Le journal", "en": "The log" },
+          "texte": {
+            "fr": "Tout ce que font les actions s’écrit ici. Il s’ouvre à tout moment, même quand rien n’a encore été lancé.",
+            "en": "Everything the actions do is written here. It opens at any time, even when nothing has run yet."
+          }
+        },
+        {
+          "cible": "aide",
+          "titre": { "fr": "Besoin d’aide ?", "en": "Need help?" },
+          "texte": {
+            "fr": "Ce bouton retrouve cette visite, celle du mode Expert, et la bienvenue.",
+            "en": "This button brings back this tour, the Expert mode tour, and the welcome pages."
+          }
+        }
+      ]
+    },
+    {
+      "id": "expert",
+      "ecran": "expert",
+      "titre": { "fr": "Visite du mode Expert", "en": "Tour of Expert mode" },
+      "resume": { "fr": "5 étapes, une minute", "en": "5 steps, one minute" },
+      "etapes": [
+        {
+          "cible": "onglets",
+          "titre": { "fr": "Scripts et lots", "en": "Scripts and batches" },
+          "texte": {
+            "fr": "Scripts : toutes les actions, rangées par catégorie. Lots : les ensembles que lance le mode Simple — c’est ici qu’on les compose.",
+            "en": "Scripts: every action, sorted by category. Batches: the sets that Simple mode runs — this is where you build them."
+          }
+        },
+        {
+          "cible": "recherche",
+          "titre": { "fr": "Trouver une action", "en": "Find an action" },
+          "texte": {
+            "fr": "Tapez quelques lettres : la liste se filtre.",
+            "en": "Type a few letters: the list filters itself."
+          }
+        },
+        {
+          "cible": "fiche",
+          "titre": { "fr": "La fiche", "en": "The details" },
+          "texte": {
+            "fr": "Ce que fait l’action, ses réglages, son analyse. « Exécuter » la lance ; « Vérifier » la relit sans rien modifier. Les réglages s’enregistrent tout seuls.",
+            "en": "What the action does, its settings, its analysis. “Run” starts it; “Check” reads it without changing anything. Settings save themselves."
+          }
+        },
+        {
+          "cible": "journal-apercu",
+          "titre": { "fr": "Le journal, en bref", "en": "The log, at a glance" },
+          "texte": {
+            "fr": "Les dernières lignes de l’action en cours. Un clic l’ouvre en grand.",
+            "en": "The latest lines of the running action. One click opens it full size."
+          }
+        },
+        {
+          "cible": "mode",
+          "titre": { "fr": "Retour au mode Simple", "en": "Back to Simple mode" },
+          "texte": {
+            "fr": "Ce que vous avez réglé ici, le mode Simple l’utilisera.",
+            "en": "What you set up here, Simple mode will use."
+          }
+        }
+      ]
+    }
+  ],
+  "alertes": [
+    {
+      "id": "droits",
+      "cible": "droits",
+      "titre_aide": { "fr": "Les droits administrateur", "en": "Administrator rights" },
+      "resume": { "fr": "Pourquoi, et comment les donner", "en": "Why, and how to grant them" },
+      "encart_action": {
+        "fr": "Cette action a besoin des droits administrateur. WinTool tourne avec des droits limités : elle risque d’échouer.",
+        "en": "This action needs administrator rights. WinTool is running with limited rights: it may fail."
+      },
+      "encart_lot": {
+        "fr": "Certaines actions ont besoin des droits administrateur. WinTool tourne avec des droits limités : elles risquent d’échouer.",
+        "en": "Some actions need administrator rights. WinTool is running with limited rights: they may fail."
+      },
+      "kick": { "fr": "Droits administrateur", "en": "Administrator rights" },
+      "titre": { "fr": "Relancez WinTool en administrateur", "en": "Restart WinTool as administrator" },
+      "texte": {
+        "fr": "Ici, « Droits limités » : WinTool n’a pas les droits administrateur. Relancez-le avec — Windows vous le demandera une fois, et toutes les actions en hériteront.",
+        "en": "Here, “Limited rights”: WinTool does not have administrator rights. Restart it with them — Windows asks once, and every action inherits them."
+      }
+    }
+  ]
+}

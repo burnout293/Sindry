@@ -49,11 +49,12 @@ jobs:
       - name: Verifier la syntaxe du frontend
         shell: bash
         run: |
-          for f in src/main.js src/analyse.js src/guide.js src/i18n.js tools/bench/fixtures.js tools/sync-icons.mjs tools/verifier-presentation.mjs; do
+          for f in src/main.js src/analyse.js src/guide.js src/i18n.js tools/bench/fixtures.js tools/sync-icons.mjs tools/verifier-presentation.mjs tools/verifier-guide.mjs tools/archiver-maquettes.mjs; do
             node --check "$f"
           done
           node tools/verifier-traductions.mjs
           node tools/verifier-presentation.mjs
+          node tools/verifier-guide.mjs
 
       # Les scripts officiels ne vivent plus ici : le depot WinTool-Catalogue les
       # valide a chaque poussee, avec ce meme validateur.

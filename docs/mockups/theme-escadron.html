@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thème Escadron (Nouvelle République)</title>
+<!--
+  Maquette 19. Un thème Star Wars, style Nouvelle République, d'après les
+  interfaces de jeux : menus épurés de Jedi: Fallen Order (texte fin et
+  espacé, coins en équerre autour de la sélection, carte holographique),
+  rouge-orangé des combinaisons de pilote, blanc des hangars. Rien n'est
+  repris de Lucasfilm : ni nom, ni emblème, ni police, ni alphabet.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+.page-h { max-width: 1240px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 680px; line-height: 1.5; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FFB067, #FF6A1A); }
+.bloc { max-width: 1240px; margin: 0 auto 26px; }
+.bloc > h2 { font-size: 19px; letter-spacing: -.3px; margin-bottom: 4px; }
+.bloc > p { color: #B4AECA; font-size: 13.5px; margin-bottom: 12px; max-width: 920px; line-height: 1.55; }
+.cadre { width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid #26232F; }
+.notes { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.notes article { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 14px 18px; }
+.notes h3 { font-size: 14px; margin-bottom: 6px; }
+.notes ul { padding-left: 18px; color: #C9C3D8; font-size: 13px; line-height: 1.6; }
+.notes .avert { border-color: #4A3814; background: #18130A; }
+.notes .avert ul { color: #E8C989; }
+
+/* ==========================================================================
+   Le thème Escadron. Deux variantes : Patrouille (sombre), Hangar (clair).
+   ========================================================================== */
+.ecran { position: relative; width: 960px; height: 600px; overflow: hidden; background: var(--fond); color: var(--text); font-family: 'Inter', 'Segoe UI', sans-serif; }
+.ecran[data-v="patrouille"] {
+  --fond: radial-gradient(ellipse at 50% 120%, #10233A 0%, #0A111C 45%, #05080E 100%);
+  --panneau: rgba(10, 18, 30, .78); --panneau-2: rgba(20, 34, 52, .9); --trait: rgba(150, 195, 235, .24); --trait-fort: rgba(190, 225, 255, .55);
+  --text: #E8EEF5; --text-2: #97A8BC; --text-3: #6E7F93;
+  --orange: #FF7A1F; --orange-texte: #FF9A4D; --sur-orange: #1A0A00; --holo: #5FE3FF; --holo-doux: rgba(95, 227, 255, .16);
+  --etoile: rgba(220, 235, 255, .8); --ok: #4BE3A0; --warn: #FFC24D;
+}
+.ecran[data-v="hangar"] {
+  --fond: linear-gradient(#F3F5F7 0%, #E6EAEE 70%, #DCE2E8 100%);
+  --panneau: rgba(255, 255, 255, .9); --panneau-2: #FFFFFF; --trait: rgba(30, 50, 75, .18); --trait-fort: rgba(30, 50, 75, .45);
+  --text: #111A26; --text-2: #4B5A6B; --text-3: #6B7888;
+  --orange: #F06A12; --orange-texte: #B4500A; --sur-orange: #1A0A00; --holo: #1C7FD0; --holo-doux: rgba(28, 127, 208, .12);
+  --etoile: rgba(30, 60, 100, .25); --ok: #0E7550; --warn: #8F5D0C;
+}
+/* Les coins coupés : la signature des panneaux. */
+.chanfrein { clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+/* Les équerres autour de ce qui est sélectionné, à la façon des menus de Fallen Order. */
+.equerres { position: relative; }
+.equerres::before, .equerres::after { content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--orange); pointer-events: none; }
+.equerres::before { top: -6px; left: -6px; border-right: none; border-bottom: none; }
+.equerres::after { bottom: -6px; right: -6px; border-left: none; border-top: none; }
+.cap { text-transform: uppercase; letter-spacing: .18em; font-size: 10.5px; font-weight: 650; color: var(--text-3); }
+
+.decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.etoiles { position: absolute; top: 0; left: 0; width: 2px; height: 2px; border-radius: 50%; animation: derive 120s linear infinite; }
+@keyframes derive { to { transform: translateX(-960px); } }
+.trainee { position: absolute; height: 1px; background: linear-gradient(90deg, transparent, var(--holo), transparent); opacity: 0; animation: trainee 7s ease-in infinite; }
+@keyframes trainee { 0% { transform: translateX(-200px); opacity: 0; } 8% { opacity: .7; } 22% { transform: translateX(1100px); opacity: 0; } 100% { opacity: 0; transform: translateX(1100px); } }
+/* La table holographique : une planète en fil de fer, posée sur l'anneau d'un projecteur. */
+.holo { position: absolute; left: 50%; top: 300px; width: 560px; height: 560px; margin-left: -280px; }
+.holo svg { width: 100%; height: 100%; overflow: visible; }
+.holo .contour { fill: var(--holo-doux); stroke: var(--holo); stroke-width: 1.4; opacity: .9; }
+.holo .lat { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .45; }
+.holo .mer { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .55; transform-box: fill-box; transform-origin: center; animation: tourne 14s linear infinite; }
+@keyframes tourne { 0% { transform: scaleX(1); } 25% { transform: scaleX(0); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+.holo .orbite { fill: none; stroke: var(--orange); stroke-width: 1; stroke-dasharray: 3 6; opacity: .7; }
+.balayage-holo { position: absolute; inset: 7%; border-radius: 50%; background: repeating-linear-gradient(0deg, transparent 0 3px, color-mix(in srgb, var(--holo) 7%, transparent) 3px 4px); }
+.anneau-proj { position: absolute; left: 50%; bottom: 18px; width: 760px; height: 70px; margin-left: -380px; border-radius: 50%; border: 1.5px solid var(--holo); opacity: .5;
+  box-shadow: 0 0 30px var(--holo-doux), inset 0 0 30px var(--holo-doux); }
+
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--trait); background: color-mix(in srgb, var(--panneau) 60%, transparent); }
+.tb img { width: 24px; height: 24px; }
+.tb .nom { font-weight: 700; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; }
+.tb .etapes { display: flex; gap: 4px; }
+.tb .etapes i { width: 22px; height: 3px; background: var(--trait); }
+.tb .etapes i.on { background: var(--orange); }
+.tb .droite { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+.onglets-tb { display: flex; gap: 2px; align-items: center; }
+.onglets-tb .touche { font-size: 10px; font-weight: 700; color: var(--text-3); border: 1px solid var(--trait); padding: 1px 5px; border-radius: 3px; }
+.onglets-tb span.o { padding: 6px 12px; font-size: 11.5px; font-weight: 650; letter-spacing: .2em; text-transform: uppercase; color: var(--text-2); border-bottom: 2px solid transparent; }
+.onglets-tb span.o.on { color: var(--text); border-bottom-color: var(--orange); }
+.etat { display: flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ok); }
+.etat i { width: 7px; height: 7px; background: var(--ok); transform: rotate(45deg); }
+.ib { width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--trait); }
+.ib svg.i { width: 15px; height: 15px; }
+
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 30px; }
+.contenu .cap { color: var(--orange-texte); }
+.contenu h1 { font-size: 30px; font-weight: 300; letter-spacing: .14em; text-transform: uppercase; margin-top: 8px; }
+.contenu > p { color: var(--text-2); font-size: 13.5px; margin-top: 8px; }
+.reco { margin: 22px auto 0; width: 430px; display: flex; align-items: center; gap: 16px; text-align: left; padding: 14px 18px; background: var(--panneau); border: 1px solid var(--trait-fort); backdrop-filter: blur(6px); }
+.reco .ri { width: 46px; height: 46px; display: grid; place-items: center; color: var(--sur-orange); background: var(--orange); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.reco b { font-size: 15px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.reco b em { font-style: normal; font-size: 9.5px; letter-spacing: .16em; padding: 3px 7px; color: var(--sur-orange); background: var(--orange); }
+.reco span { color: var(--text-2); font-size: 12.5px; }
+.sect { margin-top: 20px; }
+
+/* Les bouées deviennent des balises de carte : un losange, une étiquette, un fil vers la planète. */
+.marqueur { position: absolute; z-index: 2; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; animation: flotte 6s ease-in-out infinite alternate; }
+@keyframes flotte { from { translate: 0 -4px; } to { translate: 0 4px; } }
+.losange { width: 40px; height: 40px; transform: rotate(45deg); display: grid; place-items: center; border: 1.5px solid var(--holo); background: var(--panneau); box-shadow: 0 0 14px var(--holo-doux); }
+.losange svg { transform: rotate(-45deg); color: var(--text); width: 17px; height: 17px; }
+.marqueur .etiq { margin-top: 12px; padding: 5px 10px 5px 12px; background: var(--panneau); border-left: 2px solid var(--holo); text-align: left; white-space: nowrap; }
+.marqueur .etiq b { display: block; font-size: 11px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
+.marqueur .etiq small { font-size: 10.5px; color: var(--text-2); letter-spacing: .06em; }
+.marqueur .fil { width: 1px; height: var(--fil, 40px); background: repeating-linear-gradient(var(--holo) 0 3px, transparent 3px 7px); opacity: .6; }
+
+.barre { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 66px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px;
+  border-top: 1px solid var(--trait); background: color-mix(in srgb, var(--panneau) 85%, transparent); }
+.barre .choisi { font-size: 12px; color: var(--text-2); letter-spacing: .06em; }
+.barre .choisi b { color: var(--text); text-transform: uppercase; letter-spacing: .12em; font-weight: 650; }
+.invites { display: flex; gap: 18px; align-items: center; }
+.invite { display: inline-flex; gap: 8px; align-items: center; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); font-weight: 650; }
+.touche2 { min-width: 24px; height: 22px; padding: 0 6px; display: grid; place-items: center; border: 1px solid var(--trait-fort); font-size: 11px; letter-spacing: 0; color: var(--text); }
+.primaire { display: inline-flex; gap: 10px; align-items: center; padding: 12px 22px; font-size: 12.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--sur-orange); background: var(--orange); box-shadow: 0 0 22px color-mix(in srgb, var(--orange) 45%, transparent); }
+.primaire .touche2 { border-color: color-mix(in srgb, var(--sur-orange) 45%, transparent); color: var(--sur-orange); }
+
+/* --- L'Expert --------------------------------------------------------------- */
+.ecran.expert { height: 470px; }
+.colonnes { position: relative; z-index: 2; display: grid; grid-template-columns: 250px 1fr; height: calc(100% - 54px); }
+.liste { border-right: 1px solid var(--trait); padding: 14px 0; background: color-mix(in srgb, var(--panneau) 70%, transparent); }
+.liste .rub { padding: 12px 18px 6px; }
+.liste .it { padding: 9px 18px; font-size: 12.5px; color: var(--text-2); display: flex; gap: 10px; letter-spacing: .02em; }
+.liste .it small { color: var(--text-3); font-family: Consolas, monospace; }
+.liste .it.on { color: var(--text); background: linear-gradient(90deg, color-mix(in srgb, var(--orange) 18%, transparent), transparent); box-shadow: inset 2px 0 0 var(--orange); }
+.fiche { padding: 22px 26px; display: flex; flex-direction: column; gap: 16px; }
+.fiche .tete { display: flex; gap: 16px; align-items: flex-start; }
+.fiche h3 { font-size: 19px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; }
+.fiche .tete p { color: var(--text-2); font-size: 13px; margin-top: 4px; }
+.fiche .prov { font-size: 10px; letter-spacing: .16em; color: var(--ok); margin-left: 8px; vertical-align: 4px; }
+.fiche .act { margin-left: auto; display: flex; gap: 10px; }
+.secondaire { padding: 10px 16px; font-size: 11.5px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; border: 1px solid var(--trait-fort); color: var(--text); }
+.lectures { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--trait); }
+.lectures div { padding: 10px 14px; border-right: 1px solid var(--trait); }
+.lectures div:last-child { border-right: none; }
+.lectures b { display: block; font-size: 13px; font-weight: 600; margin-top: 4px; letter-spacing: .04em; }
+.lectures .att b { color: var(--warn); }
+.jauge3 { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; } .jauge3 i { width: 10px; height: 4px; background: var(--trait); } .jauge3 i.on { background: var(--warn); }
+.carte-cfg { background: var(--panneau); border: 1px solid var(--trait); padding: 4px 18px; }
+.carte-cfg .ln { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--trait); font-size: 13px; }
+.carte-cfg .ln:last-child { border-bottom: none; }
+.carte-cfg small { display: block; color: var(--text-3); font-size: 11.5px; margin-top: 2px; }
+.bascule { width: 40px; height: 18px; border: 1px solid var(--trait-fort); position: relative; }
+.bascule::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 12px; background: var(--text-3); }
+.bascule.on { border-color: var(--orange); } .bascule.on::after { left: auto; right: 2px; background: var(--orange); }
+
+/* --- Planche de composants -------------------------------------------------- */
+.planche { display: flex; flex-wrap: wrap; gap: 26px; align-items: center; padding: 28px; }
+.planche .ech { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.planche .ech > .cap { margin-bottom: 4px; }
+
+body.calme .ecran *, body.calme .ecran *::before, body.calme .ecran *::after { animation: none !important; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Escadron — un thème Star Wars, style Nouvelle République</h1>
+    <p>Menus épurés de Jedi: Fallen Order : texte fin et très espacé, équerres autour de la sélection, carte holographique. S'y ajoutent l'orange des combinaisons de pilote, le blanc des hangars et les invites de touche des jeux.</p>
+  </div>
+  <div class="choix">
+    <div class="pseg" id="choixV"><button data-v="patrouille" aria-pressed="true">Patrouille (sombre)</button><button data-v="hangar" aria-pressed="false">Hangar (clair)</button></div>
+    <div class="pseg" id="choixCalme"><button data-c="0" aria-pressed="true">Animé</button><button data-c="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+
+<section class="bloc">
+  <h2>Accueil du mode Simple</h2>
+  <p>La houle devient une table holographique : une planète en fil de fer qui tourne, posée sur l'anneau du projecteur. Les bouées deviennent des balises de carte, reliées à la planète par un fil.</p>
+  <div class="cadre" data-zoom="600"><div class="ecran" data-v="patrouille">
+    <div class="decor">
+      <div class="etoiles" id="et1"></div>
+      <div class="trainee" style="top:90px;width:180px;animation-delay:1s"></div><div class="trainee" style="top:150px;width:120px;animation-delay:4.2s"></div>
+      <div class="holo"><svg viewBox="-140 -140 280 280">
+        <circle class="contour" r="130"/>
+        <ellipse class="lat" rx="130" ry="30"/><ellipse class="lat" rx="113" ry="26" cy="-65"/><ellipse class="lat" rx="113" ry="26" cy="65"/><ellipse class="lat" rx="65" ry="15" cy="-112"/>
+        <ellipse class="mer" rx="130" ry="130"/><ellipse class="mer" rx="130" ry="130" style="animation-delay:-3.5s"/><ellipse class="mer" rx="130" ry="130" style="animation-delay:-7s"/><ellipse class="mer" rx="130" ry="130" style="animation-delay:-10.5s"/>
+        <ellipse class="orbite" rx="180" ry="40" transform="rotate(-12)"/>
+      </svg><div class="balayage-holo"></div></div>
+      <div class="anneau-proj"></div>
+    </div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span><span class="etapes"><i class="on"></i><i></i><i></i><i></i></span>
+      <div class="droite">
+        <div class="onglets-tb"><span class="touche">Q</span><span class="o on">Simple</span><span class="o">Expert</span><span class="touche">E</span></div>
+        <span class="etat"><i></i>Administrateur</span>
+        <span class="ib"><svg class="i"><use href="#terminal"/></svg></span><span class="ib"><svg class="i"><use href="#settings"/></svg></span>
+      </div>
+    </div>
+    <div class="contenu">
+      <div class="cap">Choisir · étape 1 sur 4</div>
+      <h1>Que souhaitez-vous faire ?</h1>
+      <p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco chanfrein-non equerres"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span>
+        <div><b>Entretien complet <em>Recommandé</em></b><span>On s'occupe de tout — environ 38 minutes</span></div></div>
+      <div class="cap sect">Ou choisissez un domaine précis</div>
+    </div>
+    <div id="marqueurs"></div>
+    <div class="barre"><span class="choisi">Choisi : <b>Entretien complet</b> · 38 min</span>
+      <div class="invites"><span class="invite"><span class="touche2">Échap</span>Retour</span><span class="primaire"><span class="touche2">↵</span>Continuer</span></div></div>
+  </div></div>
+</section>
+
+<section class="bloc">
+  <h2>Mode Expert : une fiche</h2>
+  <p>Même grammaire : capitales espacées, filets fins, sélection marquée d'un trait orange. Les faits de la fiche deviennent des « relevés » d'instrument.</p>
+  <div class="cadre" data-zoom="470"><div class="ecran expert" data-v="patrouille">
+    <div class="decor"><div class="etoiles" id="et2"></div></div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+      <div class="droite"><div class="onglets-tb"><span class="touche">Q</span><span class="o">Simple</span><span class="o on">Expert</span><span class="touche">E</span></div>
+        <span class="etat"><i></i>Administrateur</span><span class="ib"><svg class="i"><use href="#terminal"/></svg></span><span class="ib"><svg class="i"><use href="#settings"/></svg></span></div></div>
+    <div class="colonnes">
+      <div class="liste">
+        <div class="cap rub">Vie privée</div>
+        <div class="it on"><small>106</small>Réduire la télémétrie</div><div class="it"><small>107</small>Désactiver le suivi publicitaire</div><div class="it"><small>115</small>Protéger ma vie privée</div>
+        <div class="cap rub">Nettoyage</div>
+        <div class="it"><small>102</small>Nettoyer les fichiers temporaires</div><div class="it"><small>103</small>Vider les caches</div>
+      </div>
+      <div class="fiche">
+        <div class="tete"><div class="reco" style="width:auto;margin:0;padding:0;border:none;background:none;backdrop-filter:none"><span class="ri"><svg class="i"><use href="#eye-off"/></svg></span></div>
+          <div><h3>Réduire la télémétrie<span class="prov">◆ Officiel</span></h3><p>Limite ce que Windows envoie à Microsoft.</p></div>
+          <div class="act"><span class="secondaire">Vérifier</span><span class="primaire"><span class="touche2">↵</span>Exécuter</span></div></div>
+        <div class="lectures">
+          <div class="att"><span class="cap">Risque</span><b><span class="jauge3"><i class="on"></i><i class="on"></i><i></i></span>Moyen</b></div>
+          <div><span class="cap">Durée</span><b>Quelques secondes</b></div>
+          <div><span class="cap">Retour</span><b>Réversible</b></div>
+          <div><span class="cap">Dernier passage</span><b>18 septembre</b></div>
+        </div>
+        <div class="carte-cfg">
+          <div class="ln"><div>Désactiver le service de télémétrie<small>DiagTrack, arrêté et désactivé</small></div><span class="bascule on"></span></div>
+          <div class="ln"><div>Bloquer les rapports d'erreurs<small>Windows Error Reporting</small></div><span class="bascule on"></span></div>
+          <div class="ln"><div>Niveau de diagnostic minimal<small>Stratégie AllowTelemetry = 0</small></div><span class="bascule"></span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="bloc">
+  <h2>Planche de composants</h2>
+  <div class="cadre" data-zoom="230"><div class="ecran" data-v="patrouille" style="height:230px">
+    <div class="planche">
+      <div class="ech"><span class="cap">Bouton principal</span><span class="primaire"><span class="touche2">↵</span>Continuer</span></div>
+      <div class="ech"><span class="cap">Secondaire</span><span class="secondaire">Vérifier</span></div>
+      <div class="ech"><span class="cap">Invite de touche</span><span class="invite"><span class="touche2">Échap</span>Retour</span></div>
+      <div class="ech"><span class="cap">Balise</span><div class="marqueur" style="position:relative;transform:none;animation:none"><span class="losange"><svg class="i"><use href="#zap"/></svg></span><span class="etiq"><b>Performance</b><small>2 min</small></span></div></div>
+      <div class="ech"><span class="cap">Bascule</span><span class="bascule on"></span><span class="bascule"></span></div>
+      <div class="ech"><span class="cap">Sélection</span><span class="secondaire equerres">Entretien complet</span></div>
+    </div>
+  </div></div>
+</section>
+
+<section class="notes">
+  <article><h3>Ce que j'ai repris des jeux</h3><ul>
+    <li><b>Fallen Order</b> : texte fin et très espacé en capitales, peu de cadres, des équerres autour de la sélection, la carte holographique en fil de fer.</li>
+    <li><b>Les jeux en général</b> : invites de touche (↵ Continuer, Échap Retour, Q / E pour changer de mode) — elles fonctionneraient vraiment au clavier.</li>
+    <li><b>Nouvelle République</b> : orange des pilotes, blanc des hangars (variante Hangar), panneaux aux coins coupés.</li>
+  </ul></article>
+  <article><h3>Ce qu'il me manque</h3><ul>
+    <li><b>Galactic Racer</b> : je ne connais pas son interface, et je n'ai rien trouvé de fiable en ligne. Quelques captures de ses menus et de son affichage de course me permettraient une seconde version — vitesse, lignes de fuite, compteurs.</li>
+    <li>Le fil des balises est fixe ; il pourrait suivre le relief de la planète.</li>
+  </ul></article>
+  <article class="avert"><h3>Droits</h3><ul>
+    <li>Rien de Lucasfilm n'est repris : ni « Star Wars », ni l'emblème de la Nouvelle République, ni police, ni alphabet aurebesh, ni son.</li>
+    <li>D'où le nom <b>Escadron</b>, et « Patrouille » / « Hangar » pour les variantes.</li>
+  </ul></article>
+</section>
+
+<script>
+function etoiles(n, g) { let s = g; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  return Array.from({ length: n }, () => `${Math.round(r() * 1920)}px ${Math.round(r() * 600)}px 0 ${r() < .12 ? 1 : 0}px var(--etoile)`).join(','); }
+document.getElementById('et1').style.boxShadow = etoiles(160, 11);
+document.getElementById('et2').style.boxShadow = etoiles(90, 5);
+const M = [
+  { x: 15, y: 330, ic: 'trash', t: 'Faire le ménage', d: '9 min', fil: 34 }, { x: 37, y: 300, ic: 'zap', t: 'Performance', d: '2 min', fil: 50 },
+  { x: 63, y: 300, ic: 'shield', t: 'Vie privée', d: '4 min', fil: 50 }, { x: 85, y: 330, ic: 'app', t: 'Applications', d: '5 min', fil: 34 },
+  { x: 27, y: 420, ic: 'pulse', t: 'Santé', d: '1 min', fil: 18 }, { x: 73, y: 420, ic: 'wrench', t: 'Outillage', d: '9 min', fil: 18 },
+];
+document.getElementById('marqueurs').innerHTML = M.map((m, i) => `<div class="marqueur" style="left:${m.x}%;top:${m.y}px;--fil:${m.fil}px;animation-delay:-${i}s">
+  <span class="losange"><svg class="i"><use href="#${m.ic}"/></svg></span><span class="etiq"><b>${m.t}</b><small>${m.d}</small></span><span class="fil"></span></div>`).join('');
+function ajuster() { document.querySelectorAll('.cadre').forEach((c) => { const e = c.firstElementChild, z = c.clientWidth / 960; e.style.zoom = z; c.style.height = `${Number(c.dataset.zoom) * z}px`; }); }
+addEventListener('resize', ajuster); ajuster();
+document.addEventListener('click', (ev) => {
+  const v = ev.target.closest('[data-v]:not(.ecran)');
+  if (v) { document.querySelectorAll('.ecran').forEach((e) => { e.dataset.v = v.dataset.v; }); document.querySelectorAll('#choixV button').forEach((b) => b.setAttribute('aria-pressed', String(b === v))); return; }
+  const c = ev.target.closest('[data-c]');
+  if (c) { document.body.classList.toggle('calme', c.dataset.c === '1'); document.querySelectorAll('#choixCalme button').forEach((b) => b.setAttribute('aria-pressed', String(b === c))); }
+});
+</script>
+</body>
+</html>

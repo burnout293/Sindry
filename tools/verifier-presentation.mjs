@@ -60,12 +60,22 @@ const ids = new Set();
   texte(`${ou}.titre`, page.titre);
 
   if (page.type === 'bienvenue') {
-    // La page qui fait choisir la langue et l'apparence : la premiere ou rien.
+    // La page qui fait choisir la langue, l'ambiance, l'apparence et la
+    // taille : la premiere ou rien.
     if (i !== 0) err(ou, 'une page « bienvenue » ne peut etre que la premiere');
     texte(`${ou}.texte`, page.texte);
     return;
   }
-  if (page.type !== undefined) err(ou, `type « ${page.type} » inconnu (seul « bienvenue » existe)`);
+  if (page.type === 'pret') {
+    // La page qui propose la visite de l'accueil (1.7) : la derniere ou rien.
+    if (i !== doc.pages.length - 1) err(ou, 'une page « pret » ne peut etre que la derniere');
+    texte(`${ou}.texte`, page.texte);
+    if (page.icone !== undefined && !iconeConnue(page.icone)) {
+      err(ou, `« icone » : « ${page.icone} » n'est pas une icone Lucide (https://lucide.dev/icons)`);
+    }
+    return;
+  }
+  if (page.type !== undefined) err(ou, `type « ${page.type} » inconnu (attendu : « bienvenue » ou « pret »)`);
 
   const illustration = page.illustration ?? 'aucune';
   if (!ILLUSTRATIONS.includes(illustration)) {

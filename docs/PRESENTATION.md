@@ -1,9 +1,13 @@
-# Modifier la présentation de WinTool
+# Modifier la présentation et les guides de WinTool
 
 La présentation — les pages qui s'ouvrent au premier démarrage, et que l'on revoit depuis
-**Réglages → Général → Présentation de WinTool** — lit tout son contenu dans
+**Réglages → Général → Présentation de WinTool** ou le bouton **?** — lit tout son contenu dans
 [`src/presentation.json`](../src/presentation.json). Titres, phrases, icônes, illustrations,
 ordre et nombre de pages : tout se change dans ce fichier, sans toucher au code.
+
+Les **guides** (1.7) — les visites à la lampe torche et les alertes comme celle des droits
+administrateur — lisent le leur dans [`src/guide.json`](../src/guide.json) : voir
+« Les guides », plus bas.
 
 ## Le circuit
 
@@ -41,13 +45,30 @@ Les apostrophes typographiques (’) et les guillemets français (« ») passent
 
 ### La page de bienvenue
 
-Facultative ; si elle existe, c'est la première. C'est elle qui fait choisir la langue et
-l'apparence. Relancée depuis les Réglages, la présentation commence après elle.
+Facultative ; si elle existe, c'est la première. C'est elle qui fait régler WinTool à son
+goût : la langue, l'ambiance, clair ou sombre, la taille (1.7). Relancée depuis les Réglages,
+la présentation commence après elle.
 
 ```json
 {
   "id": "bienvenue",
   "type": "bienvenue",
+  "titre": { "fr": "…", "en": "…" },
+  "texte": { "fr": "…", "en": "…" }
+}
+```
+
+### La page « prêt »
+
+Facultative ; si elle existe, c'est la dernière (1.7). Elle propose la visite de l'accueil
+(`accueil` dans `src/guide.json`) : « Me faire visiter » la lance, « Je découvre seul » ferme
+la présentation. `icone` : une icône Lucide, `map` par défaut.
+
+```json
+{
+  "id": "pret",
+  "type": "pret",
+  "icone": "map",
   "titre": { "fr": "…", "en": "…" },
   "texte": { "fr": "…", "en": "…" }
 }
@@ -106,3 +127,44 @@ Les boutons de navigation (« Suivant », « Retour », « Passer la présentati
 animées. Les boutons sont dans `src/i18n.js` (clés `onb.*`) ; une nouvelle illustration
 animée demande du code (`illustrationVisite` dans `src/main.js`, styles dans
 `src/styles.css`).
+
+## Les guides
+
+[`src/guide.json`](../src/guide.json) contient deux listes. Même circuit que la présentation :
+modifier, puis `node tools/verifier-guide.mjs` (la CI le lance aussi), puis regarder dans le
+banc d'essai — bouton **?** de la barre de titre.
+
+```json
+{
+  "format": 1,
+  "visites": [
+    {
+      "id": "accueil",
+      "ecran": "simple",
+      "titre": { "fr": "Visite de l’accueil", "en": "…" },
+      "resume": { "fr": "6 étapes, une minute", "en": "…" },
+      "etapes": [
+        { "cible": "mode", "titre": { "fr": "…", "en": "…" }, "texte": { "fr": "…", "en": "…" } }
+      ]
+    }
+  ],
+  "alertes": [ { "id": "droits", "cible": "droits", "…": "…" } ]
+}
+```
+
+- **Une visite** apparaît dans le menu **?**, dans l'ordre du fichier. `ecran` dit où elle se
+  passe (`simple` : l'accueil du mode Simple ; `expert`) — WinTool y bascule avant de commencer.
+  Dix étapes au plus. La visite `accueil` est obligatoire : la page « prêt » la propose.
+- **Une étape** éclaire sa `cible` et affiche son titre et son texte. Une étape dont l'élément
+  n'est pas à l'écran (le champ de bouées sans aucun lot, par exemple) est sautée.
+- **Une cible** est le nom d'un attribut `data-guide="…"` de l'interface : `mode`,
+  `recommande`, `bouees`, `simulation`, `journal`, `aide`, `droits`, `recherche`, `onglets`,
+  `fiche`, `journal-apercu`. Le vérificateur donne la liste à jour. Pour viser un nouvel
+  élément, lui ajouter un `data-guide` dans `src/index.html` (ou dans le gabarit de
+  `src/main.js` qui le dessine) — jamais une classe CSS : elle changera au prochain remaniement.
+- **L'alerte `droits`** porte les textes des encarts (fiche d'une action, étape « Vérifier »)
+  et de la bulle qui éclaire « Droits limités ». Ses boutons (« Plus tard », « Relancer en
+  administrateur ») restent dans `src/i18n.js`.
+
+Les boutons de navigation des visites (« Suivant », « Précédent », « Passer », « Terminer »)
+et du menu **?** sont dans `src/i18n.js` (clés `guide.*`, `aide.*`).

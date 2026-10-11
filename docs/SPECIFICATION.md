@@ -639,7 +639,7 @@ réellement.
 | Thème (clair / sombre / Windows) | **partout**, icône engrenage |
 | Langue | **partout** |
 | Comportement des mises à jour | **partout** |
-| Couleurs (1.8) : Braise Ardente par défaut, ou Crépuscule (§15.4) | **partout** |
+| Ambiance (1.8) : Braise ardente par défaut, Braise crépuscule, Synthwave, Terminal vert ou ambre, Aurore boréale ou australe (§15.4) | **partout** |
 | Graphique de l'analyse (1.7) : l'anneau-engrenage, la double couronne, la jauge à dents, la barre d'espace, le fond des lignes, les rectangles ou la gaufre (§17.2) | **partout** |
 | Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
 | Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2) | Expert |
@@ -1034,15 +1034,25 @@ tard. Comme les points d'attention, c'est un regard, jamais une garantie.
 
 ## 13. Premier lancement
 
-**Une visite en quatre pages**, à l'ouverture de la toute première session, et relançable à
-tout moment depuis les Réglages généraux (« Présentation de WinTool »), dans les deux modes.
+**Une visite en cinq pages** (quatre jusqu'à la 1.6), à l'ouverture de la toute première
+session, et relançable à tout moment depuis les Réglages généraux (« Présentation de WinTool »)
+ou le bouton **?**, dans les deux modes.
 
 | Page | Contenu |
 |---|---|
-| Bienvenue | La langue et l'apparence — sur cette page, et seulement elle, pour que la suite se lise dans la bonne langue |
+| Bienvenue | WinTool à son goût : la langue, l'ambiance, clair ou sombre, la taille — sur cette page, et seulement elle, pour que la suite se lise dans la bonne langue et la bonne ambiance. Chaque choix s'applique aussitôt |
 | Le principe | Ce que fait WinTool ; mode Simple et mode Expert ; la simulation |
 | Les actions | WinTool arrive vide, pourquoi (§16.1) ; le catalogue officiel, **installable depuis la page même**, et les autres catalogues ; ses propres scripts |
 | Votre sécurité | Ce qu'un script peut faire ; n'approuver que ce dont on connaît l'origine, se faire expliquer un script — par un proche ou par une intelligence artificielle — avant de l'approuver ; l'antivirus qui peut se méfier de WinTool, et ne jamais le désactiver pour lui |
+| Vous êtes prêt | « Me faire visiter » lance la visite de l'accueil, sur le vrai écran ; « Je découvre seul » ferme. La visite reste ensuite dans le bouton **?** |
+
+**La visite et le centre d'aide (1.7, maquette M18, formule A + D).** La bienvenue explique
+des idées ; la visite montre **où** sont les choses, à la lampe torche (§15.6) — d'abord
+Simple et Expert. Le bouton **?** de la barre de titre ouvre le centre d'aide : les visites
+(l'accueil, le mode Expert), le guide des droits administrateur tant qu'ils manquent, et
+la bienvenue. Visites et alertes vivent dans **`src/guide.json`**, modifiable sans toucher au
+code comme la présentation (`docs/PRESENTATION.md`) : chaque étape vise un élément par son
+attribut `data-guide`, et `tools/verifier-guide.mjs` vérifie en CI que chaque cible existe.
 
 **Lisible à 9 ans comme à 80.** Chaque page se divise en deux :
 
@@ -1190,7 +1200,23 @@ chacune en clair et en sombre :
 | **Ardente** (défaut) | `#FD9E21` → `#FD5632` | `#FEC923` → `#FD5632` | `#FBF6F2` / `#0F0A14` |
 | **Crépuscule** | `#FF7A45` → `#F0428E` | `#FF7A45` → `#F0428E` | `#FBF5FA` / `#110A1C` |
 
-La houle de l'eau prend la couleur de la braise. Une variante est un jeu complet — fonds,
+La houle de l'eau prend la couleur de la braise.
+
+**Thèmes d'ambiance (1.7, maquette M17).** Le réglage 1.8 devient « Ambiance » et propose,
+outre Braise, trois thèmes qui changent l'ambiance entière : leurs jetons, et un décor
+derrière la houle de l'accueil du mode Simple. L'eau reste — les bouées sont calées sur elle —
+mais chaque thème l'habille.
+
+| Ambiance | Variantes | Décor |
+|---|---|---|
+| **Synthwave** | Miami (clair), Nuit (sombre) — suit le réglage 1.1 | Soleil rayé, montagnes, grille de néon qui défile ; ligne d'eau en néon ; titre en italique lumineux |
+| **Terminal** | Vert, Ambre — sombre seulement | Chasse fixe partout, lignes de balayage, lueur du phosphore ; ligne d'eau en pointillés ; curseur qui clignote |
+| **Aurore** | Boréale, Australe — sombre seulement | Voiles de lumière animés, collines ; bouées et carte en verre dépoli |
+
+Sur une ambiance sombre seulement, le bouton soleil / lune et le réglage 1.1 sont désactivés
+et le disent. L'Expert prend les jetons, pas le décor. Chaque variante est mesurée au seuil
+ci-dessous (pire cas : 5,07). Un thème Star Wars, style Nouvelle République, est en maquette
+(M19, « Escadron »). Une variante est un jeu complet — fonds,
 textes, accent, texte d'accent, états, séries des graphiques (`--serie-1` à `--serie-6`),
 contour d'engrenage, journal — mesuré au seuil ci-dessous ; changer de variante ne change
 rien d'autre. Les couleurs de la 1.5 (orange, Marée, bleu, violet, framboise) sont
@@ -1249,8 +1275,9 @@ Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/si
   lumière aux bords doux sur l'élément, et une bulle explique à quoi il sert. Hors du
   cercle, rien ne répond ; l'élément éclairé, lui, reste cliquable — c'est souvent lui
   qu'il faut toucher, et le toucher ferme le guide. Échap ferme. Le guide ne s'ouvre
-  **jamais seul en plein travail** : il répond à un geste. Sa place dans la visite du
-  premier lancement est à décider (maquette M18).
+  **jamais seul en plein travail** : il répond à un geste. Les visites en enchaînent
+  plusieurs (Suivant, Précédent, Passer, flèches du clavier) ; une zone allongée — le champ
+  de bouées — est éclairée en ellipse plutôt qu'en cercle (§13).
 
 ## 16. Sources de scripts
 

@@ -188,8 +188,17 @@ pub struct Settings {
     pub accent: String,
 }
 
-/// Variantes de couleurs du theme Braise : Ardente (defaut) et Crepuscule.
-pub const ACCENTS: [&str; 2] = ["ardente", "crepuscule"];
+/// Ambiances (reglage 1.8) : Braise — Ardente (defaut) et Crepuscule — et les
+/// themes d'ambiance de la 1.7. Terminal et Aurore n'existent qu'en sombre.
+pub const ACCENTS: [&str; 7] = [
+    "ardente",
+    "crepuscule",
+    "synthwave",
+    "terminal-vert",
+    "terminal-ambre",
+    "aurore-boreale",
+    "aurore-australe",
+];
 
 /// Graphiques proposes pour le resume de l'analyse.
 pub const GRAPHIQUES_ANALYSE: [&str; 7] = [

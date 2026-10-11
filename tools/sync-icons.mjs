@@ -87,6 +87,9 @@ const SPRITE = {
   // Le guide (1.7) : sa bulle, et la relance en administrateur qu'il propose.
   sparkles: 'sparkles',
   relancer: 'refresh-cw',
+  // Le centre d'aide : une visite, la bienvenue.
+  carte: 'map',
+  livre: 'book-open',
 };
 
 if (!existsSync(source)) {

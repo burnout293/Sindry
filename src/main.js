@@ -8,7 +8,7 @@
 
 import { t, setLang, currentLang } from './i18n.js';
 import * as A from './analyse.js';
-import { montrerGuide } from './guide.js';
+import { montrerGuide, lancerVisite, fermerGuide } from './guide.js';
 
 const invoke = window.__TAURI__.core.invoke;
 const ecouter = window.__TAURI__.event.listen;
@@ -74,6 +74,8 @@ async function iconeSVG(nom) {
    comme un autre (specification 8), au meme endroit que la langue.
    ------------------------------------------------------------------------- */
 function themeEffectif() {
+  // Terminal et Aurore n'existent qu'en sombre (1.7).
+  if (SOMBRE_SEUL.has(document.documentElement.dataset.accent)) return 'dark';
   const choisi = document.documentElement.dataset.theme;
   if (choisi) return choisi;
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -87,15 +89,33 @@ function appliquerTheme(valeur, persister = true) {
   if (persister) invoke('set_theme', { theme: valeur }).catch((e) => console.error('set_theme a echoue :', e));
 }
 
-/** Couleurs de Braise (reglage 1.8). Ardente est celle des tokens : aucun
- *  attribut. Crepuscule pose `data-accent`, que la feuille surcharge. Une
- *  valeur d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
-const ACCENTS = ['ardente', 'crepuscule'];
+/** L'ambiance (reglage 1.8) : Braise — Ardente ou Crepuscule —, ou l'un des
+ *  thèmes d'ambiance de la 1.7. Ardente est celle des tokens : aucun attribut.
+ *  Les autres posent `data-accent`, que la feuille surcharge. Une valeur
+ *  d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
+const ACCENTS = ['ardente', 'crepuscule', 'synthwave', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
+/** Celles qui n'existent qu'en sombre : le reglage clair / sombre n'a pas de prise. */
+const SOMBRE_SEUL = new Set(['terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe']);
 const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'ardente');
 function appliquerAccent(valeur) {
   const v = accentValide(valeur);
   if (v === 'ardente') delete document.documentElement.dataset.accent;
   else document.documentElement.dataset.accent = v;
+  majCommandesTheme();
+}
+
+/** Le bouton soleil / lune et le reglage 1.1 n'ont pas de prise sur une ambiance
+ *  sombre seulement : ils le disent au lieu de ne rien faire. */
+function majCommandesTheme() {
+  const seul = SOMBRE_SEUL.has(document.documentElement.dataset.accent);
+  const btn = document.getElementById('themeBtn');
+  if (btn) {
+    btn.disabled = seul;
+    btn.dataset.tip = t(seul ? 'chrome.theme_sombre_seul' : 'chrome.basculer_theme');
+  }
+  document.querySelectorAll('#setThemeSeg [data-set-theme]').forEach((b) => { b.disabled = seul; });
+  const note = document.getElementById('setThemeNote');
+  if (note) note.hidden = !seul;
 }
 
 /* -------------------------------------------------------------------------
@@ -708,7 +728,7 @@ async function rendreLots() {
   const corps = ongletExpert === 'lots' ? await rendreOngletLots() : await rendreOngletScripts();
   const nbScripts = catalogue.size;
   zone.innerHTML = `
-    <div class="lots-onglets" role="tablist" aria-label="${esc(t('expert.onglets'))}">
+    <div class="lots-onglets" role="tablist" aria-label="${esc(t('expert.onglets'))}" data-guide="onglets">
       <button type="button" role="tab" data-onglet-expert="scripts" aria-selected="${ongletExpert === 'scripts'}">
         ${esc(t('expert.onglet_scripts'))}<span class="rc">${nbScripts}</span>
       </button>
@@ -2166,27 +2186,157 @@ async function relancerEnAdministrateur() {
   }
 }
 
+/* -------------------------------------------------------------------------
+   Le guide (1.7, §13 et §15.6)
+
+   Son contenu vit dans src/guide.json — visites et alertes, en francais et en
+   anglais — et se modifie sans toucher au code (docs/PRESENTATION.md). Chaque
+   etape vise un element par son attribut `data-guide`, jamais par une classe
+   CSS qui changera au prochain remaniement ; tools/verifier-guide.mjs verifie
+   en CI que chaque cible existe. Le moteur — la lampe torche — est
+   src/guide.js.
+   ------------------------------------------------------------------------- */
+
+/** Embarque dans l'executable, comme la presentation : un fichier modifiable
+ *  apres installation pourrait faire dire n'importe quoi a WinTool. */
+let contenuGuide = { format: 1, visites: [], alertes: [] };
+
+async function chargerGuide() {
+  try {
+    const reponse = await fetch('guide.json');
+    if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
+    contenuGuide = await reponse.json();
+  } catch (e) {
+    console.error('Guide illisible :', e);
+  }
+}
+
+const cibleGuide = (nom) => document.querySelector(`[data-guide="${nom}"]`);
+const alerteGuide = (id) => contenuGuide.alertes?.find((a) => a.id === id);
+
+/** Les libelles de navigation d'une visite : le moteur ne connait pas les langues. */
+const LIBELLES_VISITE = () => ({
+  passer: t('guide.passer'),
+  precedent: t('guide.precedent'),
+  suivant: t('guide.suivant'),
+  terminer: t('guide.terminer'),
+  etape: (n, total) => t('guide.etape', { n, total }),
+});
+
+/** Lance une visite de guide.json, sur l'ecran qu'elle decrit. */
+async function demarrerVisite(id) {
+  const v = contenuGuide.visites?.find((x) => x.id === id);
+  if (!v) return;
+  fermerMenuAide();
+  if (reglagesOuverts()) fermerReglages();
+  if (v.ecran && modeCourant !== v.ecran) basculerMode(v.ecran);
+  else if (v.ecran === 'simple') afficherEtapeSimple(1);
+  // Deux images : la mise en page de l'ecran, puis la position des bouees.
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const etapes = (v.etapes || []).map((e) => ({
+    cible: cibleGuide(e.cible),
+    kick: textePresentation(v.titre),
+    titre: textePresentation(e.titre),
+    texte: textePresentation(e.texte),
+  }));
+  lancerVisite(etapes, LIBELLES_VISITE());
+}
+
 /** L'encart « droits administrateur » (1.7) : la ou l'on regarde deja, sans
  *  rien recouvrir. « Me montrer » eclaire la pastille « Droits limites ».
- *  `lot` : plusieurs actions (etape « Verifier ») plutot qu'une fiche. */
+ *  `lot` : plusieurs actions (etape « Verifier ») plutot qu'une fiche. La
+ *  premiere phrase, en gras, dit l'essentiel. */
 function encartDroits({ lot = false } = {}) {
+  const a = alerteGuide('droits');
+  const texte = textePresentation(lot ? a?.encart_lot : a?.encart_action);
+  if (!texte) return '';
+  const [premiere, ...suite] = texte.split(/(?<=[.!?])\s+/);
   return `<div class="encart"><svg class="ico i17" aria-hidden="true"><use href="#warn"/></svg>
-    <p>${t(lot ? 'droits.encart_lot' : 'droits.encart_action')}</p>
+    <p><b>${esc(premiere)}</b> ${esc(suite.join(' '))}</p>
     <button class="btn" type="button" data-montrer-droits>${esc(t('guide.me_montrer'))}</button></div>`;
 }
 
 /** Le guide sur la pastille des droits : la lampe torche, et de quoi relancer. */
 function guiderVersDroits() {
+  const a = alerteGuide('droits');
+  if (!a) return;
+  fermerMenuAide();
   montrerGuide({
-    cible: document.getElementById('adminPill'),
+    cible: cibleGuide(a.cible),
     alerte: true,
-    kick: t('droits.guide_kick'),
-    titre: t('droits.guide_titre'),
-    texte: t('droits.guide_texte'),
+    kick: textePresentation(a.kick),
+    titre: textePresentation(a.titre),
+    texte: textePresentation(a.texte),
     actions: [
       { libelle: t('guide.plus_tard') },
-      { libelle: t('droits.relancer'), primaire: true, icone: 'relancer', faire: relancerEnAdministrateur },
+      ...(estEleve ? [] : [{ libelle: t('droits.relancer'), primaire: true, icone: 'relancer', faire: relancerEnAdministrateur }]),
     ],
+  });
+}
+
+/* --- Le centre d'aide « ? » ------------------------------------------------- */
+
+function fermerMenuAide() {
+  document.getElementById('menuAide')?.remove();
+  document.getElementById('btnAide')?.setAttribute('aria-expanded', 'false');
+}
+
+function ouvrirMenuAide() {
+  const bouton = document.getElementById('btnAide');
+  if (document.getElementById('menuAide')) return fermerMenuAide();
+  fermerGuide();
+  const item = (attrs, icone, titre, resume) =>
+    `<button type="button" role="menuitem" ${attrs}><svg class="ico i17" aria-hidden="true"><use href="#${icone}"/></svg>
+      <span><b>${esc(titre)}</b>${resume ? `<small>${esc(resume)}</small>` : ''}</span></button>`;
+  const visites = (contenuGuide.visites || [])
+    .map((v) => item(`data-aide-visite="${esc(v.id)}"`, 'carte', textePresentation(v.titre), textePresentation(v.resume)))
+    .join('');
+  // Le guide des droits n'a d'objet que tant qu'ils manquent.
+  const droits = alerteGuide('droits');
+  const guides = !estEleve && droits
+    ? item('data-aide-droits', 'shield', textePresentation(droits.titre_aide), textePresentation(droits.resume))
+    : '';
+  const menu = document.createElement('div');
+  menu.className = 'menu-aide';
+  menu.id = 'menuAide';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `<h3>${esc(t('aide.visites'))}</h3>${visites}
+    ${guides ? `<h3>${esc(t('aide.guides'))}</h3>${guides}` : ''}<hr>
+    ${item('data-aide-bienvenue', 'livre', t('aide.bienvenue'), t('aide.bienvenue_resume'))}`;
+  document.body.appendChild(menu);
+  // Sous le bouton, aligne a sa droite, en pixels CSS (echelle de rendu).
+  const z = echelleCourante();
+  const r = bouton.getBoundingClientRect();
+  menu.style.top = `${r.bottom / z + 8}px`;
+  menu.style.left = `${Math.max(8, Math.min(innerWidth / z - menu.offsetWidth - 8, r.right / z - menu.offsetWidth))}px`;
+  bouton.setAttribute('aria-expanded', 'true');
+  menu.querySelector('button')?.focus();
+  menu.addEventListener('click', (ev) => {
+    const v = ev.target.closest('[data-aide-visite]');
+    if (v) return void demarrerVisite(v.dataset.aideVisite);
+    if (ev.target.closest('[data-aide-droits]')) return guiderVersDroits();
+    if (ev.target.closest('[data-aide-bienvenue]')) {
+      fermerMenuAide();
+      if (reglagesOuverts()) fermerReglages();
+      ouvrirVisite({ depuisReglages: true });
+    }
+  });
+}
+
+function cablerAide() {
+  document.getElementById('btnAide').onclick = (ev) => {
+    ev.stopPropagation();
+    ouvrirMenuAide();
+  };
+  // Un clic ailleurs, ou Echap, referme le menu.
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('#menuAide')) fermerMenuAide();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && document.getElementById('menuAide')) {
+      fermerMenuAide();
+      document.getElementById('btnAide').focus();
+    }
   });
 }
 
@@ -2822,9 +2972,10 @@ function appliquerTraductionsStatiques() {
     el.dataset.tip = texte;
     el.setAttribute('aria-label', texte);
   };
-  cible('themeBtn', t('chrome.basculer_theme'));
+  cible('themeBtn', t(SOMBRE_SEUL.has(document.documentElement.dataset.accent) ? 'chrome.theme_sombre_seul' : 'chrome.basculer_theme'));
   cible('btnSettings', t('reglages.titre'));
   cible('btnJournal', t('console.journal_tip'));
+  cible('btnAide', t('aide.tip'));
   if (term.corps) term.corps.dataset.vide = t('console.aucune_execution');
   cible('btnMin', t('chrome.reduire'));
   cible('btnMax', t('chrome.agrandir'));
@@ -4709,9 +4860,11 @@ function appliquerTraductionsReglages() {
   document.getElementById('setGrapheLabel').textContent = t('reglages.graphique');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
-    b.setAttribute('aria-label', t(`accent.${b.dataset.setAccent}`));
-    b.title = t(`accent.${b.dataset.setAccent}`);
+    b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
   });
+  const noteTheme = document.getElementById('setThemeNote');
+  if (noteTheme) noteTheme.textContent = t('reglages.theme_sombre_seul');
+  majCommandesTheme();
   document.querySelectorAll('#setGrapheSelect option').forEach((o) => { o.textContent = t(`graphe.${o.value}`); });
   document.querySelector('#setMajSelect [value="propose"]').textContent = t('reglages.maj_proposer');
   document.querySelector('#setMajSelect [value="never"]').textContent = t('reglages.maj_jamais');
@@ -5110,6 +5263,19 @@ function cablerOnboarding() {
       appliquerTheme(visite.theme, false);
       return void rendreVisite();
     }
+    // L'ambiance et la taille s'appliquent aussitot : on choisit en voyant.
+    const ambiance = ev.target.closest('[data-onb-accent]');
+    if (ambiance) {
+      visite.accent = ambiance.dataset.onbAccent;
+      appliquerAccent(visite.accent);
+      return void rendreVisite();
+    }
+    const taille = ev.target.closest('[data-onb-echelle]');
+    if (taille) {
+      visite.echelle = Number(taille.dataset.onbEchelle);
+      appliquerEchelle(visite.echelle);
+      return void rendreVisite();
+    }
     if (ev.target.closest('[data-onb="installer"]')) return void installerCatalogue();
   });
   document.getElementById('btnOnbRetour').onclick = () => {
@@ -5123,10 +5289,12 @@ function cablerOnboarding() {
       visite.etape += 1;
       rendreVisite();
     } else {
-      terminerVisite();
+      // La derniere page « pret » propose la visite : son bouton principal la
+      // lance (formule A, maquette M18).
+      terminerVisite({ visiter: presentation.pages[visite.etape]?.type === 'pret' });
     }
   };
-  document.getElementById('btnOnbPasser').onclick = terminerVisite;
+  document.getElementById('btnOnbPasser').onclick = () => terminerVisite();
   document.getElementById('btnRevoirVisite').onclick = () => {
     fermerReglages();
     ouvrirVisite({ depuisReglages: true });
@@ -5167,9 +5335,9 @@ function textePresentation(textes, valeurs = {}) {
 }
 
 /** Etat de la visite. `premiere` : on ne revient pas avant (relancee depuis les
- *  Reglages, elle commence apres la page de bienvenue : langue et apparence
- *  sont deja reglees). */
-let visite = { etape: 0, premiere: 0, depuisReglages: false, lang: 'fr', theme: 'system' };
+ *  Reglages, elle commence apres la page de bienvenue : langue, ambiance,
+ *  apparence et taille sont deja reglees). */
+let visite = { etape: 0, premiere: 0, depuisReglages: false, lang: 'fr', theme: 'system', accent: 'ardente', echelle: 1 };
 
 async function ouvrirVisite({ depuisReglages = false } = {}) {
   await chargerPresentation();
@@ -5186,22 +5354,35 @@ async function ouvrirVisite({ depuisReglages = false } = {}) {
     depuisReglages,
     lang: reglagesActuels?.lang || currentLang(),
     theme: reglagesActuels?.theme || 'system',
+    accent: accentValide(reglagesActuels?.accent),
+    echelle: Number(reglagesActuels?.ui_scale) || 1,
   };
   document.getElementById('onboarding').hidden = false;
   rendreVisite();
 }
 
-async function terminerVisite() {
+/** `visiter` : la derniere page a propose la visite de l'accueil, et elle a
+ *  ete acceptee — elle part aussitot la bienvenue refermee. */
+async function terminerVisite({ visiter = false } = {}) {
   document.getElementById('onboarding').hidden = true;
-  if (visite.depuisReglages) return;
-  try {
-    reglagesActuels = await invoke('complete_onboarding', { theme: visite.theme, lang: visite.lang });
-  } catch (e) {
-    console.error('Fin de la visite :', e);
+  if (!visite.depuisReglages) {
+    try {
+      reglagesActuels = await invoke('complete_onboarding', { theme: visite.theme, lang: visite.lang });
+      // L'ambiance et la taille, choisies sur la premiere page (1.7).
+      if (accentValide(reglagesActuels.accent) !== visite.accent) {
+        reglagesActuels = await invoke('set_accent', { accent: visite.accent });
+      }
+      if ((Number(reglagesActuels.ui_scale) || 1) !== visite.echelle) {
+        reglagesActuels = await invoke('set_ui_scale', { value: visite.echelle });
+      }
+    } catch (e) {
+      console.error('Fin de la visite :', e);
+    }
+    await appliquerLangue(visite.lang);
+    appliquerTheme(visite.theme, false);
+    if (!visiter) proposerRappelCatalogue();
   }
-  await appliquerLangue(visite.lang);
-  appliquerTheme(visite.theme, false);
-  proposerRappelCatalogue();
+  if (visiter) await demarrerVisite('accueil');
 }
 
 /** Les illustrations : du HTML et du CSS seulement, animes par styles.css.
@@ -5274,8 +5455,14 @@ async function rendreVisite() {
   );
 
   if (donnees.type === 'bienvenue') {
-    const choix = (attr, valeur, actuelle, libelle) =>
-      `<button type="button" data-${attr}="${valeur}" aria-pressed="${valeur === actuelle}">${esc(libelle)}</button>`;
+    // Les reglages qui comptent avant tout le reste (1.7) : langue, ambiance,
+    // clair ou sombre, taille. Chacun s'applique aussitot.
+    const sombreSeul = SOMBRE_SEUL.has(visite.accent);
+    const choix = (attr, valeur, actuelle, libelle, inactif = false) =>
+      `<button type="button" data-${attr}="${valeur}" aria-pressed="${valeur === actuelle}"${inactif ? ' disabled' : ''}>${esc(libelle)}</button>`;
+    const ambiances = ACCENTS.map((a) => `<button type="button" role="radio" class="accent-pastille" data-set-accent="${a}" data-onb-accent="${a}"
+      aria-checked="${a === visite.accent}">${esc(t(`accent.${a.replace('-', '_')}`))}</button>`).join('');
+    const tailles = [1, 1.15, 1.3, 1.5].map((e) => choix('onb-echelle', e, visite.echelle, `${Math.round(e * 100)} %`)).join('');
     page.innerHTML = `
       <img class="onb-logo" src="marque.png" alt="" draggable="false">
       <h1 id="onbTitre">${esc(textePresentation(donnees.titre))}</h1>
@@ -5285,11 +5472,26 @@ async function rendreVisite() {
           <span class="lbl">${esc(t('onb.langue'))}</span>
           <div class="seg">${choix('onb-lang', 'fr', visite.lang, 'Français')}${choix('onb-lang', 'en', visite.lang, 'English')}</div>
         </div>
+        <div class="grp large">
+          <span class="lbl">${esc(t('reglages.accent'))}</span>
+          <div class="accents" role="radiogroup">${ambiances}</div>
+        </div>
         <div class="grp">
           <span class="lbl">${esc(t('onb.theme'))}</span>
-          <div class="seg">${choix('onb-theme', 'light', visite.theme, t('onb.theme_clair'))}${choix('onb-theme', 'dark', visite.theme, t('onb.theme_sombre'))}${choix('onb-theme', 'system', visite.theme, t('onb.theme_systeme'))}</div>
+          <div class="seg">${choix('onb-theme', 'light', visite.theme, t('onb.theme_clair'), sombreSeul)}${choix('onb-theme', 'dark', visite.theme, t('onb.theme_sombre'), sombreSeul)}${choix('onb-theme', 'system', visite.theme, t('onb.theme_systeme'), sombreSeul)}</div>
+        </div>
+        ${sombreSeul ? `<p class="onb-text">${esc(t('reglages.theme_sombre_seul'))}</p>` : ''}
+        <div class="grp">
+          <span class="lbl">${esc(t('onb.taille'))}</span>
+          <div class="seg">${tailles}</div>
         </div>
       </div>`;
+  } else if (donnees.type === 'pret') {
+    const icones = { carte: (await iconeSVG(donnees.icone || 'map')) || '' };
+    page.innerHTML = `
+      <div class="onb-illu illu-icone" aria-hidden="true"><span>${icones.carte}</span></div>
+      <h1 id="onbTitre">${esc(textePresentation(donnees.titre))}</h1>
+      <p class="onb-text">${esc(textePresentation(donnees.texte))}</p>`;
   } else {
     const essentiel = donnees.essentiel || [];
     // Les icones des illustrations, plus celles que la page nomme.
@@ -5317,11 +5519,14 @@ async function rendreVisite() {
   retour.textContent = t('onb.retour');
   retour.hidden = visite.etape === visite.premiere;
   const passer = document.getElementById('btnOnbPasser');
-  passer.textContent = t(visite.depuisReglages ? 'onb.fermer' : 'onb.passer');
-  passer.hidden = derniere;
-  document.getElementById('btnOnbSuivant').textContent = derniere
-    ? t(visite.depuisReglages ? 'onb.fermer' : 'onb.commencer')
-    : t('onb.suivant');
+  const pret = donnees.type === 'pret';
+  // Sur la page « pret », les deux boutons sont les deux reponses : « Je
+  // decouvre seul » et « Me faire visiter ».
+  passer.textContent = pret ? t('onb.seul') : t(visite.depuisReglages ? 'onb.fermer' : 'onb.passer');
+  passer.hidden = derniere && !pret;
+  document.getElementById('btnOnbSuivant').textContent = pret
+    ? t('onb.visiter')
+    : derniere ? t(visite.depuisReglages ? 'onb.fermer' : 'onb.commencer') : t('onb.suivant');
   // Un lecteur d'ecran annonce la nouvelle page.
   document.getElementById('onbTitre')?.setAttribute('tabindex', '-1');
   document.getElementById('onbTitre')?.focus();
@@ -5644,6 +5849,7 @@ async function cablerPauseAnimation() {
 async function demarrer() {
   await injecterSprite();
   initTerminal();
+  await chargerGuide();
 
   // La fenetre est creee invisible (tauri.conf.json) : on peut charger les
   // reglages et poser langue/theme sans jamais laisser voir un flash de
@@ -5666,6 +5872,7 @@ async function demarrer() {
   cablerInteractions();
   cablerModeEtSimple();
   cablerOnboarding();
+  cablerAide();
   cablerReglages();
   cablerConfiance();
   cablerInfobulles();

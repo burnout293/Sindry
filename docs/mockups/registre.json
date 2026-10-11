@@ -19,6 +19,7 @@
     { "n": 15, "fichier": "sindry-etiquettes.html", "date": "2026-10-10 19:40", "titre": "Sindry : étiquettes", "resume": "Cinq ébauches pour les faits d'une fiche : « icônes et valeurs » retenue." },
     { "n": 16, "fichier": "sindry-attention.html", "date": "2026-10-11 07:07", "titre": "Attirer l'œil", "resume": "Six effets (Balise retenue) et cinq formes de guide (encart, puis lampe torche, retenue)." },
     { "n": 17, "fichier": "themes-ambiances.html", "date": "2026-10-11 07:37", "titre": "Thèmes d'ambiance", "resume": "Synthwave, Hyperespace (inspiré de Star Wars) et trois autres, sur l'écran d'accueil du mode Simple." },
-    { "n": 18, "fichier": "guide-bienvenue.html", "date": "2026-10-11 07:38", "titre": "Guide et bienvenue", "resume": "Comment le guide s'articule avec l'écran de bienvenue : quatre formules, et ma recommandation." }
+    { "n": 18, "fichier": "guide-bienvenue.html", "date": "2026-10-11 07:38", "titre": "Guide et bienvenue", "resume": "Comment le guide s'articule avec l'écran de bienvenue : quatre formules, et ma recommandation." },
+    { "n": 19, "fichier": "theme-escadron.html", "date": "2026-10-11 08:04", "titre": "Thème Escadron (Star Wars)", "resume": "Style Nouvelle République d'après Jedi: Fallen Order : table holographique, balises de carte, invites de touche. Variantes Patrouille et Hangar." }
   ]
 }

@@ -18,7 +18,7 @@
       <span class="brand-name" data-tauri-drag-region>WinTool</span>
       <span class="brand-ver" id="version">…</span>
 
-      <div class="tb-search only-expert">
+      <div class="tb-search only-expert" data-guide="recherche">
         <svg class="ico i14" aria-hidden="true"><use href="#search" /></svg>
         <input type="search" id="filtreLots" />
       </div>
@@ -35,27 +35,33 @@
       <span class="tb-lieu" id="tbReglages"></span>
 
       <div class="tb-right">
-        <div class="seg" id="modeSeg" role="group">
+        <div class="seg" id="modeSeg" role="group" data-guide="mode">
           <button type="button" data-mode-btn="simple" aria-pressed="true"></button>
           <button type="button" data-mode-btn="expert" aria-pressed="false"></button>
         </div>
 
         <!-- Mode test : toujours visible, des deux cotes de l'application.
              Un mode test qu'on oublie est pire que pas de mode test. -->
-        <button class="pill test" id="testPill" type="button" aria-pressed="false">
+        <button class="pill test" id="testPill" type="button" aria-pressed="false" data-guide="simulation">
           <svg class="ico i14" aria-hidden="true"><use href="#shield" /></svg>
           <span id="testPillText"></span>
         </button>
 
-        <button class="pill ok" id="adminPill" type="button">
+        <button class="pill ok" id="adminPill" type="button" data-guide="droits">
           <!-- La balise (1.7) : visible seulement en « Droits limites ». -->
           <span class="balise" aria-hidden="true"></span>
           <svg class="ico i14" aria-hidden="true"><use href="#shield" /></svg>
           <span id="adminPillText"></span>
         </button>
 
+        <!-- Le centre d'aide (1.7) : visites, guides, bienvenue. Son contenu
+             vient de src/guide.json. -->
+        <button class="iconbtn" id="btnAide" type="button" aria-haspopup="menu" aria-expanded="false" data-guide="aide">
+          <svg class="ico i17" aria-hidden="true"><use href="#help" /></svg>
+        </button>
+
         <!-- Le journal s'ouvre toujours, meme vide, en Simple comme en Expert. -->
-        <button class="iconbtn" id="btnJournal" type="button" aria-pressed="false">
+        <button class="iconbtn" id="btnJournal" type="button" aria-pressed="false" data-guide="journal">
           <svg class="ico i17" aria-hidden="true"><use href="#sec-execution" /></svg>
         </button>
         <button class="iconbtn" id="themeBtn" type="button">
@@ -81,6 +87,18 @@
     </header>
 
     <main class="stage">
+      <!-- Le decor des ambiances (1.7) : un seul s'affiche, selon le reglage 1.8. -->
+      <div class="ambiance" aria-hidden="true">
+        <div class="amb-synthwave">
+          <div class="sw-ciel"></div><div class="sw-soleil"></div>
+          <svg class="sw-montagnes" viewBox="0 0 960 52" preserveAspectRatio="none"><path d="M0 52 L0 34 L80 20 L150 38 L230 9 L320 39 L400 26 L470 43 L560 14 L650 40 L720 23 L800 38 L880 13 L960 32 L960 52Z" /></svg>
+          <div class="sw-sol-cadre"><div class="sw-sol"></div></div>
+        </div>
+        <div class="amb-aurore">
+          <div class="au-voile v1"></div><div class="au-voile v2"></div><div class="au-voile v3"></div>
+          <svg class="au-collines" viewBox="0 0 960 140" preserveAspectRatio="none"><path d="M0 140 L0 50 C120 10 220 70 330 40 C450 6 540 80 660 36 C780 0 880 56 960 30 L960 140Z" /><path d="M0 140 L0 100 C160 70 300 120 480 96 C650 72 800 112 960 92 L960 140Z" /></svg>
+        </div>
+      </div>
       <!-- Nappe de fond : une periode par motif, la plus lente. -->
       <svg class="water fond" viewBox="0 0 2360 760" preserveAspectRatio="none" aria-hidden="true">
         <defs>
@@ -143,13 +161,13 @@
                 <h1 id="s1Titre"></h1>
                 <p class="muted" id="s1Sous"></p>
               </div>
-              <div id="recoCard"></div>
+              <div id="recoCard" data-guide="recommande"></div>
               <div class="sect" id="sectAutres"></div>
             </div>
             <!-- Champ de bouees (specification §15.2) : pleine largeur, au bas de
                  la page ; il s'allonge et la page defile plutot que de rien
                  faire chevaucher. -->
-            <div class="buoys" id="buoysZone"></div>
+            <div class="buoys" id="buoysZone" data-guide="bouees"></div>
             <!-- Collee en bas de l'ecran : « Continuer » reste visible, avec ce
                  qui est choisi, meme quand le champ defile. -->
             <div class="s1-barre" id="s1Barre">
@@ -272,7 +290,7 @@
                meme sans execution : c'est lui qui dit si quelque chose tourne.
                Les lignes sont tronquees faute de largeur ; « Étendu » et
                « Complet » ouvrent le panneau du bas pour les lire en entier. -->
-          <button class="lots-journal" type="button" id="lotsJournal">
+          <button class="lots-journal" type="button" id="lotsJournal" data-guide="journal-apercu">
             <span class="lj-head">
               <span class="lj-kicker" id="ljKicker"></span>
               <span class="lj-etat" id="ljEtat"></span>
@@ -281,7 +299,7 @@
           </button>
         </aside>
 
-        <div class="detail">
+        <div class="detail" data-guide="fiche">
           <div class="dscroll" id="detailScroll"></div>
         </div>
       </section>
@@ -374,7 +392,7 @@
               </header>
               <div class="rg-cartes">
                 <div class="setrow" data-num="1.1">
-                  <span class="setrow-txt"><span class="num">1.1</span><span class="rg-libelle"><b id="setThemeLabel"></b><span class="desc" data-i18n="reglages.d_theme"></span></span></span>
+                  <span class="setrow-txt"><span class="num">1.1</span><span class="rg-libelle"><b id="setThemeLabel"></b><span class="desc" data-i18n="reglages.d_theme"></span><span class="desc" id="setThemeNote" hidden></span></span></span>
                   <div class="seg" id="setThemeSeg">
                     <button type="button" data-set-theme="light"></button>
                     <button type="button" data-set-theme="dark"></button>
@@ -386,6 +404,11 @@
                   <div class="accents" id="setAccentChoix" role="radiogroup">
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="ardente"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="crepuscule"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="synthwave"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="terminal-vert"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="terminal-ambre"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="aurore-boreale"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="aurore-australe"></button>
                   </div>
                 </div>
                 <div class="setrow" data-num="1.2">
