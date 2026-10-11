@@ -93,7 +93,7 @@ function appliquerTheme(valeur, persister = true) {
  *  thèmes d'ambiance de la 1.7. Ardente est celle des tokens : aucun attribut.
  *  Les autres posent `data-accent`, que la feuille surcharge. Une valeur
  *  d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
-const ACCENTS = ['ardente', 'crepuscule', 'synthwave', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
+const ACCENTS = ['ardente', 'crepuscule', 'synthwave', 'spatial', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
 /** Celles qui n'existent qu'en sombre : le reglage clair / sombre n'a pas de prise. */
 const SOMBRE_SEUL = new Set(['terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe']);
 const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'ardente');
@@ -4168,6 +4168,15 @@ async function arreterAnalyseSimple() {
   }
 }
 
+/** Le graphique du resume (1.7) : c'est le script qui le choisit (`## chart`).
+ *  Le lot rassemble plusieurs actions ; la premiere, dans l'ordre du lot, qui
+ *  en declare un decide. Aucune : l'anneau-engrenage. Jusqu'a la 1.6, c'etait
+ *  un reglage de l'utilisateur, qui ne savait pas mieux que le script ce qui
+ *  montre le mieux ce qu'il trouve. */
+function grapheDuLot(modeles) {
+  return modeles.map((m) => m.entree.meta.chart).find(Boolean) || 'donut';
+}
+
 function rendreResumeAnalyse(groupe) {
   const g = groupe || groupeLancement;
   if (!g || !analyseSimple) return;
@@ -4181,7 +4190,7 @@ function rendreResumeAnalyse(groupe) {
   // de plusieurs actions est resume par WinTool, en postes.
   zone.innerHTML = modeles.length === 1 && modeles[0].entree.meta.view
     ? `<div class="an-carte">${A.vue(modeles[0], 'simple', { historique: historiqueDe(modeles[0].entree.id) })}</div>`
-    : `<div class="an-carte">${A.resume(modeles, { graphe: reglagesActuels?.analysis_chart || 'donut', ...A.etatUi() })}</div>`;
+    : `<div class="an-carte">${A.resume(modeles, { graphe: grapheDuLot(modeles), ...A.etatUi() })}</div>`;
   A.poserPartiels(zone);
 
   const visibles = scriptsRetenus(g);
@@ -4857,7 +4866,6 @@ function appliquerTraductionsReglages() {
   document.querySelector('#setThemeSeg [data-set-theme="system"]').textContent = t('onb.theme_systeme');
   document.getElementById('setLangueLabel').textContent = t('reglages.langue');
   document.getElementById('setMajLabel').textContent = t('reglages.maj_comportement');
-  document.getElementById('setGrapheLabel').textContent = t('reglages.graphique');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
@@ -4865,7 +4873,6 @@ function appliquerTraductionsReglages() {
   const noteTheme = document.getElementById('setThemeNote');
   if (noteTheme) noteTheme.textContent = t('reglages.theme_sombre_seul');
   majCommandesTheme();
-  document.querySelectorAll('#setGrapheSelect option').forEach((o) => { o.textContent = t(`graphe.${o.value}`); });
   document.querySelector('#setMajSelect [value="propose"]').textContent = t('reglages.maj_proposer');
   document.querySelector('#setMajSelect [value="never"]').textContent = t('reglages.maj_jamais');
   document.getElementById('setMajVerifLabel').textContent = t('reglages.maj_verifier');
@@ -4938,7 +4945,6 @@ function remplirFormulaireReglages(reglages) {
     b.setAttribute('aria-pressed', String(b.dataset.setLang === reglages.lang));
   });
   document.getElementById('setMajSelect').value = reglages.update_policy;
-  document.getElementById('setGrapheSelect').value = reglages.analysis_chart || 'donut';
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
@@ -5594,9 +5600,6 @@ function cablerReglages() {
       rafraichirZonesAnalyse();
     };
   });
-  document.getElementById('setGrapheSelect').onchange = async (ev) => {
-    reglagesActuels = await invoke('set_analysis_chart', { chart: ev.target.value });
-  };
   document.getElementById('setMajSelect').onchange = async (ev) => {
     reglagesActuels = await invoke('set_update_policy', { policy: ev.target.value });
   };

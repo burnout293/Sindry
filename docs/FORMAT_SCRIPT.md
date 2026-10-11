@@ -189,6 +189,7 @@ Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `panels` et 
 | `engine` | `auto` / `winps` / `pwsh` | Interpréteur requis |
 | `scan` | `true` / `false` | Facultatif. `true` = le script sait analyser avant d'agir — voir « Le mode analyse » |
 | `view` | une vue | Facultatif. La présentation de l'analyse — voir « Choisir sa vue » |
+| `chart` | un graphique | Facultatif. Le graphique du résumé Simple quand le lot rassemble plusieurs analyses — voir « Choisir sa vue » |
 | `panels` | des panneaux | Facultatif. Les panneaux de l'Expert ouverts d'office — voir « Les panneaux de l'Expert » |
 | `show` | `expert` | Facultatif. L'action n'existe qu'en mode Expert : ni montrée ni lancée en Simple |
 
@@ -491,6 +492,7 @@ résumé pour un débutant et en détail pour l'Expert, en français comme en an
 |---|---|---|
 | `scan` | `true` / `false` | `true` = le script sait analyser. Sans lui, rien de ce qui suit n'est lu. |
 | `view` | une vue, puis `expert=<vue>` si l'Expert doit en voir une autre | La présentation de l'analyse — voir « Choisir sa vue ». Absente : la liste à cocher. |
+| `chart` | `donut`, `crown`, `gauge`, `bar`, `rows`, `treemap`, `waffle` | Le graphique du résumé Simple, quand le lot rassemble plusieurs analyses. Absent : l'anneau-engrenage (`donut`). |
 | `panels` | des panneaux, séparés par des espaces | Les panneaux de l'Expert ouverts d'office — voir « Les panneaux de l'Expert » |
 | `show` | `expert` | L'action n'existe qu'en Expert — voir « Ce qui ne s'affiche que dans un mode » |
 
@@ -738,8 +740,21 @@ retombe sur la liste à cocher : jamais un écran vide.
 
 En mode Simple, la vue du script ne s'applique que si le lot ne contient **qu'une** action
 analysable. Dès qu'il y en a plusieurs, WinTool les rassemble dans son propre résumé : un
-poste par groupe, le graphique choisi dans les réglages (l'anneau par défaut), et des
-chevrons pour déplier le détail.
+poste par groupe, un graphique, et des chevrons pour déplier le détail.
+
+**Le graphique du résumé se déclare** (`## chart`, 1.7 — c'était un réglage de l'utilisateur
+jusqu'à la 1.6) : c'est le script qui sait ce qui montre le mieux ce qu'il trouve. La première
+action du lot, dans l'ordre du lot, qui en déclare un décide ; aucune : l'anneau-engrenage.
+
+| `chart` | Le graphique | Pour |
+|---|---|---|
+| `donut` | L'anneau-engrenage : un arc par poste | Des tailles qui s'additionnent (défaut) |
+| `crown` | La double couronne : les postes au centre, ce qui les compose autour | Des postes faits de plusieurs éléments |
+| `gauge` | La jauge à dents seule, et « Voir le détail » | Un seul total qui compte |
+| `bar` | La barre d'espace du disque | Ce qui sera libéré, rapporté au disque |
+| `rows` | Le fond de chaque ligne, rempli à sa part | Des postes nombreux, à comparer |
+| `treemap` | Les rectangles | Quelques gros postes et beaucoup de petits |
+| `waffle` | La gaufre : cent cases | Des proportions, plutôt que des tailles |
 
 ### Les panneaux de l'Expert
 
@@ -1215,6 +1230,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `GROUPE_INCONNU` | erreur | `[group:Clé]` vise un groupe que `REPORT` ne déclare pas |
 | `GROUPE_ORPHELIN` | avertissement | Groupe déclaré dans `REPORT` où aucune option ni aucun choix ne se range |
 | `VUE_INCONNUE` | erreur | `view` ou `[view:]` hors des vues admises, ou `view` d'une autre forme que `<vue> expert=<vue>` |
+| `GRAPHIQUE_INCONNU` | erreur | `chart` hors des graphiques admis |
 | `PANNEAU_INCONNU` | erreur | `panels` cite un panneau inconnu |
 
 Les contrôles des lignes d'analyse ne voient que ce qui est écrit **en toutes lettres** :

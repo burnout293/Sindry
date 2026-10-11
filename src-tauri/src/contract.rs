@@ -57,6 +57,14 @@ pub const VUES: [&str; 14] = [
     "history",
 ];
 
+/// Les graphiques du resume de l'analyse en mode Simple (`## chart`, 1.7) :
+/// l'anneau-engrenage, la double couronne, la jauge a dents, la barre d'espace,
+/// le fond des lignes, les rectangles, la gaufre. Doit rester d'accord avec
+/// `$GRAPHIQUES` dans `tools/lint-scripts.ps1` et `resume()` dans analyse.js.
+pub const GRAPHIQUES: [&str; 7] = [
+    "donut", "crown", "gauge", "bar", "rows", "treemap", "waffle",
+];
+
 /// Les panneaux du mode Expert qu'un script peut ouvrir d'office (`## panels`).
 pub const PANNEAUX: [&str; 8] = [
     "config",
@@ -169,6 +177,11 @@ pub struct Script {
     /// liste a cocher.
     pub view: String,
     pub view_expert: String,
+    /// `chart : crown` — le graphique du resume quand le lot rassemble plusieurs
+    /// actions analysables (1.7). Jusqu'a la 1.6, c'etait un reglage de
+    /// l'utilisateur ; c'est au script de savoir ce qui montre le mieux ce qu'il
+    /// trouve. Vide : l'anneau-engrenage.
+    pub chart: String,
     /// `panels : plan progress` — panneaux de l'Expert ouverts d'office.
     pub panels: Vec<String>,
     /// Le bloc REPORT, par cle.
@@ -633,6 +646,18 @@ pub fn parse(source: &str) -> Script {
             ));
         }
     }
+    let chart = head.get("chart").cloned().unwrap_or_default();
+    if !chart.is_empty() && !GRAPHIQUES.contains(&chart.as_str()) {
+        findings.push(constat(
+            1,
+            true,
+            "GRAPHIQUE_INCONNU",
+            format!(
+                "'chart' : graphique '{chart}' inconnu ; graphiques admis : {}.",
+                GRAPHIQUES.join(" ")
+            ),
+        ));
+    }
     let panels: Vec<String> = head
         .get("panels")
         .map(String::as_str)
@@ -765,6 +790,7 @@ pub fn parse(source: &str) -> Script {
         show,
         view,
         view_expert,
+        chart,
         panels,
         report,
     }
@@ -1077,6 +1103,34 @@ if ($env:WINTOOL_CONFIG) { }
         let codes: Vec<&str> = s.findings.iter().map(|f| f.code.as_str()).collect();
         assert!(codes.contains(&"ETIQUETTE_INCONNUE"), "{codes:?}");
         assert!(codes.contains(&"GROUPE_INCONNU"), "{codes:?}");
+    }
+
+    #[test]
+    fn lit_le_graphique_du_resume() {
+        // 1.7 : le graphique du resume se declare dans l'entete.
+        let src = EXEMPLE.replace(
+            "## engine        : auto",
+            "## engine        : auto
+## chart         : crown",
+        );
+        let s = parse(&src);
+        assert_eq!(s.chart, "crown");
+        assert!(!s.findings.iter().any(|f| f.code == "GRAPHIQUE_INCONNU"));
+        assert_eq!(
+            parse(EXEMPLE).chart,
+            "",
+            "absent : l'anneau-engrenage, choisi par l'interface"
+        );
+
+        let inconnu = parse(&EXEMPLE.replace(
+            "## engine        : auto",
+            "## engine        : auto
+## chart         : camembert",
+        ));
+        assert!(inconnu
+            .findings
+            .iter()
+            .any(|f| f.code == "GRAPHIQUE_INCONNU"));
     }
 
     #[test]

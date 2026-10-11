@@ -639,8 +639,7 @@ réellement.
 | Thème (clair / sombre / Windows) | **partout**, icône engrenage |
 | Langue | **partout** |
 | Comportement des mises à jour | **partout** |
-| Ambiance (1.8) : Braise ardente par défaut, Braise crépuscule, Synthwave, Terminal vert ou ambre, Aurore boréale ou australe (§15.4) | **partout** |
-| Graphique de l'analyse (1.7) : l'anneau-engrenage, la double couronne, la jauge à dents, la barre d'espace, le fond des lignes, les rectangles ou la gaufre (§17.2) | **partout** |
+| Ambiance (1.8) : Braise ardente par défaut, Braise crépuscule, Synthwave, Spatial, Terminal vert ou ambre, Aurore boréale ou australe (§15.4) | **partout** |
 | Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
 | Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2) | Expert |
 | Comportement en cas d'échec | Expert |
@@ -1210,13 +1209,14 @@ mais chaque thème l'habille.
 | Ambiance | Variantes | Décor |
 |---|---|---|
 | **Synthwave** | Miami (clair), Nuit (sombre) — suit le réglage 1.1 | Soleil rayé, montagnes, grille de néon qui défile ; ligne d'eau en néon ; titre en italique lumineux |
+| **Spatial** | Hangar (clair), Patrouille (sombre) — suit le réglage 1.1 | Planète holographique en fil de fer qui tourne sur l'anneau d'un projecteur, étoiles, traînées ; bouées en balises de carte (losanges) ; capitales fines et espacées, équerres autour de la carte choisie (maquette M19) |
 | **Terminal** | Vert, Ambre — sombre seulement | Chasse fixe partout, lignes de balayage, lueur du phosphore ; ligne d'eau en pointillés ; curseur qui clignote |
 | **Aurore** | Boréale, Australe — sombre seulement | Voiles de lumière animés, collines ; bouées et carte en verre dépoli |
 
 Sur une ambiance sombre seulement, le bouton soleil / lune et le réglage 1.1 sont désactivés
 et le disent. L'Expert prend les jetons, pas le décor. Chaque variante est mesurée au seuil
-ci-dessous (pire cas : 5,07). Un thème Star Wars, style Nouvelle République, est en maquette
-(M19, « Escadron »). Une variante est un jeu complet — fonds,
+ci-dessous (pire cas : 4,95, Spatial clair). Un thème Star Wars à proprement parler, style
+Nouvelle République, viendra plus tard : la maquette M19 qui le cherchait est devenue Spatial. Une variante est un jeu complet — fonds,
 textes, accent, texte d'accent, états, séries des graphiques (`--serie-1` à `--serie-6`),
 contour d'engrenage, journal — mesuré au seuil ci-dessous ; changer de variante ne change
 rien d'autre. Les couleurs de la 1.5 (orange, Marée, bleu, violet, framboise) sont
@@ -1582,9 +1582,11 @@ analyser, et elle est sautée sinon.
    - un lot d'**une seule** action analysable qui déclare une vue s'affiche dans cette vue ;
    - sinon, **le résumé** : un poste par groupe, chacun avec sa case et sa taille, et un
      chevron qui déplie son détail en arborescence ; le graphique choisi dans les réglages
-     (1.7 : l'anneau-engrenage par défaut ; la double couronne, qui montre autour de chaque
-     poste ce qui le compose ; la jauge à dents seule, avec « Voir le détail » ; la barre
-     d'espace, le fond des lignes, les rectangles ou la gaufre) ; un total (« À libérer :
+     — **choisi par le script** (`## chart`, 1.7 ; c'était le réglage 1.7 jusqu'à la 1.6) : la
+     première action du lot qui en déclare un décide, l'anneau-engrenage sinon. Au choix :
+     l'anneau-engrenage, la double couronne, qui montre autour de chaque poste ce qui le
+     compose, la jauge à dents seule, avec « Voir le détail », la barre d'espace, le fond des
+     lignes, les rectangles ou la gaufre (`docs/FORMAT_SCRIPT.md`) ; un total (« À libérer :
      1,1 Go »). La vue `gauge` d'un script (une mesure avec un maximum) est elle aussi une
      jauge à dents, à la couleur de son état.
    - Les actions du lot qui ne savent pas analyser sont listées à part : elles

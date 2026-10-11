@@ -35,7 +35,10 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — la balise sur « Droits limités » ; encart et guide à la lampe torche quand une action a besoin des droits administrateur (§15.6) | Fait |
 | | — ambiances Synthwave, Terminal et Aurore, avec leur décor (§15.4, maquette M17) | Fait |
 | | — bienvenue en cinq pages (réglages d'abord, visite proposée à la fin), visites de l'accueil et de l'Expert, centre d'aide « ? », contenu dans `src/guide.json` vérifié en CI (§13, maquette M18) | Fait |
-| | — thème Star Wars « Escadron », style Nouvelle République (maquette M19) | À décider |
+| | — ambiance **Spatial** (maquette M19, d'abord pensée comme un thème Star Wars) | Fait |
+| | — le graphique du résumé se déclare dans le script (`## chart`) ; le réglage 1.7 disparaît (§17.2) | Fait |
+| | — icône de l'installeur et du désinstalleur (celle de NSIS jusqu'ici) | Fait |
+| | — un thème Star Wars, style Nouvelle République | Plus tard |
 | **2.0** | WinTool devient **Sindry** | Prévue |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

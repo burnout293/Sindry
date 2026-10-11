@@ -178,10 +178,6 @@ pub struct Settings {
     /// version ajoute arrivent coches ; on ne retient que les refus.
     #[serde(default)]
     pub sources_exclus: BTreeMap<String, Vec<String>>,
-    /// Graphique du resume de l'analyse en mode Simple (§17) : `donut`, `bar`,
-    /// `rows`, `treemap`, `waffle`, `gauge` ou `crown`. Vide : l'anneau.
-    #[serde(default)]
-    pub analysis_chart: String,
     /// Variante de couleurs de l'interface (§15.4) : une de [`ACCENTS`]. Vide,
     /// ou une valeur d'avant la 1.6 (orange, maree…) : Ardente.
     #[serde(default)]
@@ -190,19 +186,15 @@ pub struct Settings {
 
 /// Ambiances (reglage 1.8) : Braise — Ardente (defaut) et Crepuscule — et les
 /// themes d'ambiance de la 1.7. Terminal et Aurore n'existent qu'en sombre.
-pub const ACCENTS: [&str; 7] = [
+pub const ACCENTS: [&str; 8] = [
     "ardente",
     "crepuscule",
     "synthwave",
+    "spatial",
     "terminal-vert",
     "terminal-ambre",
     "aurore-boreale",
     "aurore-australe",
-];
-
-/// Graphiques proposes pour le resume de l'analyse.
-pub const GRAPHIQUES_ANALYSE: [&str; 7] = [
-    "donut", "crown", "gauge", "bar", "rows", "treemap", "waffle",
 ];
 
 /// Valeurs admises pour `catalogue_source` une fois la decision prise.
@@ -327,7 +319,6 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         catalogue_reminder_hidden: false,
         sources_inactives: Vec::new(),
         sources_exclus: BTreeMap::new(),
-        analysis_chart: String::new(),
         accent: String::new(),
     }
 }

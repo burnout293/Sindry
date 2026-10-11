@@ -35,6 +35,8 @@
     "windows": {
       "nsis": {
         "installMode": "perMachine",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
         "installerHooks": "installeur/crochets.nsh",
         "template": "installeur/installer.nsi",
         "languages": ["English", "French"]

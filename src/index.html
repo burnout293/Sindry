@@ -94,6 +94,19 @@
           <svg class="sw-montagnes" viewBox="0 0 960 52" preserveAspectRatio="none"><path d="M0 52 L0 34 L80 20 L150 38 L230 9 L320 39 L400 26 L470 43 L560 14 L650 40 L720 23 L800 38 L880 13 L960 32 L960 52Z" /></svg>
           <div class="sw-sol-cadre"><div class="sw-sol"></div></div>
         </div>
+        <div class="amb-spatial">
+          <div class="sp-etoiles"></div><div class="sp-trainee t1"></div><div class="sp-trainee t2"></div>
+          <div class="sp-holo">
+            <svg viewBox="-140 -140 280 280">
+              <circle class="sp-contour" r="130" />
+              <ellipse class="sp-lat" rx="130" ry="30" /><ellipse class="sp-lat" rx="113" ry="26" cy="-65" /><ellipse class="sp-lat" rx="65" ry="15" cy="-112" />
+              <ellipse class="sp-mer" rx="130" ry="130" /><ellipse class="sp-mer" rx="130" ry="130" style="animation-delay: -3.5s" />
+              <ellipse class="sp-mer" rx="130" ry="130" style="animation-delay: -7s" /><ellipse class="sp-mer" rx="130" ry="130" style="animation-delay: -10.5s" />
+              <ellipse class="sp-orbite" rx="180" ry="40" transform="rotate(-12)" />
+            </svg>
+          </div>
+          <div class="sp-anneau"></div>
+        </div>
         <div class="amb-aurore">
           <div class="au-voile v1"></div><div class="au-voile v2"></div><div class="au-voile v3"></div>
           <svg class="au-collines" viewBox="0 0 960 140" preserveAspectRatio="none"><path d="M0 140 L0 50 C120 10 220 70 330 40 C450 6 540 80 660 36 C780 0 880 56 960 30 L960 140Z" /><path d="M0 140 L0 100 C160 70 300 120 480 96 C650 72 800 112 960 92 L960 140Z" /></svg>
@@ -405,6 +418,7 @@
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="ardente"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="crepuscule"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="synthwave"></button>
+                    <button type="button" role="radio" class="accent-pastille" data-set-accent="spatial"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="terminal-vert"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="terminal-ambre"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="aurore-boreale"></button>
@@ -438,18 +452,6 @@
                 <div class="setrow" data-num="1.5">
                   <span class="setrow-txt"><span class="num">1.5</span><span class="rg-libelle"><b id="setMajVerifLabel"></b><span class="desc" data-i18n="reglages.d_maj_verifier"></span><span class="maj-etat" id="majEtat" aria-live="polite"></span></span></span>
                   <button class="btn compact" type="button" id="btnVerifierMaj"></button>
-                </div>
-                <div class="setrow" data-num="1.7">
-                  <span class="setrow-txt"><span class="num">1.7</span><span class="rg-libelle"><b id="setGrapheLabel"></b><span class="desc" data-i18n="reglages.d_graphique"></span></span></span>
-                  <select class="cat-select" id="setGrapheSelect">
-                    <option value="donut"></option>
-                    <option value="crown"></option>
-                    <option value="gauge"></option>
-                    <option value="bar"></option>
-                    <option value="rows"></option>
-                    <option value="treemap"></option>
-                    <option value="waffle"></option>
-                  </select>
                 </div>
                 <div class="setrow" data-num="1.6">
                   <span class="setrow-txt"><span class="num">1.6</span><span class="rg-libelle"><b id="setVisiteLabel"></b><span class="desc" data-i18n="reglages.d_visite"></span></span></span>

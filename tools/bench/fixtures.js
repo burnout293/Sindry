@@ -102,7 +102,7 @@
         translations: { fr: { title: titre, desc, options: {}, choices: {}, report: {} } },
         findings: extra.findings || [],
         // Struct `contract::Script`, champs de la 1.4 (§17).
-        scan: false, show: '', view: '', view_expert: '', panels: [], report: {},
+        scan: false, show: '', view: '', view_expert: '', chart: '', panels: [], report: {},
         ...(extra.meta || {}),
       },
       attention: extra.attention || [],
@@ -223,7 +223,9 @@
     script('leftovers', 'Remove leftovers of uninstalled programs', 'Folders and keys left behind', 'cleaning', 'package-x', {
       options: [optA('Leftovers', 'items', 'Leftovers of uninstalled programs', '', [])],
       meta: {
-        scan: true, panels: ['plan', 'attention'],
+        // `## chart` (1.7) : la double couronne, pour le resume des lots ou
+        // c'est la premiere action a declarer un graphique.
+        scan: true, chart: 'crown', panels: ['plan', 'attention'],
         report: { LowConfidence: { kind: 'note', level: 'info', label: 'Items “to check” may still be used by another program: they are not ticked.', desc: '' } },
         translations: trA('Retirer les restes de programmes', 'Dossiers et clés laissés derrière eux', { Leftovers: ['Restes de programmes désinstallés', ''] }, {}, {
           LowConfidence: ['Les éléments « À vérifier » servent peut-être encore à un autre programme : ils ne sont pas cochés.', ''],
@@ -806,7 +808,6 @@
     run_script: (a) => lancer(a?.req),
     scan_script: (a) => analyserBanc(a?.req),
     disk_space: () => ({ lecteur: 'C:', total: 511_101_108_224, libre: 46_170_898_432 }),
-    set_analysis_chart: (a) => { reglages.analysis_chart = a.chart; return JSON.parse(JSON.stringify(reglages)); },
     set_accent: (a) => { reglages.accent = a.accent; return JSON.parse(JSON.stringify(reglages)); },
     cancel_script: () => {
       if (enCours) enCours.arrete = true;

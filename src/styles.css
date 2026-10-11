@@ -343,6 +343,138 @@
   --sh: 0 2px 10px rgba(0, 0, 0, .4);
   --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
 }
+/* Spatial (maquette M19, d'abord pensee comme un theme Star Wars) : suit le
+   reglage clair / sombre comme Braise — Hangar en clair, Patrouille en sombre.
+   `--holo` : la couleur de l'hologramme ; `--etoile` : celle des etoiles. */
+:root[data-accent="spatial"] {
+  --bg: #EEF1F4;
+  --surface: #FFFFFF;
+  --surface-2: #E6EAEF;
+  --surface-3: #D8DEE6;
+  --border: #D3DAE3;
+  --border-2: #B8C3D0;
+  --text: #111A26;
+  --text-2: #4B5A6B;
+  --text-3: #56657A;
+  --ink: #1A0A00;
+  --ok: #0E7550;
+  --warn: #8F5D0C;
+  --err: #C0263F;
+  --ok-s: #E6F5EC;
+  --warn-s: #FBF3E2;
+  --err-s: #FBEAEC;
+  --acc: #F06A12;
+  --acc-2: #FF8A3D;
+  --acc-on: #A84A08;
+  --surface-soft: #F6F8FA;
+  --acc-soft: #FDEBDD;
+  --knob-off: #8794A3;
+  --serie-1: #1C7FD0;
+  --serie-2: #F06A12;
+  --serie-3: #0E9F6E;
+  --serie-4: #7A5AF8;
+  --serie-5: #D9A400;
+  --serie-6: #D6336C;
+  --rouage-a: #1C7FD0;
+  --rouage-b: #5FA8E8;
+  --eau-a: #1C7FD0;
+  --eau-b: #A9C9E8;
+  --eau-fond: 0;
+  --eau-surface: .06;
+  --holo: #1C7FD0;
+  --etoile: rgba(30, 60, 100, .3);
+  --term-bg: #111A26;
+  --term-text: #E3EAF2;
+  --term-dim: #8FA0B4;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="spatial"]:not([data-theme="light"]) {
+    --bg: #070B12;
+    --surface: #0E1622;
+    --surface-2: #142033;
+    --surface-3: #1B2A40;
+    --border: #1E2D42;
+    --border-2: #2C4060;
+    --text: #E8EEF5;
+    --text-2: #97A8BC;
+    --text-3: #8193A8;
+    --ink: #1A0A00;
+    --ok: #4BE3A0;
+    --warn: #FFC24D;
+    --err: #FF6B7A;
+    --ok-s: #0C2620;
+    --warn-s: #2A2210;
+    --err-s: #2E141C;
+    --acc: #FF7A1F;
+    --acc-2: #FF9A4D;
+    --acc-on: #FF9A4D;
+    --surface-soft: #0A111B;
+    --acc-soft: #2A1A10;
+    --knob-off: #5A6B80;
+    --serie-1: #5FE3FF;
+    --serie-2: #FF7A1F;
+    --serie-3: #4BE3A0;
+    --serie-4: #B48CFF;
+    --serie-5: #FFC24D;
+    --serie-6: #FF6B9A;
+    --rouage-a: #5FE3FF;
+    --rouage-b: #2E8BFF;
+    --eau-a: #5FE3FF;
+    --eau-b: #0E3A5C;
+    --eau-fond: 0;
+    --eau-surface: .05;
+    --holo: #5FE3FF;
+    --etoile: rgba(220, 235, 255, .8);
+    --term-bg: #04070C;
+    --term-text: #D6E4F2;
+    --term-dim: #7D90A6;
+    --sh: 0 2px 10px rgba(0, 0, 0, .4);
+    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+  }
+}
+:root[data-theme="dark"][data-accent="spatial"] {
+  --bg: #070B12;
+  --surface: #0E1622;
+  --surface-2: #142033;
+  --surface-3: #1B2A40;
+  --border: #1E2D42;
+  --border-2: #2C4060;
+  --text: #E8EEF5;
+  --text-2: #97A8BC;
+  --text-3: #8193A8;
+  --ink: #1A0A00;
+  --ok: #4BE3A0;
+  --warn: #FFC24D;
+  --err: #FF6B7A;
+  --ok-s: #0C2620;
+  --warn-s: #2A2210;
+  --err-s: #2E141C;
+  --acc: #FF7A1F;
+  --acc-2: #FF9A4D;
+  --acc-on: #FF9A4D;
+  --surface-soft: #0A111B;
+  --acc-soft: #2A1A10;
+  --knob-off: #5A6B80;
+  --serie-1: #5FE3FF;
+  --serie-2: #FF7A1F;
+  --serie-3: #4BE3A0;
+  --serie-4: #B48CFF;
+  --serie-5: #FFC24D;
+  --serie-6: #FF6B9A;
+  --rouage-a: #5FE3FF;
+  --rouage-b: #2E8BFF;
+  --eau-a: #5FE3FF;
+  --eau-b: #0E3A5C;
+  --eau-fond: 0;
+  --eau-surface: .05;
+  --holo: #5FE3FF;
+  --etoile: rgba(220, 235, 255, .8);
+  --term-bg: #04070C;
+  --term-text: #D6E4F2;
+  --term-dim: #7D90A6;
+  --sh: 0 2px 10px rgba(0, 0, 0, .4);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+}
 :root[data-accent="terminal-vert"]:not([data-theme="light"]),
 :root[data-accent="terminal-vert"][data-theme="light"] {
   color-scheme: dark;
@@ -690,7 +822,8 @@ body[data-mode="expert"] .water { display: none; }
 .ambiance { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; pointer-events: none; translate: 0 var(--maree, 0px); }
 .ambiance > div { display: none; position: absolute; inset: 0; }
 :root[data-accent="synthwave"] .amb-synthwave,
-:root[data-accent^="aurore"] .amb-aurore { display: block; }
+:root[data-accent^="aurore"] .amb-aurore,
+:root[data-accent="spatial"] .amb-spatial { display: block; }
 body[data-mode="expert"] .ambiance { display: none; }
 body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ambiance *, .ambiance *::before { animation: none !important; } }
@@ -722,6 +855,57 @@ body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-st
 :root[data-accent="synthwave"] .btn.primary { box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent); }
 /* Le libelle du champ passe devant le soleil : un halo du fond le detache. */
 :root[data-accent="synthwave"] .sect-champ { text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg); color: var(--text); }
+
+/* Spatial : une planete holographique en fil de fer qui tourne, posee sur
+   l'anneau d'un projecteur, des etoiles qui derivent, des trainees de lumiere.
+   Les bouees deviennent des balises de carte (losanges) ; capitales fines et
+   espacees, coins droits, equerres autour de la carte choisie. */
+.sp-etoiles { position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.6px 1.6px at 20px 30px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1px 1px at 140px 90px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1px 1px at 230px 170px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 60px 220px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 40px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1px 1px at 190px 250px, var(--etoile) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 280px 140px, var(--etoile) 50%, transparent 51%);
+  background-size: 340px 260px; animation: sp-derive 140s linear infinite; }
+@keyframes sp-derive { to { background-position: -340px 0; } }
+.sp-trainee { position: absolute; left: 0; height: 1px; opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--holo), transparent); animation: sp-trainee 7s ease-in infinite; }
+.sp-trainee.t1 { top: 120px; width: 180px; animation-delay: 1s; }
+.sp-trainee.t2 { top: 190px; width: 120px; animation-delay: 4.2s; }
+@keyframes sp-trainee { 0% { transform: translateX(-200px); opacity: 0; } 8% { opacity: .7; } 22%, 100% { transform: translateX(2400px); opacity: 0; } }
+.sp-holo { position: absolute; left: 50%; bottom: -260px; width: 560px; height: 560px; margin-left: -280px; }
+.sp-holo svg { width: 100%; height: 100%; overflow: visible; }
+.sp-contour { fill: color-mix(in srgb, var(--holo) 9%, transparent); stroke: var(--holo); stroke-width: 1.4; opacity: .85; }
+.sp-lat { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .4; }
+.sp-mer { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .5; transform-box: fill-box; transform-origin: center;
+  animation: sp-tourne 14s linear infinite; }
+/* Un meridien qui tourne, c'est une ellipse dont la largeur suit un cosinus. */
+@keyframes sp-tourne { 0% { transform: scaleX(1); } 25% { transform: scaleX(0); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+.sp-orbite { fill: none; stroke: var(--acc); stroke-width: 1; stroke-dasharray: 3 6; opacity: .7; }
+.sp-anneau { position: absolute; left: 50%; bottom: 8px; width: 760px; height: 70px; margin-left: -380px; border-radius: 50%;
+  border: 1.5px solid var(--holo); opacity: .45;
+  box-shadow: 0 0 30px color-mix(in srgb, var(--holo) 20%, transparent), inset 0 0 30px color-mix(in srgb, var(--holo) 20%, transparent); }
+:root[data-accent="spatial"] .water.surface path:last-child { stroke: var(--holo); stroke-dasharray: 1 6; opacity: .45; }
+:root[data-accent="spatial"] #s1Titre { text-transform: uppercase; font-weight: 300; letter-spacing: .14em; }
+:root[data-accent="spatial"] .buoy .bi { width: 44px; height: 44px; margin: 7px auto; border-radius: 3px; transform: rotate(45deg);
+  border: 1.5px solid var(--holo); box-shadow: 0 0 14px color-mix(in srgb, var(--holo) 25%, transparent); }
+:root[data-accent="spatial"] .buoy .bi svg { transform: rotate(-45deg); width: 20px; height: 20px; }
+:root[data-accent="spatial"] .buoy .blabel { border-radius: 2px; border-left: 2px solid var(--holo); }
+:root[data-accent="spatial"] .buoy .bt { text-transform: uppercase; letter-spacing: .1em; font-size: 11.5px; }
+:root[data-accent="spatial"] .reco { position: relative; border-radius: 3px; border-width: 1px; }
+:root[data-accent="spatial"] .reco .ri { border-radius: 2px; }
+:root[data-accent="spatial"] .reco .rt { text-transform: uppercase; letter-spacing: .1em; font-size: 16px; font-weight: 650; }
+:root[data-accent="spatial"] .reco[aria-current="true"]::before,
+:root[data-accent="spatial"] .reco[aria-current="true"]::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--acc); pointer-events: none;
+}
+:root[data-accent="spatial"] .reco[aria-current="true"]::before { top: -7px; left: -7px; border-right: none; border-bottom: none; }
+:root[data-accent="spatial"] .reco[aria-current="true"]::after { bottom: -7px; right: -7px; border-left: none; border-top: none; }
+:root[data-accent="spatial"] .btn.primary.big { border-radius: 3px; text-transform: uppercase; letter-spacing: .16em; font-size: 13.5px;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 40%, transparent); }
 
 /* Terminal : tout en chasse fixe (jetons), lignes de balayage et lueur du
    phosphore sur tout l'écran, une ligne d'eau en pointillés, un curseur. */
@@ -2731,6 +2915,7 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .accent-pastille[data-set-accent="ardente"]         { --pal: linear-gradient(135deg, #FEC923, #FD5632); }
 .accent-pastille[data-set-accent="crepuscule"]      { --pal: linear-gradient(135deg, #FF7A45, #DC1178); }
 .accent-pastille[data-set-accent="synthwave"]       { --pal: linear-gradient(135deg, #FF2BD6, #00E5FF); }
+.accent-pastille[data-set-accent="spatial"]         { --pal: radial-gradient(circle at 40% 40%, #5FE3FF 0 22%, #0E1622 60%, #FF7A1F 61% 70%, #0E1622 71%); }
 .accent-pastille[data-set-accent="terminal-vert"]   { --pal: radial-gradient(circle, #6CFF94 0 35%, #020A04 75%); }
 .accent-pastille[data-set-accent="terminal-ambre"]  { --pal: radial-gradient(circle, #FFB000 0 35%, #0C0700 75%); }
 .accent-pastille[data-set-accent="aurore-boreale"]  { --pal: linear-gradient(135deg, #3CFFB4, #38C6FF 55%, #06101E); }

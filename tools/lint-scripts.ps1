@@ -81,6 +81,8 @@ $TYPES_AVEC_CHOIX = @('select', 'multi')
 $VUES      = @('minimal', 'light', 'gauge', 'checklist', 'bars', 'donut', 'tiles', 'compare',
                'tree', 'table', 'treemap', 'timeline', 'chart', 'history')
 $PANNEAUX  = @('config', 'progress', 'plan', 'payload', 'attention', 'history', 'origin', 'disk')
+# Le graphique du résumé Simple, quand le lot rassemble plusieurs analyses (1.7).
+$GRAPHIQUES = @('donut', 'crown', 'gauge', 'bar', 'rows', 'treemap', 'waffle')
 $CHAMPS_FIND   = @('size', 'count', 'state', 'checked', 'ms', 'current', 'recommended', 'show')
 $CHAMPS_ITEM   = @('id', 'parent', 'group', 'name', 'path', 'publisher', 'label', 'kind', 'confidence',
                    'impact', 'risk', 'locked', 'version', 'to', 'date', 'keep', 'size', 'count',
@@ -888,6 +890,9 @@ function Test-Presentation {
                 Add-Constat $Fichier $v.Ligne 'erreur' 'VUE_INCONNUE' "'view' : vue '$nom' inconnue ; vues admises : $($VUES -join ' ')."
             }
         }
+    }
+    if ($Champs.ContainsKey('chart') -and $GRAPHIQUES -cnotcontains $Champs['chart'].Valeur) {
+        Add-Constat $Fichier $Champs['chart'].Ligne 'erreur' 'GRAPHIQUE_INCONNU' "'chart' : graphique '$($Champs['chart'].Valeur)' inconnu ; graphiques admis : $($GRAPHIQUES -join ' ')."
     }
     if ($Champs.ContainsKey('panels')) {
         foreach ($p in ($Champs['panels'].Valeur -split '[\s,]+' | Where-Object { $_ })) {

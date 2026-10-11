@@ -1254,18 +1254,6 @@ fn set_ui_scale(app: tauri::AppHandle, value: f32) -> Result<Settings, String> {
     })
 }
 
-/// Graphique du resume de l'analyse en mode Simple (§17).
-#[tauri::command]
-fn set_analysis_chart(app: tauri::AppHandle, chart: String) -> Result<Settings, String> {
-    if !settings::GRAPHIQUES_ANALYSE.contains(&chart.as_str()) {
-        return Err(format!("graphique inconnu : {chart}"));
-    }
-    with_settings(&app, |s| {
-        s.analysis_chart = chart;
-        Ok(())
-    })
-}
-
 /// Couleur d'accent de l'interface (§15.4, reglage 1.8).
 #[tauri::command]
 fn set_accent(app: tauri::AppHandle, accent: String) -> Result<Settings, String> {
@@ -1470,7 +1458,6 @@ pub fn run() {
             engines,
             run_script,
             scan_script,
-            set_analysis_chart,
             set_accent,
             disk_space,
             simulation_state,
