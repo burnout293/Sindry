@@ -52,8 +52,10 @@ struct Progression {
     total: Option<u64>,
 }
 
-/// Politiques admises pour le reglage `update_policy`.
-pub const POLITIQUES: [&str; 2] = ["propose", "never"];
+/// Politiques admises pour le reglage `update_policy` (1.4, « Mises a jour ») :
+/// proposer les versions stables, proposer aussi les versions de test
+/// (`beta`, 1.8), ne jamais proposer.
+pub const POLITIQUES: [&str; 3] = ["propose", "beta", "never"];
 
 pub fn politique_valide(p: &str) -> bool {
     POLITIQUES.contains(&p)
@@ -160,6 +162,7 @@ mod tests {
     fn seules_les_politiques_connues_sont_admises() {
         assert!(politique_valide("propose"));
         assert!(politique_valide("never"));
+        assert!(politique_valide("beta"));
         // L'interface n'en propose pas d'autre ; une valeur inconnue enregistree
         // serait lue au demarrage sans que personne ne sache quoi en faire.
         assert!(!politique_valide("auto"));

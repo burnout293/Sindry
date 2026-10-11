@@ -638,8 +638,7 @@ réellement.
 |---|---|
 | Thème (clair / sombre / Windows) | **partout**, icône engrenage |
 | Langue | **partout** |
-| Comportement des mises à jour | **partout** |
-| Proposer les versions de test (version 1.8, réglage 1.7) : les pré-versions, prises dans la liste des releases plutôt qu'à `releases/latest` | **partout** |
+| Mises à jour (1.4) : proposer uniquement les versions stables, proposer aussi les versions bêta (1.8 : la release publiée la plus récente, pré-version comprise, prise dans la liste des releases plutôt qu'à `releases/latest`), ne jamais proposer | **partout** |
 | Ambiance (1.8) : Braise ardente par défaut, Braise crépuscule, Synthwave, Spatial, Terminal vert ou ambre, Aurore boréale ou australe (§15.4) | **partout** |
 | Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
 | Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2) | Expert |

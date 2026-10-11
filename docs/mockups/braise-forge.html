@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Braise : la Forge</title>
+<!--
+  Maquette 21. La proposition B de M20 (Forge), retravaillée au niveau de
+  Synthwave, Spatial et Terminal. On garde la roue qui tourne en fond — deux,
+  désormais, qui s'engrènent — et tout le reste devient métal travaillé :
+  plaques biseautées et rivetées, écrous à six pans pour les bouées, une
+  rigole de métal en fusion à la place de l'eau, des étincelles au point de
+  contact des roues, des lettres frappées dans l'acier.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.page-h { max-width: 1240px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 700px; line-height: 1.5; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.bloc { max-width: 1240px; margin: 0 auto 26px; }
+.bloc > h2 { font-size: 19px; margin-bottom: 4px; }
+.bloc > p { color: #B4AECA; font-size: 13.5px; margin-bottom: 12px; max-width: 920px; line-height: 1.55; }
+.cadre { width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid #26232F; }
+.notes { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.notes article { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 14px 18px; }
+.notes h3 { font-size: 14px; margin-bottom: 6px; } .notes ul { padding-left: 18px; color: #C9C3D8; font-size: 13px; line-height: 1.6; }
+
+/* ==========================================================================
+   Forge. Fournaise (sombre) et Atelier (clair).
+   ========================================================================== */
+.ecran { position: relative; width: 960px; height: 600px; overflow: hidden; background: var(--fond); color: var(--text); font-family: 'Inter', 'Segoe UI', sans-serif; }
+.ecran[data-v="fournaise"] {
+  --fond: radial-gradient(ellipse at 50% 115%, #3A120C 0%, #160D10 45%, #0C090C 100%);
+  --plaque-a: #2A2326; --plaque-b: #1A1517; --plaque-bord: #4A3C3A; --lumiere: rgba(255, 220, 190, .10); --ombre: rgba(0, 0, 0, .55);
+  --text: #F4ECE6; --text-2: #B9A8A0; --text-3: #8E7D76;
+  --or: #FEC923; --braise: #FD7D26; --vermillon: #FD5632; --magenta: #DC1178; --sur-braise: #1A0B06;
+  --rivet-a: #8A7470; --rivet-b: #3A2E2C; --rouage-op: .22;
+}
+.ecran[data-v="atelier"] {
+  --fond: linear-gradient(#ECE8E4 0%, #DED7D1 70%, #CFC5BE 100%);
+  --plaque-a: #F8F5F2; --plaque-b: #E4DDD7; --plaque-bord: #B9ADA5; --lumiere: rgba(255, 255, 255, .7); --ombre: rgba(60, 40, 30, .22);
+  --text: #23191A; --text-2: #5E4E4B; --text-3: #6E5D59;
+  --or: #F0A70E; --braise: #E2640F; --vermillon: #D9431F; --magenta: #B80F64; --sur-braise: #1A0B06;
+  --rivet-a: #FFFFFF; --rivet-b: #9E918A; --rouage-op: .18;
+}
+.decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+/* Les deux roues, qui s'engrenent : la grande a gauche du titre, la petite a droite, en sens contraire. */
+.roue { position: absolute; opacity: var(--rouage-op); }
+.roue path, .roue circle { fill: none; stroke: url(#gRouage); }
+.roue.grande { left: 170px; top: 10px; width: 400px; height: 400px; animation: tourne 48s linear infinite; }
+.roue.petite { left: 548px; top: 128px; width: 230px; height: 230px; animation: tourne 27.6s linear infinite reverse; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.etincelles { position: absolute; left: 556px; top: 214px; }
+.etincelles i { position: absolute; width: 2px; height: 12px; border-radius: 2px; background: linear-gradient(#FFF3C4, var(--braise)); transform-origin: 50% 100%;
+  opacity: 0; animation: jaillit 1.4s ease-out infinite; }
+@keyframes jaillit { 0% { opacity: 0; transform: rotate(var(--a)) translateY(0); } 8% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-70px); } }
+
+/* L'enclume / l'etabli : une plaque de metal en bas, creusee d'une rigole de metal en fusion qui ondule. */
+.etabli { position: absolute; left: 0; right: 0; bottom: 0; height: 330px;
+  background: linear-gradient(180deg, var(--plaque-a), var(--plaque-b) 40%);
+  box-shadow: inset 0 2px 0 var(--lumiere), inset 0 -40px 80px var(--ombre); }
+.etabli::before { content: ''; position: absolute; inset: 0; opacity: .5;
+  background: repeating-linear-gradient(90deg, transparent 0 3px, rgba(255, 255, 255, .025) 3px 4px); }
+.rigole { position: absolute; left: 0; width: 200%; height: 70px; animation: coule 22s linear infinite; }
+.rigole.haute { top: 4px; } .rigole.basse { top: 150px; animation-duration: 30s; opacity: .7; }
+.rigole path.fond { fill: #120A0A; }
+.rigole path.fonte { fill: none; stroke: url(#gFonte); stroke-width: 9; stroke-linecap: round; filter: drop-shadow(0 0 6px var(--braise)) drop-shadow(0 0 16px var(--vermillon)); }
+@keyframes coule { to { transform: translateX(-50%); } }
+.chaleur { position: absolute; left: 0; right: 0; bottom: 250px; height: 140px; background: linear-gradient(transparent, color-mix(in srgb, var(--vermillon) 18%, transparent)); }
+
+/* La plaque : biseau, lumiere en haut, ombre en bas, quatre rivets. */
+.plaque { position: relative; background: linear-gradient(180deg, var(--plaque-a), var(--plaque-b)); border: 1px solid var(--plaque-bord);
+  box-shadow: inset 0 1px 0 var(--lumiere), inset 0 -2px 0 var(--ombre), 0 8px 22px var(--ombre); border-radius: 4px; }
+.rivets::before, .rivets::after { content: ''; position: absolute; top: 7px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--rivet-a), var(--rivet-b) 70%); box-shadow: 0 1px 1px var(--ombre); }
+.rivets::before { left: 7px; } .rivets::after { right: 7px; }
+.rivets.bas::before, .rivets.bas::after { top: auto; bottom: 7px; }
+.frappe { text-transform: uppercase; letter-spacing: .12em; font-weight: 800; text-shadow: 0 1px 0 var(--lumiere), 0 -1px 0 var(--ombre); }
+
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  background: linear-gradient(180deg, var(--plaque-a), var(--plaque-b)); border-bottom: 1px solid var(--plaque-bord); box-shadow: inset 0 -1px 0 var(--lumiere), 0 4px 14px var(--ombre); }
+.tb img { width: 26px; height: 26px; } .tb .nom { font-size: 13px; }
+.tb .droite { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.levier { display: inline-flex; padding: 3px; background: var(--plaque-b); border: 1px solid var(--plaque-bord); border-radius: 4px; box-shadow: inset 0 2px 4px var(--ombre); }
+.levier span { padding: 5px 13px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); border-radius: 3px; }
+.levier span.on { color: var(--sur-braise); background: linear-gradient(180deg, var(--or), var(--braise)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 10px color-mix(in srgb, var(--braise) 50%, transparent); }
+.boulon { width: 32px; height: 32px; display: grid; place-items: center; color: var(--text-2);
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); background: linear-gradient(180deg, var(--plaque-a), var(--plaque-b)); }
+.boulon svg.i { width: 15px; height: 15px; }
+
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 28px; }
+.contenu h1 { font-size: 30px; }
+.contenu > p { color: var(--text-2); font-size: 13.5px; margin-top: 8px; }
+.reco { margin: 22px auto 0; width: 440px; display: flex; align-items: center; gap: 16px; text-align: left; padding: 16px 22px; }
+.reco.choisie { border-color: var(--braise); box-shadow: inset 0 1px 0 var(--lumiere), 0 0 0 1px var(--braise), 0 0 26px color-mix(in srgb, var(--braise) 35%, transparent), 0 8px 22px var(--ombre); }
+.reco .ri { width: 50px; height: 50px; display: grid; place-items: center; color: var(--sur-braise);
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); background: linear-gradient(180deg, var(--or), var(--braise) 60%, var(--vermillon)); }
+.reco b { font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.reco b em { font-style: normal; font-size: 9.5px; letter-spacing: .14em; padding: 3px 8px; color: var(--sur-braise); background: linear-gradient(180deg, var(--or), var(--braise)); border-radius: 2px; }
+.reco span { color: var(--text-2); font-size: 12.5px; }
+.sect { margin-top: 18px; font-size: 11px; color: var(--text-3); }
+
+/* Les bouees : des ecrous a six pans, poses sur la rigole. */
+.ecrou { position: absolute; z-index: 2; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; animation: flotte 5s ease-in-out infinite alternate; }
+@keyframes flotte { from { translate: 0 -4px; } to { translate: 0 4px; } }
+.ecrou .six { width: 56px; height: 52px; display: grid; place-items: center; color: var(--text);
+  clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
+  background: radial-gradient(circle at 50% 50%, var(--plaque-b) 0 34%, transparent 35%), linear-gradient(180deg, var(--plaque-a), var(--plaque-b) 60%, var(--plaque-bord)); }
+.ecrou .six svg { width: 18px; height: 18px; }
+.ecrou.choisi .six { background: radial-gradient(circle at 50% 50%, #3A1408 0 34%, transparent 35%), linear-gradient(180deg, var(--or), var(--braise) 60%, var(--vermillon)); color: #FFE9C8; }
+.ecrou .etiq { padding: 6px 14px 6px; text-align: center; white-space: nowrap; }
+.ecrou .etiq b { display: block; font-size: 10.5px; }
+.ecrou .etiq small { font-size: 10.5px; color: var(--text-2); }
+
+.barre { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 68px; display: flex; align-items: center; justify-content: center; gap: 22px;
+  background: linear-gradient(180deg, var(--plaque-a), var(--plaque-b)); border-top: 1px solid var(--plaque-bord); box-shadow: inset 0 1px 0 var(--lumiere); font-size: 12.5px; color: var(--text-2); }
+.barre b { color: var(--text); }
+/* Le bouton : une barre de metal chauffe a blanc au centre. */
+.lingot { display: inline-flex; align-items: center; gap: 10px; padding: 12px 30px; font-size: 13px; color: var(--sur-braise); border-radius: 3px;
+  background: linear-gradient(180deg, #FFE9A8 0%, var(--or) 18%, var(--braise) 60%, var(--vermillon) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(120, 20, 0, .45), 0 0 22px color-mix(in srgb, var(--braise) 55%, transparent), 0 6px 14px var(--ombre);
+  animation: rougeoie 3s ease-in-out infinite; }
+@keyframes rougeoie { 50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(120, 20, 0, .45), 0 0 34px color-mix(in srgb, var(--vermillon) 70%, transparent), 0 6px 14px var(--ombre); } }
+.secondaire { display: inline-flex; padding: 10px 18px; font-size: 11.5px; color: var(--text); border-radius: 3px; }
+
+/* --- Expert : une fiche ------------------------------------------------------- */
+.ecran.expert { height: 460px; }
+.colonnes { position: relative; z-index: 2; display: grid; grid-template-columns: 250px 1fr; height: calc(100% - 54px); }
+.liste { padding: 14px 10px; border-right: 1px solid var(--plaque-bord); background: linear-gradient(90deg, var(--plaque-b), transparent); }
+.liste .rub { font-size: 10px; color: var(--text-3); padding: 10px 10px 6px; }
+.liste .it { font-size: 12.5px; padding: 9px 10px; color: var(--text-2); display: flex; gap: 9px; border-radius: 3px; }
+.liste .it small { font-family: Consolas, monospace; color: var(--text-3); }
+.liste .it.on { color: var(--text); background: linear-gradient(90deg, color-mix(in srgb, var(--braise) 22%, transparent), transparent); box-shadow: inset 3px 0 0 var(--braise); }
+.fiche { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.fiche .tete { display: flex; gap: 14px; align-items: center; }
+.fiche h3 { font-size: 17px; } .fiche .tete p { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
+.fiche .act { margin-left: auto; display: flex; gap: 10px; }
+.cfg { padding: 6px 18px; }
+.cfg .ln { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid color-mix(in srgb, var(--plaque-bord) 60%, transparent); font-size: 13px; }
+.cfg .ln:last-child { border-bottom: none; } .cfg small { display: block; color: var(--text-3); font-size: 11.5px; margin-top: 2px; }
+/* L'interrupteur : un levier dans sa glissiere. */
+.glissiere { width: 46px; height: 20px; border-radius: 3px; background: var(--plaque-b); border: 1px solid var(--plaque-bord); box-shadow: inset 0 2px 4px var(--ombre); position: relative; }
+.glissiere::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, var(--plaque-a), var(--rivet-b)); }
+.glissiere.on { background: color-mix(in srgb, var(--braise) 25%, var(--plaque-b)); }
+.glissiere.on::after { left: auto; right: 2px; background: linear-gradient(180deg, var(--or), var(--braise)); box-shadow: 0 0 8px var(--braise); }
+
+body.calme .ecran *, body.calme .ecran *::before, body.calme .ecran *::after { animation: none !important; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gRouage" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4AB2E7"/><stop offset=".5" stop-color="#775FD7"/><stop offset="1" stop-color="#CA28B1"/></linearGradient>
+    <linearGradient id="gFonte" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FEC923"/><stop offset=".3" stop-color="#FD7D26"/><stop offset=".6" stop-color="#FD5632"/><stop offset="1" stop-color="#FEC923"/></linearGradient>
+  </defs>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Braise : la Forge</h1>
+    <p>La proposition B de M20, au niveau de Synthwave, Spatial et Terminal. La roue reste — elles sont deux, qui s'engrènent — et tout devient métal travaillé : plaques biseautées et rivetées, écrous à six pans, rigole de métal en fusion, lettres frappées.</p>
+  </div>
+  <div class="choix">
+    <div class="pseg" id="choixV"><button data-v="fournaise" aria-pressed="true">Fournaise (sombre)</button><button data-v="atelier" aria-pressed="false">Atelier (clair)</button></div>
+    <div class="pseg" id="choixC"><button data-c="0" aria-pressed="true">Animé</button><button data-c="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+
+<section class="bloc">
+  <h2>Accueil du mode Simple</h2>
+  <p>Deux roues aux couleurs de l'engrenage de l'icône tournent en sens contraire ; des étincelles jaillissent là où elles se touchent. En bas, l'établi, creusé de deux rigoles où le métal en fusion ondule — elles portent les écrous comme l'eau portait les bouées.</p>
+  <div class="cadre" data-h="600"><div class="ecran" data-v="fournaise">
+    <div class="decor">
+      <svg class="roue grande" viewBox="0 0 220 220" id="roueG"></svg>
+      <svg class="roue petite" viewBox="0 0 220 220" id="roueP"></svg>
+      <div class="etincelles" id="etinc"></div>
+      <div class="chaleur"></div>
+      <div class="etabli">
+        <svg class="rigole haute" viewBox="0 0 1920 70" preserveAspectRatio="none" id="rig1"></svg>
+        <svg class="rigole basse" viewBox="0 0 1920 70" preserveAspectRatio="none" id="rig2"></svg>
+      </div>
+    </div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom frappe">WinTool</span>
+      <div class="droite"><div class="levier"><span class="on">Simple</span><span>Expert</span></div>
+        <span class="boulon"><svg class="i"><use href="#terminal"/></svg></span><span class="boulon"><svg class="i"><use href="#settings"/></svg></span></div></div>
+    <div class="contenu">
+      <h1 class="frappe">Que souhaitez-vous faire ?</h1>
+      <p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco plaque rivets choisie"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span>
+        <div><b class="frappe">Entretien complet <em>Recommandé</em></b><span>On s'occupe de tout — 11 actions</span></div></div>
+      <div class="sect frappe">Ou choisissez un domaine précis</div>
+    </div>
+    <div id="ecrous"></div>
+    <div class="barre"><span>Choisi : <b>Entretien complet</b> · 11 actions</span><span class="lingot frappe">Continuer <svg class="i"><use href="#arrow"/></svg></span></div>
+  </div></div>
+</section>
+
+<section class="bloc">
+  <h2>Mode Expert : une fiche</h2>
+  <p>La même matière : plaques rivetées, sélection marquée d'un trait de braise, interrupteurs en leviers dans leur glissière.</p>
+  <div class="cadre" data-h="460"><div class="ecran expert" data-v="fournaise">
+    <div class="decor"><svg class="roue grande" viewBox="0 0 220 220" style="left:520px;top:60px;opacity:.08" id="roueG2"></svg></div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom frappe">WinTool</span>
+      <div class="droite"><div class="levier"><span>Simple</span><span class="on">Expert</span></div><span class="boulon"><svg class="i"><use href="#terminal"/></svg></span></div></div>
+    <div class="colonnes">
+      <div class="liste"><div class="rub frappe">Vie privée</div>
+        <div class="it on"><small>106</small>Réduire la télémétrie</div><div class="it"><small>107</small>Désactiver le suivi publicitaire</div>
+        <div class="rub frappe">Nettoyage</div><div class="it"><small>102</small>Nettoyer les fichiers temporaires</div><div class="it"><small>103</small>Vider les caches</div></div>
+      <div class="fiche">
+        <div class="tete"><div class="reco" style="width:auto;margin:0;padding:0"><span class="ri"><svg class="i"><use href="#eye-off"/></svg></span></div>
+          <div><h3 class="frappe">Réduire la télémétrie</h3><p>Limite ce que Windows envoie à Microsoft.</p></div>
+          <div class="act"><span class="secondaire plaque frappe">Vérifier</span><span class="lingot frappe">Exécuter</span></div></div>
+        <div class="cfg plaque rivets">
+          <div class="ln"><div>Désactiver le service de télémétrie<small>DiagTrack, arrêté et désactivé</small></div><span class="glissiere on"></span></div>
+          <div class="ln"><div>Bloquer les rapports d'erreurs<small>Windows Error Reporting</small></div><span class="glissiere on"></span></div>
+          <div class="ln"><div>Niveau de diagnostic minimal<small>Stratégie AllowTelemetry = 0</small></div><span class="glissiere"></span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="notes">
+  <article><h3>Ce qui change par rapport à M20 B</h3><ul>
+    <li>Deux roues qui s'engrènent, et les étincelles au point de contact</li>
+    <li>Plus de coins arrondis : plaques biseautées à rivets, écrous à six pans</li>
+    <li>La houle devient deux rigoles de métal en fusion dans un établi</li>
+    <li>Le bouton principal : un lingot chauffé qui rougeoie</li>
+  </ul></article>
+  <article><h3>Ce qui ne change pas</h3><ul>
+    <li>Les couleurs de l'icône : la flamme pour ce qui agit, l'engrenage pour les roues</li>
+    <li>La disposition, les tailles de cible, le contraste mesuré à l'intégration</li>
+    <li>Il remplacerait Braise ardente ; Crépuscule pourrait suivre le même chemin</li>
+  </ul></article>
+</section>
+
+<script>
+function roue(n, r1, r2, moyeu) {
+  let d = '';
+  for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2, p = Math.PI / n;
+    const P = (r, t) => `${(110 + r * Math.cos(t)).toFixed(1)} ${(110 + r * Math.sin(t)).toFixed(1)}`;
+    d += `${k ? 'L' : 'M'}${P(r2, a - p * .5)} L${P(r1, a - p * .32)} L${P(r1, a + p * .32)} L${P(r2, a + p * .5)} `; }
+  let rayons = ''; for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; rayons += `M${110 + moyeu * Math.cos(a)} ${110 + moyeu * Math.sin(a)} L${110 + (r2 - 14) * Math.cos(a)} ${110 + (r2 - 14) * Math.sin(a)} `; }
+  return `<path d="${d}Z" style="stroke-width:7"/><circle cx="110" cy="110" r="${r2 - 14}" style="stroke-width:6"/><path d="${rayons}" style="stroke-width:9"/><circle cx="110" cy="110" r="${moyeu}" style="stroke-width:8"/>`;
+}
+document.getElementById('roueG').innerHTML = roue(20, 108, 94, 26);
+document.getElementById('roueP').innerHTML = roue(12, 108, 90, 22);
+document.getElementById('roueG2').innerHTML = roue(20, 108, 94, 26);
+document.getElementById('etinc').innerHTML = Array.from({ length: 9 }, (_, k) => `<i style="--a:${-70 + k * 17}deg;animation-delay:-${(k * 0.37) % 1.4}s"></i>`).join('');
+const onde = (amp, y) => { let d = `M0 ${y}`; for (let x = 0; x <= 1920; x += 30) d += ` L${x} ${(y - amp * Math.sin((2 * Math.PI * x) / 480)).toFixed(1)}`; return d; };
+for (const [id, a] of [['rig1', 10], ['rig2', 7]]) document.getElementById(id).innerHTML = `<path class="fond" d="${onde(a, 35)} L1920 70 L0 70Z" opacity=".35"/><path class="fonte" d="${onde(a, 35)}"/>`;
+const E = [
+  { x: 14, y: 300, ic: 'trash', t: 'Faire le ménage', d: '3 actions' }, { x: 38, y: 280, ic: 'zap', t: 'Performance', d: '3 actions', ch: 1 },
+  { x: 62, y: 290, ic: 'shield', t: 'Vie privée', d: '3 actions' }, { x: 86, y: 300, ic: 'app', t: 'Applications', d: '1 action' },
+  { x: 27, y: 425, ic: 'pulse', t: 'Santé', d: '3 actions' }, { x: 73, y: 425, ic: 'wrench', t: 'Outillage', d: '1 action' },
+];
+document.getElementById('ecrous').innerHTML = E.map((e, i) => `<div class="ecrou${e.ch ? ' choisi' : ''}" style="left:${e.x}%;top:${e.y}px;animation-delay:-${i}s">
+  <span class="six"><svg class="i"><use href="#${e.ic}"/></svg></span><span class="etiq plaque"><b class="frappe">${e.t}</b><small>${e.d}</small></span></div>`).join('');
+function ajuster() { document.querySelectorAll('.cadre').forEach((c) => { const z = c.clientWidth / 960; c.firstElementChild.style.zoom = z; c.style.height = `${Number(c.dataset.h) * z}px`; }); }
+addEventListener('resize', ajuster); ajuster();
+document.addEventListener('click', (ev) => {
+  const v = ev.target.closest('[data-v]:not(.ecran)');
+  if (v) { document.querySelectorAll('.ecran').forEach((e) => { e.dataset.v = v.dataset.v; }); document.querySelectorAll('#choixV button').forEach((b) => b.setAttribute('aria-pressed', String(b === v))); return; }
+  const c = ev.target.closest('[data-c]');
+  if (c) { document.body.classList.toggle('calme', c.dataset.c === '1'); document.querySelectorAll('#choixC button').forEach((b) => b.setAttribute('aria-pressed', String(b === c))); }
+});
+</script>
+</body>
+</html>

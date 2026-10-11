@@ -4886,7 +4886,6 @@ function appliquerTraductionsReglages() {
   document.querySelector('#setThemeSeg [data-set-theme="system"]').textContent = t('onb.theme_systeme');
   document.getElementById('setLangueLabel').textContent = t('reglages.langue');
   document.getElementById('setMajLabel').textContent = t('reglages.maj_comportement');
-  document.getElementById('setBetaLabel').textContent = t('reglages.beta');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
@@ -4895,6 +4894,7 @@ function appliquerTraductionsReglages() {
   if (noteTheme) noteTheme.textContent = t('reglages.theme_sombre_seul');
   majCommandesTheme();
   document.querySelector('#setMajSelect [value="propose"]').textContent = t('reglages.maj_proposer');
+  document.querySelector('#setMajSelect [value="beta"]').textContent = t('reglages.maj_beta');
   document.querySelector('#setMajSelect [value="never"]').textContent = t('reglages.maj_jamais');
   document.getElementById('setMajVerifLabel').textContent = t('reglages.maj_verifier');
   document.getElementById('btnVerifierMaj').textContent = t('reglages.maj_verifier_btn');
@@ -4966,7 +4966,6 @@ function remplirFormulaireReglages(reglages) {
     b.setAttribute('aria-pressed', String(b.dataset.setLang === reglages.lang));
   });
   document.getElementById('setMajSelect').value = reglages.update_policy;
-  document.getElementById('setBetaToggle').setAttribute('aria-checked', String(!!reglages.update_beta));
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
@@ -5686,12 +5685,6 @@ function cablerReglages() {
   document.getElementById('btnProtegesDroits').onclick = () => {
     fermerReglages();
     ouvrirFenetreDroits();
-  };
-  // Les versions de test (1.7) : la prochaine verification en tient compte.
-  document.getElementById('setBetaToggle').onclick = async (ev) => {
-    const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
-    ev.currentTarget.setAttribute('aria-checked', String(actif));
-    reglagesActuels = await invoke('set_update_beta', { value: actif });
   };
   document.getElementById('setNumerosToggle').onclick = async (ev) => {
     const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';

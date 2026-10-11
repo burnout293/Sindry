@@ -127,11 +127,9 @@ impl ScriptOverride {
 pub struct Settings {
     pub theme: String,
     pub lang: String,
+    /// `propose` (versions stables, defaut), `beta` (versions de test aussi) ou
+    /// `never` — voir `update::POLITIQUES`.
     pub update_policy: String,
-    /// Proposer aussi les versions de test (pre-versions, 1.7). Desactive par
-    /// defaut : une pre-version peut contenir des defauts.
-    #[serde(default)]
-    pub update_beta: bool,
     pub failure_policy: String,
     pub log_cap_mb: u32,
     pub exec_policy: String,
@@ -310,7 +308,6 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         theme: "system".to_string(),
         lang: "fr".to_string(),
         update_policy: "propose".to_string(),
-        update_beta: false,
         failure_policy: "continue".to_string(),
         log_cap_mb: 50,
         exec_policy: "bypass".to_string(),

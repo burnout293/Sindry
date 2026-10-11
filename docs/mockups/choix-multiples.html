@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choix multiples lisibles</title>
+<!--
+  Maquette 22. Une option [multi] d'un script — « Quoi modifier », sept
+  choix — est aujourd'hui une rangée de puces en chasse fixe de 10 px : peu
+  lisible, et on distingue mal ce qui est coché de ce qui ne l'est pas. Cinq
+  présentations, toutes à choix multiples, sur la carte telle qu'elle est
+  dans la fiche (Expert) et dans « Vérifier » (Simple).
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.page-h { max-width: 1180px; margin: 0 auto 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 640px; line-height: 1.5; }
+.choix { margin-left: auto; display: flex; gap: 10px; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.prop { max-width: 1180px; margin: 0 auto 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .prop { grid-template-columns: 1fr; } }
+.prop .txt h2 { font-size: 18px; display: flex; gap: 10px; align-items: center; }
+.prop .txt h2 span { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.prop .txt p { color: #C9C3D8; font-size: 13px; line-height: 1.55; margin-top: 6px; }
+.prop .txt small { display: block; color: #8C86A0; font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+/* La scene : le fond de la fiche, en Braise. */
+.scene { padding: 16px; border-radius: 16px; background: var(--bg); border: 1px solid #26232F; }
+body[data-m="sombre"] { --bg: #0F0A14; --surface: #18111F; --surface-2: #211829; --surface-3: #2B2034; --border: #2C2236; --border-2: #3D3049;
+  --text: #F7F1FA; --text-2: #B9A9C6; --text-3: #94849F; --acc: #FEC923; --acc-2: #FD5632; --acc-on: #FFB35C; --acc-soft: #2A1A14; --ink: #1A0B12; }
+body[data-m="clair"] { --bg: #FBF6F2; --surface: #FFFFFF; --surface-2: #F6EEE8; --surface-3: #EFE4DB; --border: #EADFD6; --border-2: #DCCBBE;
+  --text: #1F1426; --text-2: #6A5873; --text-3: #76637F; --acc: #FD9E21; --acc-2: #FD5632; --acc-on: #B23A0C; --acc-soft: #FFF0E4; --ink: #1A0B12; }
+.carte { background: var(--surface); border: 1px solid var(--border-2); border-radius: 16px; padding: 14px 16px; color: var(--text); }
+.carte .lib { font-size: 13.5px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; }
+.carte .lib em { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 600; color: var(--text-3); }
+.carte .sous { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.zone { margin-top: 10px; }
+.rapide { display: flex; gap: 12px; margin-top: 8px; font-size: 12px; }
+.rapide button { color: var(--acc-on); font-weight: 650; }
+
+/* A. Puces lisibles : texte normal, coche visible, contraste net entre oui et non. */
+.pa { display: flex; flex-wrap: wrap; gap: 6px; }
+.pa button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface); color: var(--text-2); border: 1px solid var(--border-2); transition: all .12s; }
+.pa button .i { opacity: 0; width: 0; transition: all .12s; }
+.pa button[aria-pressed="true"] { background: var(--acc-soft); color: var(--text); border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+.pa button[aria-pressed="true"] .i { opacity: 1; width: 14px; color: var(--acc-on); }
+.pa button:hover { border-color: var(--text-3); }
+
+/* B. Liste a cocher sur deux colonnes : la forme la plus lisible. */
+.pb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+@media (max-width: 640px) { .pb { grid-template-columns: 1fr; } }
+.pb button { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 9px; text-align: left; font-size: 13px; color: var(--text); }
+.pb button:hover { background: var(--surface-2); }
+.pb .case { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border-2); display: grid; place-items: center; flex-shrink: 0; color: var(--ink); }
+.pb .case .i { opacity: 0; }
+.pb button[aria-pressed="true"] .case { background: linear-gradient(135deg, var(--acc), var(--acc-2)); border-color: transparent; }
+.pb button[aria-pressed="true"] .case .i { opacity: 1; }
+.pb button[aria-pressed="false"] { color: var(--text-2); }
+
+/* C. Pastilles a temoin : un point qui s'allume, comme une diode. */
+.pc { display: flex; flex-wrap: wrap; gap: 6px; }
+.pc button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface-2); color: var(--text-2); border: 1px solid transparent; }
+.pc .diode { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-2); }
+.pc button[aria-pressed="true"] { color: var(--text); border-color: var(--border-2); background: var(--surface); }
+.pc button[aria-pressed="true"] .diode { background: var(--acc); box-shadow: 0 0 8px var(--acc); }
+
+/* D. Segments empiles : chaque choix est une ligne, avec un interrupteur. */
+.pd { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.pd button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; font-size: 13px; color: var(--text); text-align: left; border-bottom: 1px solid var(--border); background: var(--surface); }
+.pd button:last-child { border-bottom: none; }
+.pd button[aria-pressed="false"] { color: var(--text-2); }
+.pd .inter { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-3); position: relative; flex-shrink: 0; }
+.pd .inter::after { content: ''; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-3); }
+.pd button[aria-pressed="true"] .inter { background: linear-gradient(135deg, var(--acc), var(--acc-2)); }
+.pd button[aria-pressed="true"] .inter::after { left: auto; right: 3px; background: #fff; }
+
+/* E. Tuiles : des cartes a cocher, coche dans le coin. */
+.pe { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pe button { position: relative; text-align: left; padding: 10px 30px 10px 12px; border-radius: 12px; font-size: 12.5px; font-weight: 600; line-height: 1.3;
+  background: var(--surface-2); border: 1.5px solid transparent; color: var(--text-2); min-height: 52px; }
+.pe button .coin { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-2); display: grid; place-items: center; color: var(--ink); }
+.pe button .coin .i { width: 10px; height: 10px; opacity: 0; }
+.pe button[aria-pressed="true"] { background: var(--acc-soft); border-color: color-mix(in srgb, var(--acc) 55%, transparent); color: var(--text); }
+.pe button[aria-pressed="true"] .coin { background: linear-gradient(135deg, var(--acc), var(--acc-2)); border-color: transparent; }
+.pe button[aria-pressed="true"] .coin .i { opacity: 1; }
+
+/* Aujourd'hui, pour comparaison. */
+.p0 { display: flex; flex-wrap: wrap; gap: 5px; }
+.p0 button { font-family: Consolas, monospace; font-size: 10px; padding: 2px 7px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+.p0 button[aria-pressed="true"] { color: var(--acc-on); border-color: color-mix(in srgb, var(--acc) 40%, transparent); background: color-mix(in srgb, var(--acc) 10%, transparent); }
+
+.reco { max-width: 1180px; margin: 0 auto; background: #121019; border: 1px solid #FD9E21; border-radius: 18px; padding: 16px 22px; }
+.reco h2 { font-size: 17px; } .reco ul { margin-top: 8px; padding-left: 18px; color: #C9C3D8; font-size: 13.5px; line-height: 1.7; }
+</style>
+</head>
+<body data-m="sombre">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="ok" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol></svg>
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div><h1>Choix multiples lisibles</h1>
+    <p>L'option « Quoi modifier » de votre capture, en cinq présentations. Toutes restent à choix multiples, et se cliquent : essayez. Le compteur et « Tout / Aucun » valent pour toutes.</p></div>
+  <div class="choix"><div class="pseg" id="choixM"><button data-m="sombre" aria-pressed="true">Sombre</button><button data-m="clair" aria-pressed="false">Clair</button></div></div>
+</header>
+<div id="props"></div>
+<section class="reco">
+  <h2>Ma recommandation</h2>
+  <ul>
+    <li><b>B, la liste à cocher sur deux colonnes</b>, dès qu'il y a plus de quatre choix : on lit chaque libellé d'un trait, et une case cochée ne ressemble à rien d'autre.</li>
+    <li><b>A, les puces lisibles</b>, pour deux à quatre choix courts : compactes, la coche dit l'état sans couleur.</li>
+    <li>Dans les deux cas : texte normal à 13 px (fini la chasse fixe à 10 px), « 4 sur 7 » à côté du libellé, « Tout / Aucun » dès cinq choix. La description d'un choix (survol) reste.</li>
+  </ul>
+</section>
+<script>
+const CHOIX = ['Pas de résultats web dans la recherche', 'Masquer la zone de recherche', 'Masquer le bouton Vue des tâches', 'Masquer les Widgets', 'Masquer Chat', 'Masquer Copilot', 'Aligner la barre des tâches à gauche'];
+const etat = {};
+const PROPS = [
+  ['0', "Aujourd'hui", 'Pour comparer : chasse fixe à 10 px, coché et non coché se distinguent à peine.', ''],
+  ['a', 'Puces lisibles', "Les mêmes puces, mais en texte normal, plus grandes ; une coche apparaît sur ce qui est choisi, le fond s'éclaire. Le moins de changement.", 'Compact. Au-delà de cinq ou six choix longs, la rangée redevient touffue.'],
+  ['b', 'Liste à cocher, deux colonnes', 'Une vraie case par choix, alignée : on lit les libellés comme une liste. La forme la plus lisible, la plus familière.', 'Prend plus de hauteur que les puces.'],
+  ['c', 'Pastilles à témoin', "Chaque pastille a une petite diode qui s'allume. Garde la compacité des puces, et l'état se voit même de loin.", "L'état tient dans un point : moins évident qu'une coche pour un débutant."],
+  ['d', 'Interrupteurs empilés', 'Un choix par ligne, avec le même interrupteur que les options oui/non. Cohérent avec le reste de la fiche.', 'Le plus haut des cinq ; sept lignes pour une seule option.'],
+  ['e', 'Tuiles', 'Des cartes à cocher, coche ronde dans le coin. Les libellés longs passent sur deux lignes sans gêne.', "Plus « présentation » que « réglage » ; prend de la place."],
+];
+function zone(k) {
+  const on = (i) => !!etat[`${k}${i}`];
+  const b = (i, inner) => `<button type="button" data-k="${k}" data-i="${i}" aria-pressed="${on(i)}">${inner}</button>`;
+  const ok = '<svg class="i"><use href="#ok"/></svg>';
+  if (k === '0') return `<div class="p0">${CHOIX.map((c, i) => b(i, c)).join('')}</div>`;
+  if (k === 'a') return `<div class="pa">${CHOIX.map((c, i) => b(i, ok + c)).join('')}</div>`;
+  if (k === 'b') return `<div class="pb">${CHOIX.map((c, i) => b(i, `<span class="case">${ok}</span>${c}`)).join('')}</div>`;
+  if (k === 'c') return `<div class="pc">${CHOIX.map((c, i) => b(i, `<span class="diode"></span>${c}`)).join('')}</div>`;
+  if (k === 'd') return `<div class="pd">${CHOIX.map((c, i) => b(i, `${c}<span class="inter"></span>`)).join('')}</div>`;
+  return `<div class="pe">${CHOIX.map((c, i) => b(i, `${c}<span class="coin">${ok}</span>`)).join('')}</div>`;
+}
+function rendre() {
+  document.getElementById('props').innerHTML = PROPS.map(([k, titre, txt, lim], n) => {
+    const nb = CHOIX.filter((_, i) => etat[`${k}${i}`]).length;
+    return `<section class="prop"><div class="txt"><h2><span>${k === '0' ? '·' : k.toUpperCase()}</span>${titre}</h2><p>${txt}</p>${lim ? `<small>Limite : ${lim}</small>` : ''}</div>
+      <div class="scene"><div class="carte"><div class="lib">Quoi modifier ${k === '0' ? '' : `<em>${nb} sur ${CHOIX.length}</em>`}</div><div class="sous">un ou plusieurs éléments</div>
+      <div class="zone">${zone(k)}</div>${k === '0' ? '' : `<div class="rapide"><button data-tout="${k}">Tout</button><button data-rien="${k}">Aucun</button></div>`}</div></div></section>`;
+  }).join('');
+}
+for (const k of ['0', 'a', 'b', 'c', 'd', 'e']) [0, 1, 3, 5].forEach((i) => { etat[`${k}${i}`] = true; });
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-k]'); if (b) { const c = `${b.dataset.k}${b.dataset.i}`; etat[c] = !etat[c]; rendre(); return; }
+  const tout = ev.target.closest('[data-tout]'); if (tout) { CHOIX.forEach((_, i) => { etat[`${tout.dataset.tout}${i}`] = true; }); rendre(); return; }
+  const rien = ev.target.closest('[data-rien]'); if (rien) { CHOIX.forEach((_, i) => { etat[`${rien.dataset.rien}${i}`] = false; }); rendre(); return; }
+  const m = ev.target.closest('[data-m]'); if (m) { document.body.dataset.m = m.dataset.m; document.querySelectorAll('#choixM button').forEach((x) => x.setAttribute('aria-pressed', String(x === m))); }
+});
+rendre();
+</script>
+</body>
+</html>
