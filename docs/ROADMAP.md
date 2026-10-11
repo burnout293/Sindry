@@ -29,7 +29,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — faits des fiches en icônes et valeurs, provenance à côté du titre (§2) | Fait |
 | | — journal toujours ouvrable, même vide, en Simple comme en Expert (§2) | Fait |
 | | — nouvelle icône (Sindry) ; le nom reste WinTool jusqu'à la 2.0 | Fait |
-| **1.7** | En cours | |
+| **1.7** | Pré-version (tag `v1.7.0-beta`) | Pré-version |
 | | — vagues : la pause suit la fenêtre réduite, plus le focus ; l'eau et les bouées s'arrêtent ensemble (§15.3) | Fait |
 | | — réglages par script : « Actif » et « Nécessite un redémarrage » retirés (§4.2) | Fait |
 | | — la balise sur « Droits limités » ; encart et guide à la lampe torche quand une action a besoin des droits administrateur (§15.6) | Fait |
