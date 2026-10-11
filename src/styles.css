@@ -485,10 +485,6 @@ body[data-mode="expert"] .water { display: none; }
 /* Une valeur figee par l'utilisateur ne suit plus le script — la bordure
    accentuee et la pastille le disent d'un coup d'oeil, sans texte en plus. */
 .opt.figee { border-color: color-mix(in srgb, var(--acc) 30%, transparent); }
-/* Un script desactive reste visible et selectionnable — c'est la seule facon
-   de le reactiver. Il palit, il ne disparait pas. */
-.row.script.off .rt, .row.script.off .rn { opacity: .45; }
-.row.script.off .ri { opacity: .35; }
 .fige-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: var(--acc); margin-left: 6px; vertical-align: middle;
@@ -1702,6 +1698,76 @@ body[data-simulation="activee"] .btn.primary.big.lancer { animation: none; box-s
   color: var(--warn); background: var(--warn-s);
   border-color: color-mix(in srgb, var(--warn) 42%, transparent);
 }
+
+/* --- La balise (1.7) ----------------------------------------------------------
+   L'effet qui attire l'oeil, retenu parmi six (docs/mockups) : un point dans le
+   coin d'un element, qui emet des ondes comme un sonar. L'element lui-meme ne
+   bouge pas, ne change ni de taille ni de couleur : la balise se pose sur
+   n'importe quoi. Son parent doit etre positionne. */
+.balise {
+  position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--warn); box-shadow: 0 0 0 2px var(--bg); pointer-events: none;
+}
+.balise::before, .balise::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--warn);
+  animation: balise 2s ease-out infinite;
+}
+.balise::after { animation-delay: 1s; }
+@keyframes balise { from { transform: scale(1); opacity: .8; } to { transform: scale(3.4); opacity: 0; } }
+body.inactive .balise::before, body.inactive .balise::after { animation-play-state: paused; }
+/* Moins d'animations : le point reste, les ondes disparaissent. */
+@media (prefers-reduced-motion: reduce) { .balise::before, .balise::after { animation: none; opacity: 0; } }
+#adminPill { position: relative; }
+#adminPill .balise { display: none; }
+#adminPill.manquant .balise { display: block; }
+
+/* --- L'encart (1.7) ------------------------------------------------------------
+   Une alerte posee la ou l'on regarde deja (fiche, etape « Verifier ») : elle ne
+   recouvre rien, n'interrompt rien, et « Me montrer » ouvre le guide. */
+.encart {
+  display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 12px; font-size: 13px;
+  background: var(--warn-s); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--text);
+}
+.encart > .ico { color: var(--warn); flex-shrink: 0; }
+.encart p { flex: 1; margin: 0; color: var(--text-2); line-height: 1.45; }
+.encart p b { color: var(--text); font-weight: 650; }
+.encart .btn { flex-shrink: 0; white-space: nowrap; }
+.card > .encart { margin-top: 12px; }
+#droitsNote { margin: 0 0 14px; }
+/* Mode Simple : aucune cible sous 56 px (§3). */
+.simple .encart { font-size: 14px; }
+.simple .encart .btn { min-height: 56px; padding: 0 20px; }
+
+/* --- Le guide (1.7) : la lampe torche -----------------------------------------
+   Un cercle de lumiere aux bords doux sur l'element, le reste dans l'ombre, et
+   une bulle. Ce qui est hors du cercle n'est plus cliquable (.guide-capte,
+   evide) ; l'element eclaire, si. Voir src/guide.js. */
+.guide { position: fixed; inset: 0; z-index: 40; --guide-voile: color-mix(in srgb, var(--ink) 68%, transparent); }
+.guide-torche, .guide-capte { position: absolute; inset: 0; }
+.guide-torche { animation: guide-entree .3s ease-out; }
+@keyframes guide-entree { from { opacity: 0; } }
+.guide-bulle {
+  position: absolute; width: 384px; max-width: calc(100% - 24px); z-index: 1;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border-2); border-radius: 16px;
+  padding: 14px 16px; box-shadow: var(--sh-2); animation: guide-bulle .3s ease-out;
+}
+@keyframes guide-bulle { from { opacity: 0; transform: translateY(6px); } }
+.guide-fleche {
+  position: absolute; width: 14px; height: 14px; background: var(--surface);
+  border: 1px solid var(--border-2); transform: rotate(45deg);
+}
+.guide-bulle.dessous .guide-fleche { top: -8px; border-right: none; border-bottom: none; }
+.guide-bulle.dessus .guide-fleche { bottom: -8px; border-left: none; border-top: none; }
+.guide-kick {
+  display: flex; gap: 6px; align-items: center; font-size: 11px; font-weight: 750;
+  letter-spacing: .7px; text-transform: uppercase; color: var(--acc-on);
+}
+.guide-bulle.alerte .guide-kick { color: var(--warn); }
+.guide-bulle h2 { font-size: 15.5px; margin: 6px 0 4px; letter-spacing: -.2px; }
+.guide-bulle p { font-size: 13px; color: var(--text-2); line-height: 1.5; margin: 0; }
+.guide-bas { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.guide-bas .btn { white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .guide-torche, .guide-bulle { animation: none; } }
 
 /* --- Echelle de rendu -------------------------------------------------------
    `zoom` remet tout a l'echelle et reflue la mise en page. La barre de titre

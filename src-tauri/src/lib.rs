@@ -856,8 +856,8 @@ fn set_script_config(
     })
 }
 
-/// L'un des trois booleens WinTool de la §4.2 — `flag` vaut `restore`, `reboot`
-/// ou `enabled`. `value` absent rend le reglage a sa valeur initiale.
+/// Le booleen WinTool de la §4.2 — `flag` vaut `restore` (« Necessite un point
+/// de restauration »). `value` absent rend le reglage a sa valeur initiale.
 #[tauri::command]
 fn set_script_flag(
     app: tauri::AppHandle,
@@ -868,7 +868,7 @@ fn set_script_flag(
     with_settings(&app, |s| settings::set_flag(s, &script_id, &flag, value))
 }
 
-/// Rend au script toutes ses valeurs de `$CONFIG` et ses trois booleens (§4.2).
+/// Rend au script toutes ses valeurs de `$CONFIG` et son booleen WinTool (§4.2).
 /// Le rangement dans les lots survit : c'est une autre decision.
 #[tauri::command]
 fn reset_script_config(app: tauri::AppHandle, script_id: String) -> Result<Settings, String> {

@@ -8,6 +8,7 @@
 
 import { t, setLang, currentLang } from './i18n.js';
 import * as A from './analyse.js';
+import { montrerGuide } from './guide.js';
 
 const invoke = window.__TAURI__.core.invoke;
 const ecouter = window.__TAURI__.event.listen;
@@ -202,9 +203,12 @@ function pointAvant(entree) {
   return besoinPointRestauration(entree) && !estSimule(entree);
 }
 
-/** Idem pour le redemarrage, pre-coche si le script declare `reboot : true`. */
+/** Le redemarrage annonce d'avance : c'est le script qui le declare
+ *  (`reboot : true`, montre dans ses faits) et le confirme par `[REBOOT]`.
+ *  Il ne se regle plus par script depuis la 1.7 — une case de plus a chaque
+ *  fiche, pour une information que seul le script detient. */
 function besoinRedemarrage(entree) {
-  return reglagesScript(entree.id).reboot_ack ?? !!entree.meta.reboot;
+  return !!entree.meta.reboot;
 }
 
 /** Les valeurs de $CONFIG a imposer au script : uniquement celles que
@@ -215,25 +219,13 @@ function configFigee(id) {
   return reglagesScript(id).config || {};
 }
 
-/** Un script desactive reste range et garde ses reglages : il est saute
- *  pendant l'entretien (specification 4.2). Active par defaut. */
-function scriptActif(entree) {
-  return reglagesScript(entree.id).enabled ?? true;
-}
-
-/** Les scripts d'un lot qui tourneront vraiment. Le mode Simple ne doit jamais
- *  compter, annoncer ni estimer sur les autres. */
-function scriptsActifs(groupe) {
-  return groupe.scripts.filter(scriptActif);
-}
-
 /** Ceux que le mode Simple montre et lance : une action qui se declare
  *  reservee a l'Expert (`show : expert`, §17) n'y est ni montree ni lancee —
  *  un debutant ne lance pas ce qu'il n'a pas pu voir. */
 function scriptsSimples(groupe) {
   // Lance depuis l'Expert, un lot montre tout ce que l'Expert montre.
-  if (groupe.expert) return scriptsActifs(groupe);
-  return scriptsActifs(groupe).filter((s) => s.meta.show !== 'expert');
+  if (groupe.expert) return groupe.scripts;
+  return groupe.scripts.filter((s) => s.meta.show !== 'expert');
 }
 
 /** Le lot en cours de lancement, du choix au bilan. Un lancement depuis
@@ -249,8 +241,9 @@ function scriptsRetenus(groupe) {
   return scriptsSimples(groupe).filter((s) => !exclusLancement.has(s.id));
 }
 
-/** Champ de l'override correspondant a chaque booleen WinTool (specification 4.2). */
-const CHAMP_BOOLEEN = { restore: 'reversible_ack', reboot: 'reboot_ack', enabled: 'enabled' };
+/** Champ de l'override correspondant au booleen WinTool (specification 4.2).
+ *  « Actif » et « Necessite un redemarrage » ont ete retires en 1.7. */
+const CHAMP_BOOLEEN = { restore: 'reversible_ack' };
 
 /** Vrai des que quelque chose est fige pour ce script — hors classement en
  *  lot, qui se defait par ses propres puces. */
@@ -357,18 +350,20 @@ function rendreOption(entree, opt) {
 }
 
 /**
- * Les trois booleens de la specification 4.2 qui n'appartiennent pas au script :
- * WinTool pre-coche les deux premiers d'apres `reversible` et `reboot`,
- * l'utilisateur les corrige, et sa correction ne bouge plus. Ils vivent dans le
- * meme bloc que le $CONFIG parce que c'est la meme question — « comment ce
- * script tourne chez moi » — meme s'ils ne partent pas dans le script.
+ * Le booleen de la specification 4.2 qui n'appartient pas au script : WinTool le
+ * pre-coche d'apres `reversible`, l'utilisateur le corrige, et sa correction ne
+ * bouge plus. Il vit dans le meme bloc que le $CONFIG parce que c'est la meme
+ * question — « comment ce script tourne chez moi » — meme s'il ne part pas
+ * dans le script.
+ *
+ * Jusqu'a la 1.6, deux autres l'accompagnaient a chaque fiche : « Actif »
+ * (l'etape « Verifier » ecarte deja une action, pour un lancement) et
+ * « Necessite un redemarrage » (le script le declare lui-meme).
  */
 function rendreReglagesWinTool(entree) {
   const over = reglagesScript(entree.id);
   const cases = [
-    { flag: 'enabled', label: t('opt.active'), desc: t('opt.active_desc'), on: scriptActif(entree) },
     { flag: 'restore', label: t('opt.point_restauration'), on: besoinPointRestauration(entree) },
-    { flag: 'reboot', label: t('opt.redemarrage'), on: besoinRedemarrage(entree) },
   ];
 
   return cases
@@ -539,13 +534,11 @@ async function rendreCarte(entree, { sousBadges = '' } = {}) {
 
   const badges = rendreEtiquettes(entree);
 
-  // Toujours affiche, meme sans $CONFIG : les deux cases WinTool de la 4.2
-  // existent pour tout script, et c'est la seule place ou les regler.
+  // Toujours affiche, meme sans $CONFIG : la case WinTool de la 4.2 existe
+  // pour tout script, et c'est la seule place ou la regler.
   const options = rendreConfiguration(entree);
 
-  // Un script desactive ne se lance pas par surprise : le bouton dit pourquoi,
-  // et la ligne « Actif » juste au-dessus le remet en service en un clic.
-  const manque = scriptActif(entree) ? moteurManquant(m) : t('opt.desactive_raison');
+  const manque = moteurManquant(m);
 
   return `
     <article class="card" data-id="${esc(entree.id)}">
@@ -568,6 +561,7 @@ async function rendreCarte(entree, { sousBadges = '' } = {}) {
         </div>
       </div>
       <div class="badges">${badges}</div>
+      ${m.admin && !estEleve ? encartDroits() : ''}
       ${sousBadges}
       ${manque ? `<p class="card-warn">${esc(manque)}</p>` : ''}
       ${options}
@@ -616,7 +610,7 @@ function rendreRowScript(entree, { draggable = false, lotId = null } = {}) {
   const titre = tr?.title || m.title || entree.path;
   const actif = selection?.type === 'script' && selection.id === entree.id;
   return `
-    <div class="row script${scriptActif(entree) ? '' : ' off'}" data-script="${esc(entree.id)}" data-nom="${esc(titre.toLowerCase())}"
+    <div class="row script" data-script="${esc(entree.id)}" data-nom="${esc(titre.toLowerCase())}"
          aria-current="${actif}"
          ${draggable ? `draggable="true" data-lot-drag="${esc(lotId)}"` : ''}>
       <span class="rn">${esc(numeroFichier(entree))}</span>
@@ -689,7 +683,7 @@ async function rendreOngletScripts() {
 /** L'onglet « Lots » : les lots, puis ceux qui ne sont dans aucun. */
 async function rendreOngletLots() {
   const lignesLots = await Promise.all(
-    etatGroupes.lots.map((g) => rendreRowLot(g.lot, scriptsActifs(g).length))
+    etatGroupes.lots.map((g) => rendreRowLot(g.lot, g.scripts.length))
   );
   const lotNonClasse = { id: NON_CLASSE, icon: 'folder', name: { [currentLang()]: t('expert.non_classe') } };
   const ligneNonClasse = await rendreRowLot(lotNonClasse, etatGroupes.unclassified.length, { draggable: false });
@@ -759,7 +753,7 @@ async function rendreDetailLot(id) {
     ? ''
     : `
     <div class="dact">
-      <button class="btn primary" type="button" data-lancer-lot="${esc(cat.id)}"${scriptsActifs(groupe).length ? '' : ' disabled'}>${esc(t('expert.lancer_lot'))}</button>
+      <button class="btn primary" type="button" data-lancer-lot="${esc(cat.id)}"${groupe.scripts.length ? '' : ' disabled'}>${esc(t('expert.lancer_lot'))}</button>
       <button class="iconbtn" type="button" data-renommer-lot="${esc(cat.id)}" data-tip="${esc(t('expert.renommer'))}">
         <svg class="ico i17" aria-hidden="true"><use href="#pencil" /></svg>
       </button>
@@ -2158,6 +2152,42 @@ function appliquerDroits(eleve) {
   document.getElementById('adminPillText').textContent =
     t(estEleve ? 'chrome.administrateur' : 'chrome.sans_droits');
   p.dataset.tip = t(estEleve ? 'droits.tip_ok' : 'droits.tip_manquant');
+}
+
+/** Relance WinTool en administrateur. La fenetre elevee met un instant a
+ *  apparaitre ; si l'utilisateur refuse l'invite UAC, celle-ci reste ouverte et
+ *  rien n'est perdu. */
+async function relancerEnAdministrateur() {
+  try {
+    await invoke('relaunch_elevated');
+    setTimeout(() => laFenetre.close(), 1200);
+  } catch (e) {
+    console.error('Relance impossible :', e);
+  }
+}
+
+/** L'encart « droits administrateur » (1.7) : la ou l'on regarde deja, sans
+ *  rien recouvrir. « Me montrer » eclaire la pastille « Droits limites ».
+ *  `lot` : plusieurs actions (etape « Verifier ») plutot qu'une fiche. */
+function encartDroits({ lot = false } = {}) {
+  return `<div class="encart"><svg class="ico i17" aria-hidden="true"><use href="#warn"/></svg>
+    <p>${t(lot ? 'droits.encart_lot' : 'droits.encart_action')}</p>
+    <button class="btn" type="button" data-montrer-droits>${esc(t('guide.me_montrer'))}</button></div>`;
+}
+
+/** Le guide sur la pastille des droits : la lampe torche, et de quoi relancer. */
+function guiderVersDroits() {
+  montrerGuide({
+    cible: document.getElementById('adminPill'),
+    alerte: true,
+    kick: t('droits.guide_kick'),
+    titre: t('droits.guide_titre'),
+    texte: t('droits.guide_texte'),
+    actions: [
+      { libelle: t('guide.plus_tard') },
+      { libelle: t('droits.relancer'), primaire: true, icone: 'relancer', faire: relancerEnAdministrateur },
+    ],
+  });
 }
 
 function ouvrirFenetreDroits() {
@@ -3775,9 +3805,14 @@ function majVerifier(groupe) {
   note.hidden = !besoinRestauration;
   if (besoinRestauration) note.textContent = t('simple.point_restauration_annonce');
 
-  // Specification 6.5 : annonce d'avance, jamais declenche au milieu. La
-  // source est la case de la 4.2, pas `meta.reboot` : si l'utilisateur a
-  // decoche, on ne lui annonce pas un redemarrage qu'il a refuse.
+  // Une action qui a besoin des droits administrateur, alors que WinTool ne
+  // les a pas : on le dit avant de lancer, pas au bilan (1.7).
+  const droits = document.getElementById('droitsNote');
+  droits.hidden = estEleve || !retenus.some((s) => s.meta.admin);
+  droits.innerHTML = droits.hidden ? '' : encartDroits({ lot: true });
+
+  // Specification 6.5 : annonce d'avance, jamais declenche au milieu. C'est le
+  // script qui le declare (`reboot : true`).
   const noteRedemarrage = document.getElementById('rebootNote');
   const besoinRedemarrer = retenus.some(besoinRedemarrage);
   noteRedemarrage.hidden = !besoinRedemarrer;
@@ -4000,7 +4035,7 @@ function rendreResumeAnalyse(groupe) {
 
   const visibles = scriptsRetenus(g);
   const telsQuels = visibles.filter((s) => !s.meta.scan);
-  const reserves = g.expert ? [] : scriptsActifs(g).filter((s) => s.meta.show === 'expert');
+  const reserves = g.expert ? [] : g.scripts.filter((s) => s.meta.show === 'expert');
   const echecs = analyseSimple.echecs;
   const autres = [];
   if (telsQuels.length) {
@@ -5641,16 +5676,11 @@ async function demarrer() {
   document.getElementById('btnFermerDroits').onclick = () => {
     document.getElementById('droitsOverlay').hidden = true;
   };
-  document.getElementById('btnRelancerAdmin').onclick = async () => {
-    try {
-      await invoke('relaunch_elevated');
-      // La fenetre elevee met un instant a apparaitre ; si l'utilisateur
-      // refuse l'invite UAC, celle-ci reste ouverte et rien n'est perdu.
-      setTimeout(() => laFenetre.close(), 1200);
-    } catch (e) {
-      console.error('Relance impossible :', e);
-    }
-  };
+  document.getElementById('btnRelancerAdmin').onclick = relancerEnAdministrateur;
+  // « Me montrer » d'un encart, ou qu'il soit : fiche, etape « Verifier ».
+  document.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-montrer-droits]')) guiderVersDroits();
+  });
   document.getElementById('btnFermerIcones').onclick = () => {
     document.getElementById('iconesOverlay').hidden = true;
   };

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide et bienvenue</title>
+<!--
+  Maquette 18. Le guide (encart, puis lampe torche, retenu en maquette 16) a
+  besoin d'une place : dans l'écran de bienvenue, à côté, ou ailleurs ? Quatre
+  formules, en storyboard, et une réplique jouable de l'accueil du mode Simple
+  pour essayer la visite, l'astuce « au fil de l'eau » et le centre d'aide.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  --bg: #0F0A14; --surface: #18111F; --surface-2: #211829; --surface-3: #2B2034; --border: #2C2236; --border-2: #3D3049;
+  --text: #F7F1FA; --text-2: #B9A9C6; --text-3: #94849F; --acc-a: #FEC923; --acc-b: #FD5632; --acc-on: #FFB35C; --on-acc: #1A0B12;
+  --warn: #FFB340; --ok: #3FD69B; --eau-a: #D9482E; --eau-b: #7A1F45; --voile: rgba(6, 3, 10, .74);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+.page-h { max-width: 1180px; margin: 0 auto 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 720px; line-height: 1.5; }
+.partie { max-width: 1180px; margin: 0 auto 30px; }
+.partie > h2 { font-size: 21px; letter-spacing: -.4px; }
+.partie > p { color: #B4AECA; font-size: 13.5px; margin: 4px 0 14px; max-width: 900px; line-height: 1.55; }
+
+/* --- Ce qui existe ------------------------------------------------------- */
+.pages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 800px) { .pages { grid-template-columns: 1fr 1fr; } }
+.page { background: #121019; border: 1px solid #221F2C; border-radius: 14px; padding: 14px; }
+.page .num { font-size: 11px; font-weight: 750; color: #8C86A0; letter-spacing: .8px; text-transform: uppercase; }
+.page b { display: block; margin: 4px 0; font-size: 14px; }
+.page small { color: #A49DB6; font-size: 12.5px; line-height: 1.45; display: block; }
+
+/* --- Les formules ------------------------------------------------------- */
+.formules { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .formules { grid-template-columns: minmax(0, 1fr); } }
+.formule { background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.formule.reco { border-color: #FD9E21; }
+.formule h3 { font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.formule h3 .l { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+.formule h3 em { margin-left: auto; font-style: normal; font-size: 11px; font-weight: 750; color: #FFB35C; border: 1px solid #FFB35C; border-radius: 999px; padding: 3px 9px; }
+.formule > p { color: #C9C3D8; font-size: 13px; line-height: 1.55; }
+.recit { display: flex; gap: 6px; align-items: stretch; overflow-x: auto; padding-bottom: 4px; }
+.case { flex: 1 0 116px; background: var(--bg); border: 1px solid var(--border-2); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+.case .ecr { height: 64px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.case small { font-size: 11.5px; color: var(--text-2); line-height: 1.35; }
+.fl { align-self: center; color: #6E6880; font-size: 16px; }
+/* Mini-écrans du storyboard : quelques formes suffisent. */
+.ecr .lignes { position: absolute; left: 8px; right: 8px; top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.ecr .lignes i { height: 4px; border-radius: 2px; background: var(--surface-3); }
+.ecr .lignes i:first-child { width: 60%; background: var(--text-3); }
+.ecr .eau { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: linear-gradient(var(--eau-a), var(--eau-b)); opacity: .6; border-radius: 50% 50% 0 0 / 30% 30% 0 0; }
+.ecr .torche { position: absolute; inset: 0; }
+.ecr .bul { position: absolute; width: 46px; height: 18px; border-radius: 4px; background: var(--text); opacity: .85; }
+.ecr .btn2 { position: absolute; bottom: 8px; height: 10px; width: 40px; border-radius: 5px; background: linear-gradient(90deg, var(--acc-a), var(--acc-b)); }
+.ecr .q { position: absolute; top: 4px; right: 6px; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--acc-a); }
+.ecr .menu { position: absolute; top: 18px; right: 6px; width: 54px; height: 40px; border-radius: 5px; background: var(--surface-3); border: 1px solid var(--border-2); }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12.5px; line-height: 1.5; color: #C9C3D8; }
+.pc b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #8C86A0; margin-bottom: 2px; }
+
+/* --- La réplique jouable -------------------------------------------------- */
+.commandes { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.btn-demo { padding: 9px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 650; background: #1B1824; border: 1px solid #2D2938; color: #EDEAF5; display: inline-flex; gap: 8px; align-items: center; }
+.btn-demo:hover { border-color: #4A4458; }
+.app { position: relative; background: var(--bg); color: var(--text); border: 1px solid var(--border-2); border-radius: 16px; overflow: hidden; height: 540px; }
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border-bottom: 1px solid var(--border); }
+.tb img { width: 26px; height: 26px; }
+.tb .nom { font-weight: 800; font-size: 14.5px; }
+.tb .droite { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { padding: 5px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.seg button.on { color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 650; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); background: var(--surface-2); }
+.pill svg.i { width: 14px; height: 14px; }
+.ib { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); background: var(--surface); position: relative; }
+.ib.aide { color: var(--acc-on); border-color: color-mix(in srgb, var(--acc-a) 45%, transparent); }
+.menu-aide { position: absolute; top: 48px; right: 92px; z-index: 30; width: 300px; background: var(--surface); border: 1px solid var(--border-2); border-radius: 14px; padding: 8px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+.menu-aide h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-3); padding: 8px 10px 4px; }
+.menu-aide button { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; padding: 9px 10px; border-radius: 9px; font-size: 13px; }
+.menu-aide button:hover { background: var(--surface-2); }
+.menu-aide button small { display: block; color: var(--text-3); font-size: 11.5px; }
+.menu-aide button svg.i { color: var(--acc-on); }
+.menu-aide hr { border: none; border-top: 1px solid var(--border); margin: 6px 4px; }
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 30px; }
+.contenu h1 { font-size: 28px; letter-spacing: -.6px; }
+.contenu > p { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+.reco-c { margin: 20px auto 0; width: 400px; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 18px; border-radius: 20px; background: var(--surface); border: 2px solid var(--acc-a); }
+.reco-c .ri { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.reco-c b { font-size: 16px; } .reco-c span { display: block; color: var(--text-2); font-size: 13px; }
+.houle { position: absolute; left: 0; right: 0; bottom: 0; height: 250px; }
+.houle path.n { fill: url(#gEau); opacity: .55; } .houle path.c { fill: none; stroke: var(--acc-a); stroke-width: 2.5; opacity: .7; }
+.bouee { position: absolute; z-index: 2; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bouee .f { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border-2); }
+.bouee .l { background: var(--surface); border: 1px solid var(--border-2); border-radius: 10px; padding: 5px 11px; font-size: 12px; font-weight: 700; }
+.barre { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 66px; display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 13px; color: var(--text-2); }
+.primaire { display: inline-flex; align-items: center; gap: 8px; padding: 12px 26px; border-radius: 999px; font-size: 14.5px; font-weight: 750; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+
+/* Fenêtre de bienvenue (dernière page) */
+.bienvenue { position: absolute; inset: 0; z-index: 25; display: grid; place-items: center; background: color-mix(in srgb, #1A0B12 60%, transparent); }
+.bienvenue .carte { width: 460px; background: var(--surface); border: 1px solid var(--border-2); border-radius: 20px; padding: 26px 28px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.bienvenue .points { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; }
+.bienvenue .points i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-3); }
+.bienvenue .points i.on { width: 18px; border-radius: 4px; background: var(--acc-b); }
+.bienvenue h2 { font-size: 21px; } .bienvenue p { color: var(--text-2); font-size: 14px; margin: 8px 0 18px; line-height: 1.5; }
+.bienvenue .choix2 { display: flex; flex-direction: column; gap: 8px; }
+.bienvenue .choix2 button { padding: 14px; border-radius: 14px; font-weight: 700; font-size: 14.5px; border: 1px solid var(--border-2); }
+.bienvenue .choix2 button.p { border: none; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.bienvenue .choix2 small { display: block; font-weight: 500; font-size: 12px; opacity: .8; }
+
+/* Le guide : lampe torche + bulle (forme retenue) */
+.calque { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.calque .torche { position: absolute; inset: 0; transition: background .45s; }
+.calque .capte { position: absolute; inset: 0; pointer-events: auto; }
+.bulle { position: absolute; width: 360px; max-width: calc(100% - 24px); pointer-events: auto; z-index: 3; background: var(--surface); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: 16px; padding: 14px 16px; box-shadow: 0 18px 50px rgba(0,0,0,.45); transition: top .45s cubic-bezier(.4,0,.2,1), left .45s cubic-bezier(.4,0,.2,1); }
+.bulle .fleche { position: absolute; width: 14px; height: 14px; background: var(--surface); border: 1px solid var(--border-2); transform: rotate(45deg); transition: left .45s; }
+.bulle.dessous .fleche { top: -8px; border-right: none; border-bottom: none; }
+.bulle.dessus .fleche { bottom: -8px; border-left: none; border-top: none; }
+.bulle .kick { font-size: 11px; font-weight: 750; letter-spacing: .7px; text-transform: uppercase; color: var(--acc-on); display: flex; gap: 6px; align-items: center; }
+.bulle h5 { font-size: 15.5px; margin: 6px 0 4px; } .bulle p { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.bulle .bas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.bulle .pts { display: flex; gap: 5px; margin-right: auto; } .bulle .pts i { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); }
+.bulle .pts i.on { background: var(--acc-b); width: 16px; border-radius: 3px; }
+.b { padding: 7px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 700; border: 1px solid var(--border-2); background: var(--surface); white-space: nowrap; }
+.b.p { border: none; color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.b.lien { border: none; background: none; color: var(--text-3); padding: 7px 4px; }
+.toast { position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 40; background: var(--text); color: var(--bg); font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 10px; }
+
+.recommandation { max-width: 1180px; margin: 0 auto; background: #121019; border: 1px solid #FD9E21; border-radius: 18px; padding: 16px 22px; }
+.recommandation h2 { font-size: 18px; }
+.recommandation ol, .recommandation ul { margin-top: 8px; padding-left: 20px; color: #C9C3D8; font-size: 13.5px; line-height: 1.7; }
+.recommandation code { font-family: Consolas, monospace; font-size: 12.5px; color: #FFB35C; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><linearGradient id="gEau" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9482E"/><stop offset="1" stop-color="#7A1F45"/></linearGradient></defs>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol>
+  <symbol id="lamp" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol>
+  <symbol id="book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Guide et bienvenue</h1>
+    <p>Le guide (encart, puis lampe torche) a besoin d'une place. Dans l'écran de bienvenue, à sa suite, ou ailleurs ? Quatre formules en storyboard, puis une réplique de l'accueil pour essayer.</p>
+  </div>
+</header>
+
+<section class="partie">
+  <h2>Ce qui existe : la bienvenue en quatre pages</h2>
+  <p>Une fenêtre au tout premier lancement, relançable depuis les Réglages. Elle explique des <b>idées</b> (ce que fait WinTool, d'où viennent les actions, la sécurité), mais ne montre pas <b>où</b> sont les choses à l'écran — c'est le rôle du guide.</p>
+  <div class="pages">
+    <div class="page"><span class="num">Page 1</span><b>Bienvenue</b><small>Langue et apparence.</small></div>
+    <div class="page"><span class="num">Page 2</span><b>Le principe</b><small>Ce que fait WinTool ; Simple et Expert ; la simulation.</small></div>
+    <div class="page"><span class="num">Page 3</span><b>Les actions</b><small>WinTool arrive vide ; le catalogue officiel, installable depuis la page.</small></div>
+    <div class="page"><span class="num">Page 4</span><b>Votre sécurité</b><small>Ce qu'un script peut faire ; n'approuver que ce qu'on connaît.</small></div>
+  </div>
+</section>
+
+<section class="partie">
+  <h2>Quatre formules</h2>
+  <div class="formules" id="formules"></div>
+</section>
+
+<section class="partie">
+  <h2>Essayer</h2>
+  <p>La réplique est l'accueil du mode Simple. Le bouton <b>?</b> de la barre de titre est le centre d'aide (formule D). Échap ferme, les flèches avancent.</p>
+  <div class="commandes">
+    <button class="btn-demo" id="demoA"><svg class="i"><use href="#sparkles"/></svg>Premier lancement (A)</button>
+    <button class="btn-demo" id="demoC"><svg class="i"><use href="#lamp"/></svg>Astuce au fil de l'eau (C)</button>
+    <button class="btn-demo" id="demoD"><svg class="i"><use href="#help"/></svg>Ouvrir le centre d'aide (D)</button>
+  </div>
+  <div class="app" id="app">
+    <div class="tb">
+      <img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+      <div class="droite">
+        <div class="seg" id="gMode"><button class="on">Simple</button><button id="gExpert">Expert</button></div>
+        <span class="pill" id="gSimu"><svg class="i"><use href="#shield"/></svg>Simulation</span>
+        <span class="ib" id="gJournal"><svg class="i"><use href="#terminal"/></svg></span>
+        <button class="ib aide" id="gAide" aria-label="Aide"><svg class="i"><use href="#help"/></svg></button>
+        <span class="ib" id="gReglages"><svg class="i"><use href="#settings"/></svg></span>
+      </div>
+    </div>
+    <div class="contenu">
+      <h1>Que souhaitez-vous faire ?</h1>
+      <p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco-c" id="gReco"><span class="ri"><svg class="i" style="width:22px;height:22px"><use href="#sparkles"/></svg></span><div><b>Entretien complet</b><span>On s'occupe de tout — environ 38 minutes</span></div></div>
+    </div>
+    <svg class="houle" viewBox="0 0 1200 250" preserveAspectRatio="none"><path class="n" d="M0 70 C150 30 300 110 450 70 C600 30 750 110 900 70 C1050 30 1150 90 1200 70 L1200 250 L0 250Z"/><path class="c" d="M0 70 C150 30 300 110 450 70 C600 30 750 110 900 70 C1050 30 1150 90 1200 70"/></svg>
+    <div class="bouee" id="gBouee" style="left:22%;bottom:150px"><span class="f"><svg class="i"><use href="#trash"/></svg></span><span class="l">Faire le ménage</span></div>
+    <div class="bouee" style="left:50%;bottom:170px"><span class="f"><svg class="i"><use href="#zap"/></svg></span><span class="l">Performance</span></div>
+    <div class="bouee" style="left:78%;bottom:150px"><span class="f"><svg class="i"><use href="#pulse"/></svg></span><span class="l">Santé</span></div>
+    <div class="barre"><span>Choisi : <b style="color:var(--text)">Entretien complet</b> · 38 min</span><span class="primaire" id="gContinuer">Continuer <svg class="i"><use href="#arrow"/></svg></span></div>
+    <div class="calque" id="calque"></div>
+  </div>
+</section>
+
+<section class="recommandation">
+  <h2>Ma recommandation : A + C + D, une seule mécanique</h2>
+  <ol>
+    <li><b>La bienvenue reste ce qu'elle est</b> — des idées, en quatre pages — et sa dernière page propose « Me faire visiter (1 minute) » ou « Je découvre seul ». La visite se passe ensuite <b>sur le vrai écran</b>, à la lampe torche.</li>
+    <li><b>Des astuces au fil de l'eau</b> : la première fois qu'on ouvre l'Expert, l'analyse, les réglages ou les catalogues, une à trois bulles, puis plus jamais. Un réglage les coupe, un autre les remet toutes à zéro.</li>
+    <li><b>Un centre d'aide « ? »</b> dans la barre de titre : la visite, les astuces de l'écran ouvert, revoir la bienvenue, et les guides d'alerte (droits administrateur…).</li>
+  </ol>
+  <ul>
+    <li><b>Le contenu dans un fichier</b>, comme la bienvenue (<code>src/presentation.json</code>) : <code>src/guide.json</code> décrit visites et astuces — textes fr/en, élément visé, ordre. On les modifie sans toucher au code.</li>
+    <li><b>Des cibles stables</b> : chaque élément visé porte un <code>data-guide="…"</code>, jamais une classe CSS qui changera au prochain remaniement. Et un <b>validateur en CI</b> vérifie que chaque cible du fichier existe dans l'interface — une convention sans vérification finit toujours morte.</li>
+  </ul>
+</section>
+
+<script>
+const FORMULES = [
+  { l: 'A', titre: 'À la suite de la bienvenue', reco: true,
+    txt: "La bienvenue ne change pas. Sa dernière page propose une visite d'une minute, sur le vrai écran : l'idée d'abord, l'endroit ensuite.",
+    cases: [['bienv', 'Pages 1 à 4 : les idées'], ['choix', '« Me faire visiter » ou « Je découvre seul »'], ['torche', 'Visite : 5 étapes à la lampe torche'], ['fin', 'Fin : on est à l\'accueil, prêt']],
+    pour: "Chacun garde le choix ; la bienvenue, déjà écrite et traduite, reste intacte.", contre: "Deux temps : on peut refuser la visite et ne jamais la retrouver — d'où D." },
+  { l: 'B', titre: 'Fondue dans la bienvenue',
+    txt: "Après la langue, la bienvenue quitte sa fenêtre : chaque idée s'explique sur l'élément qui la porte (Simple/Expert, Simulation, catalogue).",
+    cases: [['bienv', 'Page 1 : langue, apparence'], ['torche', '« Le principe » éclaire Simple / Expert'], ['torche2', '« Votre sécurité » éclaire la simulation'], ['fin', 'Fin']],
+    pour: "Un seul parcours, très concret.", contre: "Réécrit la bienvenue ; la sécurité (« n'approuvez que ce que vous connaissez ») n'a pas d'élément où se poser." },
+  { l: 'C', titre: 'Au fil de l\'eau',
+    txt: "Pas de visite d'un bloc : chaque écran montre ses astuces la première fois qu'on l'ouvre, puis plus jamais.",
+    cases: [['accueil', 'Accueil : rien'], ['torche', 'Premier Expert : 3 astuces'], ['torche2', 'Première analyse : 2 astuces'], ['accueil', 'Ensuite : plus rien']],
+    pour: "On apprend au moment où on en a besoin ; rien d'un coup.", contre: "Interrompt un peu, une fois par écran ; à couper dans les réglages." },
+  { l: 'D', titre: 'Centre d\'aide « ? »',
+    txt: "Un bouton « ? » dans la barre de titre : la visite, les astuces de l'écran ouvert, revoir la bienvenue, les guides d'alerte.",
+    cases: [['q', 'Le bouton « ? »'], ['menu', 'La liste des guides'], ['torche', 'Le guide choisi'], ['fin', 'Retour']],
+    pour: "Tout se retrouve à tout moment.", contre: "Ne s'utilise que si on y pense : complète A ou C, ne les remplace pas." },
+];
+const mini = (k) => ({
+  bienv: '<div class="lignes"><i></i><i></i><i></i></div>',
+  choix: '<div class="lignes"><i></i></div><span class="btn2" style="left:10px;width:46px"></span><span class="btn2" style="left:62px;width:40px;opacity:.4"></span>',
+  torche: '<span class="eau"></span><span class="torche" style="background:radial-gradient(circle at 70% 18%, transparent 9px, rgba(6,3,10,.75) 22px)"></span><span class="bul" style="right:6px;top:28px"></span>',
+  torche2: '<span class="eau"></span><span class="torche" style="background:radial-gradient(circle at 30% 70%, transparent 9px, rgba(6,3,10,.75) 22px)"></span><span class="bul" style="left:40px;top:12px"></span>',
+  fin: '<div class="lignes"><i></i><i></i></div><span class="eau"></span>',
+  accueil: '<div class="lignes"><i></i><i></i></div><span class="eau"></span>',
+  q: '<div class="lignes"><i></i></div><span class="q"></span><span class="eau"></span>',
+  menu: '<span class="q"></span><span class="menu"></span><span class="eau"></span>',
+})[k];
+document.getElementById('formules').innerHTML = FORMULES.map((f) => `
+  <article class="formule${f.reco ? ' reco' : ''}">
+    <h3><span class="l">${f.l}</span>${f.titre}${f.reco ? '<em>avec C et D</em>' : ''}</h3>
+    <p>${f.txt}</p>
+    <div class="recit">${f.cases.map(([k, c], i) => `${i ? '<span class="fl">›</span>' : ''}<div class="case"><div class="ecr">${mini(k)}</div><small>${c}</small></div>`).join('')}</div>
+    <div class="pc"><div><b>Pour</b>${f.pour}</div><div><b>Limite</b>${f.contre}</div></div>
+  </article>`).join('');
+
+/* --- Le guide (lampe torche) ------------------------------------------------ */
+const app = document.getElementById('app'), calque = document.getElementById('calque');
+const el = (id) => document.getElementById(id);
+let courant = null;
+const VISITE = [
+  { cible: 'gReco', kick: 'Visite', titre: 'Le plus simple', texte: "« Entretien complet » s'occupe de tout. C'est le choix recommandé." },
+  { cible: 'gBouee', kick: 'Visite', titre: 'Ou un domaine précis', texte: "Chaque bouée est un ensemble d'actions : faire le ménage, accélérer le PC, protéger votre vie privée…" },
+  { cible: 'gContinuer', kick: 'Visite', titre: 'Avancer', texte: "Rien n'est lancé tout de suite : vous verrez d'abord ce qui va être fait." },
+  { cible: 'gSimu', kick: 'Visite', titre: 'Essayer sans risque', texte: "La simulation montre ce qui serait fait, sans rien modifier." },
+  { cible: 'gAide', kick: 'Visite', titre: 'Besoin d\'aide ?', texte: "Ce bouton retrouve cette visite, les astuces de chaque écran et la bienvenue." },
+];
+const ASTUCE = [
+  { cible: 'gExpert', kick: 'Astuce', titre: 'Le mode Expert', texte: "Ici, vous réglez chaque action et composez vos propres ensembles. Le mode Simple utilisera vos choix.", astuce: true },
+];
+function rect(id) { const a = app.getBoundingClientRect(), r = el(id).getBoundingClientRect(); return { x: r.left - a.left, y: r.top - a.top, w: r.width, h: r.height }; }
+function evide(t, W, H) { const r = Math.min(14, t.h / 2), { x, y, w, h } = t;
+  return `path(evenodd, "M0 0H${W}V${H}H0Z M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z")`; }
+function montrer(etapes) { courant = { etapes, i: 0 }; calque.innerHTML = '<div class="torche"></div><div class="capte"></div><div class="bulle"></div>'; dessiner(); }
+function dessiner() {
+  const { etapes, i } = courant, e = etapes[i], W = app.clientWidth, H = app.clientHeight, r0 = rect(e.cible);
+  const t = { x: r0.x - 6, y: r0.y - 6, w: r0.w + 12, h: r0.h + 12 }, cx = t.x + t.w / 2, cy = t.y + t.h / 2, rr = Math.max(t.w, t.h) / 2 + 8;
+  calque.querySelector('.torche').style.background = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rr}px, var(--voile) ${rr + 70}px)`;
+  calque.querySelector('.capte').style.clipPath = evide(t, W, H);
+  const b = calque.querySelector('.bulle'), n = etapes.length;
+  b.innerHTML = `<span class="fleche"></span><div class="kick"><svg class="i"><use href="#${e.astuce ? 'lamp' : 'sparkles'}"/></svg>${e.kick}${n > 1 ? ` · ${i + 1} sur ${n}` : ''}</div><h5>${e.titre}</h5><p>${e.texte}</p>
+    <div class="bas">${n > 1 ? `<span class="pts">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span><button class="b lien" data-a="fin">Passer</button>${i ? '<button class="b" data-a="prec">Précédent</button>' : ''}<button class="b p" data-a="suiv">${i === n - 1 ? 'Terminer' : 'Suivant'}</button>`
+      : `<span class="pts"></span><button class="b lien" data-a="taire">Ne plus montrer d'astuces</button><button class="b p" data-a="fin">Compris</button>`}</div>`;
+  const bw = b.offsetWidth, bh = b.offsetHeight, dessous = t.y + t.h + 16 + bh < H - 8, left = Math.max(12, Math.min(W - bw - 12, cx - bw / 2));
+  b.classList.toggle('dessous', dessous); b.classList.toggle('dessus', !dessous);
+  b.style.left = `${left}px`; b.style.top = `${dessous ? t.y + t.h + 16 : t.y - 16 - bh}px`;
+  b.querySelector('.fleche').style.left = `${Math.max(16, Math.min(bw - 30, cx - left - 7))}px`;
+}
+function fermer() { courant = null; calque.innerHTML = ''; }
+calque.addEventListener('click', (ev) => {
+  const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return;
+  if (a === 'fin') fermer();
+  else if (a === 'taire') { fermer(); toast('Astuces coupées — Réglages › Aide pour les remettre'); }
+  else if (a === 'suiv') { if (courant.i < courant.etapes.length - 1) { courant.i++; dessiner(); } else fermer(); }
+  else if (a === 'prec') { courant.i--; dessiner(); }
+});
+addEventListener('keydown', (ev) => { if (!courant) return; if (ev.key === 'Escape') fermer();
+  if (ev.key === 'ArrowRight' && courant.etapes.length > 1) calque.querySelector('[data-a=suiv]')?.click();
+  if (ev.key === 'ArrowLeft' && courant.i > 0) { courant.i--; dessiner(); } });
+function toast(t) { app.querySelector('.toast')?.remove(); const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; app.appendChild(d); setTimeout(() => d.remove(), 2600); }
+
+/* A : la dernière page de la bienvenue propose la visite. */
+function bienvenue() {
+  fermerMenu(); fermer(); app.querySelector('.bienvenue')?.remove();
+  const d = document.createElement('div'); d.className = 'bienvenue';
+  d.innerHTML = `<div class="carte"><div class="points"><i></i><i></i><i></i><i class="on"></i></div><h2>Vous êtes prêt</h2>
+    <p>Voulez-vous qu'on vous montre où sont les choses ? Une minute, sur l'écran que vous allez utiliser.</p>
+    <div class="choix2"><button class="p" data-b="visite">Me faire visiter<small>1 minute, 5 étapes</small></button><button data-b="seul">Je découvre seul<small>La visite reste dans le bouton « ? »</small></button></div></div>`;
+  app.appendChild(d);
+  d.addEventListener('click', (ev) => { const b = ev.target.closest('[data-b]'); if (!b) return; d.remove(); if (b.dataset.b === 'visite') montrer(VISITE); else montrer([{ ...VISITE[4], kick: 'Pour plus tard' }]); });
+}
+/* D : le centre d'aide. */
+function fermerMenu() { app.querySelector('.menu-aide')?.remove(); }
+function menu() {
+  if (app.querySelector('.menu-aide')) return fermerMenu();
+  fermer();
+  const m = document.createElement('div'); m.className = 'menu-aide';
+  m.innerHTML = `<h4>Cet écran</h4><button data-m="visite"><svg class="i"><use href="#map"/></svg><span>Visite de l'accueil<small>5 étapes, 1 minute</small></span></button>
+    <button data-m="astuces"><svg class="i"><use href="#lamp"/></svg><span>Astuces de cet écran<small>Les revoir</small></span></button><hr>
+    <h4>Guides</h4><button data-m="droits"><svg class="i"><use href="#shield"/></svg><span>Les droits administrateur<small>Pourquoi, et comment les donner</small></span></button>
+    <button data-m="bienvenue"><svg class="i"><use href="#book"/></svg><span>Revoir la bienvenue<small>Les quatre pages</small></span></button>`;
+  app.appendChild(m);
+  m.addEventListener('click', (ev) => { const b = ev.target.closest('[data-m]'); if (!b) return; fermerMenu();
+    ({ visite: () => montrer(VISITE), astuces: () => montrer(ASTUCE), bienvenue, droits: () => toast('→ ouvrirait l\'encart, puis la lampe torche sur « Droits limités »') })[b.dataset.m](); });
+}
+el('gAide').onclick = (ev) => { ev.stopPropagation(); menu(); };
+el('gExpert').onclick = () => montrer(ASTUCE);
+el('demoA').onclick = bienvenue;
+el('demoC').onclick = () => { fermerMenu(); montrer(ASTUCE); };
+el('demoD').onclick = () => { fermer(); menu(); };
+</script>
+</body>
+</html>

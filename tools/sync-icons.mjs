@@ -84,6 +84,9 @@ const SPRITE = {
   cpu: 'cpu',
   info: 'info',
   scan: 'scan-search',
+  // Le guide (1.7) : sa bulle, et la relance en administrateur qu'il propose.
+  sparkles: 'sparkles',
+  relancer: 'refresh-cw',
 };
 
 if (!existsSync(source)) {

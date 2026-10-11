@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "_note": "Chaque maquette porte un numéro définitif, dans l'ordre de création. tools/archiver-maquettes.mjs en dépose une copie numérotée et datée, avec un badge, dans le dossier d'archives. Une nouvelle maquette s'ajoute ici avant d'être archivée.",
+  "maquettes": [
+    { "n": 1, "fichier": "identites.html", "date": "2026-09-22 21:34", "titre": "Identités visuelles", "resume": "Trois palettes sur une structure identique (rejetée : trois recolorations, pas trois identités)." },
+    { "n": 2, "fichier": "dispositions.html", "date": "2026-09-22 21:34", "titre": "Dispositions", "resume": "Quatre architectures d'écran, palette verrouillée : master-détail retenu pour l'Expert." },
+    { "n": 3, "fichier": "simple-msi.html", "date": "2026-09-22 21:34", "titre": "Mode Simple façon MSI Center", "resume": "Quatre propositions : l'assistant pas-à-pas retenu." },
+    { "n": 4, "fichier": "simple-hightech.html", "date": "2026-09-22 21:34", "titre": "Mode Simple, pistes high-tech", "resume": "Variantes high-tech du mode Simple." },
+    { "n": 5, "fichier": "simple-organique.html", "date": "2026-09-22 21:34", "titre": "Mode Simple, pistes organiques", "resume": "Variantes organiques du mode Simple : origine de la marée." },
+    { "n": 6, "fichier": "reference.html", "date": "2026-09-22 21:34", "titre": "Maquette de référence", "resume": "Assistant et master-détail, deux thèmes : la spécification visuelle de la v4." },
+    { "n": 7, "fichier": "reference-v2.html", "date": "2026-09-22 21:34", "titre": "Référence v2", "resume": "Réglages, confiance, premier lancement." },
+    { "n": 8, "fichier": "config-layouts.html", "date": "2026-09-26 11:11", "titre": "Mise en page de $CONFIG", "resume": "Propositions pour afficher les options d'un script." },
+    { "n": 9, "fichier": "emplacements-proteges.html", "date": "2026-10-06 23:07", "titre": "Emplacements protégés", "resume": "Résumé et plan du disque." },
+    { "n": 10, "fichier": "lots-ecrans-reduits.html", "date": "2026-10-07 08:12", "titre": "Lots sur petit écran", "resume": "Le champ de bouées quand la fenêtre est basse." },
+    { "n": 11, "fichier": "reglages-page.html", "date": "2026-10-07 08:12", "titre": "Réglages en pleine page", "resume": "Une section par page, recherche." },
+    { "n": 12, "fichier": "analyse.html", "date": "2026-10-07 21:47", "titre": "Écran d'analyse", "resume": "Analyser, cocher, nettoyer : les propositions de la 1.4." },
+    { "n": 13, "fichier": "sindry-themes.html", "date": "2026-10-10 19:02", "titre": "Sindry : thèmes", "resume": "Palettes tirées de l'icône de Sindry : Braise retenu." },
+    { "n": 14, "fichier": "sindry-braise.html", "date": "2026-10-10 19:14", "titre": "Sindry : Braise", "resume": "Trois variantes de Braise et les graphiques à engrenages : Ardente et Crépuscule retenues." },
+    { "n": 15, "fichier": "sindry-etiquettes.html", "date": "2026-10-10 19:40", "titre": "Sindry : étiquettes", "resume": "Cinq ébauches pour les faits d'une fiche : « icônes et valeurs » retenue." },
+    { "n": 16, "fichier": "sindry-attention.html", "date": "2026-10-11 07:07", "titre": "Attirer l'œil", "resume": "Six effets (Balise retenue) et cinq formes de guide (encart, puis lampe torche, retenue)." },
+    { "n": 17, "fichier": "themes-ambiances.html", "date": "2026-10-11 07:37", "titre": "Thèmes d'ambiance", "resume": "Synthwave, Hyperespace (inspiré de Star Wars) et trois autres, sur l'écran d'accueil du mode Simple." },
+    { "n": 18, "fichier": "guide-bienvenue.html", "date": "2026-10-11 07:38", "titre": "Guide et bienvenue", "resume": "Comment le guide s'articule avec l'écran de bienvenue : quatre formules, et ma recommandation." }
+  ]
+}

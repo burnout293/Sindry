@@ -186,11 +186,15 @@ Stockés dans la configuration, **jamais dans le fichier `.ps1`** :
 |---|---|
 | Valeurs du `$CONFIG` | les défauts déclarés dans le script |
 | **Nécessite un point de restauration** | pré-coché si le script déclare `reversible : false` |
-| **Nécessite un redémarrage** | pré-coché si le script déclare `reboot : true` |
-| Activé / désactivé | activé |
+
+**Retirés en 1.7** : « Actif » et « Nécessite un redémarrage », deux cases de plus à chaque
+fiche. Écarter une action se fait déjà à l'étape « Vérifier », pour un lancement ; et le
+redémarrage, seul le script le sait — il le déclare (`reboot : true`, montré dans les faits
+de la fiche et annoncé avant le lancement) et le confirme par `[REBOOT]`. Un réglage de la
+1.6 qui les portait est ignoré : un script désactivé alors se lance de nouveau.
 
 **Principe général, valable pour tout réglage dérivé d'un script** (valeurs de `$CONFIG`,
-ces deux cases, et le rangement du script dans les lots — §5.1) : la métadonnée du script
+cette case, et le rangement du script dans les lots — §5.1) : la métadonnée du script
 **propose**, l'utilisateur **dispose**. Tant que l'utilisateur n'a rien changé, la valeur
 suit le script et se met à jour si le script change (à la Ré-analyse, §5.5) ; dès qu'il la
 modifie à la main, elle devient une **configuration figée** qu'aucun réglage venant du
@@ -287,7 +291,7 @@ Détail au §6.7.
 ## duration      : fast       # fast | medium | slow
 ## reversible    : true       # false → pré-coche « nécessite un point de restauration »
 ## interruptible : true       # false → ne peut pas être tué sans risque
-## reboot        : false      # true  → pré-coche « nécessite un redémarrage »
+## reboot        : false      # true  → redémarrage annoncé (fiche, étape Vérifier, bilan)
 ## engine        : auto       # auto | winps | pwsh — voir §6.7
 ## WINTOOL:END
 
@@ -1050,7 +1054,7 @@ tout moment depuis les Réglages généraux (« Présentation de WinTool »), da
 
 Les illustrations sont faites en HTML et CSS, sans image : elles suivent le thème et la
 langue, et ne vieillissent pas comme une capture d'écran. Elles s'arrêtent quand la fenêtre
-n'est pas active et quand Windows demande moins d'animations (§15.3). La visite se passe à
+est réduite et quand Windows demande moins d'animations (§15.3). La visite se passe à
 tout moment ; elle ne bloque rien.
 
 **Le contenu vit dans `src/presentation.json`** (1.4) : pages, titres, phrases, icônes,
@@ -1227,6 +1231,26 @@ icône, et sans jeu d'icônes en double pour le thème sombre.
 **Outillage** : `tools/lucide-icon-names.txt` versionne la liste des noms valides pour que
 le validateur fonctionne hors ligne et en intégration continue. Les SVG eux-mêmes arrivent
 par npm (`lucide-static`) côté frontend — ils ne sont pas versionnés dans le dépôt.
+
+### 15.6 Attirer l'œil, guider (1.7)
+
+Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/sindry-attention.html`).
+
+- **La balise** — un point dans le coin d'un élément, qui émet des ondes comme un sonar.
+  L'élément ne bouge pas, ne change ni de taille ni de couleur : elle se pose sur n'importe
+  quoi (classe `.balise`, parent positionné). Elle signale un **état qui dure** : la pastille
+  « Droits limités » la porte tant que WinTool n'a pas les droits administrateur. Moins
+  d'animations : le point reste, les ondes disparaissent.
+- **L'encart** — une alerte posée là où l'on regarde déjà (la fiche d'une action en
+  Expert, l'étape « Vérifier » en Simple), qui ne recouvre rien et n'interrompt rien.
+  Premier usage : une action qui a besoin des droits administrateur alors que WinTool ne
+  les a pas. Son bouton « Me montrer » ouvre le guide.
+- **Le guide, à la lampe torche** (`src/guide.js`) — tout s'assombrit sauf un cercle de
+  lumière aux bords doux sur l'élément, et une bulle explique à quoi il sert. Hors du
+  cercle, rien ne répond ; l'élément éclairé, lui, reste cliquable — c'est souvent lui
+  qu'il faut toucher, et le toucher ferme le guide. Échap ferme. Le guide ne s'ouvre
+  **jamais seul en plein travail** : il répond à un geste. Sa place dans la visite du
+  premier lancement est à décider (maquette M18).
 
 ## 16. Sources de scripts
 

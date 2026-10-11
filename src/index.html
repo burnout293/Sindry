@@ -48,6 +48,8 @@
         </button>
 
         <button class="pill ok" id="adminPill" type="button">
+          <!-- La balise (1.7) : visible seulement en « Droits limites ». -->
+          <span class="balise" aria-hidden="true"></span>
           <svg class="ico i14" aria-hidden="true"><use href="#shield" /></svg>
           <span id="adminPillText"></span>
         </button>
@@ -167,6 +169,8 @@
                 <h2 id="recapTitre"></h2>
               </div>
               <p class="muted recap-aide" id="recapAide"></p>
+              <!-- Avant la liste : une liste longue repousserait l'avertissement hors de vue. -->
+              <div id="droitsNote" hidden></div>
               <div class="box" id="recapBox">
                 <div class="box-h" id="recapBoxTitre"></div>
                 <div class="box-b list" id="recapZone"></div>

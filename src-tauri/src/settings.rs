@@ -98,12 +98,29 @@ pub struct ScriptOverride {
     pub lots: Option<Vec<String>>,
     #[serde(default)]
     pub config: BTreeMap<String, serde_json::Value>,
+    /// « Nécessite un point de restauration » : seul booléen WinTool encore
+    /// réglable par script (§4.2).
+    ///
+    /// Jusqu'à la 1.6, deux autres l'accompagnaient, retirés en 1.7 :
+    /// `enabled` (« Actif » — l'étape « Vérifier » écarte déjà une action pour
+    /// un lancement) et `reboot_ack` (« Nécessite un redémarrage » — le script
+    /// le déclare, et le confirme par `[REBOOT]`). Un `settings.json` qui les
+    /// porte encore se lit sans eux : serde ignore les champs inconnus, et ils
+    /// disparaissent à la prochaine écriture. Un script désactivé en 1.6 se
+    /// relance donc de nouveau — il n'y a plus de quoi le réactiver.
     pub reversible_ack: Option<bool>,
-    pub reboot_ack: Option<bool>,
-    /// Un script desactive reste range dans ses lots et garde ses reglages :
-    /// il est simplement saute pendant l'entretien. `None` vaut active — la
-    /// valeur initiale de la §4.2, qui ne depend d'aucune metadonnee.
-    pub enabled: Option<bool>,
+}
+
+impl ScriptOverride {
+    /// Rien n'est figé : l'entrée n'a pas lieu d'être dans `settings.json`.
+    fn est_vide(&self) -> bool {
+        // `lots` compte comme le reste : sans lui, figer puis relacher une
+        // option effacait aussi le rangement manuel du script dans ses lots.
+        self.lot_locked.is_none()
+            && self.lots.is_none()
+            && self.config.is_empty()
+            && self.reversible_ack.is_none()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -311,7 +328,11 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
 /// jamais planter) — on repart de réglages par défaut plutôt que de refuser de lancer.
 pub fn load_from(path: &Path, factory: Vec<Lot>) -> Result<Settings, String> {
     if let Ok(raw) = fs::read_to_string(path) {
-        if let Ok(s) = serde_json::from_str::<Settings>(&raw) {
+        if let Ok(mut s) = serde_json::from_str::<Settings>(&raw) {
+            // Une entree qui ne figeait qu'un reglage retire (1.7) ne fige
+            // plus rien : « aucune entree » doit continuer de vouloir dire
+            // « rien de fige ».
+            s.overrides.retain(|_, o| !o.est_vide());
             return Ok(s);
         }
     }
@@ -401,12 +422,10 @@ pub fn set_script_lot_membership(
     over.lot_locked = None;
 }
 
-/// Les trois booléens « réglage WinTool » de la §4.2, désignés par un jeton
-/// stable côté interface plutôt que par un booléen positionnel —
-/// `set_flag(id, "restore", true)` se relit, `set_flag(id, true, false)` non.
+/// Le booléen « réglage WinTool » de la §4.2, désigné par un jeton stable côté
+/// interface plutôt que par un booléen positionnel — `set_flag(id, "restore",
+/// true)` se relit, `set_flag(id, true)` non.
 pub const FLAG_RESTORE: &str = "restore";
-pub const FLAG_REBOOT: &str = "reboot";
-pub const FLAG_ENABLED: &str = "enabled";
 
 /// Fige une valeur de `$CONFIG` pour un script (§4.2 : « le script propose,
 /// l'utilisateur dispose »).
@@ -433,10 +452,10 @@ pub fn set_config_value(
     oublier_si_vide(settings, script_id);
 }
 
-/// Pose (ou relâche) l'un des trois booléens WinTool de la §4.2. `flag` vaut
-/// [`FLAG_RESTORE`], [`FLAG_REBOOT`] ou [`FLAG_ENABLED`] ; `value = None` rend
-/// le réglage à sa valeur initiale (la métadonnée du script pour les deux
-/// premiers, « activé » pour le troisième).
+/// Pose (ou relâche) le booléen WinTool de la §4.2. `flag` vaut
+/// [`FLAG_RESTORE`] ; `value = None` rend le réglage à sa valeur initiale, tirée
+/// de `reversible` dans l'entête du script. Les jetons `reboot` et `enabled`
+/// d'avant la 1.7 sont refusés comme n'importe quel jeton inconnu.
 pub fn set_flag(
     settings: &mut Settings,
     script_id: &str,
@@ -446,15 +465,13 @@ pub fn set_flag(
     let entree = settings.overrides.entry(script_id.to_string()).or_default();
     match flag {
         FLAG_RESTORE => entree.reversible_ack = value,
-        FLAG_REBOOT => entree.reboot_ack = value,
-        FLAG_ENABLED => entree.enabled = value,
         autre => return Err(format!("reglage par script inconnu : {autre}")),
     }
     oublier_si_vide(settings, script_id);
     Ok(())
 }
 
-/// Rend au script **toutes** ses valeurs de `$CONFIG` et ses deux cases d'un
+/// Rend au script **toutes** ses valeurs de `$CONFIG` et sa case WinTool d'un
 /// coup. Ne touche pas au classement en catégorie : ranger un script ailleurs
 /// et régler ses options sont deux décisions distinctes, annuler l'une ne doit
 /// pas annuler l'autre en silence.
@@ -462,8 +479,6 @@ pub fn reset_script_config(settings: &mut Settings, script_id: &str) {
     if let Some(entree) = settings.overrides.get_mut(script_id) {
         entree.config.clear();
         entree.reversible_ack = None;
-        entree.reboot_ack = None;
-        entree.enabled = None;
     }
     oublier_si_vide(settings, script_id);
 }
@@ -472,16 +487,10 @@ pub fn reset_script_config(settings: &mut Settings, script_id: &str) {
 /// fichier accumulerait des objets vides à chaque aller-retour sur un
 /// interrupteur, et « aucune entrée » cesserait de vouloir dire « rien figé ».
 fn oublier_si_vide(settings: &mut Settings, script_id: &str) {
-    // `lots` compte comme le reste : sans lui, figer puis relacher une option
-    // effacait aussi le rangement manuel du script dans ses lots.
-    let vide = settings.overrides.get(script_id).is_some_and(|o| {
-        o.lot_locked.is_none()
-            && o.lots.is_none()
-            && o.config.is_empty()
-            && o.reversible_ack.is_none()
-            && o.reboot_ack.is_none()
-            && o.enabled.is_none()
-    });
+    let vide = settings
+        .overrides
+        .get(script_id)
+        .is_some_and(ScriptOverride::est_vide);
     if vide {
         settings.overrides.remove(script_id);
     }
@@ -887,21 +896,54 @@ mod tests {
     }
 
     #[test]
-    fn les_booleens_wintool_se_posent_et_se_relachent_separement() {
+    fn le_booleen_wintool_se_pose_et_se_relache() {
         let mut s = reglages_nus();
+        set_config_value(&mut s, "abc", "Cle", Some(json!(1)));
         set_flag(&mut s, "abc", FLAG_RESTORE, Some(true)).unwrap();
-        set_flag(&mut s, "abc", FLAG_REBOOT, Some(false)).unwrap();
         assert_eq!(s.overrides["abc"].reversible_ack, Some(true));
-        assert_eq!(s.overrides["abc"].reboot_ack, Some(false));
 
         set_flag(&mut s, "abc", FLAG_RESTORE, None).unwrap();
         assert_eq!(s.overrides["abc"].reversible_ack, None);
-        assert_eq!(s.overrides["abc"].reboot_ack, Some(false));
-
-        set_flag(&mut s, "abc", FLAG_ENABLED, Some(false)).unwrap();
-        assert_eq!(s.overrides["abc"].enabled, Some(false));
 
         assert!(set_flag(&mut s, "abc", "autre_chose", Some(true)).is_err());
+        // Retires en 1.7 : une interface d'avant ne doit rien pouvoir figer.
+        assert!(set_flag(&mut s, "abc", "reboot", Some(true)).is_err());
+        assert!(set_flag(&mut s, "abc", "enabled", Some(false)).is_err());
+    }
+
+    #[test]
+    fn les_reglages_retires_en_1_7_se_lisent_sans_eux() {
+        let dir = std::env::temp_dir().join(format!("wintool-retires-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        let mut s = reglages_nus();
+        set_config_value(&mut s, "garde", "Cle", Some(json!(1)));
+        save_to(&path, &s).unwrap();
+
+        // Un settings.json de la 1.6 : « Actif » decoche sur un script,
+        // « Redemarrage » fige sur un autre, a cote d'une vraie valeur.
+        let mut brut: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        brut["overrides"]["garde"]["enabled"] = json!(false);
+        brut["overrides"]["seul"] =
+            json!({ "config": {}, "reversible_ack": null, "reboot_ack": true, "enabled": false });
+        fs::write(&path, brut.to_string()).unwrap();
+
+        let relu = load_from(&path, Vec::new()).unwrap();
+        assert_eq!(
+            relu.overrides["garde"].config["Cle"],
+            json!(1),
+            "le reste du fichier survit"
+        );
+        assert!(
+            !relu.overrides.contains_key("seul"),
+            "une entree qui ne figeait qu'un reglage retire disparait"
+        );
+        let reecrit = serde_json::to_string(&relu.overrides).unwrap();
+        assert!(!reecrit.contains("enabled") && !reecrit.contains("reboot_ack"));
+
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -909,21 +951,21 @@ mod tests {
         let mut s = reglages_nus();
         s.overrides.entry("abc".into()).or_default().lot_locked = Some("tools".into());
         set_config_value(&mut s, "abc", "Cle", Some(json!("valeur")));
-        set_flag(&mut s, "abc", FLAG_REBOOT, Some(true)).unwrap();
+        set_flag(&mut s, "abc", FLAG_RESTORE, Some(true)).unwrap();
 
         reset_script_config(&mut s, "abc");
 
         let over = &s.overrides["abc"];
         assert!(over.config.is_empty());
-        assert_eq!(over.reboot_ack, None);
+        assert_eq!(over.reversible_ack, None);
         assert_eq!(over.lot_locked.as_deref(), Some("tools"));
     }
 
     #[test]
     fn un_aller_retour_sur_un_interrupteur_ne_laisse_pas_de_trace() {
         let mut s = reglages_nus();
-        set_flag(&mut s, "abc", FLAG_REBOOT, Some(true)).unwrap();
-        set_flag(&mut s, "abc", FLAG_REBOOT, None).unwrap();
+        set_flag(&mut s, "abc", FLAG_RESTORE, Some(true)).unwrap();
+        set_flag(&mut s, "abc", FLAG_RESTORE, None).unwrap();
         assert!(
             s.overrides.is_empty(),
             "un override vide doit disparaitre de settings.json"
@@ -1086,7 +1128,6 @@ mod tests {
         // figee qui ne survit pas a un redemarrage n'est pas figee du tout.
         set_config_value(&mut modifie, "abc", "SleepOnAC_Min", Some(json!(0)));
         set_flag(&mut modifie, "abc", FLAG_RESTORE, Some(true)).unwrap();
-        set_flag(&mut modifie, "abc", FLAG_ENABLED, Some(false)).unwrap();
         save_to(&path, &modifie).unwrap();
 
         let recharge = load_from(&path, cats).unwrap();
@@ -1094,11 +1135,6 @@ mod tests {
         let over = &recharge.overrides["abc"];
         assert_eq!(over.config["SleepOnAC_Min"], json!(0));
         assert_eq!(over.reversible_ack, Some(true));
-        assert_eq!(over.enabled, Some(false));
-        assert_eq!(
-            over.reboot_ack, None,
-            "un reglage jamais touche reste au script"
-        );
 
         let _ = fs::remove_dir_all(&dir);
     }

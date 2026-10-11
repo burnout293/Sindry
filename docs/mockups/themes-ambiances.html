@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thèmes d'ambiance</title>
+<!--
+  Maquette 17. Des thèmes qui changent l'ambiance entière, pas seulement les
+  couleurs : chacun remplace la houle par son propre décor, et habille les
+  bouées, la carte recommandée et le bouton principal à sa façon. Écran posé :
+  l'accueil du mode Simple, là où l'ambiance se voit le plus.
+  Braise (le thème actuel) sert de référence.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap;
+  src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0A0A0F; }
+body { font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; color: #EDEAF5;
+       padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+.page-h { max-width: 1240px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.page-h img { width: 56px; height: 56px; }
+.page-h h1 { font-size: 26px; letter-spacing: -.6px; font-weight: 800; }
+.page-h p { color: #A49DB6; font-size: 14px; margin-top: 2px; max-width: 620px; }
+.choix { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.pseg { display: inline-flex; padding: 4px; border-radius: 12px; background: #16141F; border: 1px solid #26232F; flex-wrap: wrap; }
+.pseg button { padding: 8px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #A49DB6; }
+.pseg button[aria-pressed="true"] { color: #170A12; background: linear-gradient(135deg, #FEC923, #FD5632); }
+
+.onglets { max-width: 1240px; margin: 0 auto 14px; }
+.vue { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+@media (max-width: 1000px) { .vue { grid-template-columns: 1fr; } }
+.cadre { width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid #26232F; }
+.panneau { background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.panneau h2 { font-size: 21px; letter-spacing: -.3px; }
+.panneau .tag { color: #C9C3D8; font-size: 13.5px; line-height: 1.55; }
+.panneau h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #8C86A0; margin-top: 4px; }
+.panneau ul { padding-left: 18px; color: #C9C3D8; font-size: 13px; line-height: 1.6; }
+.nuancier { display: flex; flex-wrap: wrap; gap: 6px; }
+.nuancier span { width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); }
+.note { font-size: 12.5px; color: #E8C989; background: #231B0E; border: 1px solid #4A3814; border-radius: 12px; padding: 10px 12px; line-height: 1.5; }
+
+.grille-h { max-width: 1240px; margin: 30px auto 12px; font-size: 19px; letter-spacing: -.3px; }
+.vignettes { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.vignette { background: #121019; border: 1px solid #221F2C; border-radius: 16px; padding: 10px; text-align: left; }
+.vignette[aria-pressed="true"] { border-color: #FD9E21; }
+.vignette .mini { border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 10; position: relative; }
+.vignette .mini > .ecran { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.vignette b { display: block; margin: 10px 4px 2px; font-size: 14.5px; }
+.vignette small { display: block; margin: 0 4px 4px; color: #A49DB6; font-size: 12.5px; }
+
+.integration { max-width: 1240px; margin: 30px auto 0; background: #121019; border: 1px solid #221F2C; border-radius: 18px; padding: 16px 22px; }
+.integration h2 { font-size: 17px; }
+.integration ul { margin-top: 8px; padding-left: 18px; color: #C9C3D8; font-size: 13.5px; line-height: 1.7; }
+
+/* ==========================================================================
+   L'écran : 960 × 600, mis à l'échelle de son cadre.
+   ========================================================================== */
+.ecran {
+  position: relative; width: 960px; height: 600px; overflow: hidden;
+  background: var(--fond, var(--bg)); color: var(--text); font-family: var(--police, 'Inter', 'Segoe UI', sans-serif);
+}
+.decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tb { position: relative; z-index: 3; height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+      background: var(--tb, transparent); border-bottom: 1px solid var(--tb-bord, transparent); }
+.tb img { width: 26px; height: 26px; }
+.tb .nom { font-weight: 800; font-size: 15px; }
+.tb .ver { font-family: Consolas, monospace; font-size: 11px; color: var(--text-2); }
+.tb .etape { font-size: 12.5px; font-weight: 650; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.tb .etape i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-2); }
+.tb .etape i:first-of-type { background: var(--acc-a); }
+.tb .droite { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.seg span { padding: 5px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.seg span.on { color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 650; padding: 5px 11px;
+        border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); background: var(--surface); }
+.pill svg.i { width: 14px; height: 14px; }
+.ib { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--text-2); border: 1px solid var(--border); background: var(--surface); }
+.ib svg.i { width: 16px; height: 16px; }
+
+.contenu { position: relative; z-index: 2; text-align: center; padding-top: 34px; }
+.contenu h1 { font-size: 30px; letter-spacing: -.6px; font-weight: 800; font-family: var(--police-titre, inherit);
+              text-transform: var(--casse, none); font-style: var(--italique, normal); text-shadow: var(--lueur-titre, none); }
+.contenu > p { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+.reco { margin: 22px auto 0; width: 400px; display: flex; align-items: center; gap: 14px; text-align: left;
+        padding: 14px 18px; border-radius: var(--rayon, 20px); background: var(--surface); border: 2px solid var(--acc-a);
+        box-shadow: var(--ombre-reco, 0 12px 30px rgba(0,0,0,.25)); backdrop-filter: var(--verre, none); }
+.reco .ri { width: 48px; height: 48px; border-radius: calc(var(--rayon, 20px) * .7); display: grid; place-items: center;
+            color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); flex-shrink: 0; box-shadow: var(--lueur, none); }
+.reco b { font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.reco b em { font-style: normal; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: var(--acc-on); border: 1px solid var(--acc-on); }
+.reco span { color: var(--text-2); font-size: 13px; }
+.sect { margin-top: 22px; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+
+.bouees { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.bouee { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px;
+         animation: flotte 5s ease-in-out infinite alternate; }
+@keyframes flotte { from { translate: 0 -5px; } to { translate: 0 5px; } }
+.flotteur { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: var(--text);
+            background: var(--surface); border: 1px solid var(--border); box-shadow: var(--ombre-bouee, 0 6px 16px rgba(0,0,0,.25)); backdrop-filter: var(--verre, none); }
+.lbl { background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--rayon, 20px) * .5); padding: 6px 12px;
+       text-align: center; font-size: 12.5px; font-weight: 700; white-space: nowrap; backdrop-filter: var(--verre, none);
+       text-transform: var(--casse-lbl, none); letter-spacing: var(--espace-lbl, 0); }
+.lbl small { display: block; font-size: 11px; font-weight: 500; color: var(--text-2); text-transform: none; letter-spacing: 0; }
+
+.barre { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: 70px; display: flex; align-items: center; justify-content: center; gap: 20px;
+         background: var(--barre, transparent); font-size: 13.5px; color: var(--text-2); }
+.barre b { color: var(--text); }
+.primaire { display: inline-flex; align-items: center; gap: 10px; padding: 13px 30px; border-radius: 999px; font-size: 15px; font-weight: 750;
+            color: var(--on-acc); background: linear-gradient(135deg, var(--acc-a), var(--acc-b)); box-shadow: var(--lueur, 0 10px 26px rgba(0,0,0,.3));
+            text-transform: var(--casse, none); font-style: var(--italique, normal); letter-spacing: var(--espace-btn, 0); }
+
+/* --- Braise (référence) ------------------------------------------------- */
+.ecran[data-t="braise"] { --rayon: 20px; }
+.ecran[data-t="braise"][data-v="a"] { --bg: #0F0A14; --surface: #18111F; --surface-2: #2B2034; --border: #3D3049; --text: #F7F1FA; --text-2: #B9A9C6;
+  --acc-a: #FEC923; --acc-b: #FD5632; --acc-on: #FFB35C; --on-acc: #1A0B12; --eau-a: #D9482E; --eau-b: #7A1F45; --eau-o: .55; }
+.ecran[data-t="braise"][data-v="b"] { --bg: #FBF6F2; --surface: #FFFFFF; --surface-2: #EFE4DB; --border: #DCCBBE; --text: #1F1426; --text-2: #6A5873;
+  --acc-a: #FD9E21; --acc-b: #FD5632; --acc-on: #B23A0C; --on-acc: #1A0B12; --eau-a: #FDB45A; --eau-b: #FD5632; --eau-o: .3; }
+.houle { position: absolute; left: 0; bottom: 0; width: 200%; height: 330px; animation: derive 26s linear infinite; }
+.houle.loin { height: 380px; animation-duration: 40s; opacity: .55; }
+.houle path.n { fill: url(#gEau); opacity: var(--eau-o); }
+.houle path.c { fill: none; stroke: var(--acc-a); stroke-width: 2.5; opacity: .7; }
+@keyframes derive { to { transform: translateX(-50%); } }
+
+/* --- Synthwave ---------------------------------------------------------- */
+.ecran[data-t="synthwave"] { --rayon: 6px; --casse: uppercase; --italique: italic; --espace-btn: .08em; --casse-lbl: uppercase; --espace-lbl: .06em;
+  --police-titre: 'Inter', sans-serif; }
+.ecran[data-t="synthwave"][data-v="a"] {
+  --fond: linear-gradient(#0D0221 0%, #2B0A4F 32%, #8E1F7A 58%, #FF5F9E 63%, #0D0221 63.2%, #12032A 100%);
+  --surface: rgba(18, 4, 38, .82); --surface-2: #3B1466; --border: #FF2BD6; --text: #FDF2FF; --text-2: #D7C2F2;
+  --acc-a: #FF2BD6; --acc-b: #00E5FF; --acc-on: #7CF4FF; --on-acc: #12001F;
+  --lueur: 0 0 14px rgba(255, 43, 214, .75), 0 0 34px rgba(0, 229, 255, .35); --lueur-titre: 0 0 12px rgba(255, 43, 214, .9), 0 0 30px rgba(255, 43, 214, .5);
+  --ombre-bouee: 0 0 14px rgba(0, 229, 255, .6); --ombre-reco: 0 0 22px rgba(255, 43, 214, .45);
+  --grille: rgba(0, 229, 255, .75); --soleil-a: #FFE14D; --soleil-b: #FF2B8A; --montagne: #1A0638; --barre: linear-gradient(transparent, rgba(13, 2, 33, .85));
+  --tb: rgba(13, 2, 33, .6); --tb-bord: rgba(255, 43, 214, .35); }
+.ecran[data-t="synthwave"][data-v="b"] {
+  --fond: linear-gradient(#FFE6F3 0%, #FFC4E0 38%, #FF9CC9 60%, #FFF0F8 60.2%, #FFE9F5 100%);
+  --surface: rgba(255, 255, 255, .88); --surface-2: #FFD1E8; --border: #FF4FA7; --text: #2A0B3D; --text-2: #6E4A82;
+  --acc-a: #FF3EA5; --acc-b: #00B8D4; --acc-on: #B0106A; --on-acc: #2A0B3D;
+  --lueur: 0 0 14px rgba(255, 62, 165, .45); --lueur-titre: 0 0 14px rgba(255, 62, 165, .45);
+  --ombre-bouee: 0 0 14px rgba(0, 184, 212, .35); --ombre-reco: 0 0 22px rgba(255, 62, 165, .3);
+  --grille: rgba(255, 62, 165, .55); --soleil-a: #FFD23F; --soleil-b: #FF5FA2; --montagne: #C78BD9; --barre: linear-gradient(transparent, rgba(255, 233, 245, .9));
+  --tb: rgba(255, 255, 255, .55); --tb-bord: rgba(255, 62, 165, .3); }
+.ecran[data-t="synthwave"] .flotteur { background: var(--surface); border: 2px solid var(--acc-b); }
+.ecran[data-t="synthwave"] .lbl { border-color: var(--acc-a); }
+.ecran[data-t="synthwave"] .reco { border-color: var(--acc-a); }
+.soleil { position: absolute; left: 50%; top: 214px; width: 250px; height: 250px; margin-left: -125px; border-radius: 50%;
+  background: linear-gradient(var(--soleil-a), var(--soleil-b) 75%);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 46% no-repeat, repeating-linear-gradient(#000 0 9px, transparent 9px 15px) bottom / 100% 54% no-repeat;
+  filter: drop-shadow(0 0 30px var(--soleil-b)); }
+.montagnes { position: absolute; left: 0; right: 0; top: 300px; height: 80px; }
+.montagnes path { fill: var(--montagne); }
+.sol-cadre { position: absolute; left: 0; right: 0; top: 378px; bottom: 0; perspective: 300px; perspective-origin: 50% 0; overflow: hidden; }
+.sol { position: absolute; left: -60%; right: -60%; top: 0; height: 250px; transform-origin: 50% 0; transform: rotateX(72deg);
+  background-image: repeating-linear-gradient(90deg, var(--grille) 0 2px, transparent 2px 64px), repeating-linear-gradient(0deg, var(--grille) 0 2px, transparent 2px 36px);
+  animation: sol 1.1s linear infinite; }
+@keyframes sol { to { background-position: 0 0, 0 36px; } }
+
+/* --- Hyperespace (inspiré de Star Wars) ---------------------------------- */
+.ecran[data-t="hyperespace"] { --rayon: 4px; --casse: uppercase; --espace-btn: .16em; --casse-lbl: uppercase; --espace-lbl: .1em; }
+.ecran[data-t="hyperespace"] .contenu h1 { letter-spacing: .14em; font-weight: 700; font-size: 26px; }
+.ecran[data-t="hyperespace"][data-v="a"] {
+  --bg: #04050A; --surface: rgba(12, 14, 20, .86); --surface-2: #2A2F3A; --border: #343B49; --text: #E9EDF5; --text-2: #9AA3B5;
+  --acc-a: #FF2D3A; --acc-b: #B3001B; --acc-on: #FF6B74; --on-acc: #3A0008; --etoile: #FFFFFF;
+  --planete-a: #3A0F16; --planete-b: #0B0306; --halo: rgba(255, 45, 58, .55);
+  --tb: rgba(4, 5, 10, .7); --tb-bord: #1E232D; --barre: linear-gradient(transparent, rgba(4, 5, 10, .9)); }
+.ecran[data-t="hyperespace"][data-v="b"] {
+  --fond: linear-gradient(#DCE8F6 0%, #F4F7FB 55%); --surface: rgba(255, 255, 255, .9); --surface-2: #C9D6E6; --border: #B8C7DA; --text: #0E1726; --text-2: #4C5B70;
+  --acc-a: #2E9BFF; --acc-b: #1565C0; --acc-on: #0D5FB0; --on-acc: #06223F; --etoile: #7E95B3;
+  --planete-a: #F2E6CF; --planete-b: #CFB78E; --halo: rgba(46, 155, 255, .45);
+  --tb: rgba(255, 255, 255, .6); --tb-bord: #C9D6E6; --barre: linear-gradient(transparent, rgba(244, 247, 251, .92)); }
+/* Les boutons en lame lumineuse : un cœur presque blanc, une lueur de la couleur. */
+.ecran[data-t="hyperespace"] .primaire, .ecran[data-t="hyperespace"] .reco .ri, .ecran[data-t="hyperespace"] .seg span.on {
+  background: linear-gradient(180deg, #FFFFFF 0%, color-mix(in srgb, var(--acc-a) 22%, #fff) 100%);
+  box-shadow: 0 0 6px var(--acc-a), 0 0 18px var(--acc-a), 0 0 40px color-mix(in srgb, var(--acc-a) 60%, transparent); }
+.ecran[data-t="hyperespace"] .flotteur { border: 1.5px solid var(--acc-a); box-shadow: 0 0 12px color-mix(in srgb, var(--acc-a) 55%, transparent), inset 0 0 12px color-mix(in srgb, var(--acc-a) 30%, transparent); }
+.ecran[data-t="hyperespace"] .reco { border-width: 1.5px; box-shadow: 0 0 22px color-mix(in srgb, var(--acc-a) 35%, transparent); }
+.etoiles { position: absolute; top: 0; left: 0; width: 2px; height: 2px; border-radius: 50%; animation: derive-etoiles 90s linear infinite; }
+.etoiles.proches { width: 3px; height: 3px; animation-duration: 45s; }
+@keyframes derive-etoiles { to { transform: translateX(-960px); } }
+.planete { position: absolute; left: 50%; top: 360px; width: 2400px; height: 2400px; margin-left: -1200px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 0%, var(--planete-a), var(--planete-b) 22%);
+  box-shadow: 0 -2px 0 var(--acc-a), 0 -10px 40px var(--halo), 0 -40px 120px var(--halo); }
+
+/* --- Phosphore ------------------------------------------------------------ */
+.ecran[data-t="phosphore"] { --rayon: 0px; --police: 'Cascadia Mono', Consolas, monospace; --police-titre: 'Cascadia Mono', Consolas, monospace; }
+.ecran[data-t="phosphore"] .contenu h1 { font-weight: 700; letter-spacing: 0; }
+.ecran[data-t="phosphore"] .contenu h1::before { content: '> '; color: var(--text-2); }
+.ecran[data-t="phosphore"] .contenu h1::after { content: '_'; animation: curseur 1s steps(1) infinite; }
+@keyframes curseur { 50% { opacity: 0; } }
+.ecran[data-t="phosphore"][data-v="a"] { --bg: #020A04; --surface: rgba(2, 18, 6, .92); --surface-2: #0E3A18; --border: #1F7A3A; --text: #6CFF94; --text-2: #3FBF66;
+  --acc-a: #6CFF94; --acc-b: #2EE86A; --acc-on: #6CFF94; --on-acc: #021006; --lueur-titre: 0 0 8px rgba(108, 255, 148, .7); --tb-bord: #1F7A3A; }
+.ecran[data-t="phosphore"][data-v="b"] { --bg: #0C0700; --surface: rgba(20, 12, 0, .92); --surface-2: #3D2A06; --border: #8A5F12; --text: #FFC14D; --text-2: #D99A2B;
+  --acc-a: #FFC14D; --acc-b: #FFB000; --acc-on: #FFC14D; --on-acc: #140C00; --lueur-titre: 0 0 8px rgba(255, 176, 0, .7); --tb-bord: #8A5F12; }
+.ecran[data-t="phosphore"] { text-shadow: 0 0 4px color-mix(in srgb, var(--text) 45%, transparent); }
+.ecran[data-t="phosphore"] .flotteur { border-radius: 0; border-style: dashed; box-shadow: none; }
+.ecran[data-t="phosphore"] .lbl::before { content: '['; margin-right: 4px; color: var(--text-2); }
+.ecran[data-t="phosphore"] .lbl::after { content: ']'; margin-left: 4px; color: var(--text-2); }
+.ecran[data-t="phosphore"] .lbl small { display: inline; margin-left: 6px; }
+.ecran[data-t="phosphore"] .primaire { border-radius: 0; text-shadow: none; box-shadow: 0 0 14px color-mix(in srgb, var(--acc-a) 50%, transparent); }
+.ecran[data-t="phosphore"] .reco b em { border-radius: 0; }
+.balayage { position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55));
+  animation: scintille 4s steps(2) infinite; }
+@keyframes scintille { 50% { opacity: .9; } }
+.trace { position: absolute; left: 0; bottom: 0; width: 200%; height: 300px; animation: derive 30s linear infinite; }
+.trace path { fill: none; stroke: var(--acc-a); stroke-width: 2; stroke-dasharray: 2 7; opacity: .7; }
+.trace.loin path { opacity: .35; }
+
+/* --- Aurore ----------------------------------------------------------------- */
+.ecran[data-t="aurore"] { --rayon: 18px; --verre: blur(10px) saturate(1.2); }
+.ecran[data-t="aurore"][data-v="a"] { --fond: linear-gradient(#020816 0%, #0A1F33 62%, #071423 100%);
+  --surface: rgba(12, 28, 46, .58); --surface-2: #1E3A52; --border: rgba(160, 220, 255, .26); --text: #EAF6FF; --text-2: #A9C4D8;
+  --acc-a: #3CFFB4; --acc-b: #38C6FF; --acc-on: #7DFFD0; --on-acc: #02121A; --voile-1: #3CFFB4; --voile-2: #38C6FF; --voile-3: #8E6BFF; --colline: #04101C; }
+.ecran[data-t="aurore"][data-v="b"] { --fond: linear-gradient(#0B0618 0%, #1D0F33 62%, #120922 100%);
+  --surface: rgba(34, 18, 56, .58); --surface-2: #3B2658; --border: rgba(230, 190, 255, .26); --text: #F9EEFF; --text-2: #C7B3DB;
+  --acc-a: #FF6FB5; --acc-b: #B48CFF; --acc-on: #FF9CCB; --on-acc: #1A0620; --voile-1: #FF6FB5; --voile-2: #B48CFF; --voile-3: #6FD3FF; --colline: #0C0617; }
+.voile { position: absolute; height: 150px; border-radius: 50%; filter: blur(26px); opacity: .55; mix-blend-mode: screen; animation: ondule 12s ease-in-out infinite alternate; }
+.voile.v1 { left: -10%; width: 70%; top: 70px; background: linear-gradient(90deg, transparent, var(--voile-1), transparent); transform: skewY(-8deg); }
+.voile.v2 { left: 30%; width: 75%; top: 40px; background: linear-gradient(90deg, transparent, var(--voile-2), transparent); transform: skewY(6deg); animation-duration: 16s; }
+.voile.v3 { left: 10%; width: 60%; top: 150px; background: linear-gradient(90deg, transparent, var(--voile-3), transparent); transform: skewY(-3deg); animation-duration: 20s; opacity: .35; }
+@keyframes ondule { from { translate: -40px 0; scale: 1 .8; } to { translate: 40px 12px; scale: 1.1 1.15; } }
+.collines { position: absolute; left: 0; right: 0; bottom: 0; height: 330px; }
+.collines path { fill: var(--colline); }
+.lac { position: absolute; left: 0; right: 0; bottom: 0; height: 200px; background: linear-gradient(color-mix(in srgb, var(--voile-1) 14%, transparent), transparent 80%); }
+
+/* --- Abysses ---------------------------------------------------------------- */
+.ecran[data-t="abysses"] { --rayon: 26px; }
+.ecran[data-t="abysses"][data-v="a"] { --fond: linear-gradient(#08486A 0%, #04263F 38%, #020B16 100%);
+  --surface: rgba(4, 34, 52, .74); --surface-2: #0E4A66; --border: rgba(120, 225, 255, .28); --text: #E6FBFF; --text-2: #9CC7D6;
+  --acc-a: #2DF5E0; --acc-b: #2D8CFF; --acc-on: #7FFFF0; --on-acc: #001A22; --rayon-l: rgba(190, 245, 255, .16); --fond-marin: #01070E; --bulle: rgba(170, 240, 255, .5);
+  --ombre-bouee: 0 0 22px rgba(45, 245, 224, .45); }
+.ecran[data-t="abysses"][data-v="b"] { --fond: linear-gradient(#9FEAE6 0%, #DDF8F5 52%, #F4E9CF 100%);
+  --surface: rgba(255, 255, 255, .86); --surface-2: #BFEDEA; --border: #8FD3CE; --text: #06323B; --text-2: #3D6670;
+  --acc-a: #00BFB3; --acc-b: #1FA2E0; --acc-on: #007C74; --on-acc: #03262C; --rayon-l: rgba(255, 255, 255, .5); --fond-marin: #E7D3A8; --bulle: rgba(255, 255, 255, .8);
+  --ombre-bouee: 0 6px 18px rgba(0, 110, 120, .2); }
+.ecran[data-t="abysses"] .flotteur { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--acc-a) 45%, var(--surface)), var(--surface) 70%); border-color: color-mix(in srgb, var(--acc-a) 50%, transparent); }
+.rais { position: absolute; top: -40px; width: 130px; height: 520px; background: linear-gradient(var(--rayon-l), transparent 85%); filter: blur(10px);
+        transform-origin: top center; animation: balance 9s ease-in-out infinite alternate; }
+@keyframes balance { from { rotate: -14deg; } to { rotate: -4deg; } }
+.remontee { position: absolute; bottom: -20px; border-radius: 50%; border: 1.5px solid var(--bulle); animation: monte linear infinite; }
+@keyframes monte { to { transform: translateY(-640px); opacity: 0; } }
+.fond-marin { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; }
+.fond-marin path { fill: var(--fond-marin); }
+
+/* Mouvement réduit : le décor reste, il ne bouge plus. */
+body.calme .ecran *, body.calme .ecran *::before, body.calme .ecran *::after { animation: none !important; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gEau" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--eau-a)"/><stop offset="1" style="stop-color:var(--eau-b)"/></linearGradient>
+  </defs>
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/></symbol>
+  <symbol id="pulse" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/></symbol>
+</svg>
+
+<header class="page-h">
+  <img src="../../src/marque.png" alt="">
+  <div>
+    <h1>Thèmes d'ambiance</h1>
+    <p>Pas seulement des couleurs : chaque thème remplace la houle par son décor, et habille bouées, carte et bouton à sa façon. Deux variantes chacun. Braise, le thème actuel, sert de repère.</p>
+  </div>
+  <div class="choix">
+    <div class="pseg" id="choixVariante"></div>
+    <div class="pseg" id="choixCalme"><button data-calme="0" aria-pressed="true">Animé</button><button data-calme="1" aria-pressed="false">Mouvement réduit</button></div>
+  </div>
+</header>
+
+<div class="onglets"><div class="pseg" id="choixTheme"></div></div>
+
+<div class="vue">
+  <div class="cadre" id="cadre"></div>
+  <aside class="panneau" id="panneau"></aside>
+</div>
+
+<h2 class="grille-h">Tous côte à côte</h2>
+<div class="vignettes" id="vignettes"></div>
+
+<section class="integration">
+  <h2>Comment ils entreraient dans WinTool</h2>
+  <ul>
+    <li><b>Un réglage « Thème »</b> à la place de « Couleurs » (1.8) : on choisit le thème, puis sa variante ; clair ou sombre reste le réglage 1.1 quand le thème a les deux.</li>
+    <li><b>Un thème = des jetons + un décor.</b> Les jetons (fonds, textes, accent, séries des graphiques) changent tout l'écran ; le décor remplace la houle à l'accueil du mode Simple, et les bouées y flottent comme sur l'eau.</li>
+    <li><b>Ce qui ne change jamais</b> : la disposition, les tailles de cible (56 px en Simple), le contraste de 4,5 mesuré pour chaque variante, l'arrêt des animations quand Windows en demande moins ou que la fenêtre est réduite.</li>
+    <li><b>L'Expert reste sobre</b> : il prend les jetons du thème, pas son décor — on y lit des listes et des journaux.</li>
+  </ul>
+</section>
+
+<script>
+const THEMES = {
+  braise: { nom: 'Braise', variantes: ['Ardente sombre', 'Ardente clair'], tag: "Le thème actuel : la flamme de l'icône de Sindry, et la houle de braise.",
+    change: ['Référence de comparaison.'], note: '' },
+  synthwave: { nom: 'Synthwave', variantes: ['Nuit', 'Miami'], tag: "Les années 80 : soleil rayé, montagnes violettes, une grille de néon qui défile vers l'horizon.",
+    change: ["Décor : soleil et grille à la place de la houle", 'Bouées en anneaux de néon, titres en italique majuscule lumineux', 'Bouton principal néon, rose vers cyan', '« Miami » : la même chose au soleil couchant, en clair'], note: '' },
+  hyperespace: { nom: 'Hyperespace', variantes: ['Obscur', 'Lumière'], tag: "Inspiré de Star Wars : champ d'étoiles qui dérive, planète à l'horizon, boutons en lame lumineuse.",
+    change: ["Décor : étoiles sur deux plans, et l'arc d'une planète à la place de la houle", 'Boutons et bouées « en lame » : un cœur blanc, une lueur rouge (Obscur) ou bleue (Lumière)', 'Titres espacés en capitales, coins presque droits'],
+    note: "Le nom « Star Wars », ses logos, sa police et ses musiques appartiennent à Lucasfilm : le thème s'en inspire sans rien en reprendre. D'où « Hyperespace », et « Obscur / Lumière » plutôt que les noms des deux camps." },
+  phosphore: { nom: 'Phosphore', variantes: ['Vert', 'Ambre'], tag: "Un vieil écran cathodique : texte phosphorescent, lignes de balayage, curseur qui clignote.",
+    change: ['Tout en police à chasse fixe', 'Bouées en cases pointillées, libellés entre crochets', "Une ligne d'eau en pointillés à la place de la houle"],
+    note: "Le plus « technique » des cinq : charmant en Expert, plus difficile à lire pour un débutant. À réserver peut-être à l'Expert." },
+  aurore: { nom: 'Aurore', variantes: ['Boréale', 'Australe'], tag: "Nuit polaire : des voiles de lumière ondulent au-dessus de collines et d'un lac immobile.",
+    change: ['Décor : aurores animées, collines en silhouette', 'Cartes et bouées en verre dépoli', 'Le plus calme des cinq'], note: '' },
+  abysses: { nom: 'Abysses', variantes: ['Abysse', 'Lagon'], tag: "Sous la surface : rais de lumière, bulles qui remontent, bouées qui luisent comme des méduses.",
+    change: ['Prolonge la marée de WinTool : on passe sous l\'eau', 'Bouées bioluminescentes, coins très arrondis', '« Lagon » : eau turquoise et sable clair'], note: '' },
+};
+const IDS = Object.keys(THEMES);
+const BOUEES = [
+  { x: 14, b: 196, ic: 'trash', t: 'Faire le ménage', d: '9 min' }, { x: 38, b: 214, ic: 'zap', t: 'Performance', d: '2 min' },
+  { x: 62, b: 204, ic: 'shield', t: 'Vie privée', d: '4 min' }, { x: 86, b: 192, ic: 'app', t: 'Applications', d: '5 min' },
+  { x: 27, b: 100, ic: 'pulse', t: 'Santé', d: '1 min' }, { x: 73, b: 104, ic: 'wrench', t: 'Outillage', d: '9 min' },
+];
+const vague = (amp, y, larg) => { let d = `M0 ${y}`; for (let x = 0; x <= larg; x += 40) d += ` L${x} ${(y - amp * Math.sin((2 * Math.PI * x) / (larg / 4))).toFixed(1)}`; return d; };
+
+function etoiles(n, graine) {
+  let s = graine; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  return Array.from({ length: n }, () => `${Math.round(r() * 1920)}px ${Math.round(r() * 600)}px 0 ${r() < .15 ? 1 : 0}px var(--etoile)`).join(',');
+}
+function decor(t) {
+  if (t === 'braise') {
+    const d1 = vague(26, 80, 1920), d2 = vague(18, 60, 1920);
+    return `<svg class="houle loin" viewBox="0 0 1920 380" preserveAspectRatio="none"><path class="n" d="${d2} L1920 380 L0 380Z"/><path class="c" d="${d2}"/></svg>
+            <svg class="houle" viewBox="0 0 1920 330" preserveAspectRatio="none"><path class="n" d="${d1} L1920 330 L0 330Z"/><path class="c" d="${d1}"/></svg>`;
+  }
+  if (t === 'synthwave') {
+    return `<div class="soleil"></div>
+      <svg class="montagnes" viewBox="0 0 960 80" preserveAspectRatio="none"><path d="M0 80 L0 52 L80 30 L150 58 L230 14 L320 60 L400 40 L470 66 L560 22 L650 62 L720 36 L800 58 L880 20 L960 50 L960 80Z"/></svg>
+      <div class="sol-cadre"><div class="sol"></div></div>`;
+  }
+  if (t === 'hyperespace') {
+    return `<div class="etoiles" style="box-shadow:${etoiles(170, 7)}"></div><div class="etoiles proches" style="box-shadow:${etoiles(40, 31)}"></div><div class="planete"></div>`;
+  }
+  if (t === 'phosphore') {
+    const d1 = vague(20, 70, 1920), d2 = vague(14, 50, 1920);
+    return `<svg class="trace loin" viewBox="0 0 1920 300" preserveAspectRatio="none" style="height:360px;animation-duration:44s"><path d="${d2}"/></svg>
+            <svg class="trace" viewBox="0 0 1920 300" preserveAspectRatio="none"><path d="${d1}"/></svg><div class="balayage"></div>`;
+  }
+  if (t === 'aurore') {
+    return `<div class="voile v1"></div><div class="voile v2"></div><div class="voile v3"></div>
+      <svg class="collines" viewBox="0 0 960 330" preserveAspectRatio="none"><path d="M0 330 L0 120 C120 60 220 140 330 100 C450 56 540 150 660 96 C780 44 880 120 960 90 L960 330Z" opacity=".75"/><path d="M0 330 L0 200 C160 150 300 230 480 190 C650 150 800 220 960 180 L960 330Z"/></svg><div class="lac"></div>`;
+  }
+  if (t === 'abysses') {
+    const bulles = Array.from({ length: 14 }, (_, i) => { const tl = 8 + ((i * 37) % 14), x = (i * 71) % 960, r = 4 + ((i * 13) % 9);
+      return `<i class="remontee" style="left:${x}px;width:${r}px;height:${r}px;animation-duration:${tl}s;animation-delay:-${(i * 1.7) % tl}s"></i>`; }).join('');
+    return `<div class="rais" style="left:120px"></div><div class="rais" style="left:380px;animation-delay:-3s;width:90px"></div><div class="rais" style="left:640px;animation-delay:-6s"></div>${bulles}
+      <svg class="fond-marin" viewBox="0 0 960 170" preserveAspectRatio="none"><path d="M0 170 L0 120 C60 90 110 130 170 104 C230 80 260 120 330 110 C420 96 470 140 560 118 C640 98 700 130 780 108 C860 88 910 120 960 100 L960 170Z"/></svg>`;
+  }
+  return '';
+}
+function ecran(t, v) {
+  return `<div class="ecran" data-t="${t}" data-v="${v}">
+    <div class="decor">${decor(t)}</div>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span><span class="ver">1.7.0</span>
+      <span class="etape">Choisir <i></i><i></i><i></i><i></i></span>
+      <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div>
+        <span class="pill"><svg class="i"><use href="#shield"/></svg>Administrateur</span>
+        <span class="ib"><svg class="i"><use href="#terminal"/></svg></span><span class="ib"><svg class="i"><use href="#sun"/></svg></span><span class="ib"><svg class="i"><use href="#settings"/></svg></span></div></div>
+    <div class="contenu"><h1>Que souhaitez-vous faire ?</h1><p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
+      <div class="reco"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span><div><b>Entretien complet <em>Recommandé</em></b><span>On s'occupe de tout — environ 38 minutes</span></div></div>
+      <div class="sect">Ou choisissez un domaine précis</div></div>
+    <div class="bouees">${BOUEES.map((b, i) => `<div class="bouee" style="left:${b.x}%;bottom:${b.b}px;animation-delay:-${i * 0.9}s"><span class="flotteur"><svg class="i"><use href="#${b.ic}"/></svg></span><span class="lbl">${b.t}<small>${b.d}</small></span></div>`).join('')}</div>
+    <div class="barre"><span>Choisi : <b>Entretien complet</b> · 38 min</span><span class="primaire">Continuer <svg class="i"><use href="#arrow"/></svg></span></div>
+  </div>`;
+}
+
+let theme = 'synthwave', variante = 'a';
+const cadre = document.getElementById('cadre');
+function ajuster() {
+  const e = cadre.querySelector('.ecran'); if (!e) return;
+  const z = cadre.clientWidth / 960; e.style.zoom = z; cadre.style.height = `${600 * z}px`;
+  document.querySelectorAll('.vignette .mini').forEach((m) => { m.firstElementChild.style.zoom = m.clientWidth / 960; });
+}
+function nuancier() {
+  const e = cadre.querySelector('.ecran'), cs = getComputedStyle(e);
+  return ['--acc-a', '--acc-b', '--surface', '--border', '--text', '--text-2'].map((v) => `<span title="${v}" style="background:${cs.getPropertyValue(v)}"></span>`).join('');
+}
+function rendre() {
+  cadre.innerHTML = ecran(theme, variante);
+  const th = THEMES[theme];
+  document.getElementById('choixTheme').innerHTML = IDS.map((id) => `<button data-th="${id}" aria-pressed="${id === theme}">${THEMES[id].nom}</button>`).join('');
+  document.getElementById('choixVariante').innerHTML = th.variantes.map((n, i) => `<button data-va="${'ab'[i]}" aria-pressed="${'ab'[i] === variante}">${n}</button>`).join('');
+  ajuster();
+  document.getElementById('panneau').innerHTML = `<h2>${th.nom}</h2><p class="tag">${th.tag}</p>
+    <h3>Variantes</h3><p class="tag">${th.variantes.join(' · ')}</p>
+    <h3>Nuancier</h3><div class="nuancier">${nuancier()}</div>
+    <h3>Ce qui change</h3><ul>${th.change.map((c) => `<li>${c}</li>`).join('')}</ul>
+    ${th.note ? `<div class="note">${th.note}</div>` : ''}`;
+  document.querySelectorAll('.vignette').forEach((v) => v.setAttribute('aria-pressed', String(v.dataset.th === theme)));
+}
+document.getElementById('vignettes').innerHTML = IDS.map((id) => `<button class="vignette" data-th="${id}"><div class="mini">${ecran(id, 'a')}</div><b>${THEMES[id].nom}</b><small>${THEMES[id].variantes.join(' · ')}</small></button>`).join('');
+document.addEventListener('click', (ev) => {
+  const th = ev.target.closest('[data-th]'); if (th) { theme = th.dataset.th; variante = 'a'; rendre(); if (th.classList.contains('vignette')) scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  const va = ev.target.closest('[data-va]'); if (va) { variante = va.dataset.va; rendre(); return; }
+  const c = ev.target.closest('[data-calme]');
+  if (c) { document.body.classList.toggle('calme', c.dataset.calme === '1'); document.querySelectorAll('#choixCalme button').forEach((b) => b.setAttribute('aria-pressed', String(b === c))); }
+});
+addEventListener('resize', ajuster);
+rendre();
+</script>
+</body>
+</html>

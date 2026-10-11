@@ -185,7 +185,7 @@ Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `panels` et 
 | `duration` | `fast` / `medium` / `slow` | `slow` est annoncé à l'avance |
 | `reversible` | `true` / `false` | `false` **pré-coche** « nécessite un point de restauration » |
 | `interruptible` | `true` / `false` | `false` = ne peut pas être tué sans risque |
-| `reboot` | `true` / `false` | `true` **pré-coche** « nécessite un redémarrage » |
+| `reboot` | `true` / `false` | `true` annonce un redémarrage : dans les faits de la fiche, avant le lancement et au bilan. Il ne se règle pas dans WinTool (1.7) : c'est le script qui le sait, et `[REBOOT]` le confirme |
 | `engine` | `auto` / `winps` / `pwsh` | Interpréteur requis |
 | `scan` | `true` / `false` | Facultatif. `true` = le script sait analyser avant d'agir — voir « Le mode analyse » |
 | `view` | une vue | Facultatif. La présentation de l'analyse — voir « Choisir sa vue » |
