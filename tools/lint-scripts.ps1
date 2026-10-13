@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Validateur du contrat de script WinTool v2.
+    Validateur du contrat de script Sindry v3.
 
 .DESCRIPTION
     Vérifie que chaque .ps1 respecte le contrat défini dans docs/SPECIFICATION.md §5.
@@ -15,21 +15,21 @@
     dans les deux sens. C'est ce croisement qui rend la dérive impossible.
 
     Deux usages, deux exigences :
-      · En intégration continue sur le catalogue officiel (dépôt WinTool-Catalogue) —
+      · En intégration continue sur le catalogue officiel (dépôt Sindry-Catalogue) —
         tolérance zéro, code de sortie 1 à la moindre erreur. Ces scripts-là, on les
         maîtrise.
       · En local sur un script personnel — informatif. L'application, elle, n'empêche
         jamais un script non conforme de s'exécuter (§5.4 « constater, jamais bloquer »).
 
 .PARAMETER Path
-    Dossier à analyser. Par défaut vos scripts : %LOCALAPPDATA%\WinTool\scripts.
+    Dossier à analyser. Par défaut vos scripts : %LOCALAPPDATA%\Sindry\scripts.
 
 .PARAMETER Strict
     Traite les avertissements comme des erreurs. Exigé du catalogue officiel.
 
 .EXAMPLE
     .\tools\lint-scripts.ps1
-    .\tools\lint-scripts.ps1 -Path ..\WinTool-Catalogue\scripts -Strict
+    .\tools\lint-scripts.ps1 -Path ..\Sindry-Catalogue\scripts -Strict
 #>
 [CmdletBinding()]
 param(
@@ -41,7 +41,7 @@ $ErrorActionPreference = 'Stop'
 
 # Par defaut, le dossier ou l'utilisateur depose ses propres scripts : depuis
 # la 1.2, le depot ne contient plus aucun script.
-if (-not $Path) { $Path = Join-Path $env:LOCALAPPDATA 'WinTool\scripts' }
+if (-not $Path) { $Path = Join-Path $env:LOCALAPPDATA 'Sindry\scripts' }
 
 # ==============================================================================
 # Référentiel — la seule source de vérité sur les valeurs admises
@@ -115,7 +115,7 @@ $CATEGORIES_JSON = Get-Content $FICHIER_CATEGORIES -Raw -Encoding UTF8 | Convert
 $CATEGORIES_USINE = @($CATEGORIES_JSON | ForEach-Object { $_.id }) + @($CATEGORIES_JSON | ForEach-Object { $_.id_fr })
 
 # Noms d'icônes Lucide valides. La liste est versionnée à côté de ce script pour que
-# la vérification fonctionne hors ligne — WinTool sert justement quand la machine va
+# la vérification fonctionne hors ligne — Sindry sert justement quand la machine va
 # mal, et le validateur tourne en CI. Les SVG eux-mêmes arrivent par npm côté frontend.
 $FICHIER_ICONES = Join-Path $PSScriptRoot 'lucide-icon-names.txt'
 $ICONES = @()
@@ -158,7 +158,9 @@ function Add-Constat {
     param(
         [string] $Fichier,
         [int]    $Ligne,
-        [ValidateSet('erreur', 'avertissement')] [string] $Gravite,
+        # « note » : signale sans jamais faire echouer, meme avec -Strict (la
+        # transition vers le contrat de Sindry 2.0 passe par la).
+        [ValidateSet('erreur', 'avertissement', 'note')] [string] $Gravite,
         [string] $Code,
         [string] $Message
     )
@@ -169,13 +171,13 @@ function Add-Constat {
 }
 
 function Find-Bloc {
-    <# Renvoie @{Debut; Fin} des lignes d'un bloc ## WINTOOL:<Motif> ... ## WINTOOL:END #>
+    <# Renvoie @{Debut; Fin} des lignes d'un bloc ## SINDRY:<Motif> ... ## SINDRY:END #>
     param([string[]] $Lignes, [string] $Motif)
 
     $debut = -1
     for ($i = 0; $i -lt $Lignes.Count; $i++) {
         if ($debut -lt 0 -and $Lignes[$i] -match $Motif) { $debut = $i; continue }
-        if ($debut -ge 0 -and $Lignes[$i] -match '^\s*##\s*WINTOOL:END\s*$') {
+        if ($debut -ge 0 -and $Lignes[$i] -match '^\s*##\s*SINDRY:END\s*$') {
             return @{ Debut = $debut; Fin = $i }
         }
     }
@@ -206,13 +208,13 @@ function Test-Encodage {
 function Test-Entete {
     param([string] $Fichier, [string[]] $Lignes)
 
-    $bloc = Find-Bloc $Lignes '^\s*##\s*WINTOOL:START\s*$'
+    $bloc = Find-Bloc $Lignes '^\s*##\s*SINDRY:START\s*$'
     if (-not $bloc) {
-        Add-Constat $Fichier 1 'erreur' 'ENTETE_ABSENT' 'Aucun bloc ## WINTOOL:START ... ## WINTOOL:END.'
+        Add-Constat $Fichier 1 'erreur' 'ENTETE_ABSENT' 'Aucun bloc ## SINDRY:START ... ## SINDRY:END.'
         return @{}
     }
     if ($bloc.Fin -lt 0) {
-        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'ENTETE_NON_FERME' 'Bloc WINTOOL:START jamais refermé par WINTOOL:END.'
+        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'ENTETE_NON_FERME' 'Bloc SINDRY:START jamais refermé par SINDRY:END.'
         return @{}
     }
 
@@ -350,10 +352,10 @@ function Test-Rapport {
     param([string] $Fichier, [string[]] $Lignes)
 
     $rapport = [ordered]@{}
-    $bloc = Find-Bloc $Lignes '^\s*##\s*WINTOOL:REPORT\s*$'
+    $bloc = Find-Bloc $Lignes '^\s*##\s*SINDRY:REPORT\s*$'
     if (-not $bloc) { return $rapport }
     if ($bloc.Fin -lt 0) {
-        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'RAPPORT_NON_FERME' 'Bloc WINTOOL:REPORT jamais refermé par WINTOOL:END.'
+        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'RAPPORT_NON_FERME' 'Bloc SINDRY:REPORT jamais refermé par SINDRY:END.'
         return $rapport
     }
     for ($i = $bloc.Debut + 1; $i -lt $bloc.Fin; $i++) {
@@ -381,13 +383,13 @@ function Test-Rapport {
 function Test-Options {
     param([string] $Fichier, [string[]] $Lignes)
 
-    $bloc = Find-Bloc $Lignes '^\s*##\s*WINTOOL:OPTIONS\s*$'
+    $bloc = Find-Bloc $Lignes '^\s*##\s*SINDRY:OPTIONS\s*$'
     if (-not $bloc) {
-        Add-Constat $Fichier 1 'erreur' 'OPTIONS_ABSENT' "Aucun bloc '## WINTOOL:OPTIONS'. C'est lui qui donne aux options leur type et leur libellé ; sans lui l'interface afficherait les clés brutes."
+        Add-Constat $Fichier 1 'erreur' 'OPTIONS_ABSENT' "Aucun bloc '## SINDRY:OPTIONS'. C'est lui qui donne aux options leur type et leur libellé ; sans lui l'interface afficherait les clés brutes."
         return [ordered]@{}
     }
     if ($bloc.Fin -lt 0) {
-        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'OPTIONS_NON_FERME' 'Bloc WINTOOL:OPTIONS jamais refermé par WINTOOL:END.'
+        Add-Constat $Fichier ($bloc.Debut + 1) 'erreur' 'OPTIONS_NON_FERME' 'Bloc SINDRY:OPTIONS jamais refermé par SINDRY:END.'
         return [ordered]@{}
     }
 
@@ -553,19 +555,19 @@ function Test-Traduction {
 
     $debut = -1; $fin = -1; $langTrouvee = ''
     for ($i = 0; $i -lt $Lignes.Count; $i++) {
-        if ($debut -lt 0 -and $Lignes[$i] -match '^\s*##\s*WINTOOL:LANG\s+([A-Za-z]{2})\s*$') {
+        if ($debut -lt 0 -and $Lignes[$i] -match '^\s*##\s*SINDRY:LANG\s+([A-Za-z]{2})\s*$') {
             if ($Matches[1].ToLower() -ne $LangBase.ToLower()) { $debut = $i; $langTrouvee = $Matches[1].ToLower() }
             continue
         }
-        if ($debut -ge 0 -and $Lignes[$i] -match '^\s*##\s*WINTOOL:END\s*$') { $fin = $i; break }
+        if ($debut -ge 0 -and $Lignes[$i] -match '^\s*##\s*SINDRY:END\s*$') { $fin = $i; break }
     }
 
     if ($debut -lt 0) {
-        Add-Constat $Fichier 1 'erreur' 'TRADUCTION_ABSENTE' "Aucun bloc de traduction. L'entête est en '$LangBase' : il faut un bloc '## WINTOOL:LANG <autre langue>' (§10)."
+        Add-Constat $Fichier 1 'erreur' 'TRADUCTION_ABSENTE' "Aucun bloc de traduction. L'entête est en '$LangBase' : il faut un bloc '## SINDRY:LANG <autre langue>' (§10)."
         return
     }
     if ($fin -lt 0) {
-        Add-Constat $Fichier ($debut + 1) 'erreur' 'TRADUCTION_NON_FERMEE' 'Bloc de traduction jamais refermé par WINTOOL:END.'
+        Add-Constat $Fichier ($debut + 1) 'erreur' 'TRADUCTION_NON_FERMEE' 'Bloc de traduction jamais refermé par SINDRY:END.'
         return
     }
 
@@ -628,7 +630,7 @@ function Test-Override {
     param([string] $Fichier, [string[]] $Lignes)
 
     $trouve = $false
-    # Variables locales qui recoivent WINTOOL_CONFIG. Le repli vers un fichier
+    # Variables locales qui recoivent SINDRY_CONFIG. Le repli vers un fichier
     # passe presque toujours par l'une d'elles, une ou deux lignes plus bas :
     # ne regarder que la ligne courante laissait passer la forme la plus
     # repandue. Meme logique que `runner::trappe_de_substitution`, cote Rust.
@@ -639,14 +641,14 @@ function Test-Override {
         if ($l.TrimStart().StartsWith('#')) { continue }
         $bas = $l.ToLowerInvariant()
 
-        if ($bas -match '\$env:wintool_config') {
+        if ($bas -match '\$env:sindry_config') {
             $trouve = $true
             $gauche = ($l -split '=')[0].Trim()
             if ($gauche.StartsWith('$') -and $gauche -notmatch '\s') {
                 $portees.Add($gauche.TrimStart('$').ToLowerInvariant()) | Out-Null
             }
             if ($bas -match 'get-content') {
-                Add-Constat $Fichier ($i + 1) 'erreur' 'OVERRIDE_OBSOLETE' "Ancienne ligne d'override : WINTOOL_CONFIG contient le JSON, plus un chemin de fichier. Remplacez par ( `$env:WINTOOL_CONFIG | ConvertFrom-Json )."
+                Add-Constat $Fichier ($i + 1) 'erreur' 'OVERRIDE_OBSOLETE' "Ancienne ligne d'override : SINDRY_CONFIG contient le JSON, plus un chemin de fichier. Remplacez par ( `$env:SINDRY_CONFIG | ConvertFrom-Json )."
                 continue
             }
         }
@@ -654,7 +656,7 @@ function Test-Override {
         if ($bas -match 'get-content') {
             foreach ($v in $portees) {
                 if ($bas -match [regex]::Escape('$' + $v)) {
-                    Add-Constat $Fichier ($i + 1) 'erreur' 'OVERRIDE_FICHIER' "Repli vers un FICHIER de configuration : mecanisme retire pour raison de securite (§5.2). WinTool refuse de lancer ce script. Supprimez cette ligne, `$env:WINTOOL_CONFIG contient deja le JSON."
+                    Add-Constat $Fichier ($i + 1) 'erreur' 'OVERRIDE_FICHIER' "Repli vers un FICHIER de configuration : mecanisme retire pour raison de securite (§5.2). Sindry refuse de lancer ce script. Supprimez cette ligne, `$env:SINDRY_CONFIG contient deja le JSON."
                     break
                 }
             }
@@ -736,8 +738,8 @@ function Test-Analyse {
     <#
       Le mode analyse (FORMAT_SCRIPT.md, « Le mode analyse »). Ce qui se verifie
       sans executer quoi que ce soit :
-        - un script qui se declare analysable lit bien WINTOOL_MODE et rapporte
-          quelque chose ([FIND], [ITEM] ou [METRIC]) — sinon WinTool l'interrogerait
+        - un script qui se declare analysable lit bien SINDRY_MODE et rapporte
+          quelque chose ([FIND], [ITEM] ou [METRIC]) — sinon Sindry l'interrogerait
           pour rien ;
         - chaque ligne vise ce qui existe : [FIND] une option a cocher et l'un de
           ses choix, [ITEM] une liste [items], [METRIC] et [NOTE] une cle du bloc
@@ -758,7 +760,7 @@ function Test-Analyse {
     for ($i = 0; $i -lt $Lignes.Count; $i++) {
         $ligne = $Lignes[$i]
         if ($ligne -match '^\s*#') { continue }
-        if ($ligne -match 'WINTOOL_MODE') { $litMode = $true }
+        if ($ligne -match 'SINDRY_MODE') { $litMode = $true }
         foreach ($m in [regex]::Matches($ligne, '["'']\s*\[(FIND|ITEM|METRIC|NOTE|LOG|PROGRESS)\]\s+([^\s"'']+)([^"'']*(?:""[^"'']*)*)')) {
             $emissions += @{ Marqueur = $m.Groups[1].Value; Cle = $m.Groups[2].Value; Reste = $m.Groups[3].Value; Ligne = $i + 1 }
         }
@@ -767,14 +769,14 @@ function Test-Analyse {
 
     if ($declare) {
         if (-not $litMode) {
-            Add-Constat $Fichier $ligneScan 'erreur' 'SCAN_NON_GERE' "'scan : true' mais le script ne lit jamais `$env:WINTOOL_MODE : il agirait au lieu d'analyser."
+            Add-Constat $Fichier $ligneScan 'erreur' 'SCAN_NON_GERE' "'scan : true' mais le script ne lit jamais `$env:SINDRY_MODE : il agirait au lieu d'analyser."
         }
         if ($constats.Count -eq 0) {
             Add-Constat $Fichier $ligneScan 'erreur' 'SCAN_SANS_FIND' "'scan : true' mais aucun [FIND], [ITEM] ni [METRIC] n'est émis : l'analyse ne rapporterait rien."
         }
     }
     elseif ($litMode -or $constats.Count -gt 0) {
-        Add-Constat $Fichier $ligneScan 'avertissement' 'FIND_SANS_SCAN' "Le script sait analyser mais ne le déclare pas : ajoutez '## scan : true' à l'entête, sinon WinTool ne l'interrogera jamais."
+        Add-Constat $Fichier $ligneScan 'avertissement' 'FIND_SANS_SCAN' "Le script sait analyser mais ne le déclare pas : ajoutez '## scan : true' à l'entête, sinon Sindry ne l'interrogera jamais."
     }
 
     foreach ($e in $emissions) {
@@ -822,7 +824,7 @@ function Test-Analyse {
                     break
                 }
                 if (-not $champsLigne.Contains('id')) {
-                    Add-Constat $Fichier $e.Ligne 'erreur' 'ITEM_SANS_ID' "[ITEM] '$cle' sans id= : c'est l'id que WinTool renverra au script si l'élément est coché."
+                    Add-Constat $Fichier $e.Ligne 'erreur' 'ITEM_SANS_ID' "[ITEM] '$cle' sans id= : c'est l'id que Sindry renverra au script si l'élément est coché."
                 }
                 Test-ChampsLigne $Fichier $e.Ligne 'ITEM' $cle $champsLigne $CHAMPS_ITEM 'ITEM_CHAMP'
                 if ($champsLigne.Contains('label') -and $champsLigne['label']) {
@@ -873,7 +875,7 @@ function Test-Analyse {
 function Test-Presentation {
     <#
       Ce que l'entête et OPTIONS disent de l'affichage : vues, panneaux, groupes.
-      Un nom inconnu ne casserait rien (WinTool retomberait sur la liste à cocher),
+      Un nom inconnu ne casserait rien (Sindry retomberait sur la liste à cocher),
       mais l'auteur ne verrait jamais ce qu'il croit avoir demandé.
     #>
     param([string] $Fichier, [hashtable] $Champs, $Options, $Rapport)
@@ -957,9 +959,24 @@ if ($fichiers.Count -eq 0) {
 $racine = (Resolve-Path $Path).Path
 $idsVus = @{}
 
+# Le contrat d'avant Sindry 2.0, quand l'application s'appelait WinTool :
+# `## WINTOOL:START`, `$env:WINTOOL_CONFIG`... Lu jusqu'a la 2.1 : le script est
+# ramene au contrat de Sindry ligne a ligne (les numeros ne bougent pas), et une
+# note demande la conversion. Une note ne fait pas echouer -Strict : le catalogue
+# a le temps de migrer. Meme regle que contract::depuis_ancien_contrat.
+$ANCIEN = 'WINTOOL'
+
 foreach ($f in $fichiers) {
     $relatif = $f.FullName.Substring($racine.Length).TrimStart('\', '/')
     $lignes  = @(Get-Content -LiteralPath $f.FullName -Encoding UTF8)
+    if (@($lignes | Where-Object { $_ -match "^\s*##.*$($ANCIEN):" }).Count -gt 0) {
+        $lignes = @($lignes | ForEach-Object {
+            $l = $_
+            if ($l -match '^\s*##') { $l = $l.Replace("$($ANCIEN):", 'SINDRY:') }
+            $l.Replace("$($ANCIEN)_CONFIG", 'SINDRY_CONFIG').Replace("$($ANCIEN)_MODE", 'SINDRY_MODE')
+        })
+        Add-Constat $relatif 1 'note' 'CONTRAT_ANCIEN' "Contrat d'avant Sindry 2.0 ($($ANCIEN):START, `$env:$($ANCIEN)_CONFIG) : lu jusqu'a la 2.1. Remplacez $ANCIEN par SINDRY dans les marqueurs et les variables."
+    }
 
     Test-Encodage $relatif $f.FullName
     $champs  = Test-Entete  $relatif $lignes
@@ -992,9 +1009,10 @@ foreach ($f in $fichiers) {
 
 $erreurs        = @($script:Constats | Where-Object { $_.Gravite -eq 'erreur' })
 $avertissements = @($script:Constats | Where-Object { $_.Gravite -eq 'avertissement' })
+$notes          = @($script:Constats | Where-Object { $_.Gravite -eq 'note' })
 
 Write-Host ''
-Write-Host '  Validateur du contrat de script WinTool v2' -ForegroundColor Cyan
+Write-Host '  Validateur du contrat de script Sindry v3' -ForegroundColor Cyan
 Write-Host "  $($fichiers.Count) script(s) analysé(s) sous $racine"
 Write-Host ''
 
@@ -1007,14 +1025,15 @@ if ($script:Constats.Count -eq 0) {
 foreach ($groupe in ($script:Constats | Group-Object Fichier | Sort-Object Name)) {
     Write-Host "  $($groupe.Name)" -ForegroundColor White
     foreach ($c in ($groupe.Group | Sort-Object Ligne)) {
-        if ($c.Gravite -eq 'erreur') { $couleur = 'Red'; $etiquette = 'ERREUR ' }
-        else                         { $couleur = 'Yellow'; $etiquette = 'AVERTIR' }
+        if ($c.Gravite -eq 'erreur')     { $couleur = 'Red'; $etiquette = 'ERREUR ' }
+        elseif ($c.Gravite -eq 'note')   { $couleur = 'Cyan'; $etiquette = 'NOTE   ' }
+        else                             { $couleur = 'Yellow'; $etiquette = 'AVERTIR' }
         Write-Host ("    ligne {0,-4} {1} {2,-22} {3}" -f $c.Ligne, $etiquette, $c.Code, $c.Message) -ForegroundColor $couleur
     }
     Write-Host ''
 }
 
-Write-Host "  $($erreurs.Count) erreur(s), $($avertissements.Count) avertissement(s)." -ForegroundColor White
+Write-Host "  $($erreurs.Count) erreur(s), $($avertissements.Count) avertissement(s), $($notes.Count) note(s)." -ForegroundColor White
 Write-Host ''
 
 if ($erreurs.Count -gt 0) { exit 1 }

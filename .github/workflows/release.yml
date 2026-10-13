@@ -37,7 +37,7 @@ jobs:
       - run: npm run icons:sync
 
       # Le modele NSIS derive de celui de Tauri (page de desinstallation de
-      # WinTool, effacement sur) : tauri-action ne passe pas par `npm run build`.
+      # Sindry, effacement sur) : tauri-action ne passe pas par `npm run build`.
       - name: Preparer le modele de l'installeur
         run: node tools/modele-installeur.mjs
 
@@ -91,7 +91,7 @@ jobs:
           # ordinaire, `npm run build` n'a pas a connaitre la cle privee.
           args: --config src-tauri/tauri.release.json
           tagName: ${{ github.ref_name }}
-          releaseName: 'WinTool ${{ github.ref_name }}'
+          releaseName: 'Sindry ${{ github.ref_name }}'
           releaseDraft: true
           # latest.json, le manifeste que chaque installation interroge. Il
           # n'est servi qu'une fois la release PUBLIEE : tant qu'elle reste en
@@ -109,14 +109,14 @@ jobs:
 
             Telechargez l'installeur ci-dessous et executez-le.
 
-            **« Windows a protege votre PC » apparaitra** : WinTool n'est pas
+            **« Windows a protege votre PC » apparaitra** : Sindry n'est pas
             signe numeriquement. Cliquez sur **Informations complementaires**,
             puis **Executer quand meme**. Voir le README pour le detail.
 
             ### Verifier ce que vous telechargez
 
             ```powershell
-            Get-FileHash .\WinTool_*_x64-setup.exe -Algorithm SHA256
+            Get-FileHash .\Sindry_*_x64-setup.exe -Algorithm SHA256
             ```
 
             Comparez avec l'empreinte publiee dans le commentaire ci-dessous.

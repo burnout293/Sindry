@@ -1,10 +1,10 @@
-# WinTool
+# Sindry
 
 Outil de maintenance Windows. Une interface, deux modes, et des scripts PowerShell que
 vous pouvez lire, modifier et ajouter vous-même.
 
 - **Mode Simple** — un assistant en quatre étapes, sans un seul terme technique : choisir,
-  vérifier ce qui sera fait, voir ce que WinTool a trouvé et cocher ce qu'on veut traiter,
+  vérifier ce qui sera fait, voir ce que Sindry a trouvé et cocher ce qu'on veut traiter,
   puis le laisser faire.
   Conçu pour quelqu'un qui n'a jamais ouvert un terminal.
 - **Mode Expert** — le panneau de configuration du mode Simple : vous composez les lots,
@@ -13,8 +13,8 @@ vous pouvez lire, modifier et ajouter vous-même.
 L'application ne fait rien d'autre que lancer des scripts. Ce qu'ils font est écrit dans
 leur fichier, en clair, et vous pouvez le lire avant de cliquer.
 
-**WinTool est livré sans aucun script.** Au premier lancement, il propose d'installer le
-[catalogue officiel](https://github.com/burnout293/WinTool-Catalogue) — publié à part, sous licence MIT, et signé : chaque script est
+**Sindry est livré sans aucun script.** Au premier lancement, il propose d'installer le
+[catalogue officiel](https://github.com/burnout293/Sindry-Catalogue) — publié à part, sous licence MIT, et signé : chaque script est
 vérifié contre un index signé avant d'être écrit sur le disque. Vous choisissez les actions
 à installer, et vous pouvez ajouter d'autres catalogues (Réglages → Catalogues) : un dépôt
 GitHub et la clé publique de son éditeur. Vous pouvez aussi continuer sans, et n'utiliser
@@ -28,7 +28,7 @@ Téléchargez l'installeur depuis la page **Releases**, puis exécutez-le.
 
 ### « Windows a protégé votre PC »
 
-Cet écran bleu apparaîtra. C'est normal, et voici pourquoi : **WinTool n'est pas signé
+Cet écran bleu apparaîtra. C'est normal, et voici pourquoi : **Sindry n'est pas signé
 numériquement**. Un certificat de signature coûte plusieurs centaines d'euros par an, et ce
 projet n'en a pas.
 
@@ -43,12 +43,12 @@ Si vous préférez vérifier avant, chaque Release publie l'empreinte SHA-256 de
 Comparez-la avec :
 
 ```powershell
-Get-FileHash .\WinTool_*_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Sindry_*_x64-setup.exe -Algorithm SHA256
 ```
 
 ### Droits administrateur
 
-WinTool **s'ouvre normalement, sans élévation**. Il vous le dira s'il n'a pas les droits, et
+Sindry **s'ouvre normalement, sans élévation**. Il vous le dira s'il n'a pas les droits, et
 vous proposera de se relancer en administrateur — **une seule autorisation Windows**, et
 tous les scripts en héritent ensuite.
 
@@ -58,14 +58,14 @@ une application.
 
 ### Mises à jour
 
-Depuis la **1.1**, WinTool vérifie à son ouverture si une version plus récente est publiée,
+Depuis la **1.1**, Sindry vérifie à son ouverture si une version plus récente est publiée,
 et **vous la propose** dans un bandeau. Il ne télécharge et n'installe rien sans votre clic.
 Vous pouvez désactiver cette vérification dans les réglages ; « Vérifier maintenant » reste
 alors disponible.
 
 - **Rien n'identifie votre PC** dans cette vérification, pas même la version installée :
-  WinTool demande simplement un fichier public à GitHub.
-- **Chaque mise à jour est signée.** WinTool vérifie la signature avant d'installer quoi que
+  Sindry demande simplement un fichier public à GitHub.
+- **Chaque mise à jour est signée.** Sindry vérifie la signature avant d'installer quoi que
   ce soit, et refuse un installeur qui ne viendrait pas de ce dépôt.
 - **Si vous avez la 1.0.0**, installez la 1.1 à la main une dernière fois : la 1.0.0 ne
   savait pas encore se mettre à jour. Toutes les versions suivantes arriveront seules.
@@ -101,13 +101,13 @@ simule tous d'un coup — ou les repasse tous en réel.
 Déposez un `.ps1` dans :
 
 ```
-%LOCALAPPDATA%\WinTool\scripts\
+%LOCALAPPDATA%\Sindry\scripts\
 ```
 
 Les sous-dossiers sont libres, la découverte est récursive. Le script apparaît au prochain
 démarrage, ou après **Ré-analyser tous les scripts** dans les Réglages.
 
-**Avant sa première exécution**, WinTool vous montre son contenu et vous demande de
+**Avant sa première exécution**, Sindry vous montre son contenu et vous demande de
 l'approuver nommément. L'approbation porte sur l'empreinte exacte du fichier : toute
 modification ultérieure la révoque.
 
@@ -129,7 +129,7 @@ Vérifiez-le avant de le lancer :
 npm install
 npm run dev            # lance l'application
 npm run build          # produit l'installeur NSIS
-npm run lint:scripts   # valide le catalogue, extrait à côté (../WinTool-Catalogue)
+npm run lint:scripts   # valide le catalogue, extrait à côté (../Sindry-Catalogue)
 npm run icons:sync     # régénère les icônes depuis lucide-static
 ```
 
@@ -161,7 +161,7 @@ Ce banc ne part jamais dans le binaire : les fixtures vivent dans `tools/bench/`
 | [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) | Ce que l'application doit faire, et pourquoi. Fait autorité en cas de doute. |
 | [`docs/FORMAT_SCRIPT.md`](docs/FORMAT_SCRIPT.md) | Écrire un script : squelette, règles, codes du validateur. |
 | [`docs/PRESENTATION.md`](docs/PRESENTATION.md) | Modifier la présentation du premier démarrage sans toucher au code. |
-| [WinTool-Catalogue](https://github.com/burnout293/WinTool-Catalogue) | Les scripts officiels, leur licence (MIT) et la liste des scripts prévus. |
+| [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue) | Les scripts officiels, leur licence (MIT) et la liste des scripts prévus. |
 
 Une règle du projet : **toute convention décrite dans la documentation est vérifiée par un
 outil**. `tools/lint-scripts.ps1` valide les scripts, la suite de tests Rust lit le
@@ -179,7 +179,7 @@ par zéro script sur treize.
 [`LICENSE`](LICENSE), et une traduction française de courtoisie des avenants dans
 [`LICENSE.fr.md`](LICENSE.fr.md).
 
-En une phrase : WinTool est gratuit pour tout le monde, entreprises comprises, et
+En une phrase : Sindry est gratuit pour tout le monde, entreprises comprises, et
 personne ne peut en faire un produit payant.
 
 | Vous pouvez | Vous ne pouvez pas |
@@ -199,11 +199,11 @@ vous ajoutez**.
 de non-vente discrimine un champ d'activité, ce que la définition OSI interdit. C'est
 assumé et écrit en tête du fichier plutôt que laissé à découvrir.
 
-**Les scripts ne font pas partie de WinTool** et ne sont pas soumis à cette licence. Leurs
+**Les scripts ne font pas partie de Sindry** et ne sont pas soumis à cette licence. Leurs
 auteurs choisissent librement leurs conditions, y compris commerciales — un script
-conforme au contrat v2 reste exécutable sans WinTool, il ne lui doit donc rien. Ceux du
+conforme au contrat v2 reste exécutable sans Sindry, il ne lui doit donc rien. Ceux du
 catalogue officiel sont sous licence MIT et distribués à part, dans
-[leur propre dépôt](https://github.com/burnout293/WinTool-Catalogue) : l'installeur de WinTool n'en contient aucun.
+[leur propre dépôt](https://github.com/burnout293/Sindry-Catalogue) : l'installeur de Sindry n'en contient aucun.
 
 Les composants tiers conservent leurs propres licences, énumérées dans
 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).

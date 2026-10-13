@@ -113,7 +113,7 @@ mod tests {
     use super::*;
 
     fn dossier_test(nom: &str) -> PathBuf {
-        std::env::temp_dir().join(format!("wintool-test-history-{nom}-{}", std::process::id()))
+        std::env::temp_dir().join(format!("sindry-test-history-{nom}-{}", std::process::id()))
     }
 
     /// Regression : `duration_ms` etait un `u128`, et les arguments de commande

@@ -12,7 +12,7 @@ fn main() {
     let cle = std::fs::read_to_string("catalogue.pub")
         .map(|s| s.trim().to_string())
         .unwrap_or_default();
-    println!("cargo:rustc-env=WINTOOL_CATALOGUE_PUB={cle}");
+    println!("cargo:rustc-env=SINDRY_CATALOGUE_PUB={cle}");
 
     // Le manifeste embarque requireAdministrator : une seule invite UAC au lancement,
     // et tous les scripts executes ensuite heritent des droits administrateur.

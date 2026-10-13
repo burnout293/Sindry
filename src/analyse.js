@@ -9,11 +9,11 @@
  *     ([group:…]), un graphique, et un chevron pour deplier chaque poste ;
  *   - en mode Expert, le detail d'une action, dans la vue qu'elle a choisie
  *     (## view), avec ses panneaux.
- * Il tient aussi la selection, et calcule ce que WinTool renverra au script
- * dans WINTOOL_CONFIG.
+ * Il tient aussi la selection, et calcule ce que Sindry renverra au script
+ * dans SINDRY_CONFIG.
  *
  * Le script n'ecrit jamais de phrase. Les mots viennent de son entete
- * (OPTIONS, REPORT, LANG) et des textes de WinTool (i18n). Un element marque
+ * (OPTIONS, REPORT, LANG) et des textes de Sindry (i18n). Un element marque
  * `show=expert` ne s'affiche pas en mode Simple, mais il garde sa case : il
  * suit celle qui le contient, et revient a l'avis du script.
  *
@@ -183,7 +183,7 @@ const racines = (o) => o.items.filter((it) => !it.parent || !o.items.some((x) =>
 
 const SEL = new Map();
 
-/** L'avis du script, sinon la regle de WinTool : ce qui pese ou est a faire. */
+/** L'avis du script, sinon la regle de Sindry : ce qui pese ou est a faire. */
 const coche = (c) => (c.checked !== undefined ? c.checked === 'true'
   : c.state === 'todo' || (c.state !== 'ok' && (Number(c.size) > 0 || Number(c.count) > 0)));
 /** Un element « A verifier » (confidence=low) n'est jamais coche d'office. */
@@ -237,7 +237,7 @@ function aSupprimer(m, k) {
 }
 
 /**
- * Ce que WinTool posera dans WINTOOL_CONFIG pour l'action, d'apres les cases.
+ * Ce que Sindry posera dans SINDRY_CONFIG pour l'action, d'apres les cases.
  * Seuls les choix que l'analyse a rapportes peuvent etre coches : un choix
  * qu'elle n'a pas montre n'est jamais traite.
  */
@@ -258,7 +258,7 @@ export function configAnalyse(m) {
 }
 
 /**
- * Y a-t-il quelque chose a faire ? Sans rien de coche, WinTool ne relance pas
+ * Y a-t-il quelque chose a faire ? Sans rien de coche, Sindry ne relance pas
  * le script : le lancer pour rien ne ferait que l'inscrire « fait » dans
  * l'historique.
  */
@@ -773,7 +773,7 @@ function vueJauge(m, mode) {
     <span class="badge ${h[1] === 'ok' ? 'low' : h[1] === 'warn' ? 'med' : 'high'}">${esc(t(h[0]))}</span></div>`;
 }
 
-/** L'historique : ce que l'action a libere a chaque passage. WinTool le sait :
+/** L'historique : ce que l'action a libere a chaque passage. Sindry le sait :
  *  il garde le [FREED] de chaque action. Le script n'a rien a fournir. */
 function vueHistorique(historique = []) {
   const h = historique.filter((r) => r.freed != null && !r.simulated).slice(-12);

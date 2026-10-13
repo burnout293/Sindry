@@ -75,7 +75,7 @@ const lignes = [...registre].reverse().map((e) => `
   </a>`).join('');
 writeFileSync(join(dest, 'index.html'), `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Maquettes WinTool / Sindry</title>
+<title>Maquettes Sindry</title>
 <style>
   body { margin: 0; padding: 28px 16px 60px; background: #0E0A13; color: #F2ECF7; font-family: 'Segoe UI', system-ui, sans-serif; }
   main { max-width: 900px; margin: 0 auto; }

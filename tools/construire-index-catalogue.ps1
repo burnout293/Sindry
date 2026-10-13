@@ -1,14 +1,14 @@
 <#
   Construit index.json, l'index du catalogue de scripts (specification 16.3).
 
-  Usage (CI du depot WinTool-Catalogue, apres le validateur) :
+  Usage (CI du depot Sindry-Catalogue, apres le validateur) :
     ./tools/construire-index-catalogue.ps1 -Scripts <dossier> -Version 1.0.0 -Sortie index.json
 
   Le format est celui que lit src-tauri/src/catalogue.rs. Les deux evoluent
   ensemble : c'est pourquoi cet outil vit ici, a cote du lecteur, et non dans le
   depot du catalogue. Chaque regle controlee ici l'est aussi a la lecture, par
   l'application : ce controle sert a echouer tot, dans la CI, jamais a remplacer
-  celui de WinTool.
+  celui de Sindry.
 
   L'empreinte de chaque script est celle des octets EXACTS du fichier. Construire
   l'index depuis le dossier meme qui sera publie : une conversion de fins de
@@ -17,7 +17,7 @@
 param(
     [Parameter(Mandatory)] [string] $Scripts,
     [Parameter(Mandatory)] [string] $Version,
-    # Etiquette de la release ou les scripts seront publies. WinTool les
+    # Etiquette de la release ou les scripts seront publies. Sindry les
     # telecharge depuis cette release precise, jamais depuis 'la derniere'.
     [string] $Tag,
     [string] $Sortie = 'index.json',
@@ -99,9 +99,11 @@ foreach ($nom in $noms) {
     $bloc = ''
     foreach ($ligne in ($texte -split "`r?`n")) {
         $l = $ligne.Trim()
-        if ($l -match '^##\s*WINTOOL:START\s*$') { $bloc = 'entete'; continue }
-        if ($l -match '^##\s*WINTOOL:LANG\s+([A-Za-z-]+)\s*$') { $bloc = 'lang:' + $Matches[1].ToLowerInvariant(); continue }
-        if ($l -match '^##\s*WINTOOL:END\s*$') { $bloc = ''; continue }
+        # SINDRY:, ou WINTOOL: pour un script au contrat d'avant la 2.0 (lu
+        # jusqu'a la 2.1, comme dans lint-scripts.ps1 et contract.rs).
+        if ($l -match '^##\s*(SINDRY|WINTOOL):START\s*$') { $bloc = 'entete'; continue }
+        if ($l -match '^##\s*(SINDRY|WINTOOL):LANG\s+([A-Za-z-]+)\s*$') { $bloc = 'lang:' + $Matches[2].ToLowerInvariant(); continue }
+        if ($l -match '^##\s*(SINDRY|WINTOOL):END\s*$') { $bloc = ''; continue }
         if (-not $bloc -or $l -notmatch '^##\s*([A-Za-z_]+)\s*:\s*(.*)$') { continue }
         $cle = $Matches[1].ToLowerInvariant()
         $valeur = $Matches[2].Trim()

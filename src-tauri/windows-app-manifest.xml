@@ -2,7 +2,7 @@
 <!--
   Manifeste applicatif Windows.
 
-  asInvoker : WinTool s'ouvre TOUJOURS, eleve ou non.
+  asInvoker : Sindry s'ouvre TOUJOURS, eleve ou non.
 
   `requireAdministrator` empechait purement et simplement de lancer
   l'application sans elevation : double-cliquer sur l'executable depuis une
@@ -19,7 +19,7 @@
 -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
 
-  <assemblyIdentity type="win32" name="com.wintool.app" version="1.2.0.0" />
+  <assemblyIdentity type="win32" name="com.sindry.desktop" version="1.2.0.0" />
 
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>

@@ -2,7 +2,7 @@
 //!
 //! La source officielle est compilee dans le binaire : son depot
 //! (`catalogue::DEPOT`) et sa cle (`src-tauri/catalogue.pub`). Les sources
-//! tierces sont inscrites sous `HKLM\SOFTWARE\WinTool\Sources`, une sous-cle par
+//! tierces sont inscrites sous `HKLM\SOFTWARE\Sindry\Sources`, une sous-cle par
 //! source : comme le magasin d'approbations, rien ne s'y ecrit sans elevation.
 //! Ajouter une source, c'est decider a qui l'on confie l'execution de code en
 //! administrateur ; un programme sans droits ne doit pas pouvoir le decider a la
@@ -43,7 +43,7 @@ pub fn officielle() -> Source {
 }
 
 /// Emplacement des sources tierces, sous `HKEY_LOCAL_MACHINE`.
-pub const CLE_SOURCES: &str = r"SOFTWARE\WinTool\Sources";
+pub const CLE_SOURCES: &str = r"SOFTWARE\Sindry\Sources";
 
 /// Le nom affiche : 1 a 60 caracteres, sans caractere de controle.
 pub fn nom_sur(nom: &str) -> bool {
@@ -234,7 +234,7 @@ mod tests {
 
         impl Bac {
             fn neuf(nom: &str) -> Bac {
-                let c = format!(r"SOFTWARE\WinTool-tests-{}-{nom}", std::process::id());
+                let c = format!(r"SOFTWARE\Sindry-tests-{}-{nom}", std::process::id());
                 let _ = CURRENT_USER.remove_tree(&c);
                 Bac(c)
             }

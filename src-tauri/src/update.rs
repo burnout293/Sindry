@@ -1,4 +1,4 @@
-//! Mise a jour de WinTool (specification §11).
+//! Mise a jour de Sindry (specification §11).
 //!
 //! Le greffon officiel `tauri-plugin-updater` fait le travail delicat, et son
 //! code a ete lu avant d'etre retenu :
@@ -24,7 +24,7 @@
 //! ignore les pre-versions : c'est voulu, elles ne doivent pas atteindre tout
 //! le monde. Qui coche « Proposer les versions de test » interroge plutot la
 //! liste des releases publiees (API de GitHub, sans compte : la requete ne
-//! porte que l'en-tete User-Agent « WinTool ») et prend le manifeste de la plus
+//! porte que l'en-tete User-Agent « Sindry ») et prend le manifeste de la plus
 //! recente, pre-version ou non. La verification de la signature ne change pas :
 //! une pre-version est signee avec la meme cle.
 
@@ -32,8 +32,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime, Url};
 use tauri_plugin_updater::{Updater, UpdaterExt};
 
-/// Le depot des releases de WinTool.
-const DEPOT: &str = "burnout293/WinTool";
+/// Le depot des releases de Sindry.
+const DEPOT: &str = "burnout293/Sindry";
 
 /// Une version plus recente, telle que l'interface la presente.
 #[derive(Debug, Clone, Serialize)]
@@ -108,7 +108,7 @@ async fn greffon<R: Runtime>(app: &AppHandle<R>, beta: bool) -> Result<Updater, 
     b.build().map_err(|e| e.to_string())
 }
 
-/// Interroge la derniere release publiee. `None` : WinTool est a jour.
+/// Interroge la derniere release publiee. `None` : Sindry est a jour.
 pub async fn verifier<R: Runtime>(
     app: &AppHandle<R>,
     beta: bool,
@@ -139,7 +139,7 @@ pub async fn installer<R: Runtime>(app: &AppHandle<R>, beta: bool) -> Result<(),
         .check()
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "WinTool est deja a jour.".to_string())?;
+        .ok_or_else(|| "Sindry est deja a jour.".to_string())?;
 
     let emetteur = app.clone();
     let mut recu: u64 = 0;

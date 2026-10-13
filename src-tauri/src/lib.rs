@@ -5,6 +5,7 @@ mod contract;
 mod discovery;
 mod garde;
 mod history;
+mod migration;
 mod restore;
 mod runner;
 mod security;
@@ -144,7 +145,7 @@ fn script_approuve(entree: &discovery::ScriptEntry) -> Result<bool, String> {
     Ok(approval::is_approved(&store, &entree.hash))
 }
 
-/// Relance WinTool avec les droits administrateur, puis ferme l'instance
+/// Relance Sindry avec les droits administrateur, puis ferme l'instance
 /// courante.
 ///
 /// Demande a Windows de relancer l'application en administrateur : l'invite
@@ -233,13 +234,13 @@ const SANS_SIMULATION: &str = "SANS_SIMULATION";
 /// analysable (`scan : true`, §17).
 const SANS_ANALYSE: &str = "SANS_ANALYSE";
 
-/// Analyse un script (§17) : WinTool lui demande ce qu'il ferait, avec
-/// `WINTOOL_MODE=scan`. Rend la main immediatement ; la suite arrive par
+/// Analyse un script (§17) : Sindry lui demande ce qu'il ferait, avec
+/// `SINDRY_MODE=scan`. Rend la main immediatement ; la suite arrive par
 /// `script:line`, puis `script:analysis` et `script:end`.
 ///
 /// Analyser, c'est executer (§17.4) : l'approbation et la garde des reglages
 /// s'appliquent exactement comme pour l'action. Que l'analyse ne modifie rien
-/// est une promesse de l'auteur, que WinTool ne peut pas verifier.
+/// est une promesse de l'auteur, que Sindry ne peut pas verifier.
 #[tauri::command]
 fn scan_script(
     app: tauri::AppHandle,
@@ -429,7 +430,7 @@ fn preparer_approbation(
 fn approve_script(hash: String) -> Result<(), String> {
     // Le magasin ne vaut que par les droits du dossier qui l'abrite. Depuis
     // que l'application s'ouvre sans elevation (manifeste asInvoker), un
-    // premier lancement non eleve CREERAIT `%ProgramData%\WinTool\` avec des
+    // premier lancement non eleve CREERAIT `%ProgramData%\Sindry\` avec des
     // droits d'ecriture pour l'utilisateur — et n'importe quel programme
     // tournant sous son compte pourrait alors y inscrire sa propre empreinte
     // pour se declarer approuve. Le magasin deviendrait decoratif, ce que le
@@ -553,7 +554,9 @@ fn set_script_exceptions(script_id: String, ids: Vec<String>) -> Result<(), Stri
     }
     let sur = !script_id.is_empty()
         && script_id.len() <= 80
-        && script_id.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c));
+        && script_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c));
     if !sur {
         return Err(format!("identifiant de script refuse : {script_id}"));
     }
@@ -907,7 +910,7 @@ fn set_script_config(
     })
 }
 
-/// Le booleen WinTool de la §4.2 — `flag` vaut `restore` (« Necessite un point
+/// Le booleen Sindry de la §4.2 — `flag` vaut `restore` (« Necessite un point
 /// de restauration »). `value` absent rend le reglage a sa valeur initiale.
 #[tauri::command]
 fn set_script_flag(
@@ -919,7 +922,7 @@ fn set_script_flag(
     with_settings(&app, |s| settings::set_flag(s, &script_id, &flag, value))
 }
 
-/// Rend au script toutes ses valeurs de `$CONFIG` et son booleen WinTool (§4.2).
+/// Rend au script toutes ses valeurs de `$CONFIG` et son booleen Sindry (§4.2).
 /// Le rangement dans les lots survit : c'est une autre decision.
 #[tauri::command]
 fn reset_script_config(app: tauri::AppHandle, script_id: String) -> Result<Settings, String> {
@@ -1464,6 +1467,23 @@ fn reorder_lot_scripts(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Lance par l'installeur (crochet NSIS_HOOK_POSTINSTALL), en administrateur
+    // et sans fenetre : reprendre ce que WinTool laisse, puis s'arreter.
+    if std::env::args().any(|a| a == "--migrer-depuis-wintool") {
+        let _ = migration::donnees_utilisateur();
+        let _ = migration::systeme();
+        return;
+    }
+    // Et a chaque demarrage, ce qui resterait : sans droits, le dossier local ;
+    // avec, le registre et l'ancienne installation. Deja fait : sans effet.
+    for fait in migration::donnees_utilisateur() {
+        systeme::signaler(format!("Migration depuis WinTool : {fait}."));
+    }
+    if is_elevated() {
+        for fait in migration::systeme() {
+            systeme::signaler(format!("Migration depuis WinTool : {fait}."));
+        }
+    }
     // En tout premier, avant le moindre fil et la moindre vue : WebView2 lit
     // ces variables en creant son moteur, et chaque processus lance en herite.
     //
@@ -1481,7 +1501,7 @@ pub fn run() {
         if !suspectes.is_empty() {
             systeme::signaler(format!(
                 "Variables d'environnement qui font charger du code dans PowerShell ou dans \
-                 l'interface : {}. WinTool ne les transmet pas. Elles servent aux outils de \
+                 l'interface : {}. Sindry ne les transmet pas. Elles servent aux outils de \
                  developpement et de diagnostic ; si vous n'en utilisez pas, une analyse \
                  antivirus est conseillee.",
                 suspectes.join(", ")
@@ -1500,7 +1520,8 @@ pub fn run() {
             // depuis HKLM, dossiers de l'utilisateur ramenes dans son profil
             // s'ils visent un emplacement protege.
             let handle = app.handle();
-            if let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle, "")) {
+            if let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle, ""))
+            {
                 let corrigees =
                     systeme::preparer_environnement_enfants(&profil, |p| zones.protege(p));
                 if !corrigees.is_empty() {

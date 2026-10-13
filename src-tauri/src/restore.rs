@@ -54,9 +54,9 @@ pub fn creer_point_de_restauration(description: &str) -> Result<RestoreOutcome, 
            $avant = Dernier; \
            Checkpoint-Computer -Description '{description_echappee}' -RestorePointType MODIFY_SETTINGS -WarningAction SilentlyContinue; \
            $apres = Dernier; \
-           if ($null -eq $apres) {{ 'WINTOOL:AUCUN' }} elseif ($apres -eq $avant) {{ 'WINTOOL:RECENT' }} else {{ 'WINTOOL:CREE' }} \
+           if ($null -eq $apres) {{ 'SINDRY:AUCUN' }} elseif ($apres -eq $avant) {{ 'SINDRY:RECENT' }} else {{ 'SINDRY:CREE' }} \
          }} catch {{ \
-           'WINTOOL:ERREUR ' + $_.FullyQualifiedErrorId; \
+           'SINDRY:ERREUR ' + $_.FullyQualifiedErrorId; \
            $_.Exception.Message \
          }}"
     );
@@ -76,7 +76,7 @@ pub fn creer_point_de_restauration(description: &str) -> Result<RestoreOutcome, 
         .map_err(|e| format!("lancement de Checkpoint-Computer impossible : {e}"))?;
 
     let texte = String::from_utf8_lossy(&sortie.stdout);
-    if texte.contains("WINTOOL:") {
+    if texte.contains("SINDRY:") {
         return Ok(interpreter(&texte));
     }
     // Le script n'a meme pas pu s'executer : on garde ce que PowerShell a dit.
@@ -88,16 +88,16 @@ fn interpreter(sortie: &str) -> RestoreOutcome {
     let mut lignes = sortie
         .lines()
         .map(str::trim)
-        .skip_while(|l| !l.starts_with("WINTOOL:"));
+        .skip_while(|l| !l.starts_with("SINDRY:"));
     let verdict = lignes.next().unwrap_or_default();
     match verdict {
-        "WINTOOL:CREE" => RestoreOutcome::Created,
-        "WINTOOL:RECENT" => RestoreOutcome::ThrottledRecent,
+        "SINDRY:CREE" => RestoreOutcome::Created,
+        "SINDRY:RECENT" => RestoreOutcome::ThrottledRecent,
         // Aucun point, meme apres une creation sans erreur : la protection du
         // disque systeme est coupee.
-        "WINTOOL:AUCUN" => RestoreOutcome::ProtectionDisabled,
+        "SINDRY:AUCUN" => RestoreOutcome::ProtectionDisabled,
         _ => {
-            let id = verdict.strip_prefix("WINTOOL:ERREUR").unwrap_or("").trim();
+            let id = verdict.strip_prefix("SINDRY:ERREUR").unwrap_or("").trim();
             let message = lignes.collect::<Vec<_>>().join(" ").trim().to_string();
             if id.starts_with("ServiceDisabled") {
                 RestoreOutcome::ServiceDisabled
@@ -156,30 +156,30 @@ mod tests {
     fn lit_le_verdict_sans_dependre_de_la_langue() {
         assert_eq!(
             interpreter(
-                "WINTOOL:CREE
+                "SINDRY:CREE
 "
             ),
             RestoreOutcome::Created
         );
         assert_eq!(
-            interpreter("WINTOOL:RECENT"),
+            interpreter("SINDRY:RECENT"),
             RestoreOutcome::ThrottledRecent
         );
         assert_eq!(
-            interpreter("WINTOOL:AUCUN"),
+            interpreter("SINDRY:AUCUN"),
             RestoreOutcome::ProtectionDisabled
         );
         // La capture de l'utilisateur, 1.4.0 : service desactive, message en
         // francais. C'est l'identifiant qui tranche, pas la phrase.
         let sortie =
-            "WINTOOL:ERREUR ServiceDisabled,Microsoft.PowerShell.Commands.CheckpointComputerCommand
+            "SINDRY:ERREUR ServiceDisabled,Microsoft.PowerShell.Commands.CheckpointComputerCommand
                       Impossible d'exécuter cette commande : le service ne peut pas démarrer.";
         assert_eq!(interpreter(sortie), RestoreOutcome::ServiceDisabled);
     }
 
     #[test]
     fn une_erreur_inconnue_garde_son_message_et_son_identifiant() {
-        let sortie = "WINTOOL:ERREUR Autre,Commande
+        let sortie = "SINDRY:ERREUR Autre,Commande
 Quelque chose d'imprévu.";
         assert_eq!(
             interpreter(sortie),

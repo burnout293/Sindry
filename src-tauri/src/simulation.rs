@@ -161,12 +161,12 @@ mod tests {
             None => ("", String::new()),
         };
         parse(&format!(
-            "## WINTOOL:START\n## id : 00000000-0000-4000-8000-000000000001\n## lang : en\n\
+            "## SINDRY:START\n## id : 00000000-0000-4000-8000-000000000001\n## lang : en\n\
              ## title : T\n## desc : D\n## category : tools\n## icon : wrench\n\
              ## version : 1.0\n## admin : true\n## risk : low\n## duration : fast\n\
              ## reversible : true\n## interruptible : true\n## reboot : false\n\
-             ## engine : auto\n## WINTOOL:END\n\n\
-             ## WINTOOL:OPTIONS\n## Verbose : [bool] Verbose\n{decl}## WINTOOL:END\n\n\
+             ## engine : auto\n## SINDRY:END\n\n\
+             ## SINDRY:OPTIONS\n## Verbose : [bool] Verbose\n{decl}## SINDRY:END\n\n\
              $CONFIG = @{{\n    Verbose = $false\n{conf}}}\n"
         ))
     }

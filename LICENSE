@@ -1,4 +1,4 @@
-WinTool
+Sindry
 Copyright 2026 Buly
 
 This license has two parts, and both apply:
@@ -8,13 +8,13 @@ This license has two parts, and both apply:
      carries the clauses on contributions (Section 5) and on trade names
      (Section 6) that this project relies on.
 
-  2. The WinTool Additional Terms, which follow the Apache License below. They
-     restrict it on four points: you may not sell WinTool, you must hand the
+  2. The Sindry Additional Terms, which follow the Apache License below. They
+     restrict it on four points: you may not sell Sindry, you must hand the
      source to anyone you hand a modified binary to, you must disclose any data
      collection you add, and you may not pass a fork off as the official
      version.
 
-In one sentence: WinTool is free for everyone, companies included, and nobody
+In one sentence: Sindry is free for everyone, companies included, and nobody
 may turn it into something you have to pay for.
 
 Because part 2 restricts part 1, the result is NOT the Apache License 2.0 and
@@ -22,7 +22,7 @@ must not be called that. It is also not an Open Source license as the Open
 Source Initiative defines the term. That is deliberate, and stated up front
 rather than left to be discovered.
 
-Scripts are not part of WinTool. Their authors license them as they wish,
+Scripts are not part of Sindry. Their authors license them as they wish,
 including commercially. See Section 5 of the Additional Terms.
 
 Third-party components keep their own licenses. See THIRD-PARTY-NOTICES.md.
@@ -238,7 +238,7 @@ convenience. This English text is the one that governs.
 
 ================================================================================
 
-                        WINTOOL ADDITIONAL TERMS
+                        SINDRY ADDITIONAL TERMS
                               Version 1.0
 
 ================================================================================
@@ -260,16 +260,16 @@ DEFINITIONS
 
 The definitions of the Apache License apply. In addition:
 
-"WinTool" means the Work licensed under these terms, of which the Licensor is
+"Sindry" means the Work licensed under these terms, of which the Licensor is
 the author.
 
-"Modified Version" means a Derivative Work of WinTool, including a fork.
+"Modified Version" means a Derivative Work of Sindry, including a fork.
 
-"Script" means a file that WinTool can read, configure or execute, and that
-keeps its essential function when run without WinTool. A Script is NOT part of
-WinTool and is NOT licensed under these terms, whoever wrote it.
+"Script" means a file that Sindry can read, configure or execute, and that
+keeps its essential function when run without Sindry. A Script is NOT part of
+Sindry and is NOT licensed under these terms, whoever wrote it.
 
-"Script Source" means a catalogue from which WinTool can obtain Scripts.
+"Script Source" means a catalogue from which Sindry can obtain Scripts.
 
 "Corresponding Source" means the source code of a Modified Version in the form
 preferred for making modifications to it, together with the scripts and
@@ -281,11 +281,11 @@ under their own licenses, for which a reference and a version suffice.
 1. NO SALE
 --------------------------------------------------------------------------------
 
-You may not Sell WinTool or any Modified Version.
+You may not Sell Sindry or any Modified Version.
 
 "Sell" means doing any of the following for a fee or other consideration:
 
-  (a) transferring a copy of WinTool or of a Modified Version;
+  (a) transferring a copy of Sindry or of a Modified Version;
   (b) granting access to it, including by download, hosting, streaming, or
       preinstallation on hardware;
   (c) granting a license to use it;
@@ -293,32 +293,32 @@ You may not Sell WinTool or any Modified Version.
       continued access to it;
   (e) placing it behind a paywall, a paid registration, or a required donation;
   (f) making the price of any product, bundle, or package depend, in whole or in
-      part, on the inclusion of WinTool;
+      part, on the inclusion of Sindry;
   (g) charging for any feature of it, or for the removal of any limitation of it;
-  (h) charging for access to a Script Source on which WinTool or a Modified
+  (h) charging for access to a Script Source on which Sindry or a Modified
       Version depends in order to function.
 
 You may not solicit or accept a donation, tip, or other payment in exchange for
-access to WinTool or to a Modified Version, or as a condition of obtaining it.
+access to Sindry or to a Modified Version, or as a condition of obtaining it.
 
 CHARGING FOR SOMETHING ELSE IS NOT SELLING. The following are expressly
 permitted, and nothing in this Section may be read to forbid them:
 
-  (i)   using WinTool in the ordinary course of any activity, including the
+  (i)   using Sindry in the ordinary course of any activity, including the
         activity of a for-profit company of any size;
   (ii)  charging for installation, configuration, repair, maintenance, training,
         or support services, including services performed with the help of
-        WinTool;
-  (iii) charging for an IT service of which WinTool is a tool rather than the
+        Sindry;
+  (iii) charging for an IT service of which Sindry is a tool rather than the
         object;
-  (iv)  distributing WinTool from a website, forum, or channel funded by
+  (iv)  distributing Sindry from a website, forum, or channel funded by
         advertising;
-  (v)   monetising content that describes, reviews, or demonstrates WinTool,
+  (v)   monetising content that describes, reviews, or demonstrates Sindry,
         including sponsored content;
-  (vi)  charging for a Script, which is not part of WinTool.
+  (vi)  charging for a Script, which is not part of Sindry.
 
-In each permitted case, WinTool itself must remain obtainable free of charge, and
-the payment must correspond to goods or services other than WinTool.
+In each permitted case, Sindry itself must remain obtainable free of charge, and
+the payment must correspond to goods or services other than Sindry.
 
 --------------------------------------------------------------------------------
 2. CORRESPONDING SOURCE ON DISTRIBUTION
@@ -343,7 +343,7 @@ is distribution, whatever the commercial relationship between them.
 3. DISCLOSURE OF ADDED DATA COLLECTION
 --------------------------------------------------------------------------------
 
-WinTool as published by the Licensor contains no telemetry.
+Sindry as published by the Licensor contains no telemetry.
 
 If a Modified Version You distribute collects, records, or transmits any
 information about its users, their devices, or their use of it, beyond what a
@@ -360,31 +360,31 @@ obligation You may have under data protection law.
 
 In addition to Section 6 of the Apache License:
 
-You may not present a Modified Version as the official WinTool, nor use the name
-"WinTool" or the project's visual identity in a way likely to suggest that a
+You may not present a Modified Version as the official Sindry, nor use the name
+"Sindry" or the project's visual identity in a way likely to suggest that a
 Modified Version originates from or is endorsed by the Licensor.
 
 A Modified Version You distribute must state clearly, where a user will see it,
 that it is a modified and unofficial version, and must keep a reference to the
 official repository.
 
-Naming the origin factually — "based on WinTool" — is permitted and is not an
+Naming the origin factually — "based on Sindry" — is permitted and is not an
 endorsement claim.
 
 --------------------------------------------------------------------------------
 5. SCRIPTS AND SCRIPT SOURCES
 --------------------------------------------------------------------------------
 
-Scripts and Script Sources are not part of WinTool and are not licensed under
+Scripts and Script Sources are not part of Sindry and are not licensed under
 these terms. Their authors choose their own terms freely, including commercial
 ones.
 
-WinTool reads Scripts, may recognise a format, may classify, configure and run
+Sindry reads Scripts, may recognise a format, may classify, configure and run
 them. It adds no execution capability to a Script: a Script that does not work
-without WinTool does not become functional by being loaded into it.
+without Sindry does not become functional by being loaded into it.
 
 The Licensor does not control, review, endorse, or warrant Scripts or Script
-Sources, including those WinTool marks as coming from the official Script
+Sources, including those Sindry marks as coming from the official Script
 Source. Such a mark states provenance only. The Licensor is not liable for what
 a Script does.
 
@@ -392,7 +392,7 @@ a Script does.
 6. FUTURE VERSIONS
 --------------------------------------------------------------------------------
 
-The Licensor may publish future versions of WinTool under different terms,
+The Licensor may publish future versions of Sindry under different terms,
 including more permissive ones. Doing so does not affect the rights You have
 already received in any version published under these terms, which remain
 governed by them.
@@ -410,7 +410,7 @@ immediately.
 If You breach Section 2, 3, or 4, and do not cure the breach within thirty days
 of being notified of it, the rights granted to You terminate.
 
-Termination does not affect anyone who received WinTool or a Modified Version
+Termination does not affect anyone who received Sindry or a Modified Version
 from You in good faith before the breach, whose rights continue so long as they
 comply with these terms. Your obligation under Section 2 towards recipients who
 already received an Object form from You survives termination.
@@ -419,7 +419,7 @@ already received an Object form from You survives termination.
 8. THIRD-PARTY COMPONENTS
 --------------------------------------------------------------------------------
 
-WinTool incorporates components licensed by third parties under their own terms,
+Sindry incorporates components licensed by third parties under their own terms,
 listed in THIRD-PARTY-NOTICES.md. Nothing in these Additional Terms restricts
 the rights those licenses grant You in those components, and nothing in this
 license may be read to do so.
@@ -430,7 +430,7 @@ license may be read to do so.
 
 Sections 7 and 8 of the Apache License apply, subject to the following.
 
-WinTool runs with administrator privileges and executes Scripts that can change
+Sindry runs with administrator privileges and executes Scripts that can change
 the system substantially. The Licensor does not warrant any result and is not
 liable for the consequences of a Script, a Script Source, a Modified Version, or
 a use that does not comply with these terms.

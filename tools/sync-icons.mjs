@@ -8,7 +8,7 @@
  *   src/icons/<nom>.svg   les 2112 icones, copiees telles quelles. Elles sont
  *                         chargees a la demande : seules celles reellement
  *                         affichees entrent en memoire. Aucune requete reseau -
- *                         WinTool sert justement quand la machine va mal.
+ *                         Sindry sert justement quand la machine va mal.
  *
  *   src/icons.svg         un sprite des icones du chrome de l'application,
  *                         injecte dans le document au demarrage. On evite ainsi

@@ -44,7 +44,7 @@ function texte(ou, valeur, { vide = false } = {}) {
   }
 }
 
-if (doc.format !== 1) err('format', `vaut ${JSON.stringify(doc.format)}, cette version de WinTool lit le format 1`);
+if (doc.format !== 1) err('format', `vaut ${JSON.stringify(doc.format)}, cette version de Sindry lit le format 1`);
 if (!Array.isArray(doc.pages) || !doc.pages.length) err('pages', 'au moins une page est attendue');
 
 const ids = new Set();

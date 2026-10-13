@@ -1,5 +1,5 @@
 [package]
-name = "wintool"
+name = "sindry"
 version = "1.8.0"
 description = "Outil de maintenance Windows"
 authors = ["Buly"]
@@ -8,11 +8,11 @@ edition = "2021"
 [lib]
 # Le suffixe _lib est necessaire sous Windows pour que le nom de la bibliotheque
 # n'entre pas en conflit avec celui du binaire. Voir rust-lang/cargo#8519.
-name = "wintool_lib"
+name = "sindry_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "wintool"
+name = "sindry"
 path = "src/main.rs"
 # Aucun test ici : toute la logique vit dans la bibliotheque, qui se teste
 # sans lancer l'application. Le binaire, lui, ouvre une fenetre — le harnais

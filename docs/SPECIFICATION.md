@@ -1,4 +1,4 @@
-# WinTool v0.4 — Spécification fonctionnelle
+# Sindry v0.4 — Spécification fonctionnelle
 
 > Ce document fait autorité sur le comportement de l'application.
 > Toute divergence entre ce document et le code est un défaut, à corriger d'un côté
@@ -21,7 +21,7 @@ Version du document : 0.1 — 22/09/2026
 
 ---
 
-## 1. Ce qu'est WinTool
+## 1. Ce qu'est Sindry
 
 Un outil de maintenance Windows qui exécute des scripts PowerShell derrière une interface
 graphique. Distribué publiquement sur GitHub sous forme d'un `.exe` unique (Tauri 2).
@@ -105,8 +105,8 @@ Aucun terme technique n'apparaît en mode Simple, jamais.
 | Code de sortie 0 | **C'est terminé !** · *7 actions sur 7 réussies* |
 | Script, entretien (pour un script) | **une action** — « 24 actions », « catalogue d'actions » |
 
-**Une action, c'est ce que WinTool sait faire** — un script, vu du mode Expert. Le mot
-« entretien » ne désigne que le moment où WinTool travaille (« Entretien en cours »,
+**Une action, c'est ce que Sindry sait faire** — un script, vu du mode Expert. Le mot
+« entretien » ne désigne que le moment où Sindry travaille (« Entretien en cours »,
 l'étape 3) : appliqué à chaque script, il ne voulait rien dire pour un débutant. « Action »
 est aussi le mot du bilan ; un seul mot, partout.
 
@@ -205,11 +205,11 @@ script ne réécrit plus jamais automatiquement.
 **Deux racines, que distingue ce qui fonde la confiance en elles.**
 
 ```
-%LOCALAPPDATA%\WinTool\sources\officiel\   ← catalogue officiel (§16), index signé
+%LOCALAPPDATA%\Sindry\sources\officiel\   ← catalogue officiel (§16), index signé
 │   ├─ index.json, index.json.sig
 │   ├─ 100_CLEAN_TEMP_FILES.ps1
 │   └─ …
-%LOCALAPPDATA%\WinTool\scripts\            ← scripts de l'utilisateur
+%LOCALAPPDATA%\Sindry\scripts\            ← scripts de l'utilisateur
 ├─ MesScripts\                             ← il organise comme il veut
 └─ Essais\
 ```
@@ -235,7 +235,7 @@ apparaît. Tout ce qui s'y trouve passe par l'approbation avant première exécu
 **Les sous-dossiers sont autorisés et la découverte est récursive.** Le dossier d'une
 source, lui, est plat — son index est une liste plate.
 
-**Règle de mise à jour** : WinTool ne touche jamais aux scripts de l'utilisateur. Ceux du
+**Règle de mise à jour** : Sindry ne touche jamais aux scripts de l'utilisateur. Ceux du
 catalogue sont remplacés à la demande, et une version modifiée localement est gardée à côté
 avant remplacement (§16.5).
 
@@ -245,7 +245,7 @@ configuration, le rangement dans les lots et l'historique.
 
 - **Scripts du catalogue officiel** : `id` obligatoire, vérifié par sa CI (§5.4) et par
   l'outil qui construit son index.
-- **Scripts utilisateur sans `id`** : tolérés (« constater, jamais bloquer ») — WinTool
+- **Scripts utilisateur sans `id`** : tolérés (« constater, jamais bloquer ») — Sindry
   retombe alors sur le **chemin relatif** à `scripts\` comme identifiant provisoire, et le
   lint signale l'anomalie « pas d'id déclaré : un renommage ou déplacement fera perdre la
   configuration de ce script ».
@@ -277,7 +277,7 @@ Détail au §6.7.
 ### 5.1 Entête
 
 ```powershell
-## WINTOOL:START
+## SINDRY:START
 ## id            : 3f2b1a9c-7e4d-4c6a-9b0e-1d5f6a8c2e0b
 ## lang          : fr
 ## title         : Désactiver la veille
@@ -293,21 +293,21 @@ Détail au §6.7.
 ## interruptible : true       # false → ne peut pas être tué sans risque
 ## reboot        : false      # true  → redémarrage annoncé (fiche, étape Vérifier, bilan)
 ## engine        : auto       # auto | winps | pwsh — voir §6.7
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:LANG en
+## SINDRY:LANG en
 ## title             : Disable sleep
 ## desc              : Prevents Windows from sleeping or hibernating
 ## VeilleBranche_Min : Sleep on AC power — 0 = never
-## WINTOOL:END
+## SINDRY:END
 ```
 
 **`id` s'obtient avec `New-Guid`** (natif PowerShell, aucune dépendance) : lancer la
 commande dans un terminal et coller le résultat dans l'entête à la création du script.
 Risque de collision négligeable — pas besoin d'un schéma maison (timestamp, compteur…).
 
-Le bloc `WINTOOL:START` est rédigé dans la langue déclarée par `lang`. Chaque bloc
-`WINTOOL:LANG <code>` ajoute une traduction : métadonnées **et** libellés des clés de
+Le bloc `SINDRY:START` est rédigé dans la langue déclarée par `lang`. Chaque bloc
+`SINDRY:LANG <code>` ajoute une traduction : métadonnées **et** libellés des clés de
 `$CONFIG`. Une traduction absente retombe sur la langue de base. Ajouter une langue plus
 tard ne touche à rien d'autre.
 
@@ -328,7 +328,7 @@ contient que des clés et des valeurs par défaut.** Les deux langues se déclar
 exactement de la même façon, en bloc — c'est cette symétrie qui rend la dérive détectable.
 
 ```powershell
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## DnsProvider  : [select] DNS provider — the service that resolves website addresses
 ##   cloudflare : Cloudflare — 1.1.1.1, fastest on most connections
 ##   google     : Google — 8.8.8.8, very reliable
@@ -338,7 +338,7 @@ exactement de la même façon, en bloc — c'est cette symétrie qui rend la dé
 ##   cache      : Browser caches
 ## ApplyToIPv6  : [bool]   Apply to IPv6 — equivalent resolvers
 ## FlushCache   : [hidden] Flush the resolver cache afterwards
-## WINTOOL:END
+## SINDRY:END
 
 $CONFIG = @{
     DnsProvider  = "cloudflare"
@@ -347,9 +347,9 @@ $CONFIG = @{
     FlushCache   = $true
 }
 
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 ```
@@ -371,8 +371,8 @@ ligne. La v0.3 ne vérifiait rien de tout cela.
 
 **Pourquoi la ligne d'override est décisive.** La v0.3 reconstruisait le bloc `$CONFIG` par
 expression régulière, écrivait un `.ps1` temporaire et l'exécutait — mécanisme fragile et
-déjà cassé. Désormais WinTool pose le JSON des valeurs choisies **dans la variable
-`WINTOOL_CONFIG` elle-même**, et exécute **le script original tel quel**. Plus de
+déjà cassé. Désormais Sindry pose le JSON des valeurs choisies **dans la variable
+`SINDRY_CONFIG` elle-même**, et exécute **le script original tel quel**. Plus de
 réécriture, plus de fichier temporaire. Le script reste parfaitement exécutable seul en
 double-clic : sans la variable d'environnement, il utilise ses valeurs par défaut.
 
@@ -385,7 +385,7 @@ processus déjà lancé ne peut pas être modifié de l'extérieur — il n'y a 
 d'intervalle à exploiter, parce qu'il n'y a plus de fichier.
 
 Plafond : Windows limite une variable d'environnement à 32 767 caractères. Au-delà de
-30 000, WinTool refuse le lancement avec un message clair plutôt que de transmettre une
+30 000, Sindry refuse le lancement avec un message clair plutôt que de transmettre une
 configuration tronquée.
 
 ### 5.3 Sortie normalisée
@@ -435,13 +435,13 @@ officiel**, dans son propre dépôt : ces scripts-là, qu'on maîtrise, doivent 
 
 ### 5.5 Analyse et ré-analyse
 
-> Il s'agit ici de la **lecture du fichier** par WinTool. À ne pas confondre avec
+> Il s'agit ici de la **lecture du fichier** par Sindry. À ne pas confondre avec
 > l'analyse du §17, où c'est le script qui examine le PC.
 
 **L'analyse** d'un script (parsing de l'entête, résolution de l'`id` et de ses collisions
 §4.3, vérification de conformité §5.4, vérification que le moteur requis par `engine` est
 disponible §6.7) a lieu **une seule fois, à la découverte du fichier**. Elle n'est pas
-relancée automatiquement si le fichier est modifié ensuite — WinTool ne surveille pas les
+relancée automatiquement si le fichier est modifié ensuite — Sindry ne surveille pas les
 scripts en continu. Un script édité après coup continue de se comporter selon ce qui a été
 compris **à sa découverte**, jusqu'à une ré-analyse explicite.
 
@@ -490,7 +490,7 @@ du mode Simple. Comportement modifiable en mode Expert.
   défaut sur beaucoup d'installations Windows 10/11, et Windows refuse plus d'un point par
   24 h. L'interface l'a promis à l'étape 2 — elle doit donc dire clairement ce qui s'est
   réellement passé.
-- **Le verdict ne dépend pas de la langue de Windows** (1.5) : WinTool compare le dernier
+- **Le verdict ne dépend pas de la langue de Windows** (1.5) : Sindry compare le dernier
   point avant et après, et lit l'identifiant stable de l'erreur. Windows n'échoue pas
   quand un point existe déjà depuis moins de 24 h — il avertit et ne crée rien : ce cas
   n'est plus pris pour un succès. En mode Simple, une phrase ; le message brut de Windows
@@ -513,12 +513,12 @@ sont refusés avec un message explicite.
 
 **Moteur** : un fichier `.ps1` ne peut pas choisir lui-même son interpréteur — sous
 Windows, c'est toujours le processus appelant qui décide, il n'existe pas d'équivalent du
-shebang Unix. Par défaut (`engine : auto`), WinTool choisit **le plus récent disponible**
+shebang Unix. Par défaut (`engine : auto`), Sindry choisit **le plus récent disponible**
 entre `pwsh.exe` (PowerShell 7+) et `powershell.exe` (5.1, présent nativement sur tout
 Windows 10/11). Un script peut forcer `engine : pwsh` ou `engine : winps` dans son entête
 s'il a besoin d'une version précise (ex : opérateurs `??`/`?:`, propres à PowerShell 7+).
 
-**Où WinTool cherche les interpréteurs** : `powershell.exe` dans System32, `pwsh.exe` dans
+**Où Sindry cherche les interpréteurs** : `powershell.exe` dans System32, `pwsh.exe` dans
 `Program Files\PowerShell\7` (ou `8`) — deux dossiers qu'un compte sans élévation ne peut
 pas écrire, lus dans `HKLM` et jamais dans les variables d'environnement. **Ni le `PATH`, ni
 le profil de l'utilisateur** : jusqu'à la 1.1.1, PowerShell 7 était aussi cherché dans
@@ -526,15 +526,15 @@ le profil de l'utilisateur** : jusqu'à la 1.1.1, PowerShell 7 était aussi cher
 administrateur (§12.4). Conséquence assumée : un PowerShell 7 installé pour un seul
 utilisateur n'est pas utilisé.
 
-Si `engine : pwsh` est demandé et que PowerShell 7 n'est pas installé, WinTool ne se
+Si `engine : pwsh` est demandé et que PowerShell 7 n'est pas installé, Sindry ne se
 replie **jamais silencieusement** sur 5.1 (risque de plantage en cours d'exécution sur une
-syntaxe incompatible) : le script est marqué indisponible (§4.3), et WinTool propose comme
+syntaxe incompatible) : le script est marqué indisponible (§4.3), et Sindry propose comme
 raccourci le script livré par défaut « Installer PowerShell 7 ». Si l'échec d'un script
 en cours d'exécution ressemble à une incompatibilité de version, un indice peut être
 affiché à titre indicatif — sans garantie de détection, ce n'est pas un pré-requis.
 
 **Politique d'exécution (`ExecutionPolicy`)** : par défaut `Bypass`, appliquée **uniquement
-au processus enfant** lancé par WinTool pour exécuter le script — jamais à la politique de
+au processus enfant** lancé par Sindry pour exécuter le script — jamais à la politique de
 la machine ou de l'utilisateur, qui ne sont jamais lues ni modifiées. Rien à restaurer à la
 désinstallation. Alternative réglable dans les paramètres Expert : `RemoteSigned` ou
 `Unrestricted`, toujours au niveau du processus enfant seul.
@@ -610,7 +610,7 @@ simulation. Régler la simulation script par script impose de la conserver — c
 fait pour la 1.1.1. Le risque s'inverse alors : croire réel un entretien simulé. Ce sont
 les deux dernières règles qui le ferment, et c'est pourquoi elles ne se discutent pas.
 
-**Limite assumée** : `SafeTest` est une convention de script. WinTool garantit que la clé
+**Limite assumée** : `SafeTest` est une convention de script. Sindry garantit que la clé
 est transmise avec la valeur enregistrée, et qu'aucun script incapable de se simuler ne
 part quand la simulation est activée ; il ne peut pas garantir qu'un script qui la déclare
 l'honore complètement. Cette responsabilité est celle de l'auteur du script, et
@@ -655,7 +655,7 @@ réellement.
 Une personne à qui l'on a installé l'outil peut éclaircir ou agrandir son interface sans
 jamais croiser un réglage qu'elle pourrait casser.
 
-**Une page de WinTool, pas une fenêtre posée dessus** (1.2.1). Les réglages couvrent la
+**Une page de Sindry, pas une fenêtre posée dessus** (1.2.1). Les réglages couvrent la
 scène, sous la barre de titre, qui reste active : **Simple / Expert se change sans quitter
 les réglages**, et l'on reste sur la même section — sauf si elle est réservée au mode Expert
 et que l'on passe en Simple, auquel cas on revient au Général. Jusqu'à la 1.2.0, ils
@@ -709,8 +709,8 @@ laisse ses propres journaux s'accumuler sans limite.
 |---|---|
 | Interface de l'application | **fr + en** |
 | Lots d'usine et catégories | **fr + en** (les lots créés par l'utilisateur sont dans la langue qu'il tape) |
-| Mots de l'analyse (bloc `WINTOOL:REPORT`) | **fr + en** via les blocs `WINTOOL:LANG` |
-| Titres, descriptions et libellés d'options des scripts | **fr + en** via les blocs `WINTOOL:LANG` |
+| Mots de l'analyse (bloc `SINDRY:REPORT`) | **fr + en** via les blocs `SINDRY:LANG` |
+| Titres, descriptions et libellés d'options des scripts | **fr + en** via les blocs `SINDRY:LANG` |
 | **Sortie d'exécution brute des scripts** | **anglais seul** |
 
 En mode Simple cette sortie est masquée derrière « Voir le détail technique », et la
@@ -736,19 +736,19 @@ avant d'être retenu. Le détail des choix est en tête de `src-tauri/src/update
 
 ### 11.1 Comportement
 
-- **Au démarrage**, si le réglage vaut « Proposer », WinTool interroge la dernière release
+- **Au démarrage**, si le réglage vaut « Proposer », Sindry interroge la dernière release
   publiée — **après** l'affichage de la fenêtre et sans l'attendre. Une machine hors ligne
   est un cas normal : la vérification échoue alors en silence.
 - **Une version plus récente** fait apparaître un bandeau : « Installer » ou « Plus tard ».
-  « Plus tard » vaut pour la session : WinTool ne redemande pas avant le prochain lancement.
+  « Plus tard » vaut pour la session : Sindry ne redemande pas avant le prochain lancement.
 - **« Ne jamais vérifier »** supprime toute requête automatique. « Vérifier maintenant »
   reste disponible dans les réglages : c'est alors une action explicite, pas un contact
   silencieux.
 - **L'installation est refusée pendant un entretien**, par l'interface et par le moteur.
-  Sous Windows, l'installeur ferme WinTool : il couperait le script en cours au milieu de
+  Sous Windows, l'installeur ferme Sindry : il couperait le script en cours au milieu de
   ce qu'il fait. Entre deux scripts d'un lot, un drapeau dédié tient ce refus — ni l'état
   d'exécution, nul le temps de lancer le script suivant, ni l'état du bilan ne le disent.
-- **L'installeur ferme WinTool puis le rouvre.** Il demande l'élévation, l'installation
+- **L'installeur ferme Sindry puis le rouvre.** Il demande l'élévation, l'installation
   étant `perMachine` (§4.3).
 
 ### 11.2 Intégrité : une signature, pas une empreinte
@@ -801,18 +801,18 @@ installation ne reçoit rien. Publier le brouillon est donc l'acte qui livre la 
 
 À documenter dans le README : l'exécutable n'étant pas signé Authenticode, **SmartScreen
 affichera un avertissement** au premier téléchargement. La signature de mise à jour est
-d'une autre nature : elle ne rassure pas Windows, elle garantit à WinTool que ce qu'il
+d'une autre nature : elle ne rassure pas Windows, elle garantit à Sindry que ce qu'il
 installe vient bien de ce dépôt.
 
 ---
 
 ## 12. Sécurité
 
-**Cadrage** : WinTool tourne en administrateur et exécute des scripts qui ont donc un accès
+**Cadrage** : Sindry tourne en administrateur et exécute des scripts qui ont donc un accès
 système complet. L'application **ne peut pas empêcher** un script malveillant de nuire —
 aucun bac à sable n'a de sens ici, ce serait contraire à la raison d'être de l'outil
 (maintenance système). Le risque réel n'est pas qu'un attaquant déjà capable d'exécuter du
-code utilise WinTool pour ça — il n'en a pas besoin — mais que WinTool devienne, pour un
+code utilise Sindry pour ça — il n'en a pas besoin — mais que Sindry devienne, pour un
 public non technique (le mode Simple vise explicitement les débutants), un **exécuteur
 admin de confiance** qu'on le piège à pointer vers un script récupéré ailleurs (forum,
 vidéo, mail). C'est un problème social, pas cryptographique : la réponse est la **friction
@@ -842,7 +842,7 @@ Tout script est identifié par un **hash de son contenu**, calculé à l'analyse
 
 ### 12.2 Points d'attention détectés — indicatif, non garanti
 
-Sur l'écran d'approbation (§12.1), WinTool signale la présence de motifs à risque connu
+Sur l'écran d'approbation (§12.1), Sindry signale la présence de motifs à risque connu
 dans le script — `Invoke-Expression`, `DownloadString`/`DownloadFile`, `-EncodedCommand`,
 désactivation de Windows Defender, suppression récursive forcée hors dossiers temporaires,
 etc. Depuis la 1.5, aussi les gestes qu'un logiciel malveillant fait pour s'installer
@@ -859,17 +859,17 @@ script et donc sans valeur face à un script malveillant.
 
 ### 12.3 Intégrité de l'exécution
 
-WinTool ne désactive **jamais** AMSI ni l'intégration antivirus native de PowerShell lors
+Sindry ne désactive **jamais** AMSI ni l'intégration antivirus native de PowerShell lors
 du lancement d'un script — pas de `-EncodedCommand` ni d'autre mécanisme qui contournerait
 le scan que Windows Defender effectue déjà par défaut sur le contenu d'un script. C'est une
 couche de défense gratuite déjà présente sur la machine ; l'implémentation ne doit pas la
 casser par inadvertance en cherchant à optimiser le lancement du processus.
 
-### 12.4 Élévation : où WinTool pourrait servir d'escalier
+### 12.4 Élévation : où Sindry pourrait servir d'escalier
 
 **Modèle de menace.** L'attaquant est du code qui tourne **sous le compte de l'utilisateur,
 sans élévation**. C'est le seul qui compte : celui qui est déjà administrateur n'a pas
-besoin de WinTool. Toute la question est donc de savoir où WinTool, qui est élevé, lui
+besoin de Sindry. Toute la question est donc de savoir où Sindry, qui est élevé, lui
 tiendrait l'échelle.
 
 Chaque étape entre le lancement de l'application et la fin d'un script a été passée en
@@ -890,9 +890,9 @@ chemin identifié.
 | Lancement | `Import-Module` cherche d'abord sous `Documents`, inscriptible | `PSModulePath` réduit aux **chemins système** |
 | Lancement | L'interpréteur résolu par le `PATH`, ou cherché dans le profil (`%LOCALAPPDATA%\PowerShell`) | **Chemin lu dans `HKLM`** : System32 et Program Files seulement ; ni `PATH`, ni profil, ni variable d'environnement (§6.7, corrigé en 1.2) |
 | Lancement | Dossier courant = dossier du script, inscriptible : `cmd /c outil` et `Process.Start("outil.exe")` y cherchent l'exécutable avant le système | Dossier courant **System32**, et `NoDefaultCurrentDirectoryInExePath` (1.2) |
-| Environnement | Les variables de l'utilisateur (`HKCU\Environment`) sont héritées par le processus élevé : `COR_PROFILER_PATH` et `DOTNET_STARTUP_HOOKS` font charger du code dans PowerShell, `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` lance un autre moteur d'interface, `windir`, `SystemRoot` ou `TEMP` redéfinis font viser un autre dossier aux scripts | Familles `COR_`, `CORECLR_`, `COMPLUS_`, `DOTNET_`, `WEBVIEW2_` **retirées au démarrage** du processus de WinTool — l'environnement de l'utilisateur n'est pas modifié, et une version de développement les garde —, avec une alerte pour celles qui chargent du code ; variables du système **rétablies depuis `HKLM`** pour chaque script ; `TEMP`, `TMP`, `LOCALAPPDATA`, `APPDATA`, `USERPROFILE` ramenées dans le profil s'ils visent un emplacement protégé (1.2) |
+| Environnement | Les variables de l'utilisateur (`HKCU\Environment`) sont héritées par le processus élevé : `COR_PROFILER_PATH` et `DOTNET_STARTUP_HOOKS` font charger du code dans PowerShell, `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` lance un autre moteur d'interface, `windir`, `SystemRoot` ou `TEMP` redéfinis font viser un autre dossier aux scripts | Familles `COR_`, `CORECLR_`, `COMPLUS_`, `DOTNET_`, `WEBVIEW2_` **retirées au démarrage** du processus de Sindry — l'environnement de l'utilisateur n'est pas modifié, et une version de développement les garde —, avec une alerte pour celles qui chargent du code ; variables du système **rétablies depuis `HKLM`** pour chaque script ; `TEMP`, `TMP`, `LOCALAPPDATA`, `APPDATA`, `USERPROFILE` ramenées dans le profil s'ils visent un emplacement protégé (1.2) |
 | Réglages | `settings.json` est inscriptible, et ses valeurs partent à un script élevé : écrire `C:\Windows` dans les dossiers à vider du nettoyage suffit | **Garde** : chaque valeur doit avoir le type et faire partie des choix déclarés ; un texte libre ne peut pas viser un **emplacement protégé** — chemins résolus avant comparaison ; liste modifiable par l'utilisateur, mais rangée dans `HKLM` et modifiable **en administrateur seulement** (1.2) |
-| Désinstallation | Le désinstalleur, administrateur, efface dans des dossiers inscriptibles par l'utilisateur : une jonction glissée à la place de `logs` lui ferait effacer le dossier visé | **Jamais `RMDir /r`**, qui suit les jonctions — y compris là où le modèle de Tauri l'employait : effacement parcouru par WinTool, qui retire une jonction rencontrée **comme un lien**, sans descendre dedans ; **rien du tout** si le dossier de base est lui-même une jonction — éprouvé sur une arborescence piégée (1.2) |
+| Désinstallation | Le désinstalleur, administrateur, efface dans des dossiers inscriptibles par l'utilisateur : une jonction glissée à la place de `logs` lui ferait effacer le dossier visé | **Jamais `RMDir /r`**, qui suit les jonctions — y compris là où le modèle de Tauri l'employait : effacement parcouru par Sindry, qui retire une jonction rencontrée **comme un lien**, sans descendre dedans ; **rien du tout** si le dossier de base est lui-même une jonction — éprouvé sur une arborescence piégée (1.2) |
 | Journal | Une valeur secrète (mot de passe de sauvegarde) écrite en clair dans le journal technique | Valeurs des clés `Password`, `Secret`, `Token` **masquées** (1.2) |
 | Bouton Arrêter | `taskkill` résolu par le `PATH`, exécuté en administrateur | **Chemin absolu**, lu dans `HKLM` |
 
@@ -904,15 +904,15 @@ l'empreinte d'un contenu substitué — l'approbation porterait alors sur un con
 personne n'a jamais lu.
 
 **Magasin d'approbations.** La liste des empreintes approuvées vit sous
-`HKLM\SOFTWARE\WinTool\Approbations`, où rien ne se crée ni ne s'écrit sans élévation.
+`HKLM\SOFTWARE\Sindry\Approbations`, où rien ne se crée ni ne s'écrit sans élévation.
 Dans un fichier de réglages inscriptible par l'utilisateur, un logiciel malveillant y
 ajouterait simplement sa propre empreinte, et tout le dispositif du §12.1 deviendrait
 décoratif.
 
-C'est exactement ce que permettait l'ancien emplacement, `%ProgramData%\WinTool\approved.json`
+C'est exactement ce que permettait l'ancien emplacement, `%ProgramData%\Sindry\approved.json`
 (jusqu'à la 1.1.1). `ProgramData` laisse n'importe quel compte y **créer** dossiers et
 fichiers, et en devenir propriétaire : un programme sans droits pouvait créer ce fichier
-avant WinTool et s'y approuver. Aucune vérification ne rattrape cela de façon simple — il
+avant Sindry et s'y approuver. Aucune vérification ne rattrape cela de façon simple — il
 aurait fallu contrôler propriétaire et droits de chaque fichier. La base de registre `HKLM`
 ne laisse rien préparer d'avance : la garantie vient du système. Les approbations de
 l'ancien fichier ne sont pas reprises, faute de savoir qui l'a écrit.
@@ -931,14 +931,14 @@ System32, d'où partent les scripts.
 
 **La liste appartient à l'utilisateur.** Il peut en retirer un emplacement — un script qui
 vérifie les fichiers de Windows doit pouvoir recevoir `C:\Windows` — et en ajouter. Retirer
-un emplacement marqué « très sensible » (Windows, Program Files, le dossier de WinTool, la
+un emplacement marqué « très sensible » (Windows, Program Files, le dossier de Sindry, la
 racine des lecteurs) se confirme explicitement. Mais ses changements vivent dans
-`HKLM\SOFTWARE\WinTool\Garde`, et ne s'écrivent **qu'en administrateur** : la liberté de
+`HKLM\SOFTWARE\Sindry\Garde`, et ne s'écrivent **qu'en administrateur** : la liberté de
 retirer un emplacement ne vaut que si un programme sans droits ne peut pas l'exercer à sa
 place. Rangée dans `settings.json`, il lui aurait suffi de réécrire le fichier. Sans droits,
 la liste s'affiche, mais ne se modifie pas.
 
-**Désinstallation.** La page de désinstallation de WinTool remplace celle de Tauri :
+**Désinstallation.** La page de désinstallation de Sindry remplace celle de Tauri :
 
 - **Garder mes données** (par défaut) — rien n'est effacé ;
 - **Tout effacer, sauf mes scripts personnels** ;
@@ -952,8 +952,8 @@ compte qui désinstalle est concerné : un autre compte du même PC garde ses do
 **`RMDir /r` de NSIS suit les jonctions** — vérifié sur une vraie jonction, la cible a été
 vidée. Le désinstalleur tourne en administrateur alors que ces dossiers sont inscriptibles
 par l'utilisateur : une jonction glissée vers System32 l'aurait fait vider. Le modèle de
-Tauri efface ainsi les données de l'interface (`RmDir /r`). Aucun effacement de WinTool ne
-passe donc par `RMDir /r` : `WINTOOL_EFFACER_ARBRE` parcourt lui-même les dossiers et retire
+Tauri efface ainsi les données de l'interface (`RmDir /r`). Aucun effacement de Sindry ne
+passe donc par `RMDir /r` : `SINDRY_EFFACER_ARBRE` parcourt lui-même les dossiers et retire
 une jonction rencontrée comme un lien, sans jamais descendre dedans — éprouvé sur une
 arborescence piégée, la cible est restée intacte. Résidu : l'intervalle entre la
 vérification et l'effacement.
@@ -972,28 +972,28 @@ crochet et la page vivent dans `src-tauri/installeur/crochets.nsh`.
   `winget` vit précisément dans l'un d'eux. Le restreindre casserait des scripts
   légitimes. Les dossiers du système y passent en premier.
 - Un texte libre qui n'est pas un chemin (un mot de passe, une adresse) n'est contrôlé que
-  par son type : WinTool ne sait pas ce que le script en fera. C'est au script de le
+  par son type : Sindry ne sait pas ce que le script en fera. C'est au script de le
   valider (`FORMAT_SCRIPT.md`, « Sécurité »).
 - Les réglages qui ne sont pas des valeurs de script — la composition des lots, la
   simulation, l'exigence d'un point de restauration — restent modifiables par un programme
-  sous le compte de l'utilisateur. Ils peuvent rendre WinTool **moins prudent**, jamais lui
+  sous le compte de l'utilisateur. Ils peuvent rendre Sindry **moins prudent**, jamais lui
   faire exécuter un script non approuvé ni viser un emplacement protégé.
-- Le dossier de données de l'interface (`%LOCALAPPDATA%\com.wintool.app`, géré par
+- Le dossier de données de l'interface (`%LOCALAPPDATA%\com.sindry.desktop`, géré par
   WebView2) est inscriptible et lu par l'interface élevée. Non audité en profondeur ;
   l'interface elle-même est embarquée dans le binaire.
 
 **Le cadre, pour mesurer ces résidus.** Quand l'utilisateur est administrateur de son PC
 (le cas courant à la maison), Microsoft ne considère pas l'invite UAC comme une frontière de
 sécurité : un programme qui tourne déjà sous son compte dispose de moyens connus d'obtenir
-l'élévation, avec ou sans WinTool. Ces mesures ne prétendent donc pas rendre la machine
-inviolable ; elles évitent que WinTool soit **le chemin le plus simple**. Quand l'utilisateur
-est un compte standard et qu'un administrateur saisit son mot de passe, WinTool élevé
+l'élévation, avec ou sans Sindry. Ces mesures ne prétendent donc pas rendre la machine
+inviolable ; elles évitent que Sindry soit **le chemin le plus simple**. Quand l'utilisateur
+est un compte standard et qu'un administrateur saisit son mot de passe, Sindry élevé
 tourne sous le profil de l'administrateur : les fichiers et variables du compte standard ne
 le concernent plus.
 
 ### 12.5 Le témoin des changements sensibles (1.5)
 
-Aucun bac à sable n'est possible pour un script administrateur : WinTool ne peut pas
+Aucun bac à sable n'est possible pour un script administrateur : Sindry ne peut pas
 l'*empêcher* de toucher au démarrage de Windows ou à l'antivirus. Il peut en revanche
 **relever, avant et après chaque script**, ce qu'un logiciel malveillant modifie pour
 s'installer durablement, et **le dire dans le bilan**.
@@ -1034,15 +1034,15 @@ tard. Comme les points d'attention, c'est un regard, jamais une garantie.
 ## 13. Premier lancement
 
 **Une visite en cinq pages** (quatre jusqu'à la 1.6), à l'ouverture de la toute première
-session, et relançable à tout moment depuis les Réglages généraux (« Présentation de WinTool »)
+session, et relançable à tout moment depuis les Réglages généraux (« Présentation de Sindry »)
 ou le bouton **?**, dans les deux modes.
 
 | Page | Contenu |
 |---|---|
-| Bienvenue | WinTool à son goût : la langue, l'ambiance, clair ou sombre, la taille — sur cette page, et seulement elle, pour que la suite se lise dans la bonne langue et la bonne ambiance. Chaque choix s'applique aussitôt |
-| Le principe | Ce que fait WinTool ; mode Simple et mode Expert ; la simulation |
-| Les actions | WinTool arrive vide, pourquoi (§16.1) ; le catalogue officiel, **installable depuis la page même**, et les autres catalogues ; ses propres scripts |
-| Votre sécurité | Ce qu'un script peut faire ; n'approuver que ce dont on connaît l'origine, se faire expliquer un script — par un proche ou par une intelligence artificielle — avant de l'approuver ; l'antivirus qui peut se méfier de WinTool, et ne jamais le désactiver pour lui |
+| Bienvenue | Sindry à son goût : la langue, l'ambiance, clair ou sombre, la taille — sur cette page, et seulement elle, pour que la suite se lise dans la bonne langue et la bonne ambiance. Chaque choix s'applique aussitôt |
+| Le principe | Ce que fait Sindry ; mode Simple et mode Expert ; la simulation |
+| Les actions | Sindry arrive vide, pourquoi (§16.1) ; le catalogue officiel, **installable depuis la page même**, et les autres catalogues ; ses propres scripts |
+| Votre sécurité | Ce qu'un script peut faire ; n'approuver que ce dont on connaît l'origine, se faire expliquer un script — par un proche ou par une intelligence artificielle — avant de l'approuver ; l'antivirus qui peut se méfier de Sindry, et ne jamais le désactiver pour lui |
 | Vous êtes prêt | « Me faire visiter » lance la visite de l'accueil, sur le vrai écran ; « Je découvre seul » ferme. La visite reste ensuite dans le bouton **?** |
 
 **La visite et le centre d'aide (1.7, maquette M18, formule A + D).** La bienvenue explique
@@ -1073,7 +1073,7 @@ mode d'emploi dans [`docs/PRESENTATION.md`](PRESENTATION.md) — et
 manquante, une icône que Lucide ne connaît pas, plus de cinq phrases dans l'essentiel)
 plutôt que d'afficher une page blanche. Le fichier est **embarqué dans l'exécutable** : un
 fichier modifiable après l'installation laisserait un programme malveillant faire dire à
-WinTool, dans une page de confiance, « désactivez votre antivirus ».
+Sindry, dans une page de confiance, « désactivez votre antivirus ».
 
 ---
 
@@ -1095,7 +1095,7 @@ contestés, pas dissimulés.
 ## 15. Système visuel — « Marée »
 
 Direction retenue le 22/09/2026, après trois séries de maquettes comparatives.
-Maquette de référence : `docs/mockups/` et le canevas *WinTool — Marée contre Ressac*.
+Maquette de référence : `docs/mockups/` et le canevas *Sindry — Marée contre Ressac*.
 
 ### 15.1 Le principe
 
@@ -1189,7 +1189,7 @@ Deux obligations :
 Un **accent unique** pour tout ce qui est interactif, actif ou sélectionné — boutons,
 repères, marée.
 
-**Thème Braise (1.6).** La palette vient de l'icône de Sindry, le nom de la 2.0 : la
+**Thème Braise (1.6).** La palette vient de l'icône de Sindry : la
 flamme — or, ambre, vermillon, magenta — pour ce qui agit ; l'engrenage — ciel, roi,
 violet, orchidée — pour le contour des graphiques. Deux variantes au choix (réglage 1.8),
 chacune en clair et en sombre :
@@ -1244,7 +1244,7 @@ ne s'aligne pas sur la grille. La v0.3 en utilisait (🧹 ⚡ 🛡️ 😴) ; c'
 |---|---|
 | Bibliothèque | **Lucide** — 2 112 icônes, 999 Ko de SVG, licence ISC |
 | Pourquoi celle-là | C'est exactement l'idiome des maquettes. Les 22 icônes dessinées à la main pendant la phase 0 existent toutes chez Lucide, aux mêmes métriques — l'adopter ne change pas l'apparence validée, elle remplace des approximations par les tracés officiels. |
-| Distribution | **Intégralement embarquée**, chargée à la demande. Aucune récupération réseau : WinTool sert précisément quand la machine va mal, parfois sans connexion, et c'est une application élevée en administrateur. |
+| Distribution | **Intégralement embarquée**, chargée à la demande. Aucune récupération réseau : Sindry sert précisément quand la machine va mal, parfois sans connexion, et c'est une application élevée en administrateur. |
 | Icônes personnalisées | **Interdites.** Avec 2 112 icônes le besoin est nul, et un SVG arbitraire affiché par une application administrateur est une surface d'attaque. C'est ce qui garantit l'uniformité. |
 | Sélecteur (Expert) | Une cinquantaine d'icônes curées mises en avant, recherche pour atteindre les 2 112 |
 
@@ -1265,11 +1265,11 @@ Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/si
 - **La balise** — un point dans le coin d'un élément, qui émet des ondes comme un sonar.
   L'élément ne bouge pas, ne change ni de taille ni de couleur : elle se pose sur n'importe
   quoi (classe `.balise`, parent positionné). Elle signale un **état qui dure** : la pastille
-  « Droits limités » la porte tant que WinTool n'a pas les droits administrateur. Moins
+  « Droits limités » la porte tant que Sindry n'a pas les droits administrateur. Moins
   d'animations : le point reste, les ondes disparaissent.
 - **L'encart** — une alerte posée là où l'on regarde déjà (la fiche d'une action en
   Expert, l'étape « Vérifier » en Simple), qui ne recouvre rien et n'interrompt rien.
-  Premier usage : une action qui a besoin des droits administrateur alors que WinTool ne
+  Premier usage : une action qui a besoin des droits administrateur alors que Sindry ne
   les a pas. Son bouton « Me montrer » ouvre le guide.
 - **Le guide, à la lampe torche** (`src/guide.js`) — tout s'assombrit sauf un cercle de
   lumière aux bords doux sur l'élément, et une bulle explique à quoi il sert. Hors du
@@ -1284,30 +1284,30 @@ Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/si
 > **État : implémenté** — la source officielle en 1.2, les sources tierces en 1.4
 > (`src-tauri/src/catalogue.rs`, `src-tauri/src/sources.rs`). L'installeur ne contient plus
 > aucun script ; le catalogue officiel vit dans le dépôt
-> [WinTool-Catalogue](https://github.com/burnout293/WinTool-Catalogue), sous licence MIT.
+> [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue), sous licence MIT.
 >
 > Cette section a été écrite avant le code, pour que le modèle de sécurité soit arrêté avant
 > qu'un raccourci ne le décide à notre place. Le code l'a suivie ; les écarts sont notés là
 > où ils se trouvent.
 
-### 16.1 Pourquoi WinTool ne livre plus de scripts
+### 16.1 Pourquoi Sindry ne livre plus de scripts
 
-Jusqu'ici les scripts voyageaient dans l'installeur. Ils n'y sont plus : **WinTool est
+Jusqu'ici les scripts voyageaient dans l'installeur. Ils n'y sont plus : **Sindry est
 livré sans aucun script** et propose à l'utilisateur de les récupérer depuis une *source*.
 
 Deux raisons, l'une juridique et l'autre technique.
 
-La raison juridique commande. La licence de WinTool interdit d'en tirer un revenu direct,
+La raison juridique commande. La licence de Sindry interdit d'en tirer un revenu direct,
 mais ne s'applique **pas** aux scripts, qui restent la propriété de leurs auteurs et
 peuvent avoir n'importe quelle licence — y compris commerciale. Cette séparation ne tient
 que si elle est réelle : un script embarqué dans l'installeur serait difficile à présenter
-comme indépendant du logiciel qui le distribue. En cessant de les livrer, WinTool rend la
+comme indépendant du logiciel qui le distribue. En cessant de les livrer, Sindry rend la
 séparation juridique visible dans son fonctionnement, ce que le cahier des charges de la
 licence exige explicitement.
 
 La raison technique suit. Les scripts évoluent plus vite que l'application — un réglage
 Windows change, une clé de registre se déplace, une commande disparaît. Les lier au rythme
-des versions de WinTool condamnait soit l'application à sortir une version pour corriger un
+des versions de Sindry condamnait soit l'application à sortir une version pour corriger un
 script, soit les scripts à vieillir entre deux versions.
 
 **Conséquence assumée** : une installation neuve ne sait rien faire tant que l'utilisateur
@@ -1330,7 +1330,7 @@ Une source est un catalogue de scripts publié à une adresse, signé par son é
 **La clé publique de la source officielle est compilée dans le binaire.** Elle ne vit ni
 dans les réglages ni dans un fichier de configuration : `build.rs` lit
 `src-tauri/catalogue.pub` à la compilation. Absent, la clé est vide et le catalogue refuse
-tout ; la release de WinTool refuse de se construire sans. **Ce n'est pas la clé des mises à
+tout ; la release de Sindry refuse de se construire sans. **Ce n'est pas la clé des mises à
 jour** (§11.2) : si l'une fuitait, elle ne signerait que son propre domaine. Le raisonnement est celui du §12.4 :
 tout ce qui est inscriptible sans élévation est remplaçable par un logiciel malveillant, et
 une clé publique remplacée transforme le bandeau « source officielle » en décor.
@@ -1341,7 +1341,7 @@ demande donc une élévation. C'est une friction volontaire : ajouter une source
 décider à qui l'on confiera l'exécution de code en administrateur.
 
 **Concrètement (1.4).** Une source tierce est **un dépôt GitHub et la clé publique de son
-éditeur** — rien d'autre à saisir. Elle s'inscrit sous `HKLM\SOFTWARE\WinTool\Sources\<id>`
+éditeur** — rien d'autre à saisir. Elle s'inscrit sous `HKLM\SOFTWARE\Sindry\Sources\<id>`
 (`Nom`, `Depot`, `Cle`). L'ajout télécharge l'index de la dernière release, le vérifie avec
 la clé donnée, et **n'inscrit rien si la vérification échoue**. C'est l'index qui donne
 l'identifiant de la source (`source`) : il doit être un nom de dossier sûr (minuscules,
@@ -1391,7 +1391,7 @@ pourrait écrire hors de son dossier. Deux noms qui ne diffèrent que par la cas
 refusés : Windows y verrait le même fichier.
 
 L'index déclare aussi `format` (version du format : un format inconnu demande une mise à
-jour de WinTool plutôt qu'il ne se lit de travers), `source` (un index signé pour une autre
+jour de Sindry plutôt qu'il ne se lit de travers), `source` (un index signé pour une autre
 source est refusé), `version` (`X.Y.Z`) et `tag`, la release où vivent les scripts. Les
 scripts se téléchargent depuis **cette** release, jamais depuis « la dernière » : entre la
 lecture de l'index et celle des scripts, une autre a pu paraître.
@@ -1417,7 +1417,7 @@ Puisqu'il n'en livre plus, cet ancrage disparaît et **la signature le remplace*
 | N'importe quel script dont l'empreinte a changé depuis | **explicite, à nouveau** |
 
 Une signature valide prouve l'origine, pas l'innocuité. C'est pourquoi une source tierce
-correctement signée ne gagne aucune approbation implicite : WinTool sait alors de qui vient
+correctement signée ne gagne aucune approbation implicite : Sindry sait alors de qui vient
 le script, ce qui est exactement ce dont l'utilisateur a besoin pour décider — et rien de
 plus.
 
@@ -1431,7 +1431,7 @@ fasse **contre l'index signé** et non contre une empreinte recalculée localeme
 
 Un script téléchargé est d'abord reçu en mémoire, son empreinte calculée, puis comparée à
 celle de l'index signé. **Rien n'est écrit sur le disque tant que tous les scripts reçus ne
-correspondent pas**, dans `%LOCALAPPDATA%\WinTool\sources\<id-source>\`. Un dossier par
+correspondent pas**, dans `%LOCALAPPDATA%\Sindry\sources\<id-source>\`. Un dossier par
 source, à part des scripts de l'utilisateur : deux sources ne peuvent pas se marcher dessus,
 et la provenance d'un script se lit dans son chemin.
 
@@ -1442,8 +1442,8 @@ demandent l'accord de l'utilisateur jusqu'à la prochaine installation complète
 penche toujours du côté de la prudence.
 
 Un script **modifié localement** est mis de côté (`<nom>.ps1.<horodatage>.bak`, que la
-découverte ignore) avant d'être remplacé : WinTool ne détruit pas le travail de
-l'utilisateur. Un script **retiré du catalogue** reste sur le disque — WinTool ne supprime
+découverte ignore) avant d'être remplacé : Sindry ne détruit pas le travail de
+l'utilisateur. Un script **retiré du catalogue** reste sur le disque — Sindry ne supprime
 jamais un script — mais n'étant plus nommé par l'index, il redevient un script ordinaire,
 soumis à l'approbation ; l'interface le dit au moment de l'installation.
 
@@ -1464,7 +1464,7 @@ sinon reçu en mémoire, contrôlé contre l'index signé, lu, et oublié. Rien 
 coche ce qu'on veut ; seuls les **refus** sont retenus (`sources_exclus`, par identifiant
 d'index), si bien qu'une action qu'une nouvelle version ajoute arrive cochée. Une action
 décochée n'est ni téléchargée ni montrée ; son fichier, s'il avait déjà été installé,
-reste sur le disque — WinTool ne supprime jamais un script.
+reste sur le disque — Sindry ne supprime jamais un script.
 
 ### 16.6 Ce que l'interface montre
 
@@ -1479,7 +1479,7 @@ respectée définitivement.
 
 **Sur chaque script**, sa provenance est visible sans avoir à la chercher : source
 officielle, nom de la source tierce, ou script local. Un script de source tierce porte la
-mention qu'il **n'est ni contrôlé ni approuvé par le projet WinTool**.
+mention qu'il **n'est ni contrôlé ni approuvé par le projet Sindry**.
 
 **Dans les réglages**, une section Catalogues, visible dans les deux modes : une carte par
 catalogue — l'officiel en tête —, avec l'état de la version installée, « Consulter et
@@ -1489,13 +1489,13 @@ administrateur. Les nouveautés d'un catalogue ajouté s'annoncent dans le même
 celles de l'officiel, qui mène à sa carte plutôt que d'installer d'emblée.
 
 La formulation n'atteste que la **provenance** : « publiés et signés par le projet
-WinTool », jamais « vérifiés ». La licence (conditions additionnelles, §5) précise que le
+Sindry », jamais « vérifiés ». La licence (conditions additionnelles, §5) précise que le
 concédant n'examine ni ne garantit les scripts, y compris ceux de la source officielle ;
 l'interface ne doit pas promettre davantage.
 
 Le mode Simple suit les règles de langage du §3. « Source » n'y apparaît pas : on y parle
 de **catalogues** et d'**actions**, et une source tierce devient **« Ajouté par vous — ni
-contrôlé ni approuvé par le projet WinTool »**, sur sa carte comme dans l'écran
+contrôlé ni approuvé par le projet Sindry »**, sur sa carte comme dans l'écran
 d'approbation de chacune de ses actions.
 
 ### 16.7 Vie privée
@@ -1509,7 +1509,7 @@ d'identifiant machine, pas de paramètre d'URL, pas d'en-tête personnalisé per
 distinguer une installation d'une autre. La source apprend qu'une adresse IP a demandé un
 fichier public — ce que tout hébergeur voit — et rien de plus.
 
-WinTool n'envoie jamais à une source la liste des scripts installés, l'historique
+Sindry n'envoie jamais à une source la liste des scripts installés, l'historique
 d'exécution ou la configuration.
 
 ### 16.8 Forks et sources tierces
@@ -1519,7 +1519,7 @@ remplace cette constante et sa clé publique, et dispose du même mécanisme pou
 catalogue — c'est l'intention : le modèle est fait pour être repris.
 
 Le format d'index est documenté pour que n'importe qui publie une source sans demander
-d'autorisation. WinTool n'exerce aucun contrôle sur le contenu des sources tierces et ne
+d'autorisation. Sindry n'exerce aucun contrôle sur le contenu des sources tierces et ne
 répond pas de ce qu'elles distribuent.
 
 ### 16.9 Si la clé officielle est compromise
@@ -1528,14 +1528,14 @@ La clé publique étant dans le binaire, **la remplacer exige une mise à jour d
 l'application**. C'est le prix de l'ancrage : on gagne l'impossibilité de substituer la clé
 localement, on perd la rotation rapide.
 
-En cas de compromission : publier une version de WinTool portant la nouvelle clé, et
+En cas de compromission : publier une version de Sindry portant la nouvelle clé, et
 considérer comme non approuvé tout script dont l'empreinte provient d'un index signé par
-l'ancienne. Les scripts déjà installés ne sont pas supprimés — WinTool ne supprime jamais
+l'ancienne. Les scripts déjà installés ne sont pas supprimés — Sindry ne supprime jamais
 un fichier de script (§14) — mais ils repassent par l'écran d'approbation.
 
 ### 16.10 Ce qui reste hors de portée
 
-- WinTool **ne vérifie pas** ce que fait un script. La signature atteste l'origine, jamais
+- Sindry **ne vérifie pas** ce que fait un script. La signature atteste l'origine, jamais
   l'intention. Le §12.2 reste ce qu'il est : des points d'attention, pas un verdict.
 - Pas de dépendances entre scripts, pas de résolution de versions. Un index est une liste
   plate.
@@ -1546,8 +1546,8 @@ un fichier de script (§14) — mais ils repassent par l'écran d'approbation.
 
 ## 17. Analyser avant d'agir
 
-> **État : livré dans la 1.4.** Le contrat côté script — `scan`, `WINTOOL_MODE`, les lignes
-> `[FIND]` `[ITEM]` `[METRIC]` `[NOTE]`, le bloc `WINTOOL:REPORT`, les vues et les
+> **État : livré dans la 1.4.** Le contrat côté script — `scan`, `SINDRY_MODE`, les lignes
+> `[FIND]` `[ITEM]` `[METRIC]` `[NOTE]`, le bloc `SINDRY:REPORT`, les vues et les
 > panneaux — est décrit dans `docs/FORMAT_SCRIPT.md`, section « Le mode analyse », avec un
 > exemple complet (`docs/mockups/exemple-analyse.ps1`). Maquette de référence :
 > `docs/mockups/analyse.html`. Cette section décrit ce que fait l'application.
@@ -1559,15 +1559,15 @@ puis agir**. L'utilisateur ne lance plus un nettoyage à l'aveugle ; il voit ce 
 fait et en combien, et décoche ce qu'il veut garder.
 
 Ce n'est pas une nouvelle mécanique d'exécution. Un script analysable est lancé deux fois :
-une fois avec `WINTOOL_MODE=scan`, puis normalement, avec ses cases — `[bool]`, `[multi]`,
+une fois avec `SINDRY_MODE=scan`, puis normalement, avec ses cases — `[bool]`, `[multi]`,
 `[select]`, `[items]` — fixées d'après ce qui a été coché. La sélection voyage par
-`WINTOOL_CONFIG`, comme n'importe quel réglage (§5.2).
+`SINDRY_CONFIG`, comme n'importe quel réglage (§5.2).
 
 **Un seul affichage, réglé par le script.** Il n'y a pas un rendu Simple et un rendu Expert
 à écrire. Le script choisit sa vue (`view`, avec `expert=` si l'Expert doit en voir une
 autre), range ses cases en postes (`[group:]`), et marque par `show` ce qui ne s'adresse
 qu'à un mode. Il ne livre que des nombres, des noms et des jetons ; les mots viennent de
-son entête traduite, et c'est WinTool qui compose. Une vue ne fait jamais disparaître une
+son entête traduite, et c'est Sindry qui compose. Une vue ne fait jamais disparaître une
 case, et une vue qui ne trouve pas de quoi s'afficher retombe sur la liste à cocher.
 
 ### 17.2 Dans le mode Simple
@@ -1576,7 +1576,7 @@ L'étape 3 de l'assistant (§2) : elle suit « Vérifier » dès qu'une action r
 analyser, et elle est sautée sinon.
 
 1. **Choisir** — un lot ; **Vérifier** — les actions retenues pour ce lancement.
-2. **Analyser** — WinTool interroge une à une les actions analysables du lot (« J'examine
+2. **Analyser** — Sindry interroge une à une les actions analysables du lot (« J'examine
    votre PC… », une barre, « Action 2 sur 3 »), puis affiche **« Voici ce que j'ai
    trouvé »** :
    - un lot d'**une seule** action analysable qui déclare une vue s'affiche dans cette vue ;
@@ -1620,7 +1620,7 @@ La fiche de chaque script analysable propose **« Analyser »**. L'analyse s'aff
 fiche, dans la vue que le script a choisie, avec son heure, « Relancer l'analyse », et ce
 qui a été ignoré — ligne par ligne, avec la raison. À côté, des **panneaux** : réglages
 appliqués, journal de l'analyse filtrable par étapes, constats et canaux `[LOG]`, ce qui
-sera fait, ce que recevra le script (le JSON exact de `WINTOOL_CONFIG`), points
+sera fait, ce que recevra le script (le JSON exact de `SINDRY_CONFIG`), points
 d'attention, historique de ce que l'action a libéré, provenance, espace disque. Le script
 en ouvre certains d'office (`panels`) ; l'utilisateur ouvre et ferme les autres.
 
@@ -1635,7 +1635,7 @@ celui de l'auteur de script qui vérifie ce que son analyse rapporte.
 
 C'est le point à ne jamais perdre de vue. L'analyse fait tourner le script, en
 administrateur si l'entête le demande. Que ce mode ne modifie rien est une **promesse de
-l'auteur**, que WinTool ne peut pas vérifier (§12, cadrage).
+l'auteur**, que Sindry ne peut pas vérifier (§12, cadrage).
 
 En conséquence :
 
@@ -1643,14 +1643,14 @@ En conséquence :
   non approuvé n'est pas plus analysé qu'exécuté.
 - L'analyse passe par le **même lanceur durci** que l'action (§12.4) : verrou en écriture
   sur le fichier, `-NoProfile`, `PSModulePath` réduit, interpréteur par chemin absolu, garde
-  des réglages. `WINTOOL_MODE` est posé pour l'analyse et **retiré** de l'environnement de
+  des réglages. `SINDRY_MODE` est posé pour l'analyse et **retiré** de l'environnement de
   l'action : une variable héritée ne peut faire ni analyser au lieu d'agir, ni l'inverse.
 - Une ligne qui vise une option, un choix, une note ou un libellé que le script ne déclare
   pas est **ignorée** et relevée comme anomalie : un script ne peut parler que de ses
   propres cases, jamais faire apparaître une case au nom d'un autre.
 - Une mesure illisible — taille négative, texte à la place d'un nombre, jeton inconnu —
   est ignorée et relevée, jamais interprétée au mieux.
-- **Les éléments trouvés reviennent par leur id, jamais par leur chemin.** WinTool retient
+- **Les éléments trouvés reviennent par leur id, jamais par leur chemin.** Sindry retient
   en mémoire les ids que la dernière analyse de chaque script a annoncés, avec l'empreinte
   du fichier analysé, et **refuse de lancer** une action dont la configuration contient un
   id que cette analyse n'a pas annoncé, ou dont le fichier a changé depuis
@@ -1659,7 +1659,7 @@ En conséquence :
 - **Bornes** : 20 000 lignes lues par analyse, 5 000 éléments par liste, 400 caractères par
   texte. Au-delà, la suite est ignorée, et l'Expert le voit.
 - L'interface ne présente jamais l'analyse comme « sans risque ». Elle dit ce qu'elle fait :
-  WinTool examine le PC.
+  Sindry examine le PC.
 
 ### 17.5 Arrêter une analyse
 

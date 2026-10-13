@@ -1,4 +1,4 @@
-# Écrire un script WinTool
+# Écrire un script Sindry
 
 Remplace `CREER_UN_SCRIPT.txt`, dont la convention n'était respectée par **aucun** des
 13 scripts livrés. Pour que cela ne se reproduise pas, tout ce qui est décrit ici est
@@ -14,10 +14,10 @@ Référence normative : `docs/SPECIFICATION.md` §5.
 1. Copiez le squelette ci-dessous dans un fichier `.ps1`.
 2. Générez un identifiant : `New-Guid`, collez-le dans `id`.
 3. **Enregistrez en UTF-8 *avec BOM*** (voir Encodage — c'est le piège n°1).
-4. Déposez-le dans `%LOCALAPPDATA%\WinTool\scripts\` (sous-dossiers libres).
+4. Déposez-le dans `%LOCALAPPDATA%\Sindry\scripts\` (sous-dossiers libres).
 5. Vérifiez : `.\tools\lint-scripts.ps1`
 
-Un script non conforme **s'exécute quand même** : WinTool signale, il ne bloque pas
+Un script non conforme **s'exécute quand même** : Sindry signale, il ne bloque pas
 (§5.4). **Mais plusieurs situations font refuser le lancement** — approbation manquante,
 ancienne ligne d'override, script non simulable alors que la simulation est activée, interpréteur absent, fichier
 modifié depuis son analyse. Elles sont toutes listées dans **« Ce qui empêche un script de
@@ -28,9 +28,9 @@ se lancer »**, plus bas : lisez cette section avant d'écrire votre premier scr
 ## Le principe : trois blocs, un rôle chacun
 
 ```
-## WINTOOL:START     ce qu'est le script          ─┐
-## WINTOOL:OPTIONS   ses réglages, typés et nommés ├─ pour les humains et l'interface
-## WINTOOL:LANG fr   les mêmes, traduits          ─┘
+## SINDRY:START     ce qu'est le script          ─┐
+## SINDRY:OPTIONS   ses réglages, typés et nommés ├─ pour les humains et l'interface
+## SINDRY:LANG fr   les mêmes, traduits          ─┘
 
 $CONFIG = @{ ... }   les valeurs par défaut        ─── du PowerShell pur
 ```
@@ -49,7 +49,7 @@ traduction qui ne correspond à rien — tout est signalé, avec le numéro de l
 ## Nommer le fichier
 
 **Cette norme ne s'applique qu'aux scripts officiels**, ceux du catalogue
-([WinTool-Catalogue](https://github.com/burnout293/WinTool-Catalogue)).
+([Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue)).
 Vos scripts personnels se nomment comme vous voulez : l'application ne regarde jamais le
 nom de fichier, elle ne connaît que le champ `id`.
 
@@ -84,7 +84,7 @@ sous-dossiers : son index signé est une liste plate.
 ## Le squelette
 
 ```powershell
-## WINTOOL:START
+## SINDRY:START
 ## id            : 3f2b1a9c-7e4d-4c6a-9b0e-1d5f6a8c2e0b
 ## lang          : en
 ## title         : Set fast DNS
@@ -100,9 +100,9 @@ sous-dossiers : son index signé est une liste plate.
 ## interruptible : true
 ## reboot        : false
 ## engine        : auto
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## DnsProvider  : [select] DNS provider — the service that resolves website addresses
 ##   cloudflare : Cloudflare — 1.1.1.1, fastest on most connections
 ##   google     : Google — 8.8.8.8, very reliable
@@ -110,9 +110,9 @@ sous-dossiers : son index signé est une liste plate.
 ## ApplyToIPv6  : [bool]   Apply to IPv6 — equivalent resolvers
 ## FlushCache   : [hidden] Flush the resolver cache afterwards
 ## SafeTest     : [bool]   Simulate — shows what would be done, changes nothing
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:LANG fr
+## SINDRY:LANG fr
 ## title        : Utiliser un Internet plus rapide
 ## desc         : Accélère la navigation avec un résolveur plus rapide
 ## DnsProvider  : Fournisseur DNS — le service qui traduit les adresses des sites
@@ -122,7 +122,7 @@ sous-dossiers : son index signé est une liste plate.
 ## ApplyToIPv6  : Appliquer à l'IPv6 — résolveurs équivalents
 ## FlushCache   : Vider le cache de résolution ensuite
 ## SafeTest     : Simuler — montre ce qui serait fait, sans rien modifier
-## WINTOOL:END
+## SINDRY:END
 
 $CONFIG = @{
     DnsProvider = "cloudflare"
@@ -131,9 +131,9 @@ $CONFIG = @{
     SafeTest    = $false
 }
 
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 
@@ -185,7 +185,7 @@ Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `panels` et 
 | `duration` | `fast` / `medium` / `slow` | `slow` est annoncé à l'avance |
 | `reversible` | `true` / `false` | `false` **pré-coche** « nécessite un point de restauration » |
 | `interruptible` | `true` / `false` | `false` = ne peut pas être tué sans risque |
-| `reboot` | `true` / `false` | `true` annonce un redémarrage : dans les faits de la fiche, avant le lancement et au bilan. Il ne se règle pas dans WinTool (1.7) : c'est le script qui le sait, et `[REBOOT]` le confirme |
+| `reboot` | `true` / `false` | `true` annonce un redémarrage : dans les faits de la fiche, avant le lancement et au bilan. Il ne se règle pas dans Sindry (1.7) : c'est le script qui le sait, et `[REBOOT]` le confirme |
 | `engine` | `auto` / `winps` / `pwsh` | Interpréteur requis |
 | `scan` | `true` / `false` | Facultatif. `true` = le script sait analyser avant d'agir — voir « Le mode analyse » |
 | `view` | une vue | Facultatif. La présentation de l'analyse — voir « Choisir sa vue » |
@@ -195,7 +195,7 @@ Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `panels` et 
 
 ### Catégories et lots : deux choses distinctes
 
-Depuis la 1.4, WinTool range les scripts de deux façons, qui ne se confondent plus :
+Depuis la 1.4, Sindry range les scripts de deux façons, qui ne se confondent plus :
 
 | | La **catégorie** | Le **lot** |
 |---|---|---|
@@ -222,7 +222,7 @@ liste.
 
 Les lots d'usine vivent dans **`tools/lots.json`**, et chacun dit quelles catégories il
 accueille : « Faire le ménage » accueille `cleaning`, « Vie privée » accueille `privacy`…
-À la découverte d'un script, WinTool le place dans le lot qui accueille sa catégorie ; s'il
+À la découverte d'un script, Sindry le place dans le lot qui accueille sa catégorie ; s'il
 n'y en a aucun, le script part en **« Non classé »**. Tant que personne ne l'a déplacé à la
 main, une ré-analyse le replacera en suivant `category`. **Dès que l'utilisateur le range
 lui-même, c'est terminé** : son rangement devient figé. Le script propose, l'humain dispose.
@@ -266,7 +266,7 @@ N'importe lequel des 2 112 noms fonctionne ; cette table sert à choisir vite. E
 Un `.ps1` ne peut pas choisir son interpréteur — sous Windows c'est le processus appelant
 qui décide, il n'y a pas d'équivalent du shebang Unix. `auto` prend le plus récent
 disponible. Ne forcez `pwsh` que si vous utilisez vraiment de la syntaxe PowerShell 7
-(`??`, `?:`) : si PowerShell 7 est absent, WinTool **ne se replie jamais en silence** sur
+(`??`, `?:`) : si PowerShell 7 est absent, Sindry **ne se replie jamais en silence** sur
 5.1 — le script est marqué indisponible.
 
 ---
@@ -276,10 +276,10 @@ disponible. Ne forcez `pwsh` que si vous utilisez vraiment de la syntaxe PowerSh
 Une ligne par réglage : `## Clé : [type] Libellé — Description`.
 
 ```powershell
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## TimeoutSeconds : [number] Operation timeout — in seconds
 ## CreateBackup   : [bool]   Create a backup first — recommended
-## WINTOOL:END
+## SINDRY:END
 ```
 
 | Type | Contrôle affiché |
@@ -321,7 +321,7 @@ de l'option précédente. La clé disparaît de l'interface, et vous récoltez
 espaces**. C'est l'indentation, et elle seule, qui distingue un choix d'une option.
 
 ```powershell
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## DnsProvider  : [select] DNS provider — the service that resolves website addresses
 ##   cloudflare : Cloudflare — 1.1.1.1, fastest on most connections
 ##   google     : Google — 8.8.8.8, very reliable
@@ -330,7 +330,7 @@ espaces**. C'est l'indentation, et elle seule, qui distingue un choix d'une opti
 ##   temp       : Temporary files
 ##   cache      : Browser caches
 ##   logs       : Old log files
-## WINTOOL:END
+## SINDRY:END
 ```
 
 Chaque choix reçoit un libellé et une description, traduits dans le bloc `LANG` de la même
@@ -363,12 +363,12 @@ L'application est bilingue (§10). Le bloc traduit l'entête, les options **et l
 vers une langue **différente** de celle déclarée par `lang` :
 
 ```powershell
-## WINTOOL:LANG fr
+## SINDRY:LANG fr
 ## title        : Utiliser un Internet plus rapide
 ## desc         : Accélère la navigation avec un résolveur plus rapide
 ## DnsProvider  : Fournisseur DNS — le service qui traduit les adresses des sites
 ##   cloudflare : Cloudflare — 1.1.1.1, le plus rapide
-## WINTOOL:END
+## SINDRY:END
 ```
 
 `title` et `desc` sont obligatoires. Une traduction absente retombe sur la langue de base —
@@ -387,9 +387,9 @@ seulement qu'une seconde langue existe.
 ## La ligne d'override — ne la supprimez pas
 
 ```powershell
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 ```
@@ -399,14 +399,14 @@ le script tourne toujours avec ses valeurs par défaut, sans que rien ne le sign
 
 Elle remplace un mécanisme bien pire. La v0.3 reconstruisait le bloc `$CONFIG` à coups
 d'expression régulière, écrivait un `.ps1` temporaire et exécutait *celui-là* — fragile,
-et déjà cassé au moment de la refonte. Désormais WinTool pose vos réglages dans la
-variable `WINTOOL_CONFIG` et exécute **votre fichier, tel quel**.
+et déjà cassé au moment de la refonte. Désormais Sindry pose vos réglages dans la
+variable `SINDRY_CONFIG` et exécute **votre fichier, tel quel**.
 
 > **La variable contient le JSON, pas un chemin de fichier.** Une version antérieure de ce
-> guide écrivait `Get-Content $env:WINTOOL_CONFIG -Raw | ConvertFrom-Json` : cette forme
+> guide écrivait `Get-Content $env:SINDRY_CONFIG -Raw | ConvertFrom-Json` : cette forme
 > ne fonctionne plus, et le validateur la refuse (`OVERRIDE_OBSOLETE`). Le fichier
 > intermédiaire a été supprimé parce qu'il vivait dans un dossier inscriptible sans
-> élévation : un autre programme pouvait le remplacer entre l'écriture par WinTool et la
+> élévation : un autre programme pouvait le remplacer entre l'écriture par Sindry et la
 > lecture par votre script, et faire ainsi entrer ses propres valeurs dans `$CONFIG` —
 > en administrateur.
 
@@ -456,7 +456,7 @@ contentait de constater le démarrage, et enregistrait ainsi des succès fictifs
 
 ### `[CKPT]`, le marqueur qui rend l'annulation sûre
 
-Au premier clic sur « Arrêter », WinTool laisse le script en cours aller au bout. Au
+Au premier clic sur « Arrêter », Sindry laisse le script en cours aller au bout. Au
 second, il ne le tue que si le script est `interruptible`, **ou** si un `[CKPT]` a été
 franchi. Émettez-en un dès que l'état du système redevient cohérent :
 
@@ -468,21 +468,21 @@ Write-Host "[CKPT] Backup complete - safe to interrupt from here"
 
 ## Le mode analyse
 
-> **Exploité par WinTool depuis la 1.4.** Un script qui ne déclare rien de ce qui suit
+> **Exploité par Sindry depuis la 1.4.** Un script qui ne déclare rien de ce qui suit
 > fonctionne exactement comme avant : le mode analyse est une capacité en plus, jamais
 > une obligation.
 
 C'est le fonctionnement de CCleaner ou de Malwarebytes, en trois temps :
 
-1. **Analyser** — WinTool demande au script ce qu'il ferait, sans rien modifier.
+1. **Analyser** — Sindry demande au script ce qu'il ferait, sans rien modifier.
 2. **Cocher** — l'utilisateur voit ce que le script a trouvé et choisit ce qu'il veut traiter.
-3. **Agir** — WinTool relance le script en ne lui transmettant que les cases cochées.
+3. **Agir** — Sindry relance le script en ne lui transmettant que les cases cochées.
 
 En mode Simple, c'est l'étape 2 de l'assistant, « Voici ce que j'ai trouvé ». En mode
 Expert, c'est le bouton **Analyser** de la fiche d'un script (§17 de la spécification).
 
 **Le script ne compose pas l'écran : il le décrit.** Il n'écrit que des nombres, des noms
-et des jetons. Les mots viennent de son entête, déjà traduite, et WinTool les met en page
+et des jetons. Les mots viennent de son entête, déjà traduite, et Sindry les met en page
 dans la vue que le script a choisie. C'est ce qui permet au même script de s'afficher en
 résumé pour un débutant et en détail pour l'Expert, en français comme en anglais.
 
@@ -504,8 +504,8 @@ résumé pour un débutant et en détail pour l'Expert, en français comme en an
 
 ### Le contrat, en quatre règles
 
-**1. WinTool pose `WINTOOL_MODE=scan`.** C'est une variable d'environnement, distincte de
-`WINTOOL_CONFIG`. Absente — lancement normal, ou double-clic sur le fichier —, le script
+**1. Sindry pose `SINDRY_MODE=scan`.** C'est une variable d'environnement, distincte de
+`SINDRY_CONFIG`. Absente — lancement normal, ou double-clic sur le fichier —, le script
 agit comme d'habitude.
 
 **2. En mode analyse, le script ne modifie RIEN.** Ni fichier, ni registre, ni service, ni
@@ -519,7 +519,7 @@ ignorée, et relevée en mode Expert : un script ne parle que de ses propres cas
 
 **4. La sélection revient par `$CONFIG`, comme n'importe quel réglage.** C'est le point qui
 rend le mode analyse presque gratuit à écrire : il n'y a **pas de mode « action » à
-implémenter**. Après l'analyse, WinTool lance le script normalement, avec dans `$CONFIG`
+implémenter**. Après l'analyse, Sindry lance le script normalement, avec dans `$CONFIG`
 ce qui a été coché — voir « Ce qui revient au script ». Votre code d'action existe déjà :
 il lit `$CONFIG`, et fait ce qu'on lui dit.
 
@@ -554,7 +554,7 @@ recommander un choix qu'une fois tous mesurés :
 
 | Champ | Valeur | Sens |
 |---|---|---|
-| `size=` | entier, en **octets** | Espace récupérable. WinTool l'affiche dans l'unité et la langue de l'utilisateur. |
+| `size=` | entier, en **octets** | Espace récupérable. Sindry l'affiche dans l'unité et la langue de l'utilisateur. |
 | `count=` | entier | Nombre d'éléments trouvés : fichiers, entrées de démarrage… |
 | `state=` | `todo` / `ok` | Un réglage : `todo` = pas encore en place, `ok` = déjà fait — la case est alors grisée |
 | `checked=` | `true` / `false` | L'avis du script : cocher d'office ou non, quoi que disent les mesures |
@@ -567,7 +567,7 @@ recommander un choix qu'une fois tous mesurés :
 
 | Champ | Valeur | Sens |
 |---|---|---|
-| `id=` | lettres, chiffres et `- _ . : @ +`, 128 au plus | **Obligatoire.** Ce que WinTool renverra au script si l'élément est coché |
+| `id=` | lettres, chiffres et `- _ . : @ +`, 128 au plus | **Obligatoire.** Ce que Sindry renverra au script si l'élément est coché |
 | `parent=` | l'`id` d'un autre élément de la même liste | Range l'élément sous ce parent : une arborescence |
 | `name=` | texte | Lequel : « Default », « Adobe Reader » |
 | `label=` | une clé du bloc `REPORT` | Ce que c'est, traduit : `label=Cache name=Default` s'affiche « Fichiers en cache — Default » |
@@ -600,12 +600,12 @@ bilingue. Tout ce que l'analyse affiche et qui n'est pas déjà le libellé d'un
 déclare dans un bloc `REPORT`, placé entre `OPTIONS` et `LANG` :
 
 ```
-## WINTOOL:REPORT
+## SINDRY:REPORT
 ## Junk       : [group] Junk files — Temporary files and the recycle bin
 ## Cache      : Cache
 ## FreeSpace  : Free space on drive C:
 ## UpdateNote : [note:warn] If an update is waiting to be installed, Windows will download it again.
-## WINTOOL:END
+## SINDRY:END
 ```
 
 | Forme | Sert à | Visé par |
@@ -629,7 +629,7 @@ est une liste **vide dans l'entête**, que l'analyse remplit de lignes `[ITEM]` 
 ```
 
 Sa valeur par défaut dans `$CONFIG` est toujours un tableau, en général `@()`. Sans
-WinTool, la liste reste vide et le script ne touche à rien : c'est le comportement sûr
+Sindry, la liste reste vide et le script ne touche à rien : c'est le comportement sûr
 du double-clic.
 
 **L'`id` est une clé, pas un chemin.** Calculez-le à partir de ce qui ne bouge pas entre
@@ -638,7 +638,7 @@ l'action, **retrouvez les éléments en rappelant la même fonction** que pendan
 et ne vous servez de l'id reçu que pour choisir parmi ce que vous avez vous-même retrouvé.
 Un id ne sert jamais à fabriquer un chemin.
 
-WinTool y veille de son côté : il retient les ids de la dernière analyse de chaque script,
+Sindry y veille de son côté : il retient les ids de la dernière analyse de chaque script,
 avec l'empreinte du fichier analysé, et **refuse de lancer** l'action si `$CONFIG` contient
 un id que cette analyse n'a pas annoncé — voir « Ce qui empêche un script de se lancer ».
 
@@ -674,11 +674,11 @@ posent aussi sur un choix, avant son libellé :
 | `[group:Clé]` | option, choix | Range la case dans un **poste** du résumé Simple : le groupe `Clé`, déclaré dans `REPORT`. Sans groupe, une option fait un poste à elle seule. |
 | `[show:simple]`, `[show:expert]` | option, choix | La case ne s'affiche que dans ce mode |
 | `[view:x]` | option | La présentation de cette seule option : `bars` ou `donut` pour un `[multi]`, `chart` pour un `[select]`, `tree` `table` `tiles` `treemap` pour un `[items]` |
-| `[scan]` | option | Un réglage **de l'analyse elle-même** — une ancienneté minimale, un dossier à examiner. Ce n'est pas une case : WinTool le transmet tel qu'il est configuré, à l'analyse comme à l'action. |
+| `[scan]` | option | Un réglage **de l'analyse elle-même** — une ancienneté minimale, un dossier à examiner. Ce n'est pas une case : Sindry le transmet tel qu'il est configuré, à l'analyse comme à l'action. |
 
 Les étiquettes ne se traduisent pas : le bloc `LANG` ne reprend que le libellé.
 
-### Ce que WinTool coche d'office
+### Ce que Sindry coche d'office
 
 Dans cet ordre :
 
@@ -732,14 +732,14 @@ en donne une autre à l'Expert : `## view : gauge expert=table`.
 | `chart` | un `[select]` dont les choix ont un `ms=` | Des colonnes à comparer : plus bas, plus rapide |
 | `light` | des `[METRIC]` avec `health=` | Un feu : tout va bien, un point à surveiller, un problème |
 | `gauge` | une `[METRIC]` avec `max=` | Une jauge à dents, à la couleur de son état |
-| `history` | rien : WinTool garde le `[FREED]` de chaque action | Ce que l'action a libéré, passage après passage |
+| `history` | rien : Sindry garde le `[FREED]` de chaque action | Ce que l'action a libéré, passage après passage |
 
 **Une vue ne fait jamais disparaître une case.** Ce qu'elle ne montre pas suit dessous, en
 liste. Et une vue qui ne trouve pas de quoi s'afficher — un `donut` sans aucune taille —
 retombe sur la liste à cocher : jamais un écran vide.
 
 En mode Simple, la vue du script ne s'applique que si le lot ne contient **qu'une** action
-analysable. Dès qu'il y en a plusieurs, WinTool les rassemble dans son propre résumé : un
+analysable. Dès qu'il y en a plusieurs, Sindry les rassemble dans son propre résumé : un
 poste par groupe, un graphique, et des chevrons pour déplier le détail.
 
 **Le graphique du résumé se déclare** (`## chart`, 1.7 — c'était un réglage de l'utilisateur
@@ -766,15 +766,15 @@ l'utilisateur peut aussi ouvrir et fermer lui-même :
 | `config` | Les réglages appliqués |
 | `progress` | Le journal de l'analyse, filtrable par étapes, constats et canaux `[LOG]` |
 | `plan` | Ce qui sera fait, d'après les cases cochées |
-| `payload` | Ce que recevra le script : le JSON exact de `WINTOOL_CONFIG` |
-| `attention` | Les points d'attention que WinTool repère dans le texte du script |
+| `payload` | Ce que recevra le script : le JSON exact de `SINDRY_CONFIG` |
+| `attention` | Les points d'attention que Sindry repère dans le texte du script |
 | `history` | Ce que l'action a libéré, passage après passage |
 | `origin` | La provenance : catalogue, fichier, empreinte, accord |
 | `disk` | L'espace disque, aujourd'hui et après l'action |
 
 ### Ce qui revient au script
 
-Après l'analyse, WinTool lance le script **sans** `WINTOOL_MODE`, avec dans `$CONFIG` :
+Après l'analyse, Sindry lance le script **sans** `SINDRY_MODE`, avec dans `$CONFIG` :
 
 | Option | Ce que reçoit le script |
 |---|---|
@@ -811,11 +811,11 @@ C'est l'exemple de référence de la norme. Il passe le validateur en `-Strict`,
 identique au fichier `docs/mockups/exemple-analyse.ps1` — un test y veille. Il montre des
 choix mesurés, une case simple, un choix montré sans être coché avec sa note, une
 arborescence d'`[items]`, des éléments réservés à l'Expert, une note réservée au Simple,
-une mesure et des lignes de journal ; puis l'action, qui ne lit que ce que WinTool lui
+une mesure et des lignes de journal ; puis l'action, qui ne lit que ce que Sindry lui
 renvoie.
 
 ```powershell
-## WINTOOL:START
+## SINDRY:START
 ## id            : 6c08ece0-709a-4210-aacb-eda594e8deee
 ## lang          : en
 ## title         : Free up disk space
@@ -834,9 +834,9 @@ renvoie.
 ## scan          : true
 ## view          : donut
 ## panels        : plan progress
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## Targets    : [multi] Temporary files
 ##   user     : [group:Junk] Your temporary files
 ##   windows  : [group:Junk] [show:expert] Windows temporary files
@@ -844,18 +844,18 @@ renvoie.
 ## RecycleBin : [bool] [group:Junk] Empty the recycle bin
 ## Browsers   : [items] [view:tree] Browser caches
 ## SafeTest   : [bool] Simulate — shows what would be done, changes nothing
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:REPORT
+## SINDRY:REPORT
 ## Junk       : [group] Junk files — Temporary files and the recycle bin
 ## OldUpdates : [group] Old Windows updates — What Windows keeps after installing them
 ## Cache      : Cache
 ## FreeSpace  : Free space on drive C:
 ## UpdateNote : [note:warn] If an update is waiting to be installed, Windows will download it again.
 ## Untouched  : [note:info] Your passwords, bookmarks and history are not touched.
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:LANG fr
+## SINDRY:LANG fr
 ## title      : Faire de la place
 ## desc       : Supprime les fichiers temporaires, les mises à jour téléchargées et le cache des navigateurs
 ## Targets    : Fichiers temporaires
@@ -871,7 +871,7 @@ renvoie.
 ## FreeSpace  : Espace libre sur le disque C:
 ## UpdateNote : Si une mise à jour attend d'être installée, Windows la téléchargera de nouveau.
 ## Untouched  : Vos mots de passe, vos favoris et votre historique ne sont pas touchés.
-## WINTOOL:END
+## SINDRY:END
 
 # ==============================================================================
 # L'exemple de référence de la norme d'analyse : docs/FORMAT_SCRIPT.md,
@@ -879,10 +879,10 @@ renvoie.
 # Il passe le validateur en -Strict (tools/lint-scripts.ps1).
 #
 # Le script est lancé deux fois :
-#   1. ANALYSE  — WinTool pose WINTOOL_MODE=scan. Le script mesure, décrit ce
+#   1. ANALYSE  — Sindry pose SINDRY_MODE=scan. Le script mesure, décrit ce
 #      qu'il a trouvé, et ne modifie RIEN.
-#   2. ACTION   — WinTool relance le script sans WINTOOL_MODE, avec dans
-#      WINTOOL_CONFIG ce que l'utilisateur a coché. Le script ne fait que ça.
+#   2. ACTION   — Sindry relance le script sans SINDRY_MODE, avec dans
+#      SINDRY_CONFIG ce que l'utilisateur a coché. Le script ne fait que ça.
 #
 # Seul, en double-clic, il agit avec ses valeurs par défaut ($CONFIG ci-dessous).
 # ==============================================================================
@@ -894,11 +894,11 @@ $CONFIG = @{
     SafeTest   = $false
 }
 # Browsers est une liste [items] : ses éléments n'existent qu'après l'analyse.
-# Sans WinTool, elle reste vide et le script ne touche à aucun navigateur.
+# Sans Sindry, elle reste vide et le script ne touche à aucun navigateur.
 
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 
@@ -924,7 +924,7 @@ function Get-RecycleBinItems {
 
 # Les caches de navigateurs. Chaque cache reçoit un Id STABLE, calculé à partir
 # de ce qui ne bouge pas entre l'analyse et l'action : le navigateur et le profil.
-# WinTool ne renverra que des Id ; c'est cette même fonction, rappelée à l'action,
+# Sindry ne renverra que des Id ; c'est cette même fonction, rappelée à l'action,
 # qui retrouvera les chemins. Un Id reçu ne sert jamais à fabriquer un chemin.
 $Browsers = @(
     @{ Id = 'chrome';  Name = 'Google Chrome';   Process = 'chrome';  Cache = 'Cache';  Root = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data' }
@@ -958,12 +958,12 @@ function Get-BrowserCaches {
 # ==============================================================================
 # 1. ANALYSE — on mesure, on décrit, on ne modifie RIEN
 # ==============================================================================
-# Tout ce bloc est en lecture seule. WinTool ne peut pas le vérifier : c'est une
+# Tout ce bloc est en lecture seule. Sindry ne peut pas le vérifier : c'est une
 # promesse de l'auteur, et l'utilisateur coche sur la foi de ce qu'elle rapporte.
 # Le script n'écrit jamais de phrase : des nombres, des noms, des jetons. Les
 # mots viennent de l'entête (REPORT, LANG), déjà traduite.
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
 
     # --- Des choix mesurés : une ligne [FIND] par choix de Targets ---
     Write-Output "[STEP] 1/3 Measuring temporary folders"
@@ -1017,7 +1017,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
 # ==============================================================================
 # 2. ACTION — uniquement ce que l'utilisateur a coché
 # ==============================================================================
-# WinTool a posé dans WINTOOL_CONFIG, et l'override a versé dans $CONFIG :
+# Sindry a posé dans SINDRY_CONFIG, et l'override a versé dans $CONFIG :
 #   Targets    = les choix cochés, par exemple @("user", "update")
 #   RecycleBin = $true ou $false
 #   Browsers   = les Id cochés, par exemple @("chrome-Default", "firefox-abcd.default")
@@ -1089,14 +1089,14 @@ exit 0
 
 Remarquez que les clés `Targets.$t` sont calculées. Le validateur ne peut vérifier que les
 clés écrites en toutes lettres ; une clé calculée lui échappe, par construction. À vous de
-garantir qu'elle ne produit que des choix déclarés — WinTool, lui, ignorera les autres.
+garantir qu'elle ne produit que des choix déclarés — Sindry, lui, ignorera les autres.
 
 ### Exemple court — un réglage
 
 Pour l'optimisation ou la vie privée, on ne mesure pas une taille : on constate un **état**.
 
 ```powershell
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     $key   = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
     $value = (Get-ItemProperty -Path $key -Name AllowTelemetry -ErrorAction SilentlyContinue).AllowTelemetry
     $state = if ($value -eq 0) { 'ok' } else { 'todo' }
@@ -1117,14 +1117,14 @@ arrive grisée avec la mention « Déjà en place » ; sinon elle arrive cochée
   montre. Nommez vos options par l'action.
 - **L'analyse se place après la ligne d'override et avant tout code qui modifie.** Après,
   pour disposer de `$CONFIG` — et de vos options `[scan]`. Avant, parce qu'une
-  modification qui s'exécuterait avant le test de `WINTOOL_MODE` aurait lieu pendant
+  modification qui s'exécuterait avant le test de `SINDRY_MODE` aurait lieu pendant
   l'analyse.
 - **L'analyse rapporte tout ce qu'elle pourrait faire**, pas seulement ce que la
   configuration actuelle sélectionne. C'est l'utilisateur qui choisit, après.
 - **À l'action, ne faites confiance qu'à ce que vous retrouvez.** Une valeur reçue ne sert
   que de clé dans les tables du script, et seulement si elle y figure : `$Folders['x']`
   vaut `$null` pour une clé inconnue, et `"$null\*"` viserait la racine du disque.
-- **Analyser, c'est exécuter.** WinTool lance le script en administrateur pour l'analyser,
+- **Analyser, c'est exécuter.** Sindry lance le script en administrateur pour l'analyser,
   exactement comme pour agir. Un script non approuvé ne sera pas plus analysé qu'exécuté
   (§12.1 de la spécification).
 - **L'analyse doit être rapide.** Elle précède chaque action et l'utilisateur l'attend
@@ -1159,7 +1159,7 @@ Dans VS Code : *Sélectionner l'encodage → Enregistrer avec l'encodage → UTF
 
 ```powershell
 .\tools\lint-scripts.ps1                                               # vos scripts
-.\tools\lint-scripts.ps1 -Path ..\WinTool-Catalogue\scripts -Strict   # catalogue officiel
+.\tools\lint-scripts.ps1 -Path ..\Sindry-Catalogue\scripts -Strict   # catalogue officiel
 ```
 
 `-Strict` traite les avertissements comme des erreurs. Les scripts du catalogue officiel
@@ -1173,8 +1173,8 @@ validateur sans l'ajouter ici est un défaut.**
 | Code | Gravité | Déclencheur |
 |---|---|---|
 | `BOM_ABSENT` | erreur | Fichier non-ASCII sans BOM UTF-8 |
-| `ENTETE_ABSENT` | erreur | Pas de bloc `WINTOOL:START` |
-| `ENTETE_NON_FERME` | erreur | `WINTOOL:START` sans `WINTOOL:END` |
+| `ENTETE_ABSENT` | erreur | Pas de bloc `SINDRY:START` |
+| `ENTETE_NON_FERME` | erreur | `SINDRY:START` sans `SINDRY:END` |
 | `CHAMP_MANQUANT` | erreur | Champ d'entête obligatoire absent |
 | `CHAMP_DOUBLON` | avertissement | Champ déclaré deux fois |
 | `VALEUR_INVALIDE` | erreur | `risk`, `duration`, `engine`, `show` ou un booléen hors valeurs admises ; `[show:]` hors `simple`/`expert` |
@@ -1183,7 +1183,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `CATEGORIE_INCONNUE` | avertissement | Catégorie hors `tools/categories.json` → « Autres », et aucun lot |
 | `ICONE_EMOJI` | erreur | `icon` contient un emoji |
 | `ICONE_INCONNUE` | erreur | Nom d'icône absent de Lucide — suggestion si proche |
-| `OPTIONS_ABSENT` | erreur | Pas de bloc `WINTOOL:OPTIONS` |
+| `OPTIONS_ABSENT` | erreur | Pas de bloc `SINDRY:OPTIONS` |
 | `OPTIONS_NON_FERME` | erreur | Bloc `OPTIONS` non refermé |
 | `TYPE_ABSENT` | erreur | Option déclarée sans `[type]` |
 | `TYPE_INVALIDE` | erreur | Type inconnu, ou variante autre que `[items:keep-one]` |
@@ -1197,7 +1197,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `OPTION_ORPHELINE` | erreur | Option déclarée sans valeur par défaut dans `$CONFIG` |
 | `TYPE_INCOHERENT` | avertissement | `[bool]` sur une valeur non booléenne, `[number]` sur du texte |
 | `DEFAUT_INVALIDE` | erreur | Défaut hors des choix, `select` en tableau, `multi` ou `items` qui n'en est pas un |
-| `TRADUCTION_ABSENTE` | erreur | Aucun bloc `WINTOOL:LANG` vers une langue autre que `lang` |
+| `TRADUCTION_ABSENTE` | erreur | Aucun bloc `SINDRY:LANG` vers une langue autre que `lang` |
 | `TRADUCTION_NON_FERMEE` | erreur | Bloc de traduction non refermé |
 | `TRADUCTION_INCOMPLETE` | erreur | `title` ou `desc` non traduit |
 | `TRADUCTION_OPTION` | avertissement | Une option sans libellé traduit |
@@ -1205,12 +1205,12 @@ validateur sans l'ajouter ici est un défaut.**
 | `TRADUCTION_ORPHELINE` | erreur | Traduction d'une option, d'un choix ou d'une entrée de `REPORT` qui n'existe pas |
 | `TRADUCTION_RAPPORT` | avertissement | Une entrée de `REPORT` sans texte traduit |
 | `OVERRIDE_ABSENT` | erreur | Ligne d'override manquante |
-| `OVERRIDE_OBSOLETE` | erreur | Ancienne ligne d'override lisant un fichier — `WINTOOL_CONFIG` contient le JSON |
-| `OVERRIDE_FICHIER` | erreur | Repli vers un fichier de configuration — **WinTool refuse de lancer le script** |
+| `OVERRIDE_OBSOLETE` | erreur | Ancienne ligne d'override lisant un fichier — `SINDRY_CONFIG` contient le JSON |
+| `OVERRIDE_FICHIER` | erreur | Repli vers un fichier de configuration — **Sindry refuse de lancer le script** |
 | `MARQUEUR_INCONNU` | erreur | Balise proche d'un marqueur connu — `[REBBOT]` → `[REBOOT]` |
 | `MARQUEUR_CASSE` | avertissement | Marqueur pas en majuscules |
 | `SORTIE_NON_ANGLAISE` | avertissement | Message affiché contenant des accents |
-| `SCAN_NON_GERE` | erreur | `scan : true` mais `$env:WINTOOL_MODE` n'est jamais lu : le script agirait au lieu d'analyser |
+| `SCAN_NON_GERE` | erreur | `scan : true` mais `$env:SINDRY_MODE` n'est jamais lu : le script agirait au lieu d'analyser |
 | `SCAN_SANS_FIND` | erreur | `scan : true` mais aucun `[FIND]`, `[ITEM]` ni `[METRIC]` n'est émis |
 | `FIND_SANS_SCAN` | avertissement | Le script sait analyser mais ne déclare pas `scan : true` : il ne sera jamais interrogé |
 | `FIND_CLE_INCONNUE` | erreur | `[FIND]` vise une option absente, d'un type autre que `[bool]`/`[multi]`/`[select]`, ou un choix non déclaré |
@@ -1224,7 +1224,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `NOTE_INCONNUE` | erreur | `[NOTE]` vise une note absente de `REPORT` ou une cible non déclarée, ou porte un champ autre que `show=` |
 | `LOG_CANAL` | erreur | `[LOG]` sans canal : un mot, puis le texte |
 | `PROGRESS_VALEUR` | erreur | `[PROGRESS]` hors d'un entier de 0 à 100 |
-| `RAPPORT_NON_FERME` | erreur | Bloc `WINTOOL:REPORT` non refermé |
+| `RAPPORT_NON_FERME` | erreur | Bloc `SINDRY:REPORT` non refermé |
 | `NOTE_NIVEAU` | erreur | `[note:…]` hors `info` / `warn` |
 | `ETIQUETTE_INCONNUE` | erreur | Étiquette inconnue sur une option, un choix ou une entrée de `REPORT` |
 | `GROUPE_INCONNU` | erreur | `[group:Clé]` vise un groupe que `REPORT` ne déclare pas |
@@ -1235,7 +1235,7 @@ validateur sans l'ajouter ici est un défaut.**
 
 Les contrôles des lignes d'analyse ne voient que ce qui est écrit **en toutes lettres** :
 une clé ou une valeur calculée (`Targets.$t`, `size=$($m.Size)`) leur échappe, par
-construction. WinTool, lui, lit la vraie sortie, et ignore ce qui ne correspond pas.
+construction. Sindry, lui, lit la vraie sortie, et ignore ce qui ne correspond pas.
 
 Le contrôle des marqueurs ne regarde que les balises **en tête de chaîne affichée**.
 Sans cette restriction, les transtypages PowerShell deviennent des faux positifs :
@@ -1245,7 +1245,7 @@ Sans cette restriction, les transtypages PowerShell deviennent des faux positifs
 
 ## Votre modèle : le squelette de ce document
 
-Le dépôt [WinTool-Catalogue](https://github.com/burnout293/WinTool-Catalogue) contient le catalogue officiel, et chacun de ses scripts passe le
+Le dépôt [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue) contient le catalogue officiel, et chacun de ses scripts passe le
 validateur en `-Strict`. Ils sont de bons exemples de ce qu'on peut faire — mais ils
 évoluent, et aucun n'est garanti représentatif de toutes les règles.
 
@@ -1267,7 +1267,7 @@ les enfreint passe `-Strict` sans un mot, puis se comporte mal.
 droits d'administrateur, l'analyse de l'exemple rapporte `size=0` pour
 `C:\Windows\Temp` — non parce qu'il est vide, mais parce qu'elle n'a pas pu y entrer.
 
-Dans WinTool, un script `admin : true` est analysé en administrateur et voit juste. Le piège
+Dans Sindry, un script `admin : true` est analysé en administrateur et voit juste. Le piège
 guette **l'auteur qui teste à la main** : lancez vos analyses dans une console
 administrateur, sinon vous validerez des zéros qui n'en sont pas.
 
@@ -1281,7 +1281,7 @@ pas le type et affiche un champ de texte libre à la place de l'interrupteur ou 
 
 ### Le code de langue fait exactement deux lettres
 
-`## WINTOOL:LANG fr` — pas `fr-FR`, pas `french`. Le validateur n'accepte que deux lettres
+`## SINDRY:LANG fr` — pas `fr-FR`, pas `french`. Le validateur n'accepte que deux lettres
 et signalerait `TRADUCTION_ABSENTE` sans expliquer pourquoi.
 
 ### L'accolade fermante de `$CONFIG` est seule sur sa ligne
@@ -1296,13 +1296,13 @@ Un `}  # fin de config` empêche le parseur de trouver la fin du bloc.
 
 ### Le bloc d'override ne peut pas être en commentaire
 
-Il doit contenir littéralement `$env:WINTOOL_CONFIG`, sur une ligne non commentée. Un
+Il doit contenir littéralement `$env:SINDRY_CONFIG`, sur une ligne non commentée. Un
 exemple mis en commentaire dans un en-tête `<# … #>` ne compte pas, et vous récoltez
 `OVERRIDE_ABSENT`.
 
 ### Une clé d'option ne contient pas d'espace
 
-Et elle doit être **identique aux trois endroits** : `WINTOOL:OPTIONS`, `WINTOOL:LANG` et
+Et elle doit être **identique aux trois endroits** : `SINDRY:OPTIONS`, `SINDRY:LANG` et
 `$CONFIG`. Le validateur croise les trois dans les deux sens.
 
 ### `category` ne peut pas viser un lot
@@ -1314,13 +1314,13 @@ le script dans « Autres ».
 
 ### Une valeur d'`engine` inconnue se comporte comme `auto`
 
-`engine : powershell` ou `engine : ps7` ne produisent aucune erreur : WinTool prend
+`engine : powershell` ou `engine : ps7` ne produisent aucune erreur : Sindry prend
 simplement l'interpréteur le plus récent disponible. Les trois seules valeurs qui ont un
 sens sont `auto`, `winps` et `pwsh`.
 
 ### La configuration injectée est plafonnée
 
-Au-delà de **30 000 caractères** de JSON, WinTool refuse le lancement (limite Windows sur
+Au-delà de **30 000 caractères** de JSON, Sindry refuse le lancement (limite Windows sur
 une variable d'environnement). Un `[multi]` à très nombreux choix ou une `[string]` très
 longue peuvent y conduire.
 
@@ -1334,21 +1334,21 @@ variables que **n'importe quel programme tournant sous le compte de l'utilisateu
 modifier**, sans élévation. Tout ce qu'un tel programme peut écrire, il peut le faire viser
 par votre script.
 
-| Ce que vous lisez | D'où ça vient | Ce que WinTool garantit | Ce qui vous reste |
+| Ce que vous lisez | D'où ça vient | Ce que Sindry garantit | Ce qui vous reste |
 |---|---|---|---|
 | `$CONFIG` | `settings.json`, inscriptible par l'utilisateur | Type et choix conformes à votre bloc `OPTIONS` ; aucun chemin d'un texte libre ne vise un emplacement protégé | Bornes des nombres, sens des textes |
-| `$env:SystemRoot`, `$env:ProgramData`, `$env:SystemDrive`, `$env:ProgramFiles` | Rétablies par WinTool depuis la base de registre `HKLM` | Justes sous WinTool | **Rien hors de WinTool** : en double-clic, elles viennent du profil |
+| `$env:SystemRoot`, `$env:ProgramData`, `$env:SystemDrive`, `$env:ProgramFiles` | Rétablies par Sindry depuis la base de registre `HKLM` | Justes sous Sindry | **Rien hors de Sindry** : en double-clic, elles viennent du profil |
 | `$env:TEMP`, `$env:TMP`, `$env:LOCALAPPDATA`, `$env:APPDATA`, `$env:USERPROFILE` | Le profil de l'utilisateur | Ramenées dans son profil si elles visent le système | À vérifier avant toute suppression |
-| Le dossier courant | System32 sous WinTool | — | **Ne vous en servez jamais** : `$PSScriptRoot` pour vos fichiers |
+| Le dossier courant | System32 sous Sindry | — | **Ne vous en servez jamais** : `$PSScriptRoot` pour vos fichiers |
 
 Les règles qui en découlent :
 
 1. **Avant de supprimer ou d'écraser, vérifiez où vous êtes.** Un chemin issu de `$CONFIG`
    ou d'une variable de l'utilisateur ne doit jamais désigner Windows, les Program Files,
-   ProgramData, la racine d'un lecteur ou un autre profil. WinTool le refuse déjà pour les
+   ProgramData, la racine d'un lecteur ou un autre profil. Sindry le refuse déjà pour les
    textes libres, mais votre script peut être lancé seul — et un double-clic n'a pas de
    garde.
-2. **Bornez vos nombres.** WinTool garantit qu'un `[number]` est un nombre, pas qu'il est
+2. **Bornez vos nombres.** Sindry garantit qu'un `[number]` est un nombre, pas qu'il est
    raisonnable : une ancienneté de `-1` heure, un délai de `100000` jours se refusent dans
    le script.
 3. **N'exécutez jamais une valeur.** Pas d'`Invoke-Expression`, pas de
@@ -1357,7 +1357,7 @@ Les règles qui en découlent :
 4. **Appelez les outils du système par leur chemin complet**
    (`"$env:SystemRoot\System32\ipconfig.exe"`), jamais par leur seul nom.
 5. **Pas de secret dans une option.** Une option `[string]` est enregistrée en clair dans
-   `settings.json`. WinTool masque dans le journal les valeurs des clés dont le nom contient
+   `settings.json`. Sindry masque dans le journal les valeurs des clés dont le nom contient
    `Password`, `Secret` ou `Token` — nommez-les ainsi si vous ne pouvez pas faire autrement.
 
 Exemple, pour une liste de dossiers à vider reçue en texte libre :
@@ -1380,9 +1380,9 @@ foreach ($dossier in ("$($CONFIG.CustomPaths)" -split ';' | ForEach-Object { $_.
 
 ---
 
-## Ce que WinTool relève autour de votre script
+## Ce que Sindry relève autour de votre script
 
-Avant et après chaque script, WinTool relève ce qu'un logiciel malveillant modifie pour
+Avant et après chaque script, Sindry relève ce qu'un logiciel malveillant modifie pour
 s'installer durablement — tâches planifiées, services, démarrage, variables du système,
 exclusions de l'antivirus, fichier `hosts`, certificats racine, règles du pare-feu — et le
 dit dans le bilan (§12.5 de la spécification). Avant l'approbation, il repère aussi ces
@@ -1398,13 +1398,13 @@ familles est signalée comme ne tenant pas sa promesse.
 
 ## Ce qui empêche un script de se lancer
 
-WinTool applique partout le principe « **constater, jamais bloquer** » : un script
+Sindry applique partout le principe « **constater, jamais bloquer** » : un script
 non conforme s'exécute quand même, ses anomalies sont simplement affichées. Il
 existe exactement **cinq exceptions**, et aucune ne porte sur la forme du fichier :
 toutes protègent ce qui s'exécute avec les droits administrateur, ou ce que
 l'interface promet à l'utilisateur.
 
-Si vous écrivez des scripts pour WinTool, ce sont les seules choses qui peuvent
+Si vous écrivez des scripts pour Sindry, ce sont les seules choses qui peuvent
 faire refuser le lancement :
 
 ### 1. Le script n'est pas approuvé
@@ -1417,29 +1417,29 @@ fichier invalide l'approbation. Voir §12.1 et §16.4 de la spécification.
 
 **C'est le refus qui surprend le plus, donc lisez-le en entier.**
 
-`WINTOOL_CONFIG` **contient le JSON** de vos réglages. Elle ne contient pas, et
+`SINDRY_CONFIG` **contient le JSON** de vos réglages. Elle ne contient pas, et
 n'a jamais à contenir, le chemin d'un fichier. La bonne forme est :
 
 ```powershell
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 ```
 
-WinTool **refuse de lancer** un script dont le bloc d'override passe
-`WINTOOL_CONFIG` — ou une variable qui la porte — à `Get-Content` :
+Sindry **refuse de lancer** un script dont le bloc d'override passe
+`SINDRY_CONFIG` — ou une variable qui la porte — à `Get-Content` :
 
 ```powershell
 # REFUSÉ : mécanisme retiré pour raison de sécurité
-$wtJson = $env:WINTOOL_CONFIG
+$wtJson = $env:SINDRY_CONFIG
 if (-not $wtJson.TrimStart().StartsWith('{')) { $wtJson = Get-Content -LiteralPath $wtJson -Raw }
 ```
 
 **Pourquoi.** Ce repli vient d'une version antérieure où la variable donnait le
 chemin d'un fichier JSON. Ce fichier vivait dans un dossier inscriptible sans
-élévation : un autre programme pouvait le remplacer entre le moment où WinTool
+élévation : un autre programme pouvait le remplacer entre le moment où Sindry
 l'écrivait et celui où PowerShell le lisait, et faire entrer ses propres valeurs
 dans votre `$CONFIG` — **avec les droits administrateur**. Le fichier a disparu,
 mais tant que le repli existe dans un script, la porte peut être rouverte.
@@ -1458,7 +1458,7 @@ numéro de ligne, avant même que vous n'essayiez de lancer le script.
 
 ### 3. Un réglage refusé par la garde
 
-Juste avant le lancement, WinTool contrôle chaque valeur de `$CONFIG` contre votre bloc
+Juste avant le lancement, Sindry contrôle chaque valeur de `$CONFIG` contre votre bloc
 `OPTIONS` (section « Sécurité » ci-dessus). Le script **n'est pas lancé** si une valeur n'a
 pas le type déclaré, si un choix ne fait pas partie de la liste, ou si un texte libre
 désigne un emplacement protégé. L'utilisateur voit quel réglage est en cause, et pourquoi.
@@ -1479,7 +1479,7 @@ clé qu'un script n'utilise pas ajouterait une entrée inerte à sa table, et il
 la machine pendant que l'interface annonce une simulation. Un refus visible vaut mieux
 qu'une garantie fausse.
 
-**Le libellé de l'option ne vous appartient pas.** WinTool affiche partout « Simuler »,
+**Le libellé de l'option ne vous appartient pas.** Sindry affiche partout « Simuler »,
 quel que soit celui que vous écrivez : le terme doit être le même pour tous les scripts.
 Le bloc `OPTIONS` exige néanmoins un libellé, et la traduction, une ligne ; écrivez donc
 celui-ci, pour que votre script se lise comme l'interface le montrera.
@@ -1512,7 +1512,7 @@ if ($SafeTest) {
 ### 5. Une sélection qui ne vient pas de la dernière analyse
 
 Pour un script analysable, ce qui revient dans une liste `[items]` est une liste d'ids
-(voir « Le mode analyse »). WinTool retient les ids que la **dernière analyse** de chaque
+(voir « Le mode analyse »). Sindry retient les ids que la **dernière analyse** de chaque
 script a annoncés, avec l'empreinte exacte du fichier analysé, et **refuse de lancer**
 l'action si `$CONFIG` contient un id que cette analyse n'a pas annoncé — ou si le fichier a
 changé depuis. L'utilisateur voit « Relancez l'analyse ».

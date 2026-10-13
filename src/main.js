@@ -1,5 +1,5 @@
 /**
- * WinTool - amorce de l'interface.
+ * Sindry - amorce de l'interface.
  *
  * Modules ES natifs, aucun bundler : Tauri sert src/ en fichiers statiques.
  * C'est volontaire et coherent avec le principe du projet - on depose un
@@ -263,7 +263,7 @@ function scriptsRetenus(groupe) {
   return scriptsSimples(groupe).filter((s) => !exclusLancement.has(s.id));
 }
 
-/** Champ de l'override correspondant au booleen WinTool (specification 4.2).
+/** Champ de l'override correspondant au booleen Sindry (specification 4.2).
  *  « Actif » et « Necessite un redemarrage » ont ete retires en 1.7. */
 const CHAMP_BOOLEEN = { restore: 'reversible_ack' };
 
@@ -287,7 +287,7 @@ const CLE_SIMULATION = 'SafeTest';
 
 function libelleOption(entree, opt) {
   // La simulation porte le meme nom partout, quel que soit le libelle ecrit par
-  // l'auteur du script : c'est WinTool qui l'impose, pas chaque script.
+  // l'auteur du script : c'est Sindry qui l'impose, pas chaque script.
   if (opt.key === CLE_SIMULATION) return { label: t('simulation.option_label'), desc: t('simulation.option_desc') };
   const tr = entree.meta.translations?.[currentLang()]?.options?.[opt.key];
   if (tr && tr[0]) return { label: tr[0], desc: tr[1] || '' };
@@ -384,7 +384,7 @@ function rendreOption(entree, opt) {
 }
 
 /**
- * Le booleen de la specification 4.2 qui n'appartient pas au script : WinTool le
+ * Le booleen de la specification 4.2 qui n'appartient pas au script : Sindry le
  * pre-coche d'apres `reversible`, l'utilisateur le corrige, et sa correction ne
  * bouge plus. Il vit dans le meme bloc que le $CONFIG parce que c'est la meme
  * question — « comment ce script tourne chez moi » — meme s'il ne part pas
@@ -394,7 +394,7 @@ function rendreOption(entree, opt) {
  * (l'etape « Verifier » ecarte deja une action, pour un lancement) et
  * « Necessite un redemarrage » (le script le declare lui-meme).
  */
-function rendreReglagesWinTool(entree) {
+function rendreReglagesSindry(entree) {
   const over = reglagesScript(entree.id);
   const cases = [
     { flag: 'restore', label: t('opt.point_restauration'), on: besoinPointRestauration(entree) },
@@ -404,12 +404,12 @@ function rendreReglagesWinTool(entree) {
     .map((c) => {
       const fige = over[CHAMP_BOOLEEN[c.flag]] != null;
       return `
-    <div class="opt wintool${fige ? ' figee' : ''}">
+    <div class="opt sindry${fige ? ' figee' : ''}">
       <div class="opt-body">
         <div class="opt-label">${esc(c.label)}${
           fige ? `<i class="fige-dot" data-tip="${esc(t('opt.figee_tip'))}"></i>` : ''
         }</div>
-        <div class="opt-desc">${esc(c.desc || t('opt.reglage_wintool'))}</div>
+        <div class="opt-desc">${esc(c.desc || t('opt.reglage_sindry'))}</div>
       </div>
       <div class="opt-ctl">
         <button class="switch" type="button" role="switch" data-flag="${c.flag}" data-kind="bool"
@@ -445,7 +445,7 @@ function rendreConfiguration(entree) {
       </div>
       <div class="opts">
         ${options.map((o) => rendreOption(entree, o)).join('')}
-        ${rendreReglagesWinTool(entree)}
+        ${rendreReglagesSindry(entree)}
         ${rendreExceptionsScript(entree)}
       </div>
     </div>`;
@@ -472,7 +472,7 @@ function rendreExceptionsScript(entree) {
       g.modifiable ? '' : ' disabled'}><span class="case"><svg class="ico" aria-hidden="true"><use href="#check" /></svg></span><span>${esc(t(`garde.id.${id}`))}</span></button>`;
   }).join('');
   return `
-    <div class="opt wintool empilee" data-exceptions-pour="${esc(entree.id)}">
+    <div class="opt sindry empilee" data-exceptions-pour="${esc(entree.id)}">
       <div class="opt-body">
         <div class="opt-label">${esc(t('garde.exceptions_titre'))}</div>
         <div class="opt-desc">${esc(t(g.modifiable ? 'garde.exceptions_desc' : 'garde.exceptions_droits'))}</div>
@@ -619,7 +619,7 @@ async function rendreCarte(entree, { sousBadges = '' } = {}) {
 
   const badges = rendreEtiquettes(entree);
 
-  // Toujours affiche, meme sans $CONFIG : la case WinTool de la 4.2 existe
+  // Toujours affiche, meme sans $CONFIG : la case Sindry de la 4.2 existe
   // pour tout script, et c'est la seule place ou la regler.
   const options = rendreConfiguration(entree);
 
@@ -725,7 +725,7 @@ function rendreRowManquant(id) {
  *  par l'interface seule — rien qui doive survivre a un autre poste. */
 let ongletExpert = (() => {
   try {
-    return localStorage.getItem('wintool.onglet') === 'lots' ? 'lots' : 'scripts';
+    return localStorage.getItem('sindry.onglet') === 'lots' ? 'lots' : 'scripts';
   } catch {
     return 'scripts';
   }
@@ -734,7 +734,7 @@ let ongletExpert = (() => {
 function choisirOnglet(onglet) {
   ongletExpert = onglet === 'lots' ? 'lots' : 'scripts';
   try {
-    localStorage.setItem('wintool.onglet', ongletExpert);
+    localStorage.setItem('sindry.onglet', ongletExpert);
   } catch {
     // Stockage indisponible : l'onglet reviendra aux scripts au prochain lancement.
   }
@@ -1158,8 +1158,8 @@ function valeurControle(el) {
 
 function lireConfig(carte) {
   const config = {};
-  // `[data-opt]` seulement : les deux cases WinTool portent `data-ack` et ne
-  // descendent pas dans le script — elles pilotent WinTool, pas $CONFIG.
+  // `[data-opt]` seulement : les deux cases Sindry portent `data-ack` et ne
+  // descendent pas dans le script — elles pilotent Sindry, pas $CONFIG.
   for (const el of carte.querySelectorAll('[data-opt]')) {
     config[el.dataset.opt] = valeurControle(el);
   }
@@ -1250,8 +1250,8 @@ function familleLigne(marker, stream) {
 }
 
 /** Les familles masquees : une commodite d'affichage, gardee dans ce
- *  navigateur seulement (rien a voir avec les reglages de WinTool). */
-const CLE_MASQUES = 'wintool.journalMasques';
+ *  navigateur seulement (rien a voir avec les reglages de Sindry). */
+const CLE_MASQUES = 'sindry.journalMasques';
 let masquesJournal = new Set();
 try { masquesJournal = new Set(JSON.parse(localStorage.getItem(CLE_MASQUES) || '[]')); } catch { /* stockage indisponible : tout est montre */ }
 
@@ -1303,7 +1303,7 @@ function basculerConsole(mode) {
  * croire qu'on simule alors qu'on modifie vraiment est le pire resultat
  * possible, et une seule pastille se perd dans une barre chargee.
  */
-// --- Mise a jour de WinTool (specification §11) ------------------------------
+// --- Mise a jour de Sindry (specification §11) ------------------------------
 // Detecter et proposer, rien d'installe sans un clic. La verification de la
 // signature, le telechargement et l'installation sont faits cote Rust par le
 // greffon officiel (voir src-tauri/src/update.rs) ; ici on ne fait qu'afficher.
@@ -1358,7 +1358,7 @@ function rendreBandeauMaj(erreur) {
   plusTard.hidden = false;
   installer.textContent = t('maj.installer');
   plusTard.textContent = t('maj.plus_tard');
-  // L'installeur ferme WinTool : pendant un entretien, il couperait le script
+  // L'installeur ferme Sindry : pendant un entretien, il couperait le script
   // en cours au milieu de ce qu'il fait. Le moteur refuse aussi de son cote.
   installer.disabled = executionEnCours();
   installer.dataset.tip = executionEnCours() ? t('maj.pendant_execution') : '';
@@ -1394,7 +1394,7 @@ async function installerMaj() {
 
   // Une fois tout recu, le texte annonce la suite plutot que de rester sur
   // « 100 % » : la verification de signature puis l'installeur prennent encore
-  // quelques secondes, et c'est la que WinTool va se fermer.
+  // quelques secondes, et c'est la que Sindry va se fermer.
   const arreterEcoute = await ecouter('update:progress', (ev) => {
     const { recu, total } = ev.payload;
     if (total && recu >= total) texte.textContent = t('maj.lancement');
@@ -1403,7 +1403,7 @@ async function installerMaj() {
   });
 
   try {
-    // Sous Windows, le greffon lance l'installeur puis ferme WinTool : on ne
+    // Sous Windows, le greffon lance l'installeur puis ferme Sindry : on ne
     // revient ici qu'en cas d'echec.
     await invoke('install_update');
   } catch (e) {
@@ -1430,7 +1430,7 @@ function cablerMaj() {
 /* -------------------------------------------------------------------------
    Catalogue d'entretiens (specification §16)
 
-   WinTool ne livre plus de scripts : ils viennent du catalogue officiel, dont
+   Sindry ne livre plus de scripts : ils viennent du catalogue officiel, dont
    l'index est signe. Tout le travail de confiance se fait cote Rust
    (catalogue.rs) — verification de signature, empreintes, ecriture. L'interface
    propose et rapporte ; elle n'installe jamais rien sans un clic (§16.5).
@@ -2264,7 +2264,7 @@ function appliquerDroits(eleve) {
   p.dataset.tip = t(estEleve ? 'droits.tip_ok' : 'droits.tip_manquant');
 }
 
-/** Relance WinTool en administrateur. La fenetre elevee met un instant a
+/** Relance Sindry en administrateur. La fenetre elevee met un instant a
  *  apparaitre ; si l'utilisateur refuse l'invite UAC, celle-ci reste ouverte et
  *  rien n'est perdu. */
 async function relancerEnAdministrateur() {
@@ -2288,7 +2288,7 @@ async function relancerEnAdministrateur() {
    ------------------------------------------------------------------------- */
 
 /** Embarque dans l'executable, comme la presentation : un fichier modifiable
- *  apres installation pourrait faire dire n'importe quoi a WinTool. */
+ *  apres installation pourrait faire dire n'importe quoi a Sindry. */
 let contenuGuide = { format: 1, visites: [], alertes: [] };
 
 async function chargerGuide() {
@@ -2800,7 +2800,7 @@ function ouvrirEcranConfiance(entree, requete) {
   const tr = entree.meta.translations?.[currentLang()];
   document.getElementById('trustTitre').textContent = tr?.title || entree.meta.title || entree.id;
   // D'ou vient ce script se lit avant de decider (§16.6) : un catalogue ajoute
-  // n'est ni controle ni approuve par le projet WinTool.
+  // n'est ni controle ni approuve par le projet Sindry.
   const empreinte = t('trust.sous', { hash: requete.hash.slice(0, 16) });
   document.getElementById('trustSous').textContent =
     entree.origin === 'tierce' ? `${t('trust.tierce', { nom: nomSource(entree.source) })} ${empreinte}` : empreinte;
@@ -4060,7 +4060,7 @@ function majVerifier(groupe) {
   note.hidden = !besoinRestauration;
   if (besoinRestauration) note.textContent = t('simple.point_restauration_annonce');
 
-  // Une action qui a besoin des droits administrateur, alors que WinTool ne
+  // Une action qui a besoin des droits administrateur, alors que Sindry ne
   // les a pas : on le dit avant de lancer, pas au bilan (1.7).
   const droits = document.getElementById('droitsNote');
   droits.hidden = estEleve || !retenus.some((s) => s.meta.admin);
@@ -4084,7 +4084,7 @@ function majVerifier(groupe) {
    Analyser avant d'agir (specification §17)
 
    Un script qui se declare analysable (`scan : true`) est lance une premiere
-   fois avec WINTOOL_MODE=scan : il mesure et decrit, sans rien modifier. Le
+   fois avec SINDRY_MODE=scan : il mesure et decrit, sans rien modifier. Le
    moteur lit ce qu'il ecrit contre son entete (analyse.rs) ; src/analyse.js en
    fait l'ecran et tient la selection, qui repart vers le script a l'action.
    Une analyse ne vaut que pour la session, et pour le contenu exact du
@@ -4291,7 +4291,7 @@ function rendreResumeAnalyse(groupe) {
   }).filter(Boolean);
   const zone = document.getElementById('anResume');
   // Une action seule a l'ecran garde la vue que son script a choisie ; un lot
-  // de plusieurs actions est resume par WinTool, en postes.
+  // de plusieurs actions est resume par Sindry, en postes.
   zone.innerHTML = modeles.length === 1 && modeles[0].entree.meta.view
     ? `<div class="an-carte">${A.vue(modeles[0], 'simple', { historique: historiqueDe(modeles[0].entree.id) })}</div>`
     : `<div class="an-carte">${A.resume(modeles, { graphe: grapheDuLot(modeles), ...A.etatUi() })}</div>`;
@@ -4435,7 +4435,7 @@ function panneauAnalyse(entree, m, cle) {
     corps = A.plan(m);
   } else if (cle === 'payload') {
     const cfg = { ...lireConfigCarte(entree), ...configAnalysePour(entree) };
-    corps = `<div class="an-journal">WINTOOL_CONFIG = ${esc(JSON.stringify(cfg, null, 2))}</div>`;
+    corps = `<div class="an-journal">SINDRY_CONFIG = ${esc(JSON.stringify(cfg, null, 2))}</div>`;
   } else if (cle === 'attention') {
     const points = entree.attention || [];
     corps = points.length
@@ -4602,7 +4602,7 @@ async function lancerEntretien() {
   if (besoinRestauration) {
     try {
       const resultat = await invoke('create_restore_point', {
-        description: `WinTool - ${nomLot(groupe.lot)}`,
+        description: `Sindry - ${nomLot(groupe.lot)}`,
       });
       noterRestauration(resultat);
     } catch (e) {
@@ -5072,7 +5072,7 @@ function appliquerNumerosReglages(actif) {
 }
 
 /* -------------------------------------------------------------------------
-   Reglages (specification §8) : une page de WinTool, pas une fenetre posee
+   Reglages (specification §8) : une page de Sindry, pas une fenetre posee
    dessus. La barre de titre reste active : Simple / Expert se change sans
    quitter les reglages, et l'on reste sur la meme section — sauf si elle est
    reservee au mode Expert et que l'on passe en Simple.
@@ -5424,7 +5424,7 @@ function cablerOnboarding() {
 /** Le contenu de la presentation : `src/presentation.json` (§13), modifiable
  *  sans toucher au code — voir docs/PRESENTATION.md. Il est embarque dans
  *  l'executable, et c'est voulu : un fichier modifiable apres installation
- *  pourrait faire dire a WinTool « desactivez votre antivirus ». */
+ *  pourrait faire dire a Sindry « desactivez votre antivirus ». */
 let presentation = { format: 1, pages: [] };
 
 async function chargerPresentation() {
@@ -5931,7 +5931,7 @@ function cablerInfobulles() {
  * laisse parfois ouvert longtemps.
  *
  * Jusqu'a la 1.6.0, la pause suivait le FOCUS : l'eau se figeait des qu'on
- * cliquait dans une autre fenetre, alors que WinTool restait affiche — et les
+ * cliquait dans une autre fenetre, alors que Sindry restait affiche — et les
  * bouees, elles, continuaient d'onduler sur une eau immobile. Une fenetre
  * visible mais inactive s'anime donc desormais.
  *

@@ -1,9 +1,9 @@
-﻿; Crochets de l'installeur NSIS de WinTool.
+﻿; Crochets de l'installeur NSIS de Sindry.
 ; Branchés par tauri.conf.json (bundle > windows > nsis > installerHooks), et
 ; complétés par le modèle dérivé de Tauri (tools/modele-installeur.mjs), qui
-; insère WINTOOL_PAGE_DESINSTALLATION et WINTOOL_EFFACER_ARBRE.
+; insère SINDRY_PAGE_DESINSTALLATION et SINDRY_EFFACER_ARBRE.
 ;
-; DÉSINSTALLATION — la page de WinTool remplace celle de Tauri :
+; DÉSINSTALLATION — la page de Sindry remplace celle de Tauri :
 ;
 ;   ( ) Garder mes données                       rien n'est effacé
 ;   ( ) Tout effacer, sauf mes scripts personnels
@@ -17,7 +17,7 @@
 ; dossiers sont inscriptibles par n'importe quel programme du compte. Or
 ; « RMDir /r » de NSIS SUIT les jonctions (vérifié) : une jonction glissée dans
 ; l'un d'eux vers System32 ferait vider System32. Aucune suppression ici ne
-; passe donc par « RMDir /r » : WINTOOL_EFFACER_ARBRE parcourt lui-même les
+; passe donc par « RMDir /r » : SINDRY_EFFACER_ARBRE parcourt lui-même les
 ; dossiers, et retire un lien rencontré sans jamais descendre dedans.
 
 !include nsDialogs.nsh
@@ -66,16 +66,16 @@ Function un.WtEffacerArbre
   Pop $R0
 FunctionEnd
 
-!macro WINTOOL_EFFACER_ARBRE CHEMIN
+!macro SINDRY_EFFACER_ARBRE CHEMIN
   ${If} ${FileExists} "${CHEMIN}\*.*"
     Push "${CHEMIN}"
     Call un.WtEffacerArbre
   ${EndIf}
 !macroend
 
-; Les données de WinTool sous BASE (%LOCALAPPDATA%\WinTool), selon les choix
+; Les données de Sindry sous BASE (%LOCALAPPDATA%\Sindry), selon les choix
 ; de la page. Rien du tout si BASE est lui-même un lien.
-!macro WINTOOL_EFFACER_DONNEES BASE
+!macro SINDRY_EFFACER_DONNEES BASE
   Push $R8
   ${GetFileAttributes} "${BASE}" "REPARSE_POINT" $R8
   ${If} $R8 != 1
@@ -87,13 +87,13 @@ FunctionEnd
       Delete "${BASE}\history.json"
     ${EndIf}
     ${If} $WtJournaux == 1
-      !insertmacro WINTOOL_EFFACER_ARBRE "${BASE}\logs"
+      !insertmacro SINDRY_EFFACER_ARBRE "${BASE}\logs"
     ${EndIf}
     ${If} $WtCatalogue == 1
-      !insertmacro WINTOOL_EFFACER_ARBRE "${BASE}\sources"
+      !insertmacro SINDRY_EFFACER_ARBRE "${BASE}\sources"
     ${EndIf}
     ${If} $WtScripts == 1
-      !insertmacro WINTOOL_EFFACER_ARBRE "${BASE}\scripts"
+      !insertmacro SINDRY_EFFACER_ARBRE "${BASE}\scripts"
     ${EndIf}
     ; Le dossier ne part que s'il est vide : ce qui n'a pas été choisi reste.
     RMDir "${BASE}"
@@ -120,20 +120,20 @@ FunctionEnd
 
 ; La page « déjà installé » (1.7) : $R2 est le premier choix, coché d'office ;
 ; $R3 le second. Insérées par le modèle dérivé (tools/modele-installeur.mjs).
-!macro WINTOOL_TEXTES_MISE_A_JOUR
+!macro SINDRY_TEXTES_MISE_A_JOUR
   !insertmacro WT_TEXTE $R2 "Mettre à jour (recommandé) — vos réglages et vos scripts sont conservés" "Update (recommended) — your settings and scripts are kept"
   !insertmacro WT_TEXTE $R3 "Désinstaller d'abord, puis installer" "Uninstall first, then install"
 !macroend
 
-!macro WINTOOL_TEXTES_REPARATION
-  !insertmacro WT_TEXTE $R2 "Réparer — réinstaller les fichiers de WinTool, sans toucher à vos réglages" "Repair — reinstall WinTool's files, without touching your settings"
-  !insertmacro WT_TEXTE $R3 "Désinstaller WinTool" "Uninstall WinTool"
+!macro SINDRY_TEXTES_REPARATION
+  !insertmacro WT_TEXTE $R2 "Réparer — réinstaller les fichiers de Sindry, sans toucher à vos réglages" "Repair — reinstall Sindry's files, without touching your settings"
+  !insertmacro WT_TEXTE $R3 "Désinstaller Sindry" "Uninstall Sindry"
 !macroend
 
 ; Insérée par le modèle dérivé à la place de la page de confirmation de Tauri,
 ; APRÈS la déclaration de ses variables ($PassiveMode, $UpdateMode,
 ; $DeleteAppDataCheckboxState) : c'est ce qui permet de les utiliser ici.
-!macro WINTOOL_PAGE_DESINSTALLATION
+!macro SINDRY_PAGE_DESINSTALLATION
   Var WtDialogue
   Var WtRadioGarder
   Var WtRadioSimple
@@ -165,8 +165,8 @@ FunctionEnd
       Abort
     ${EndIf}
 
-    !insertmacro WT_TEXTE $R1 "Désinstaller WinTool" "Uninstall WinTool"
-    !insertmacro WT_TEXTE $R2 "Que doit-il rester de WinTool sur ce PC ?" "What should remain of WinTool on this PC?"
+    !insertmacro WT_TEXTE $R1 "Désinstaller Sindry" "Uninstall Sindry"
+    !insertmacro WT_TEXTE $R2 "Que doit-il rester de Sindry sur ce PC ?" "What should remain of Sindry on this PC?"
     !insertmacro MUI_HEADER_TEXT "$R1" "$R2"
 
     nsDialogs::Create 1018
@@ -272,27 +272,36 @@ FunctionEnd
 
 ; --- Après la désinstallation des fichiers ---------------------------------
 
+; Migration depuis WinTool (2.0) : apres l'installation, en administrateur et
+; sans fenetre, Sindry reprend les donnees et les reglages de WinTool, puis le
+; desinstalle (voir src-tauri/src/migration.rs). Sans effet s'il n'y a rien a
+; reprendre — une mise a jour de Sindry par exemple.
+!macro NSIS_HOOK_POSTINSTALL
+  nsExec::Exec '"$INSTDIR\${MAINBINARYNAME}.exe" --migrer-depuis-wintool'
+  Pop $0
+!macroend
+
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $UpdateMode <> 1
-    ; Le registre 64 bits, celui qu'écrit WinTool.
+    ; Le registre 64 bits, celui qu'écrit Sindry.
     SetRegView 64
     ${If} $WtApprobations == 1
-      DeleteRegKey HKLM "SOFTWARE\WinTool\Approbations"
+      DeleteRegKey HKLM "SOFTWARE\Sindry\Approbations"
     ${EndIf}
     ${If} $WtGarde == 1
-      DeleteRegKey HKLM "SOFTWARE\WinTool\Garde"
+      DeleteRegKey HKLM "SOFTWARE\Sindry\Garde"
     ${EndIf}
-    DeleteRegKey /ifempty HKLM "SOFTWARE\WinTool"
+    DeleteRegKey /ifempty HKLM "SOFTWARE\Sindry"
 
     SetShellVarContext current
-    !insertmacro WINTOOL_EFFACER_DONNEES "$LOCALAPPDATA\WinTool"
+    !insertmacro SINDRY_EFFACER_DONNEES "$LOCALAPPDATA\Sindry"
 
     ; Ancien magasin d'approbations (1.0 à 1.1.1) : un fichier nommé, puis le
     ; dossier s'il est vide.
     ${If} $WtApprobations == 1
       SetShellVarContext all
-      Delete "$APPDATA\WinTool\approved.json"
-      RMDir "$APPDATA\WinTool"
+      Delete "$APPDATA\Sindry\approved.json"
+      RMDir "$APPDATA\Sindry"
     ${EndIf}
   ${EndIf}
 !macroend

@@ -1,6 +1,6 @@
-//! Emplacements du systeme, et environnement des processus que WinTool lance.
+//! Emplacements du systeme, et environnement des processus que Sindry lance.
 //!
-//! WinTool tourne eleve et lance des interpreteurs eleves. Tout ce qui designe
+//! Sindry tourne eleve et lance des interpreteurs eleves. Tout ce qui designe
 //! un executable, un dossier du systeme ou une variable lue par un runtime doit
 //! donc venir d'une source que le compte de l'utilisateur **ne peut pas ecrire**
 //! (specification 12.4).
@@ -148,7 +148,7 @@ pub fn emplacements() -> &'static Emplacements {
 // ---------------------------------------------------------------------------
 
 /// Familles de variables qui font charger du code par un runtime ou par
-/// WebView2. Aucune n'a d'usage pour WinTool :
+/// WebView2. Aucune n'a d'usage pour Sindry :
 ///
 /// - `COR_*`, `CORECLR_*` : profileurs .NET (outils de diagnostic et de
 ///   supervision de serveurs). `COR_PROFILER_PATH` charge une DLL dans
@@ -449,7 +449,7 @@ mod tests {
             "TEMP",
             "CORE_COUNT",
             "DOTNETCLI",
-            "WINTOOL_CONFIG",
+            "SINDRY_CONFIG",
             "PSModulePath",
         ] {
             assert!(!a_retirer(n), "{n}");

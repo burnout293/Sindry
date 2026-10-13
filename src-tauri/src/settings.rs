@@ -98,7 +98,7 @@ pub struct ScriptOverride {
     pub lots: Option<Vec<String>>,
     #[serde(default)]
     pub config: BTreeMap<String, serde_json::Value>,
-    /// « Nécessite un point de restauration » : seul booléen WinTool encore
+    /// « Nécessite un point de restauration » : seul booléen Sindry encore
     /// réglable par script (§4.2).
     ///
     /// Jusqu'à la 1.6, deux autres l'accompagnaient, retirés en 1.7 :
@@ -426,7 +426,7 @@ pub fn set_script_lot_membership(
     over.lot_locked = None;
 }
 
-/// Le booléen « réglage WinTool » de la §4.2, désigné par un jeton stable côté
+/// Le booléen « réglage Sindry » de la §4.2, désigné par un jeton stable côté
 /// interface plutôt que par un booléen positionnel — `set_flag(id, "restore",
 /// true)` se relit, `set_flag(id, true)` non.
 pub const FLAG_RESTORE: &str = "restore";
@@ -456,7 +456,7 @@ pub fn set_config_value(
     oublier_si_vide(settings, script_id);
 }
 
-/// Pose (ou relâche) le booléen WinTool de la §4.2. `flag` vaut
+/// Pose (ou relâche) le booléen Sindry de la §4.2. `flag` vaut
 /// [`FLAG_RESTORE`] ; `value = None` rend le réglage à sa valeur initiale, tirée
 /// de `reversible` dans l'entête du script. Les jetons `reboot` et `enabled`
 /// d'avant la 1.7 sont refusés comme n'importe quel jeton inconnu.
@@ -475,7 +475,7 @@ pub fn set_flag(
     Ok(())
 }
 
-/// Rend au script **toutes** ses valeurs de `$CONFIG` et sa case WinTool d'un
+/// Rend au script **toutes** ses valeurs de `$CONFIG` et sa case Sindry d'un
 /// coup. Ne touche pas au classement en catégorie : ranger un script ailleurs
 /// et régler ses options sont deux décisions distinctes, annuler l'une ne doit
 /// pas annuler l'autre en silence.
@@ -900,7 +900,7 @@ mod tests {
     }
 
     #[test]
-    fn le_booleen_wintool_se_pose_et_se_relache() {
+    fn le_booleen_sindry_se_pose_et_se_relache() {
         let mut s = reglages_nus();
         set_config_value(&mut s, "abc", "Cle", Some(json!(1)));
         set_flag(&mut s, "abc", FLAG_RESTORE, Some(true)).unwrap();
@@ -917,7 +917,7 @@ mod tests {
 
     #[test]
     fn les_reglages_retires_en_1_7_se_lisent_sans_eux() {
-        let dir = std::env::temp_dir().join(format!("wintool-retires-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sindry-retires-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
@@ -1113,8 +1113,7 @@ mod tests {
 
     #[test]
     fn charge_puis_recharge_a_l_identique() {
-        let dir =
-            std::env::temp_dir().join(format!("wintool-test-settings-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sindry-test-settings-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
         let _ = fs::remove_file(&path);
@@ -1145,8 +1144,7 @@ mod tests {
 
     #[test]
     fn un_settings_json_corrompu_ne_bloque_pas_le_lancement() {
-        let dir =
-            std::env::temp_dir().join(format!("wintool-test-corrompu-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sindry-test-corrompu-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
         fs::write(&path, "{ pas du json valide").unwrap();

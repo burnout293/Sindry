@@ -1,7 +1,7 @@
-# Modifier la présentation et les guides de WinTool
+# Modifier la présentation et les guides de Sindry
 
 La présentation — les pages qui s'ouvrent au premier démarrage, et que l'on revoit depuis
-**Réglages → Général → Présentation de WinTool** ou le bouton **?** — lit tout son contenu dans
+**Réglages → Général → Présentation de Sindry** ou le bouton **?** — lit tout son contenu dans
 [`src/presentation.json`](../src/presentation.json). Titres, phrases, icônes, illustrations,
 ordre et nombre de pages : tout se change dans ce fichier, sans toucher au code.
 
@@ -20,7 +20,7 @@ administrateur — lisent le leur dans [`src/guide.json`](../src/guide.json) : v
 
 Le fichier est **embarqué dans l'exécutable** : modifié après l'installation, il serait
 ignoré. C'est voulu. Un fichier modifiable sur le disque laisserait un programme malveillant
-faire dire à WinTool, dans une page de confiance, « désactivez votre antivirus ».
+faire dire à Sindry, dans une page de confiance, « désactivez votre antivirus ».
 
 ## Le fichier
 
@@ -45,7 +45,7 @@ Les apostrophes typographiques (’) et les guillemets français (« ») passent
 
 ### La page de bienvenue
 
-Facultative ; si elle existe, c'est la première. C'est elle qui fait régler WinTool à son
+Facultative ; si elle existe, c'est la première. C'est elle qui fait régler Sindry à son
 goût : la langue, l'ambiance, clair ou sombre, la taille (1.7). Relancée depuis les Réglages,
 la présentation commence après elle.
 
@@ -153,7 +153,7 @@ banc d'essai — bouton **?** de la barre de titre.
 ```
 
 - **Une visite** apparaît dans le menu **?**, dans l'ordre du fichier. `ecran` dit où elle se
-  passe (`simple` : l'accueil du mode Simple ; `expert`) — WinTool y bascule avant de commencer.
+  passe (`simple` : l'accueil du mode Simple ; `expert`) — Sindry y bascule avant de commencer.
   Dix étapes au plus. La visite `accueil` est obligatoire : la page « prêt » la propose.
 - **Une étape** éclaire sa `cible` et affiche son titre et son texte. Une étape dont l'élément
   n'est pas à l'écran (le champ de bouées sans aucun lot, par exemple) est sautée.

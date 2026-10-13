@@ -1,6 +1,6 @@
-# Mentions relatives aux composants tiers — WinTool
+# Mentions relatives aux composants tiers — Sindry
 
-Document établi le 26 septembre 2026 pour WinTool 1.0.0, à partir de l'état réel du dépôt
+Document établi le 26 septembre 2026 pour Sindry 1.0.0, à partir de l'état réel du dépôt
 à cette date (`src-tauri/Cargo.lock`, `package-lock.json`, `src/icons/`, `src/fonts/`).
 **Mis à jour le 6 octobre 2026 pour la 1.2** : 46 composants Rust, arrivés en 1.1 avec la
 mise à jour automatique et réutilisés en 1.2 par le catalogue de scripts, y manquaient —
@@ -37,30 +37,30 @@ obligatoire.
 
 ## 1. Pourquoi ce fichier existe
 
-WinTool est distribué sous une licence personnalisée, écrite pour ce projet. Mais WinTool
-n'est pas fait que de code écrit pour WinTool : l'application s'appuie sur des
+Sindry est distribué sous une licence personnalisée, écrite pour ce projet. Mais Sindry
+n'est pas fait que de code écrit pour Sindry : l'application s'appuie sur des
 bibliothèques, des icônes et des polices écrites par d'autres, chacune avec sa propre
 licence.
 
 Ces licences — MIT, Apache-2.0, ISC, OFL, BSD, Zlib, Unicode, MPL — sont permissives :
 elles autorisent expressément à redistribuer le composant à l'intérieur d'un logiciel
-diffusé sous d'autres conditions, y compris une licence maison comme celle de WinTool.
-C'est ce qui rend la licence de WinTool possible.
+diffusé sous d'autres conditions, y compris une licence maison comme celle de Sindry.
+C'est ce qui rend la licence de Sindry possible.
 
 **En échange, toutes exigent une seule et même chose : que leurs mentions soient
 conservées.** Le texte de la licence et l'avis de droit d'auteur doivent voyager avec le
 logiciel, jusqu'à l'utilisateur final. Retirer ces mentions ferait perdre le droit de
-redistribuer le composant — et donc de distribuer WinTool.
+redistribuer le composant — et donc de distribuer Sindry.
 
-Ce fichier est cette conservation. Il n'accorde aucun droit sur WinTool lui-même : la
-licence de WinTool reste le fichier `LICENSE`. Il ne fait que rendre à chaque composant
+Ce fichier est cette conservation. Il n'accorde aucun droit sur Sindry lui-même : la
+licence de Sindry reste le fichier `LICENSE`. Il ne fait que rendre à chaque composant
 tiers la mention qui lui est due.
 
 Trois précisions pour le lecteur :
 
-- **Les licences ci-dessous s'appliquent aux composants tiers, pas à WinTool.** Le fait
-  que WinTool intègre du code sous MIT ne rend pas WinTool disponible sous MIT.
-- **Les scripts PowerShell ne sont pas concernés.** Ils ne font pas partie de WinTool et
+- **Les licences ci-dessous s'appliquent aux composants tiers, pas à Sindry.** Le fait
+  que Sindry intègre du code sous MIT ne rend pas Sindry disponible sous MIT.
+- **Les scripts PowerShell ne sont pas concernés.** Ils ne font pas partie de Sindry et
   relèvent chacun de la licence choisie par leur auteur (voir `LICENSE` et
   `docs/FORMAT_SCRIPT.md`).
 - **Aucune licence n'a été devinée.** Chaque mention provient du champ `license` déclaré
@@ -73,7 +73,7 @@ Trois précisions pour le lecteur :
 
 | Périmètre | Méthode |
 |---|---|
-| Bibliothèques Rust | `cargo tree --offline --edges normal --target x86_64-pc-windows-msvc --prefix none --no-dedupe` (269 entrées en 1.2, dont WinTool lui-même), croisé avec le champ `license` de `cargo metadata --offline --format-version 1` |
+| Bibliothèques Rust | `cargo tree --offline --edges normal --target x86_64-pc-windows-msvc --prefix none --no-dedupe` (269 entrées en 1.2, dont Sindry lui-même), croisé avec le champ `license` de `cargo metadata --offline --format-version 1` |
 | Avis de droit d'auteur Rust | Fichiers `LICENSE*` présents dans les sources décompressées du registre, sous `~/.cargo/registry/src/` |
 | Paquets npm | `package.json`, `package-lock.json`, et les fichiers `LICENSE` présents dans `node_modules` |
 | Icônes | Fichiers réellement versionnés dans `src/icons/` (2 113 SVG) et sprite `src/icons.svg` |
@@ -84,7 +84,7 @@ Le filtre `--target x86_64-pc-windows-msvc` importe : sans lui, `cargo metadata`
 aussi les dépendances Linux (`rustix`, `linux-raw-sys`, WASI) et macOS (famille `objc2`),
 qui ne sont **pas** compilées dans le binaire Windows livré. Vérifié : aucune d'elles
 n'apparaît dans l'arbre Windows. Elles sont volontairement absentes de ce document. Si
-WinTool est un jour porté sur une autre plateforme, ce fichier devra être régénéré — et
+Sindry est un jour porté sur une autre plateforme, ce fichier devra être régénéré — et
 l'arbre des autres plateformes introduit des expressions de licence absentes ici
 (`Apache-2.0 WITH LLVM-exception`, `MIT OR Apache-2.0 OR LGPL-2.1-or-later`,
 `Zlib OR Apache-2.0 OR MIT`), qu'il faudra traiter.
@@ -112,7 +112,7 @@ curl -L https://raw.githubusercontent.com/IBM/plex/master/LICENSE.txt
 
 ## 3. Déclaration de choix de licence (branche MIT)
 
-La majorité des composants tiers de WinTool ne sont pas sous une licence unique : ils sont
+La majorité des composants tiers de Sindry ne sont pas sous une licence unique : ils sont
 proposés **au choix** sous plusieurs licences, avec l'opérateur SPDX `OR` (ou, dans les
 notations antérieures à SPDX, une simple barre oblique `/`). Ce `OR` est une option offerte
 au redistributeur, pas un cumul : il faut en choisir une, et c'est celle-là seule qui
@@ -124,7 +124,7 @@ toute lecture implicite.
 ### Déclaration
 
 > **Pour chaque composant tiers dont la licence déclarée offre un choix entre plusieurs
-> licences, WinTool exerce l'option **MIT** et redistribue ce composant sous les seules
+> licences, Sindry exerce l'option **MIT** et redistribue ce composant sous les seules
 > conditions de la licence MIT.**
 >
 > Lorsque MIT ne figure pas parmi les options offertes, l'option retenue est nommée
@@ -134,7 +134,7 @@ toute lecture implicite.
 > cumulatives reliées par `AND` — aucune option n'est exercée : toutes les conditions
 > déclarées s'appliquent.
 >
-> Ce choix vaut pour la version 1.0.0 de WinTool et pour toutes les versions ultérieures
+> Ce choix vaut pour la version 1.0.0 de Sindry et pour toutes les versions ultérieures
 > tant que ce document n'énonce pas le contraire. Il est irrévocable pour les copies déjà
 > distribuées : un destinataire qui a reçu un composant sous MIT le conserve sous MIT.
 
@@ -145,7 +145,7 @@ tableau est exhaustif : la somme de la colonne « Nb » fait 268. *(Recompté po
 46 composants, arrivés avec la mise à jour automatique en 1.1 et réutilisés par le catalogue
 de scripts en 1.2, manquaient à ce document.)*
 
-| Expression déclarée | Nb | Choix offert ? | **Option exercée par WinTool** |
+| Expression déclarée | Nb | Choix offert ? | **Option exercée par Sindry** |
 |---|---:|---|---|
 | `MIT OR Apache-2.0` | 133 | oui | **MIT** |
 | `MIT` | 50 | non | MIT (seule licence) |
@@ -192,7 +192,7 @@ texte. L'Apache-2.0, elle, impose en plus deux choses que MIT ignore :
 En exerçant MIT sur les 175 composants qui offrent ce choix face à l'Apache-2.0, ces deux
 obligations ne s'attachent pas à eux.
 
-### Conséquence : quels textes de licence doivent malgré tout accompagner WinTool
+### Conséquence : quels textes de licence doivent malgré tout accompagner Sindry
 
 Une fois l'option MIT exercée partout où elle est offerte, voici exactement ce qui reste
 dû. C'est la liste des textes reproduits en section 11.
@@ -246,7 +246,7 @@ Deux composants de cette famille font exception et **n'offrent aucun choix** :
 
 | Composant | Version | Licence déclarée | Conséquence |
 |---|---|---|---|
-| `tao` | 0.35.3 | **Apache-2.0 seule** | Le texte complet de l'Apache-2.0 doit accompagner WinTool |
+| `tao` | 0.35.3 | **Apache-2.0 seule** | Le texte complet de l'Apache-2.0 doit accompagner Sindry |
 | `dpi` | 0.1.2 | **Apache-2.0 AND MIT** (cumulatives) | Les deux textes sont dus, on ne peut pas choisir |
 
 C'était, en 1.0.0, la seule raison pour laquelle le texte de l'Apache-2.0 restait
@@ -261,7 +261,7 @@ avec les avis de musl libc, Sun Microsystems, David Schultz, Steven G. Kargl,
 Bruce D. Evans, Stephen L. Moshier, Arm Limited et Rich Felker qu'il reprend).
 
 **Vérifié : ni `tao` 0.35.3 ni `dpi` 0.1.2 ne livrent de fichier `NOTICE`.** L'obligation
-§4(d) de l'Apache-2.0 est donc sans objet pour WinTool. De même, WinTool ne modifie aucun
+§4(d) de l'Apache-2.0 est donc sans objet pour Sindry. De même, Sindry ne modifie aucun
 fichier de ces deux paquets : §4(b) est sans objet également. Ne restent que §4(a)
 — joindre une copie de la licence, ce que fait §11.5 — et §4(c), la conservation des avis.
 
@@ -279,7 +279,7 @@ Notes sur les deux paquets npm :
 
 ## 5. Bibliothèques Rust nommément traitées
 
-| Composant | Version | Licence déclarée | Option exercée | Rôle dans WinTool |
+| Composant | Version | Licence déclarée | Option exercée | Rôle dans Sindry |
 |---|---|---|---|---|
 | `serde` | 1.0.229 | MIT OR Apache-2.0 | **MIT** | Sérialisation des structures échangées avec l'interface |
 | `serde_derive` | 1.0.229 | MIT OR Apache-2.0 | **MIT** | Macros dérivées de `serde` |
@@ -303,7 +303,7 @@ Notes sur les deux paquets npm :
 
 ## 6. Arbre Rust complet, groupé par licence déclarée
 
-268 bibliothèques tierces, hors WinTool lui-même. Une même bibliothèque peut apparaître
+268 bibliothèques tierces, hors Sindry lui-même. Une même bibliothèque peut apparaître
 en deux versions : c'est normal, Cargo les compile alors séparément et les deux sont
 présentes dans le binaire.
 
@@ -468,21 +468,21 @@ fichier `NOTICE`.
 ### Autres
 
 `dunce` 1.0.5 — `CC0-1.0 OR MIT-0 OR Apache-2.0`. Aucune de ces options n'est la licence
-MIT proprement dite. **WinTool exerce l'option MIT-0**, la plus proche et la moins
+MIT proprement dite. **Sindry exerce l'option MIT-0**, la plus proche et la moins
 exigeante ; son texte est reproduit en §11.2. Les textes CC0-1.0 et Apache-2.0 ne sont pas
 dus **de ce fait** (l'Apache-2.0 reste due par ailleurs, pour `tao` et `dpi`).
 
 `tao` 0.35.3 (`Apache-2.0` seule) et `dpi` 0.1.2 (`Apache-2.0 AND MIT`) : déjà traités en
 section 4.
 
-`sync_wrapper` 1.0.2 — `Apache-2.0` seule, sans fichier `NOTICE` (vérifié) ; WinTool n'en
+`sync_wrapper` 1.0.2 — `Apache-2.0` seule, sans fichier `NOTICE` (vérifié) ; Sindry n'en
 modifie aucun fichier. Son texte est celui du §11.5.
 
 ---
 
 ## 7. Icônes — Lucide
 
-WinTool embarque **2 113 fichiers SVG** dans `src/icons/`, copiés depuis le paquet npm
+Sindry embarque **2 113 fichiers SVG** dans `src/icons/`, copiés depuis le paquet npm
 `lucide-static` par `tools/sync-icons.mjs`, plus un sprite `src/icons.svg` assemblé à
 partir des mêmes fichiers. Ces icônes sont redistribuées telles quelles dans
 l'application.
@@ -505,7 +505,7 @@ C'est un point qui avait été manqué dans la version précédente de ce docume
 
 **Vérifié : les 115 icônes de cette liste sont toutes présentes dans `src/icons/`.** Le
 volet MIT n'est donc pas théorique : il s'applique à des fichiers réellement redistribués
-par WinTool, et son avis de droit d'auteur doit être conservé au même titre que celui de
+par Sindry, et son avis de droit d'auteur doit être conservé au même titre que celui de
 Lucide.
 
 Correction par rapport à la version précédente de ce document, qui indiquait
@@ -520,7 +520,7 @@ concernées et le texte MIT qui s'y attache.
 
 ## 8. Polices — Inter et IBM Plex Mono
 
-WinTool embarque trois fichiers de polices dans `src/fonts/`, chargés par `src/styles.css`
+Sindry embarque trois fichiers de polices dans `src/fonts/`, chargés par `src/styles.css`
 via `@font-face` et servis localement. Vérifié dans `tauri.conf.json` : la politique CSP
 de l'application n'autorise que `font-src 'self'` — aucune requête réseau n'est faite pour
 les polices, elles sont bien redistribuées dans le paquet d'installation.
@@ -654,24 +654,24 @@ pas une décision de justice : elle éclaire l'intention, elle ne la tranche pas
   ce cas. Plusieurs services de diffusion de polices web opèrent sous des accords de ce
   type. Je n'en ai pas trouvé pour IBM Plex, mais je n'ai pas mené de recherche
   exhaustive, et un tel accord ne bénéficierait pas nécessairement à un redistributeur en
-  aval comme WinTool. **À vérifier auprès d'IBM ou dans le dépôt `IBM/plex`** (voir
+  aval comme Sindry. **À vérifier auprès d'IBM ou dans le dépôt `IBM/plex`** (voir
   section 12).
 - **La provenance exacte des fichiers n'est pas documentée**, ce qui empêche de savoir
   sous quel régime l'intermédiaire a produit le sous-ensemble. Les noms de fichiers suivent
   la convention du projet Fontsource, mais aucune dépendance Fontsource ne figure dans
   `package.json` : les fichiers ont été déposés à la main. La version inscrite dans le
   fichier, « Version 2.3 », est par ailleurs une version ancienne d'IBM Plex Mono.
-- **Le fait que WinTool n'ait pas produit lui-même le sous-ensemble ne le protège pas.**
+- **Le fait que Sindry n'ait pas produit lui-même le sous-ensemble ne le protège pas.**
   La condition 3 interdit à une Modified Version d'*utiliser* le nom réservé ; distribuer
   la Modified Version non conforme d'un tiers reste la distribuer. Et le nom présenté à
   l'utilisateur via `styles.css` est, lui, entièrement sous le contrôle de l'auteur de
-  WinTool.
+  Sindry.
 
 **Quatre façons de se mettre en règle, de la moins coûteuse à la plus coûteuse :**
 
 | # | Solution | Coût | Effet |
 |---|---|---|---|
-| A | **Renommer.** Réécrire les enregistrements `name` 1, 3, 4, 6 (et 16 s'il existe) des deux `.woff2` avec un nom ne contenant pas « Plex » — par exemple `WinTool Mono` — puis aligner `font-family` dans `src/styles.css`. | ~30 min, `fontTools` suffit | Conformité pleine. La condition 3 ne vise que le nom. |
+| A | **Renommer.** Réécrire les enregistrements `name` 1, 3, 4, 6 (et 16 s'il existe) des deux `.woff2` avec un nom ne contenant pas « Plex » — par exemple `Sindry Mono` — puis aligner `font-family` dans `src/styles.css`. | ~30 min, `fontTools` suffit | Conformité pleine. La condition 3 ne vise que le nom. |
 | B | **Livrer la version d'origine**, telle qu'IBM la publie, sans sous-ensemble ni reconversion. | Poids du paquet | Plus de Modified Version, donc plus de condition 3. *À vérifier d'abord : IBM publie-t-il lui-même du `.woff2` ? Si vous convertissez vous-même, vous recréez une Modified Version.* |
 | C | **Obtenir d'IBM une permission écrite explicite** couvrant l'usage du nom sur un sous-ensemble. | Délai, incertain | Conformité pleine, par la porte que la condition 3 laisse ouverte. |
 | D | **Remplacer IBM Plex Mono** par une police à chasse fixe dont l'en-tête OFL ne déclare aucun nom réservé, comme Inter n'en déclare aucun. | Travail de design | Supprime le problème. *Vérifier l'en-tête de chaque candidate — ne pas le supposer.* |
@@ -682,7 +682,7 @@ vérifiable en une commande, et n'exige l'accord de personne.
 **Attention, si A est retenue :** renommer ne dispense de rien d'autre. L'avis
 `Copyright 2017 IBM Corp. All rights reserved.` doit être conservé dans `name` 0 ; le
 fichier renommé reste sous OFL-1.1 (condition 5) ; et la condition 4 interdit d'utiliser le
-nom d'IBM pour promouvoir WinTool, y compris pour dire que WinTool « utilise IBM Plex ».
+nom d'IBM pour promouvoir Sindry, y compris pour dire que Sindry « utilise IBM Plex ».
 Mentionner la provenance dans ce document-ci est une reconnaissance de contribution, que la
 condition 4 autorise expressément — en faire un argument de présentation, non.
 
@@ -693,14 +693,14 @@ condition 4 autorise expressément — en faire un argument de présentation, no
    Il faut des fichiers autonomes. *Ce n'est pas le cas actuellement — voir section 12.*
 2. **Les polices ne peuvent pas être vendues seules** (condition 1). L'OFL autorise leur
    vente à l'intérieur d'un ensemble logiciel plus large, mais interdit de vendre les
-   fichiers de police pris isolément. Aucun conflit ici : la licence de WinTool interdit
-   déjà de vendre WinTool.
+   fichiers de police pris isolément. Aucun conflit ici : la licence de Sindry interdit
+   déjà de vendre Sindry.
 3. **Les fichiers de police restent sous OFL** (condition 5), y compris renommés. Cela ne
-   contamine pas WinTool : « The requirement for fonts to remain under this license does
+   contamine pas Sindry : « The requirement for fonts to remain under this license does
    not apply to any document created using the Font Software », et l'OFL n'impose rien au
    logiciel qui embarque la police. Elle ne régit que les fichiers de police et leurs
    dérivés.
-4. **Le nom des auteurs ne peut pas servir à promouvoir WinTool** (condition 4), sauf pour
+4. **Le nom des auteurs ne peut pas servir à promouvoir Sindry** (condition 4), sauf pour
    reconnaître leur contribution — ce que fait ce document.
 
 ---
@@ -724,12 +724,12 @@ deux fois dans le graphe, avec des jeux de fonctionnalités différents. L'insta
 atteinte par `tauri-codegen` (une macro procédurale, donc exécutée pendant la
 compilation) active `dom_query` ; celle atteinte directement par `tauri` ne l'active pas.
 Les quatre composants liés à `dom_query` ne sont donc vraisemblablement pas liés dans
-`wintool.exe`. `option-ext`, lui, l'est bel et bien.
+`sindry.exe`. `option-ext`, lui, l'est bel et bien.
 
 ### Ce que la MPL-2.0 exige, et pourquoi ce n'est pas un problème
 
 La MPL-2.0 est conçue pour ce cas précis. Son article 3.3 autorise explicitement à
-distribuer un « Larger Work » — ici WinTool — **sous les conditions de son choix**, y
+distribuer un « Larger Work » — ici Sindry — **sous les conditions de son choix**, y
 compris une licence propriétaire ou personnalisée. Le copyleft ne remonte pas : il ne
 s'applique qu'aux fichiers d'origine MPL.
 
@@ -744,10 +744,10 @@ Source de `option-ext` : <https://github.com/soc/option-ext>
 Sources de `cssparser`, `cssparser-macros`, `selectors`, `dtoa-short` : projet Servo,
 <https://github.com/servo/rust-cssparser> et <https://github.com/servo/servo>
 
-### Articulation avec la licence de WinTool
+### Articulation avec la licence de Sindry
 
-La licence de WinTool comporte désormais une obligation de code source, mais elle ne se
-déclenche **que sur distribution** : quiconque distribue une version modifiée de WinTool
+La licence de Sindry comporte désormais une obligation de code source, mais elle ne se
+déclenche **que sur distribution** : quiconque distribue une version modifiée de Sindry
 doit en fournir le code source complet à chaque personne qui reçoit le binaire, sans
 obligation de publication ouverte. Un usage purement interne à une organisation, sans
 aucune remise à un tiers, ne déclenche rien.
@@ -760,31 +760,31 @@ soit.
 
 Ils diffèrent en revanche sur trois points, qu'il faut avoir en tête :
 
-| | Licence WinTool | MPL-2.0 |
+| | Licence Sindry | MPL-2.0 |
 |---|---|---|
-| **Portée** | tout le code de la version modifiée de WinTool | uniquement les cinq fichiers/composants MPL listés ci-dessus |
+| **Portée** | tout le code de la version modifiée de Sindry | uniquement les cinq fichiers/composants MPL listés ci-dessus |
 | **Destinataire** | remise du code à chaque personne qui reçoit le binaire | il suffit d'informer le destinataire du moyen d'obtenir le code (art. 3.2(a)), à un coût n'excédant pas celui de la distribution |
-| **Source de l'obligation** | contrat consenti par l'auteur de WinTool | licence des composants, indépendante — elle s'appliquerait même si la licence WinTool n'exigeait rien |
+| **Source de l'obligation** | contrat consenti par l'auteur de Sindry | licence des composants, indépendante — elle s'appliquerait même si la licence Sindry n'exigeait rien |
 
 Le dernier point est le plus important : la MPL s'applique de son propre chef. Un
-assouplissement futur de la licence WinTool (que l'arbitrage (f) réserve d'ailleurs pour
+assouplissement futur de la licence Sindry (que l'arbitrage (f) réserve d'ailleurs pour
 les versions à venir) ne libérerait pas pour autant des obligations MPL sur ces cinq
 composants.
 
 **Il reste utile que le fichier `LICENSE` signale ce point**, pour éviter qu'un forkeur de
-bonne foi croie que les conditions de WinTool épuisent la question. Une phrase suffit, par
+bonne foi croie que les conditions de Sindry épuisent la question. Une phrase suffit, par
 exemple dans l'article consacré aux composants tiers : *« Certains composants tiers
 imposent leurs propres obligations, notamment de mise à disposition de leur code source.
 La présente licence ne s'y substitue pas et n'en dispense pas. »*
 
-Le texte de la MPL-2.0 doit accompagner WinTool. Il est le seul texte non reproduit dans ce
+Le texte de la MPL-2.0 doit accompagner Sindry. Il est le seul texte non reproduit dans ce
 document ; voir §11.9, qui explique pourquoi et où le prendre.
 
 ---
 
 ## 10. Microsoft Edge WebView2
 
-WinTool affiche son interface dans WebView2, le moteur de rendu de Microsoft Edge. C'est
+Sindry affiche son interface dans WebView2, le moteur de rendu de Microsoft Edge. C'est
 la brique la plus délicate de ce document, parce que c'est la seule qui ne soit pas sous
 licence libre : elle relève des **conditions de distribution de Microsoft**, un contrat
 propriétaire qui ne figure dans aucun fichier du dépôt.
@@ -793,7 +793,7 @@ Deux éléments distincts, à ne pas confondre :
 
 **Le Runtime WebView2.** C'est le moteur lui-même. Microsoft l'installe et le met à jour
 sur Windows 10 et 11 ; il est en pratique déjà présent sur les machines visées par
-WinTool. Vérifié dans `src-tauri/tauri.conf.json` : aucun `webviewInstallMode` n'est
+Sindry. Vérifié dans `src-tauri/tauri.conf.json` : aucun `webviewInstallMode` n'est
 défini, donc Tauri applique son mode par défaut pour une cible NSIS. Il faut vérifier ce
 mode exact (section 12) : selon le réglage, l'installeur télécharge le programme d'amorçage
 depuis les serveurs de Microsoft au moment de l'installation, ou bien l'embarque. **Le
@@ -805,12 +805,12 @@ respect des conditions de redistribution du Runtime publiées par Microsoft.
 **MIT** ; ce sont des liaisons écrites par le projet Tauri, pas du code Microsoft. Elles
 décrivent l'interface COM du moteur sans le contenir.
 
-WinTool n'est ni publié ni approuvé par Microsoft. « Microsoft », « Windows », « Microsoft
+Sindry n'est ni publié ni approuvé par Microsoft. « Microsoft », « Windows », « Microsoft
 Edge » et « WebView2 » sont des marques de Microsoft Corporation, citées ici à titre
 purement descriptif.
 
 **Les conditions Microsoft sont susceptibles d'évoluer sans lien avec le calendrier de
-WinTool.** C'est le seul composant de ce document qui ne soit pas figé par une licence
+Sindry.** C'est le seul composant de ce document qui ne soit pas figé par une licence
 irrévocable. Il faut donc les relire avant chaque version marquante :
 <https://developer.microsoft.com/microsoft-edge/webview2/>
 
@@ -1051,7 +1051,7 @@ Corporation ; ARM Inc. ; CloudFlare, Inc. ; Oracle and/or its affiliates ; the f
 authors.
 
 Vérifié dans les sources du registre : aucun des quatre ne livre de fichier `NOTICE`, et
-WinTool ne modifie aucun de leurs fichiers ; les §4(b) et §4(d) sont donc sans objet.
+Sindry ne modifie aucun de leurs fichiers ; les §4(b) et §4(d) sont donc sans objet.
 
 Texte repris de <https://www.apache.org/licenses/LICENSE-2.0.txt>, identique au fichier
 `LICENSE` livré dans les sources de `tao` et de `dpi`.
@@ -1309,7 +1309,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 La clause 3 mérite d'être relevée : elle interdit d'utiliser le nom des auteurs de
-`brotli`, `alloc-no-stdlib`, `alloc-stdlib` et `subtle` pour promouvoir WinTool. WinTool ne le fait
+`brotli`, `alloc-no-stdlib`, `alloc-stdlib` et `subtle` pour promouvoir Sindry. Sindry ne le fait
 pas, et ne doit pas commencer.
 
 ### 11.7 Licence Zlib — `foldhash` 0.2.0
@@ -1400,7 +1400,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 ### 11.9 Licence MPL-2.0 — le seul texte non reproduit ici, et pourquoi
 
 Les cinq composants de la section 9 imposent que le texte de la MPL-2.0 accompagne
-WinTool. Il n'est **pas** reproduit dans ce document, et c'est un choix délibéré, pas un
+Sindry. Il n'est **pas** reproduit dans ce document, et c'est un choix délibéré, pas un
 oubli : le texte fait près de dix pages, il doit de toute façon être livré comme fichier
 autonome dans l'installeur (comme tous les autres, voir section 12 point 1), et l'insérer
 ici doublerait la longueur du document sans rien ajouter à l'obligation.
@@ -1491,7 +1491,7 @@ absente.
 1. **Aucun texte de licence n'est versionné dans le dépôt.** Vérifié : `git ls-files` ne
    retourne aucun fichier de licence, et le dossier `licenses/` n'existe pas. La seule
    copie présente sur la machine est `node_modules/lucide-static/LICENSE`, qui n'est pas
-   suivi par Git et disparaîtra de toute copie du dépôt. En l'état, WinTool redistribue des
+   suivi par Git et disparaîtra de toute copie du dépôt. En l'état, Sindry redistribue des
    composants MIT, ISC, OFL, BSD, Zlib, MPL, Apache et Unicode sans leurs textes :
    l'obligation commune à toutes ces licences n'est pas remplie.
 
@@ -1551,7 +1551,7 @@ absente.
    `webviewInstallMode`. Vérifier dans la documentation Tauri 2 la valeur par défaut
    appliquée à une cible NSIS, puis **la fixer explicitement** dans le fichier de
    configuration. Ne pas dépendre d'un défaut implicite sur un point qui détermine si
-   WinTool redistribue ou non un binaire Microsoft : un changement de défaut dans une
+   Sindry redistribue ou non un binaire Microsoft : un changement de défaut dans une
    version future de Tauri modifierait silencieusement les obligations.
 
 6. **Provenance exacte des `.woff2`.** Les noms de fichiers suivent la convention du projet
@@ -1573,7 +1573,7 @@ absente.
    supposer.
 
 9. **Fonctionnalités Cargo et arbre réel.** Cette liste provient de la résolution par
-   défaut, vérifiée le 6 octobre 2026 pour la 1.2 : 269 entrées dont WinTool, soit
+   défaut, vérifiée le 6 octobre 2026 pour la 1.2 : 269 entrées dont Sindry, soit
    268 bibliothèques tierces, et la somme des groupes de la section 6 retombe exactement
    sur 268. Depuis la 1.2, `tools/verifier-mentions-tierces.mjs` le contrôle en CI : un
    composant absent de ce document fait échouer la construction — c'est ainsi que 46
@@ -1581,20 +1581,20 @@ absente.
    l'arbre changera. Le fichier généré au point 3 doit alors être régénéré, et ce document
    relu.
 
-10. **Adresse du dépôt public — tranché.** WinTool reste sur GitHub :
-    <https://github.com/burnout293/WinTool>, et son catalogue de scripts sur
-    <https://github.com/burnout293/WinTool-Catalogue>. La migration vers GitLab un temps
+10. **Adresse du dépôt public — tranché.** Sindry reste sur GitHub :
+    <https://github.com/burnout293/Sindry>, et son catalogue de scripts sur
+    <https://github.com/burnout293/Sindry-Catalogue>. La migration vers GitLab un temps
     envisagée a été abandonnée.
 
 ### Hors périmètre
 
 11. **Les scripts PowerShell du catalogue officiel ne sont pas des composants tiers**, et
     ne font plus partie de ce dépôt ni de l'installeur depuis la 1.2. Ils sont l'œuvre de
-    l'auteur de WinTool et publiés sous licence MIT dans [WinTool-Catalogue](https://github.com/burnout293/WinTool-Catalogue). Les scripts
+    l'auteur de Sindry et publiés sous licence MIT dans [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue). Les scripts
     provenant de sources tierces relèvent de la licence choisie par leur auteur et
     n'entrent jamais dans ce document — conformément à la séparation posée par la licence
-    WinTool et par `docs/FORMAT_SCRIPT.md`. Un script conforme au contrat v2 conserve sa
-    fonction hors de WinTool ; il n'est pas une extension de WinTool et n'est pas soumis à
+    Sindry et par `docs/FORMAT_SCRIPT.md`. Un script conforme au contrat v2 conserve sa
+    fonction hors de Sindry ; il n'est pas une extension de Sindry et n'est pas soumis à
     sa licence.
 
 12. **Contributions assistées par IA.** Le cahier des charges soulève la question du
@@ -1616,7 +1616,7 @@ absente.
 | Portage vers une autre plateforme | Régénérer intégralement : cette liste est spécifique à Windows x86-64, et les autres cibles introduisent des licences absentes ici |
 | Avant chaque version publiée | Relire les conditions WebView2 de Microsoft (section 10) |
 
-Ce document ne modifie ni ne remplace le fichier `LICENSE` de WinTool. En cas de
-divergence entre les deux sur les droits accordés **sur WinTool**, `LICENSE` prévaut.
+Ce document ne modifie ni ne remplace le fichier `LICENSE` de Sindry. En cas de
+divergence entre les deux sur les droits accordés **sur Sindry**, `LICENSE` prévaut.
 Sur les droits accordés **sur un composant tiers**, c'est la licence propre de ce
 composant qui prévaut, et rien dans `LICENSE` ne peut y déroger.

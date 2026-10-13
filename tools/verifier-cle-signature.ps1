@@ -19,7 +19,7 @@
   les lire de la, et NE PAS reprendre les secrets bruts dans son propre env.
   Usage local, pour verifier une cle AVANT de la confier a GitHub, depuis la
   racine du depot :
-    powershell -NoProfile -File tools\verifier-cle-signature.ps1 -FichierCle "$env:USERPROFILE\.tauri\wintool.key"
+    powershell -NoProfile -File tools\verifier-cle-signature.ps1 -FichierCle "$env:USERPROFILE\.tauri\sindry.key"
   Le mot de passe est alors demande en saisie masquee. Lance ainsi, dans un
   processus a part, rien ne survit dans la session : ni la cle, ni le mot de
   passe.
@@ -80,7 +80,7 @@ if ([string]::IsNullOrWhiteSpace($cle)) {
     Echec 'Secret manquant' "TAURI_SIGNING_PRIVATE_KEY est absent ou vide. Il se cree dans Settings > Secrets and variables > Actions > onglet Secrets > Repository secrets."
 }
 if ([string]::IsNullOrEmpty($mdp)) {
-    Echec 'Secret manquant' "TAURI_SIGNING_PRIVATE_KEY_PASSWORD est absent ou vide. La cle de WinTool est protegee par un mot de passe : sans lui, elle ne s'ouvre pas."
+    Echec 'Secret manquant' "TAURI_SIGNING_PRIVATE_KEY_PASSWORD est absent ou vide. La cle de Sindry est protegee par un mot de passe : sans lui, elle ne s'ouvre pas."
 }
 
 # --- 2. Nettoyage --------------------------------------------------------------
@@ -107,11 +107,11 @@ $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = $mdp
 try {
     $texte = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($cle))
 } catch {
-    Echec 'Cle illisible' "TAURI_SIGNING_PRIVATE_KEY n'est pas un texte base64 valide, meme une fois les blancs retires : le contenu de wintool.key a probablement ete coupe."
+    Echec 'Cle illisible' "TAURI_SIGNING_PRIVATE_KEY n'est pas un texte base64 valide, meme une fois les blancs retires : le contenu de sindry.key a probablement ete coupe."
 }
 $entete = ($texte -split "`r?`n")[0]
 if ($entete -match 'public key') {
-    Echec 'Mauvaise cle' "TAURI_SIGNING_PRIVATE_KEY contient la cle PUBLIQUE (wintool.key.pub). Il faut y coller le contenu de wintool.key, le fichier SANS .pub."
+    Echec 'Mauvaise cle' "TAURI_SIGNING_PRIVATE_KEY contient la cle PUBLIQUE (sindry.key.pub). Il faut y coller le contenu de sindry.key, le fichier SANS .pub."
 }
 if ($entete -notmatch 'secret key') {
     Echec 'Cle inattendue' "TAURI_SIGNING_PRIVATE_KEY ne ressemble pas a une cle de signature Tauri (entete lue : '$entete')."
@@ -120,8 +120,8 @@ if ($entete -notmatch 'secret key') {
 # --- 4. Le mot de passe ouvre-t-il la cle ? -------------------------------------
 # On signe un fichier d'essai. tauri lit la cle et le mot de passe dans les
 # variables d'environnement : ils ne passent jamais sur une ligne de commande.
-$essai = Join-Path ([IO.Path]::GetTempPath()) 'wintool-essai-signature.txt'
-Set-Content -LiteralPath $essai -Value 'WinTool' -Encoding Ascii
+$essai = Join-Path ([IO.Path]::GetTempPath()) 'sindry-essai-signature.txt'
+Set-Content -LiteralPath $essai -Value 'Sindry' -Encoding Ascii
 Remove-Item -LiteralPath "$essai.sig" -ErrorAction SilentlyContinue
 
 $ancienne = $ErrorActionPreference
@@ -150,7 +150,7 @@ if ($code -ne 0 -or -not (Test-Path -LiteralPath "$essai.sig")) {
         Echec 'Cle et mot de passe ne vont pas ensemble' "Le mot de passe de TAURI_SIGNING_PRIVATE_KEY_PASSWORD n'ouvre pas la cle de TAURI_SIGNING_PRIVATE_KEY. Soit le mot de passe est faux, soit la cle n'est pas celle de ce mot de passe : apres un changement de cle, les DEUX secrets doivent etre remplaces (colonne Last updated). Detail : $detail"
     }
     if ($detail -match 'base64|decode') {
-        Echec 'Cle illisible' "TAURI_SIGNING_PRIVATE_KEY ne se decode pas : le contenu de wintool.key a probablement ete coupe ou altere. Detail : $detail"
+        Echec 'Cle illisible' "TAURI_SIGNING_PRIVATE_KEY ne se decode pas : le contenu de sindry.key a probablement ete coupe ou altere. Detail : $detail"
     }
     Echec 'Signature impossible' "La cle n'a pas pu signer un fichier d'essai. Detail : $detail"
 }

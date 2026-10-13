@@ -5,7 +5,7 @@
 //! ils partent tels quels a un script lance en administrateur : sans controle,
 //! un programme sans droits n'aurait qu'a ecrire `C:\Windows` dans les
 //! « dossiers supplementaires » du nettoyage des caches, puis attendre le
-//! prochain entretien. WinTool lui aurait tenu l'echelle.
+//! prochain entretien. Sindry lui aurait tenu l'echelle.
 //!
 //! Deux controles, juste avant le lancement :
 //!
@@ -20,7 +20,7 @@
 //!
 //! **La liste est a l'utilisateur.** Il peut en retirer un emplacement — pour un
 //! script qui doit verifier les fichiers de Windows, par exemple — et en
-//! ajouter. Mais ses changements vivent dans `HKLM\SOFTWARE\WinTool\Garde`, et
+//! ajouter. Mais ses changements vivent dans `HKLM\SOFTWARE\Sindry\Garde`, et
 //! ne s'ecrivent qu'en administrateur : la liberte de retirer un emplacement ne
 //! vaut que si un programme sans droits ne peut pas l'exercer a sa place. Dans
 //! `settings.json`, il lui aurait suffi de reecrire le fichier. Retirer un
@@ -201,7 +201,7 @@ impl ConfigGarde {
 
 /// Emplacement de `ConfigGarde`, sous `HKEY_LOCAL_MACHINE` : rien ne s'y ecrit
 /// sans elevation (meme raisonnement que le magasin d'approbations).
-pub const CLE_GARDE: &str = r"SOFTWARE\WinTool\Garde";
+pub const CLE_GARDE: &str = r"SOFTWARE\Sindry\Garde";
 
 #[cfg(windows)]
 pub fn charger_depuis(racine: &windows_registry::Key, chemin: &str) -> ConfigGarde {
@@ -585,8 +585,7 @@ mod tests {
     struct Bac(PathBuf);
     impl Bac {
         fn neuf(nom: &str) -> Bac {
-            let d =
-                std::env::temp_dir().join(format!("wintool-garde-{}-{nom}", std::process::id()));
+            let d = std::env::temp_dir().join(format!("sindry-garde-{}-{nom}", std::process::id()));
             let _ = std::fs::remove_dir_all(&d);
             std::fs::create_dir_all(&d).unwrap();
             Bac(d)
@@ -629,12 +628,23 @@ mod tests {
     fn une_exception_ne_vaut_que_pour_son_script() {
         let e = systeme::emplacements();
         let mut config = ConfigGarde::default();
-        config.exceptions.insert("verifier-windows".into(), vec!["windows".into()]);
+        config
+            .exceptions
+            .insert("verifier-windows".into(), vec!["windows".into()]);
         let pour = |id: &str| Zones::pour_script(e, &profil(), None, &config, id);
-        assert!(!pour("verifier-windows").protege(&e.windows), "le script autorise recoit le dossier de Windows");
+        assert!(
+            !pour("verifier-windows").protege(&e.windows),
+            "le script autorise recoit le dossier de Windows"
+        );
         assert!(pour("autre-script").protege(&e.windows), "les autres non");
-        assert!(pour("verifier-windows").protege(&e.program_data), "le reste de la liste tient");
-        assert!(pour("").protege(&e.windows), "sans script : la liste commune");
+        assert!(
+            pour("verifier-windows").protege(&e.program_data),
+            "le reste de la liste tient"
+        );
+        assert!(
+            pour("").protege(&e.windows),
+            "sans script : la liste commune"
+        );
     }
 
     fn opt(key: &str, kind: &str, choix: &[&str], defaut: Option<DefaultValue>) -> Opt {
@@ -658,7 +668,7 @@ mod tests {
     }
 
     fn script(options: Vec<Opt>) -> Script {
-        let mut s = crate::contract::parse("## WINTOOL:START\n## id : x\n## WINTOOL:END\n");
+        let mut s = crate::contract::parse("## SINDRY:START\n## id : x\n## SINDRY:END\n");
         s.options = options;
         s
     }
@@ -676,7 +686,7 @@ mod tests {
         for p in [
             e.windows.clone(),
             e.system32().join("drivers"),
-            e.program_files.join("WinTool"),
+            e.program_files.join("Sindry"),
             e.program_data.join("Microsoft"),
             e.profils.join("Default"),
             PathBuf::from(format!(r"{}\", e.lecteur)),
@@ -760,14 +770,15 @@ mod tests {
     #[test]
     fn la_liste_modifiee_se_relit_depuis_le_registre() {
         use windows_registry::CURRENT_USER;
-        let chemin = format!(r"SOFTWARE\WinTool-tests-{}-garde", std::process::id());
+        let chemin = format!(r"SOFTWARE\Sindry-tests-{}-garde", std::process::id());
         let _ = CURRENT_USER.remove_tree(&chemin);
         let mut c = ConfigGarde {
             retires: vec!["windows".into()],
             ajouts: vec![r"D:\Archives".into()],
             ..Default::default()
         };
-        c.exceptions.insert("sfc".into(), vec!["windows".into(), "program_data".into()]);
+        c.exceptions
+            .insert("sfc".into(), vec!["windows".into(), "program_data".into()]);
         enregistrer_dans(CURRENT_USER, &chemin, &c).unwrap();
         assert_eq!(charger_depuis(CURRENT_USER, &chemin), c);
         // Vider une liste efface la valeur, et se relit comme une liste vide.

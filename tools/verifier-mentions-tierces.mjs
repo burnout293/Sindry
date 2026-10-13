@@ -1,4 +1,4 @@
-// Chaque bibliotheque compilee dans WinTool figure dans THIRD-PARTY-NOTICES.md.
+// Chaque bibliotheque compilee dans Sindry figure dans THIRD-PARTY-NOTICES.md.
 //
 // Entre la 1.1 et la 1.2, 46 composants arrives avec la mise a jour automatique
 // manquaient a ce document — dont plusieurs (ring, rustls-webpki, untrusted,
@@ -29,7 +29,7 @@ const sortie = execFileSync(
 const arbre = new Set();
 for (const ligne of sortie.split(/\r?\n/)) {
   const m = /^(\S+) v(\d+\.\d+\.\d+)/.exec(ligne.trim());
-  if (m && m[1] !== 'wintool') arbre.add(`${m[1]} ${m[2]}`);
+  if (m && m[1] !== 'sindry') arbre.add(`${m[1]} ${m[2]}`);
 }
 
 const doc = readFileSync(new URL('THIRD-PARTY-NOTICES.md', racine), 'utf8');
@@ -43,7 +43,7 @@ for (const m of doc.matchAll(/\| `([A-Za-z0-9_-]+)` \| (\d+\.\d+\.\d+)(?: et (\d
 let echecs = 0;
 for (const c of [...arbre].sort()) {
   if (!cites.has(c)) {
-    console.log(`::error title=Composant non mentionne::${c} est compile dans WinTool mais absent de THIRD-PARTY-NOTICES.md`);
+    console.log(`::error title=Composant non mentionne::${c} est compile dans Sindry mais absent de THIRD-PARTY-NOTICES.md`);
     echecs++;
   }
 }

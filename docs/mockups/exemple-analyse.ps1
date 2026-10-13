@@ -1,4 +1,4 @@
-﻿## WINTOOL:START
+﻿## SINDRY:START
 ## id            : 6c08ece0-709a-4210-aacb-eda594e8deee
 ## lang          : en
 ## title         : Free up disk space
@@ -17,9 +17,9 @@
 ## scan          : true
 ## view          : donut
 ## panels        : plan progress
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## Targets    : [multi] Temporary files
 ##   user     : [group:Junk] Your temporary files
 ##   windows  : [group:Junk] [show:expert] Windows temporary files
@@ -27,18 +27,18 @@
 ## RecycleBin : [bool] [group:Junk] Empty the recycle bin
 ## Browsers   : [items] [view:tree] Browser caches
 ## SafeTest   : [bool] Simulate — shows what would be done, changes nothing
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:REPORT
+## SINDRY:REPORT
 ## Junk       : [group] Junk files — Temporary files and the recycle bin
 ## OldUpdates : [group] Old Windows updates — What Windows keeps after installing them
 ## Cache      : Cache
 ## FreeSpace  : Free space on drive C:
 ## UpdateNote : [note:warn] If an update is waiting to be installed, Windows will download it again.
 ## Untouched  : [note:info] Your passwords, bookmarks and history are not touched.
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:LANG fr
+## SINDRY:LANG fr
 ## title      : Faire de la place
 ## desc       : Supprime les fichiers temporaires, les mises à jour téléchargées et le cache des navigateurs
 ## Targets    : Fichiers temporaires
@@ -54,7 +54,7 @@
 ## FreeSpace  : Espace libre sur le disque C:
 ## UpdateNote : Si une mise à jour attend d'être installée, Windows la téléchargera de nouveau.
 ## Untouched  : Vos mots de passe, vos favoris et votre historique ne sont pas touchés.
-## WINTOOL:END
+## SINDRY:END
 
 # ==============================================================================
 # L'exemple de référence de la norme d'analyse : docs/FORMAT_SCRIPT.md,
@@ -62,10 +62,10 @@
 # Il passe le validateur en -Strict (tools/lint-scripts.ps1).
 #
 # Le script est lancé deux fois :
-#   1. ANALYSE  — WinTool pose WINTOOL_MODE=scan. Le script mesure, décrit ce
+#   1. ANALYSE  — Sindry pose SINDRY_MODE=scan. Le script mesure, décrit ce
 #      qu'il a trouvé, et ne modifie RIEN.
-#   2. ACTION   — WinTool relance le script sans WINTOOL_MODE, avec dans
-#      WINTOOL_CONFIG ce que l'utilisateur a coché. Le script ne fait que ça.
+#   2. ACTION   — Sindry relance le script sans SINDRY_MODE, avec dans
+#      SINDRY_CONFIG ce que l'utilisateur a coché. Le script ne fait que ça.
 #
 # Seul, en double-clic, il agit avec ses valeurs par défaut ($CONFIG ci-dessous).
 # ==============================================================================
@@ -77,11 +77,11 @@ $CONFIG = @{
     SafeTest   = $false
 }
 # Browsers est une liste [items] : ses éléments n'existent qu'après l'analyse.
-# Sans WinTool, elle reste vide et le script ne touche à aucun navigateur.
+# Sans Sindry, elle reste vide et le script ne touche à aucun navigateur.
 
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 
@@ -107,7 +107,7 @@ function Get-RecycleBinItems {
 
 # Les caches de navigateurs. Chaque cache reçoit un Id STABLE, calculé à partir
 # de ce qui ne bouge pas entre l'analyse et l'action : le navigateur et le profil.
-# WinTool ne renverra que des Id ; c'est cette même fonction, rappelée à l'action,
+# Sindry ne renverra que des Id ; c'est cette même fonction, rappelée à l'action,
 # qui retrouvera les chemins. Un Id reçu ne sert jamais à fabriquer un chemin.
 $Browsers = @(
     @{ Id = 'chrome';  Name = 'Google Chrome';   Process = 'chrome';  Cache = 'Cache';  Root = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data' }
@@ -141,12 +141,12 @@ function Get-BrowserCaches {
 # ==============================================================================
 # 1. ANALYSE — on mesure, on décrit, on ne modifie RIEN
 # ==============================================================================
-# Tout ce bloc est en lecture seule. WinTool ne peut pas le vérifier : c'est une
+# Tout ce bloc est en lecture seule. Sindry ne peut pas le vérifier : c'est une
 # promesse de l'auteur, et l'utilisateur coche sur la foi de ce qu'elle rapporte.
 # Le script n'écrit jamais de phrase : des nombres, des noms, des jetons. Les
 # mots viennent de l'entête (REPORT, LANG), déjà traduite.
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
 
     # --- Des choix mesurés : une ligne [FIND] par choix de Targets ---
     Write-Output "[STEP] 1/3 Measuring temporary folders"
@@ -200,7 +200,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
 # ==============================================================================
 # 2. ACTION — uniquement ce que l'utilisateur a coché
 # ==============================================================================
-# WinTool a posé dans WINTOOL_CONFIG, et l'override a versé dans $CONFIG :
+# Sindry a posé dans SINDRY_CONFIG, et l'override a versé dans $CONFIG :
 #   Targets    = les choix cochés, par exemple @("user", "update")
 #   RecycleBin = $true ou $false
 #   Browsers   = les Id cochés, par exemple @("chrome-Default", "firefox-abcd.default")

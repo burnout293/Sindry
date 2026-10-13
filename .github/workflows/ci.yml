@@ -56,7 +56,7 @@ jobs:
           node tools/verifier-presentation.mjs
           node tools/verifier-guide.mjs
 
-      # Les scripts officiels ne vivent plus ici : le depot WinTool-Catalogue les
+      # Les scripts officiels ne vivent plus ici : le depot Sindry-Catalogue les
       # valide a chaque poussee, avec ce meme validateur.
 
       # Les scripts complets de FORMAT_SCRIPT.md sont les modeles que l'agent
@@ -71,7 +71,7 @@ jobs:
           $n = 0
           foreach ($m in [regex]::Matches($doc, '(?s)```powershell\r?\n(.*?)```')) {
             $code = $m.Groups[1].Value
-            if ($code -notmatch '## WINTOOL:START') { continue }
+            if ($code -notmatch '## SINDRY:START') { continue }
             $n++
             $f = Join-Path $dir ('{0:D3}_EXEMPLE.ps1' -f $n)
             [IO.File]::WriteAllText($f, $code, [Text.UTF8Encoding]::new($true))

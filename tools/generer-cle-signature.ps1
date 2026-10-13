@@ -19,7 +19,7 @@
     powershell -NoProfile -File tools\generer-cle-signature.ps1 -Cible catalogue
 
   Deux clés distinctes, jamais la même :
-    mises-a-jour  signe les installeurs de WinTool. Clé publique dans
+    mises-a-jour  signe les installeurs de Sindry. Clé publique dans
                   src-tauri/tauri.conf.json (plugins.updater.pubkey).
     catalogue     signe l'index du catalogue officiel de scripts. Clé publique
                   dans src-tauri/catalogue.pub, compilée dans l'application.
@@ -42,10 +42,10 @@ param(
 
 $catalogue = $Cible -eq 'catalogue'
 if (-not $Fichier) {
-    $nom = if ($catalogue) { 'wintool-catalogue.key' } else { 'wintool.key' }
+    $nom = if ($catalogue) { 'sindry-catalogue.key' } else { 'sindry.key' }
     $Fichier = Join-Path (Join-Path $env:USERPROFILE '.tauri') $nom
 }
-$depot = if ($catalogue) { 'WinTool-Catalogue' } else { 'WinTool' }
+$depot = if ($catalogue) { 'Sindry-Catalogue' } else { 'Sindry' }
 
 function Arret([string] $Message) {
     Write-Host ''
@@ -54,7 +54,7 @@ function Arret([string] $Message) {
 }
 
 if (-not (Test-Path -LiteralPath $Config)) {
-    Arret "$Config introuvable. Lancez ce script depuis la racine du dépôt WinTool."
+    Arret "$Config introuvable. Lancez ce script depuis la racine du dépôt Sindry."
 }
 
 # --- 1. Un mot de passe tiré au hasard ------------------------------------------

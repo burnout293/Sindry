@@ -1,6 +1,6 @@
 //! Ce qu'une analyse rapporte (specification §17, docs/FORMAT_SCRIPT.md).
 //!
-//! Un script analysable est lance avec `WINTOOL_MODE=scan` : il mesure, et decrit
+//! Un script analysable est lance avec `SINDRY_MODE=scan` : il mesure, et decrit
 //! ce qu'il a trouve sur sa sortie, une ligne par constat — `[FIND]`, `[ITEM]`,
 //! `[METRIC]`, `[NOTE]`. Ce module lit ces lignes **contre l'entete du script** :
 //!
@@ -640,7 +640,7 @@ mod tests {
     #[test]
     fn une_seconde_ligne_complete_le_meme_constat() {
         let meta = parse(
-            r#"## WINTOOL:START
+            r#"## SINDRY:START
 ## id            : 00000000-0000-4000-8000-000000000001
 ## lang          : en
 ## title         : T
@@ -656,12 +656,12 @@ mod tests {
 ## reboot        : false
 ## engine        : auto
 ## scan          : true
-## WINTOOL:END
-## WINTOOL:OPTIONS
+## SINDRY:END
+## SINDRY:OPTIONS
 ## Dns : [select] DNS
 ##   a : A
 ##   b : B
-## WINTOOL:END
+## SINDRY:END
 $CONFIG = @{
     Dns = "a"
 }

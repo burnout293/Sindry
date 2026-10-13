@@ -1,7 +1,7 @@
 /**
  * Banc d'essai de l'interface.
  *
- * WinTool impose `requireAdministrator` (§12.4) et ne peut donc pas etre lance
+ * Sindry impose `requireAdministrator` (§12.4) et ne peut donc pas etre lance
  * depuis un shell non eleve. Ce serveur sert `src/` tel quel et injecte
  * `fixtures.js` juste avant `main.js` : l'interface tourne alors dans un
  * navigateur ordinaire, avec un faux pont vers Rust.

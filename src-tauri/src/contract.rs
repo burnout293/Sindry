@@ -4,10 +4,10 @@
 //! meme format et doivent rester d'accord : voir `docs/FORMAT_SCRIPT.md`.
 //!
 //! Principe de lecture (style B) :
-//!   `## WINTOOL:START`    ce qu'est le script
-//!   `## WINTOOL:OPTIONS`  ses reglages, types et nommes
-//!   `## WINTOOL:REPORT`   ce que son analyse nomme : libelles, notes, groupes
-//!   `## WINTOOL:LANG xx`  les memes, traduits
+//!   `## SINDRY:START`    ce qu'est le script
+//!   `## SINDRY:OPTIONS`  ses reglages, types et nommes
+//!   `## SINDRY:REPORT`   ce que son analyse nomme : libelles, notes, groupes
+//!   `## SINDRY:LANG xx`  les memes, traduits
 //!   `$CONFIG = @{ ... }`  les valeurs par defaut, du PowerShell pur
 //!
 //! Regle de la specification 5.4 : **constater, jamais bloquer**. Un script non
@@ -200,7 +200,41 @@ fn split_label(reste: &str) -> (String, String) {
     }
 }
 
-/// Repere un bloc `## WINTOOL:<tete>` ... `## WINTOOL:END`.
+/// Le contrat d'avant la 2.0, quand l'application s'appelait WinTool : ses
+/// marqueurs `## WINTOOL:START`, `## WINTOOL:OPTIONS`… et ses variables
+/// `$env:WINTOOL_CONFIG`, `$env:WINTOOL_MODE`. **Lu jusqu'a la 2.1**, le temps
+/// que les catalogues passent a `SINDRY` : c'est le seul endroit, avec la
+/// migration (`migration.rs`), ou l'ancien nom subsiste.
+const ANCIEN: &str = "WINTOOL";
+
+/// Le texte d'un script a l'ancien contrat, ramene au nouveau : les marqueurs
+/// des lignes `##` et les deux variables. Les numeros de ligne ne bougent pas,
+/// les constats tombent donc au bon endroit. `None` : le script est deja au
+/// contrat de Sindry.
+pub fn depuis_ancien_contrat(source: &str) -> Option<String> {
+    let marqueur = format!("{ANCIEN}:");
+    let ancien = source
+        .lines()
+        .any(|l| l.trim_start().starts_with("##") && l.contains(&marqueur));
+    if !ancien {
+        return None;
+    }
+    let lignes: Vec<String> = source
+        .lines()
+        .map(|l| {
+            let l = if l.trim_start().starts_with("##") {
+                l.replace(&marqueur, "SINDRY:")
+            } else {
+                l.to_string()
+            };
+            l.replace(&format!("{ANCIEN}_CONFIG"), "SINDRY_CONFIG")
+                .replace(&format!("{ANCIEN}_MODE"), "SINDRY_MODE")
+        })
+        .collect();
+    Some(lignes.join("\n"))
+}
+
+/// Repere un bloc `## SINDRY:<tete>` ... `## SINDRY:END`.
 /// Renvoie l'intervalle exclusif des lignes interieures.
 fn find_block(lines: &[&str], head: &str) -> Option<(usize, usize)> {
     let mut start = None;
@@ -212,7 +246,7 @@ fn find_block(lines: &[&str], head: &str) -> Option<(usize, usize)> {
             }
             continue;
         }
-        if t.starts_with("##") && t[2..].trim() == "WINTOOL:END" {
+        if t.starts_with("##") && t[2..].trim() == "SINDRY:END" {
             return Some((start.unwrap() + 1, i));
         }
     }
@@ -311,12 +345,24 @@ fn parse_default(brut: &str) -> DefaultValue {
 // ---------------------------------------------------------------------------
 
 pub fn parse(source: &str) -> Script {
-    let lines: Vec<&str> = source.lines().collect();
+    let converti = depuis_ancien_contrat(source);
+    let lines: Vec<&str> = converti.as_deref().unwrap_or(source).lines().collect();
     let mut findings = Vec::new();
+    if converti.is_some() {
+        findings.push(Finding {
+            line: 1,
+            severity: Severity::Warning,
+            code: "CONTRAT_ANCIEN".into(),
+            message: format!(
+                "Contrat d'avant Sindry 2.0 ({ANCIEN}:START, $env:{ANCIEN}_CONFIG) : lu jusqu'a la 2.1. \
+                 Remplacez {ANCIEN} par SINDRY dans les marqueurs et les variables."
+            ),
+        });
+    }
 
     // --- Entete -----------------------------------------------------------
     let mut head: BTreeMap<String, String> = BTreeMap::new();
-    match find_block(&lines, "WINTOOL:START") {
+    match find_block(&lines, "SINDRY:START") {
         Some((a, b)) => {
             for l in &lines[a..b] {
                 let t = l.trim();
@@ -333,7 +379,7 @@ pub fn parse(source: &str) -> Script {
             line: 1,
             severity: Severity::Error,
             code: "ENTETE_ABSENT".into(),
-            message: "Aucun bloc ## WINTOOL:START.".into(),
+            message: "Aucun bloc ## SINDRY:START.".into(),
         }),
     }
 
@@ -367,7 +413,7 @@ pub fn parse(source: &str) -> Script {
 
     // --- Options ----------------------------------------------------------
     let mut options: Vec<Opt> = Vec::new();
-    match find_block(&lines, "WINTOOL:OPTIONS") {
+    match find_block(&lines, "SINDRY:OPTIONS") {
         Some((a, b)) => {
             for (decalage, l) in lines[a..b].iter().enumerate() {
                 let Some((indent, nom, reste)) = parse_decl(l) else {
@@ -481,14 +527,14 @@ pub fn parse(source: &str) -> Script {
             line: 1,
             severity: Severity::Error,
             code: "OPTIONS_ABSENT".into(),
-            message: "Aucun bloc ## WINTOOL:OPTIONS ; l'interface afficherait les cles brutes."
+            message: "Aucun bloc ## SINDRY:OPTIONS ; l'interface afficherait les cles brutes."
                 .into(),
         }),
     }
 
     // --- Rapport : ce que l'analyse nomme ----------------------------------
     let mut report: BTreeMap<String, ReportEntry> = BTreeMap::new();
-    if let Some((a, b)) = find_block(&lines, "WINTOOL:REPORT") {
+    if let Some((a, b)) = find_block(&lines, "SINDRY:REPORT") {
         for (decalage, l) in lines[a..b].iter().enumerate() {
             let Some((_, nom, reste)) = parse_decl(l) else {
                 continue;
@@ -561,16 +607,16 @@ pub fn parse(source: &str) -> Script {
             continue;
         }
         let apres = t[2..].trim();
-        let Some(code) = apres.strip_prefix("WINTOOL:LANG ") else {
+        let Some(code) = apres.strip_prefix("SINDRY:LANG ") else {
             continue;
         };
         let code = code.trim().to_ascii_lowercase();
 
-        // Fin du bloc : le prochain WINTOOL:END.
+        // Fin du bloc : le prochain SINDRY:END.
         let mut fin = lines.len();
         for (j, m) in lines.iter().enumerate().skip(i + 1) {
             let mt = m.trim();
-            if mt.starts_with("##") && mt[2..].trim() == "WINTOOL:END" {
+            if mt.starts_with("##") && mt[2..].trim() == "SINDRY:END" {
                 fin = j;
                 break;
             }
@@ -745,7 +791,7 @@ pub fn parse(source: &str) -> Script {
     }
 
     // --- Ligne d'override --------------------------------------------------
-    if !lines.iter().any(|l| l.contains("WINTOOL_CONFIG")) {
+    if !lines.iter().any(|l| l.contains("SINDRY_CONFIG")) {
         findings.push(Finding {
             line: 1,
             severity: Severity::Error,
@@ -803,7 +849,7 @@ mod tests {
     use super::*;
 
     const EXEMPLE: &str = r#"
-## WINTOOL:START
+## SINDRY:START
 ## id            : 985863a2-4150-4790-90b5-fdb31feee22b
 ## lang          : en
 ## title         : Set fast DNS
@@ -819,9 +865,9 @@ mod tests {
 ## interruptible : true
 ## reboot        : false
 ## engine        : auto
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:OPTIONS
+## SINDRY:OPTIONS
 ## DnsProvider  : [select] DNS provider — the resolver service
 ##   cloudflare : Cloudflare — 1.1.1.1
 ##   quad9      : Quad9 — 9.9.9.9
@@ -829,14 +875,14 @@ mod tests {
 ##   temp       : Temporary files
 ##   cache      : Browser caches
 ## FlushCache   : [hidden] Flush the cache afterwards
-## WINTOOL:END
+## SINDRY:END
 
-## WINTOOL:LANG fr
+## SINDRY:LANG fr
 ## title        : Internet plus rapide
 ## desc         : Accelere la navigation
 ## DnsProvider  : Fournisseur DNS — le service de resolution
 ##   cloudflare : Cloudflare — 1.1.1.1
-## WINTOOL:END
+## SINDRY:END
 
 $CONFIG = @{
     DnsProvider  = "cloudflare"
@@ -844,7 +890,7 @@ $CONFIG = @{
     FlushCache   = $true
 }
 
-if ($env:WINTOOL_CONFIG) { }
+if ($env:SINDRY_CONFIG) { }
 "#;
 
     #[test]
@@ -936,7 +982,7 @@ if ($env:WINTOOL_CONFIG) { }
             .split("```powershell")
             .skip(1)
             .filter_map(|bloc| bloc.split("```").next())
-            .find(|bloc| bloc.contains("WINTOOL:START"))
+            .find(|bloc| bloc.contains("SINDRY:START"))
             .expect("aucun squelette dans docs/FORMAT_SCRIPT.md");
 
         let s = parse(squelette);
@@ -988,7 +1034,7 @@ if ($env:WINTOOL_CONFIG) { }
             .split("```powershell")
             .skip(1)
             .filter_map(|bloc| bloc.split("```").next())
-            .filter(|bloc| bloc.contains("WINTOOL:START"))
+            .filter(|bloc| bloc.contains("SINDRY:START"))
             .collect();
 
         // Le squelette et l'exemple d'analyse. Si l'un disparait, ce test doit le
@@ -1103,6 +1149,25 @@ if ($env:WINTOOL_CONFIG) { }
         let codes: Vec<&str> = s.findings.iter().map(|f| f.code.as_str()).collect();
         assert!(codes.contains(&"ETIQUETTE_INCONNUE"), "{codes:?}");
         assert!(codes.contains(&"GROUPE_INCONNU"), "{codes:?}");
+    }
+
+    #[test]
+    fn l_ancien_contrat_se_lit_encore_avec_un_constat() {
+        // Un script ecrit pour WinTool (avant la 2.0) : memes informations,
+        // un constat qui demande la conversion, aucune autre anomalie.
+        let ancien = EXEMPLE
+            .replace("SINDRY:", "WINTOOL:")
+            .replace("SINDRY_CONFIG", "WINTOOL_CONFIG");
+        assert!(ancien.contains("## WINTOOL:START"));
+        let s = parse(&ancien);
+        assert_eq!(s.title, "Set fast DNS");
+        assert_eq!(s.options.len(), parse(EXEMPLE).options.len());
+        let codes: Vec<&str> = s.findings.iter().map(|f| f.code.as_str()).collect();
+        assert_eq!(codes, vec!["CONTRAT_ANCIEN"], "{codes:?}");
+        assert!(parse(EXEMPLE)
+            .findings
+            .iter()
+            .all(|f| f.code != "CONTRAT_ANCIEN"));
     }
 
     #[test]

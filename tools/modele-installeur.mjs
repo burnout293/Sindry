@@ -1,7 +1,7 @@
-// Derive le modele NSIS de Tauri pour l'installeur de WinTool.
+// Derive le modele NSIS de Tauri pour l'installeur de Sindry.
 //
 // Tauri n'offre que des crochets (installeur/crochets.nsh) inseres dans des
-// sections : pas de quoi remplacer une page. Or WinTool a besoin de deux
+// sections : pas de quoi remplacer une page. Or Sindry a besoin de deux
 // changements que les crochets ne permettent pas :
 //
 // 1. Sa propre page de desinstallation — garder ses donnees, tout effacer
@@ -71,9 +71,9 @@ function remplacer(nom, avant, apres) {
 }
 
 // 1. La page de confirmation de Tauri (et sa case) laisse place a celle de
-//    WinTool, definie dans crochets.nsh. $DeleteAppDataCheckboxState reste
+//    Sindry, definie dans crochets.nsh. $DeleteAppDataCheckboxState reste
 //    declaree : la section de desinstallation de Tauri la lit, et la page de
-//    WinTool la positionne.
+//    Sindry la positionne.
 const debutPage = modele.indexOf('; 1. Confirm uninstall page');
 const repereFin = '!insertmacro MUI_UNPAGE_CONFIRM\n';
 const finPage = modele.indexOf(repereFin, debutPage);
@@ -83,17 +83,17 @@ if (debutPage < 0 || finPage < 0) {
 remplacer(
   'page de confirmation',
   modele.slice(debutPage, finPage + repereFin.length),
-  '; 1. Page de desinstallation de WinTool (installeur/crochets.nsh)\n' +
+  '; 1. Page de desinstallation de Sindry (installeur/crochets.nsh)\n' +
     'Var DeleteAppDataCheckboxState\n' +
-    '!insertmacro WINTOOL_PAGE_DESINSTALLATION\n',
+    '!insertmacro SINDRY_PAGE_DESINSTALLATION\n',
 );
 
 // 2. Effacement des donnees de l'interface sans suivre les jonctions.
 remplacer(
   'effacement des donnees de l interface',
   '    RmDir /r "$APPDATA\\${BUNDLEID}"\n    RmDir /r "$LOCALAPPDATA\\${BUNDLEID}"\n',
-  '    !insertmacro WINTOOL_EFFACER_ARBRE "$APPDATA\\${BUNDLEID}"\n' +
-    '    !insertmacro WINTOOL_EFFACER_ARBRE "$LOCALAPPDATA\\${BUNDLEID}"\n',
+  '    !insertmacro SINDRY_EFFACER_ARBRE "$APPDATA\\${BUNDLEID}"\n' +
+    '    !insertmacro SINDRY_EFFACER_ARBRE "$LOCALAPPDATA\\${BUNDLEID}"\n',
 );
 
 // 3. La page « deja installe » (1.7). Pour une version plus ancienne, Tauri
@@ -105,18 +105,18 @@ remplacer(
 remplacer(
   'choix de la meme version',
   '    StrCpy $R2 "$(addOrReinstall)"\n    StrCpy $R3 "$(uninstallApp)"\n',
-  '    !insertmacro WINTOOL_TEXTES_REPARATION\n',
+  '    !insertmacro SINDRY_TEXTES_REPARATION\n',
 );
 remplacer(
   'choix d une version plus ancienne',
   '    StrCpy $R2 "$(uninstallBeforeInstalling)"\n    StrCpy $R3 "$(dontUninstall)"\n    !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"\n  ; Downgrading',
-  '    !insertmacro WINTOOL_TEXTES_MISE_A_JOUR\n    !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"\n  ; Downgrading',
+  '    !insertmacro SINDRY_TEXTES_MISE_A_JOUR\n    !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"\n  ; Downgrading',
 );
 remplacer(
   'effet du choix pour une version plus ancienne',
   '  ${ElseIf} $R0 = 1 ; Upgrading\n    ${If} $R1 = 1              ; User chose to uninstall\n      Goto reinst_uninstall\n    ${Else}\n      Goto reinst_done         ; User chose NOT to uninstall\n    ${EndIf}\n',
   '  ${ElseIf} $R0 = 1 ; Upgrading\n' +
-    '    ; WinTool : le premier choix met a jour sans desinstaller — et en mode\n' +
+    '    ; Sindry : le premier choix met a jour sans desinstaller — et en mode\n' +
     '    ; silencieux (/P), comme le faisait Tauri.\n' +
     '    ${If} $R1 = 1\n    ${OrIf} $PassiveMode = 1\n      Goto reinst_done\n    ${Else}\n      Goto reinst_uninstall\n    ${EndIf}\n',
 );

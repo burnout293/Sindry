@@ -1,5 +1,5 @@
 {
-  "name": "wintool",
+  "name": "sindry",
   "private": true,
   "version": "1.8.0",
   "description": "Outil de maintenance Windows - interface Tauri, scripts PowerShell",
@@ -9,7 +9,7 @@
     "dev": "tauri dev",
     "build": "node ./tools/modele-installeur.mjs && tauri build",
     "installeur": "node ./tools/modele-installeur.mjs",
-    "lint:scripts": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/lint-scripts.ps1 -Path ../WinTool-Catalogue/scripts -Strict",
+    "lint:scripts": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/lint-scripts.ps1 -Path ../Sindry-Catalogue/scripts -Strict",
     "icons:sync": "node ./tools/sync-icons.mjs",
     "clean": "cargo clean --manifest-path src-tauri/Cargo.toml"
   },

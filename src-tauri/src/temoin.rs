@@ -1,7 +1,7 @@
 //! Temoin des changements sensibles (specification §12.5).
 //!
 //! Aucun bac a sable n'est possible pour un script administrateur (§12) :
-//! WinTool ne peut pas l'*empecher* de toucher aux taches planifiees ou au
+//! Sindry ne peut pas l'*empecher* de toucher aux taches planifiees ou au
 //! demarrage de Windows. Il peut en revanche **relever, avant et apres chaque
 //! script**, ce qu'un logiciel malveillant modifie pour s'installer
 //! durablement, et **le dire dans le bilan** : « ce script a cree la tache
@@ -447,7 +447,7 @@ mod tests {
 
     #[test]
     fn le_fichier_hosts_se_compare_ligne_a_ligne() {
-        let d = std::env::temp_dir().join(format!("wintool-temoin-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("sindry-temoin-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         let f = d.join("hosts");
         std::fs::write(&f, "# commentaire\r\n127.0.0.1   localhost # local\r\n\r\n").unwrap();

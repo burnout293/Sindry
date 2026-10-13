@@ -3407,6 +3407,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
+name = "sindry"
+version = "1.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "minisign-verify",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tauri-plugin-updater",
+ "windows-registry",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "siphasher"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5189,26 +5209,6 @@ checksum = "cb5a765337c50e9ec252c2069be9bf91c7df47afb103b642ba3a53bf8101be97"
 dependencies = [
  "cfg-if",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "wintool"
-version = "1.8.0"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "minisign-verify",
- "reqwest",
- "rustls",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tauri-plugin-updater",
- "windows-registry",
- "windows-sys 0.61.2",
 ]
 
 [[package]]

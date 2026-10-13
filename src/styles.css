@@ -1,12 +1,12 @@
 /* ==========================================================================
-   WinTool - tokens et base
+   Sindry - tokens et base
    Issus de docs/mockups/reference.html, section 15 de la specification.
    Regle absolue : aucune couleur en dur hors de ce bloc de tokens.
    ========================================================================== */
 
 /* --- Polices, embarquees ---------------------------------------------------
    La maquette est entierement composee en Inter, et le journal dans la fonte a
-   chasse fixe « WinTool Mono ». Les appeler depuis Google Fonts serait sans
+   chasse fixe « Sindry Mono ». Les appeler depuis Google Fonts serait sans
    effet : la CSP de
    l'application n'autorise aucune requete sortante (`font-src 'self'`), et
    c'est voulu — un outil de maintenance doit fonctionner sur une machine hors
@@ -16,7 +16,7 @@
    Inter est ici en fonte variable : un seul fichier de 48 Ko couvre toutes les
    graisses de 100 a 900, au lieu d'un fichier par graisse.
 
-   « WinTool Mono » est IBM Plex Mono, renommee. L'OFL-1.1 reserve le nom
+   « Sindry Mono » est IBM Plex Mono, renommee. L'OFL-1.1 reserve le nom
    « Plex » : un sous-ensemble converti en woff2 est une « Modified Version »
    au sens de la licence, et sa condition 3 lui interdit alors de porter le nom
    reserve. Le renommage porte sur les enregistrements `name` 1, 3, 4 et 6 ; le
@@ -31,18 +31,18 @@
   src: url('fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
 }
 @font-face {
-  font-family: 'WinTool Mono';
+  font-family: 'Sindry Mono';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('fonts/wintool-mono-400.woff2') format('woff2');
+  src: url('fonts/sindry-mono-400.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'WinTool Mono';
+  font-family: 'Sindry Mono';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('fonts/wintool-mono-500.woff2') format('woff2');
+  src: url('fonts/sindry-mono-500.woff2') format('woff2');
 }
 
 /* --- Braise, variante Ardente : theme clair (defaut) ----------------------
@@ -122,7 +122,7 @@
   --sh-2: 0 10px 34px rgba(31, 20, 38, .10);
 
   --ui: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'WinTool Mono', 'Cascadia Mono', Consolas, monospace;
+  --mono: 'Sindry Mono', 'Cascadia Mono', Consolas, monospace;
 
   --titlebar-h: 54px;
 }
@@ -1192,7 +1192,7 @@ body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-st
               border-color: color-mix(in srgb, var(--acc) 38%, transparent); }
 
 /* Bloc CONFIGURATION (specification 4.2) : les options du script et les deux
-   cases WinTool, sous un seul entete — c'est la meme question pour qui lit. */
+   cases Sindry, sous un seul entete — c'est la meme question pour qui lit. */
 .conf {
   margin-top: 16px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 20px; overflow: hidden;
@@ -2044,7 +2044,7 @@ body.inactive .rise-crest { animation-play-state: paused; }
 .grp.large .accents { justify-content: flex-start; max-width: none; }
 .grp .seg button:disabled { opacity: .45; cursor: not-allowed; }
 
-/* --- Reglages : une page de WinTool (specification §8) ------------------------
+/* --- Reglages : une page de Sindry (specification §8) ------------------------
    Pas une fenetre posee dessus : la page couvre la scene, sous la barre de
    titre, qui reste active. Un menu des sections a gauche, une section a la
    fois a droite, une carte par reglage. */

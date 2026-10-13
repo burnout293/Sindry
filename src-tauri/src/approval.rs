@@ -6,11 +6,11 @@
 //! Tout le reste — script de l'utilisateur, script officiel modifie — doit y
 //! figurer, par son empreinte exacte, avant sa toute premiere execution.
 //!
-//! **Le magasin vit dans la base de registre, sous `HKLM\SOFTWARE\WinTool`.**
-//! Jusqu'a la 1.1.1 c'etait un fichier, `%ProgramData%\WinTool\approved.json`.
+//! **Le magasin vit dans la base de registre, sous `HKLM\SOFTWARE\Sindry`.**
+//! Jusqu'a la 1.1.1 c'etait un fichier, `%ProgramData%\Sindry\approved.json`.
 //! Or `ProgramData` laisse n'importe quel compte y **creer** dossiers et
 //! fichiers, et en devenir proprietaire : un programme sans droits pouvait
-//! creer ce fichier avant WinTool et y inscrire l'empreinte de son propre
+//! creer ce fichier avant Sindry et y inscrire l'empreinte de son propre
 //! script, qu'un entretien lance en administrateur aurait alors execute sans
 //! rien demander. `HKLM\SOFTWARE` n'admet, lui, aucune creation ni ecriture sans
 //! elevation : il n'y a rien a verrouiller, rien a verifier, et rien qu'un tiers
@@ -25,7 +25,7 @@ pub struct ApprovalStore {
 }
 
 /// Emplacement du magasin, sous `HKEY_LOCAL_MACHINE`.
-pub const CLE: &str = r"SOFTWARE\WinTool\Approbations";
+pub const CLE: &str = r"SOFTWARE\Sindry\Approbations";
 
 /// Une empreinte SHA-256 en hexadecimal minuscule, rien d'autre.
 fn empreinte_valide(h: &str) -> bool {
@@ -107,7 +107,7 @@ mod tests {
         fn neuve(nom: &str) -> CleEssai {
             // Une cle par test, sans parent commun : les tests tournent en
             // parallele, et le nettoyage de l'un ne doit pas defaire l'autre.
-            let c = format!(r"SOFTWARE\WinTool-tests-{}-{nom}", std::process::id());
+            let c = format!(r"SOFTWARE\Sindry-tests-{}-{nom}", std::process::id());
             let _ = CURRENT_USER.remove_tree(&c);
             CleEssai(c)
         }
@@ -145,7 +145,7 @@ mod tests {
     fn sans_droits_hklm_refuse_l_ecriture() {
         // La garantie elle-meme : un processus non eleve ne peut pas s'approuver.
         // (Si les tests tournent en administrateur, l'essai n'a pas de sens.)
-        let essai = r"SOFTWARE\WinTool-tests-droits";
+        let essai = r"SOFTWARE\Sindry-tests-droits";
         if LOCAL_MACHINE.create(essai).is_ok() {
             let _ = LOCAL_MACHINE.remove_tree(essai);
             return;

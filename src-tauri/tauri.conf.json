@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "WinTool",
+  "productName": "Sindry",
   "version": "1.8.0",
-  "identifier": "com.wintool.app",
+  "identifier": "com.sindry.desktop",
   "build": {
     "frontendDist": "../src"
   },
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "WinTool",
+        "title": "Sindry",
         "width": 1180,
         "height": 760,
         "minWidth": 920,
@@ -59,7 +59,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg5RUJGMDI2M0VCQjkxMEIKUldRTGticytKdkRyaVlKZlE4d21HcHArdk96Vjgvbjh3bWNvVlc1eTRHNHFaZndWeWkrNThFUGoK",
       "endpoints": [
-        "https://github.com/burnout293/WinTool/releases/latest/download/latest.json"
+        "https://github.com/burnout293/Sindry/releases/latest/download/latest.json"
       ],
       "requireSignedVersion": true,
       "windows": {

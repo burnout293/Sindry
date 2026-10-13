@@ -1,9 +1,9 @@
 //! Catalogues de scripts (specification §16).
 //!
-//! WinTool n'embarque plus aucun script : il les recupere depuis des *sources*
-//! — la source officielle, le depot WinTool-Catalogue, et celles qu'un
+//! Sindry n'embarque plus aucun script : il les recupere depuis des *sources*
+//! — la source officielle, le depot Sindry-Catalogue, et celles qu'un
 //! administrateur ajoute (`sources.rs`). La separation est d'abord juridique —
-//! les scripts ne sont pas sous la licence de WinTool (§16.1) — et ce module la
+//! les scripts ne sont pas sous la licence de Sindry (§16.1) — et ce module la
 //! rend reelle dans le fonctionnement. Toutes les sources passent par le meme
 //! code ; seule l'officielle a une cle compilee, et seuls ses scripts sont
 //! approuves d'office (§16.4).
@@ -17,7 +17,7 @@
 //! <script>.ps1      un fichier par script, a cote
 //! ```
 //!
-//! Le format de signature est celui des mises a jour de WinTool, mais la cle en
+//! Le format de signature est celui des mises a jour de Sindry, mais la cle en
 //! est **une autre** : si l'une fuitait, elle ne signerait que son propre
 //! domaine. Une cle de catalogue compromise ne fabrique pas de fausse mise a
 //! jour de l'application, et inversement.
@@ -50,7 +50,7 @@ pub const SOURCE: &str = "officiel";
 /// Le depot GitHub qui publie le catalogue officiel, `proprietaire/depot`. Un
 /// fork remplace cette constante et `src-tauri/catalogue.pub` (§16.8) : aucune
 /// autre adresse n'est cablee ailleurs.
-pub const DEPOT: &str = "burnout293/WinTool-Catalogue";
+pub const DEPOT: &str = "burnout293/Sindry-Catalogue";
 
 /// L'adresse d'un depot GitHub. Une source n'est jamais qu'un depot : ses
 /// releases portent l'index signe et les scripts.
@@ -63,13 +63,13 @@ pub fn url_depot(depot: &str) -> String {
 /// remplacer. Vide si le fichier manque — cas d'un fork qui n'a pas encore
 /// genere la sienne. Le catalogue refuse alors tout, plutot que de faire
 /// confiance a quoi que ce soit ; et une release refuse de se construire sans.
-const CLE_PUBLIQUE: &str = env!("WINTOOL_CATALOGUE_PUB");
+const CLE_PUBLIQUE: &str = env!("SINDRY_CATALOGUE_PUB");
 
 pub fn cle_officielle() -> &'static str {
     CLE_PUBLIQUE
 }
 
-/// Version du format d'index que cette version de WinTool sait lire.
+/// Version du format d'index que cette version de Sindry sait lire.
 pub const FORMAT: u32 = 1;
 
 const INDEX: &str = "index.json";
@@ -263,7 +263,7 @@ fn hex64(s: &str) -> bool {
 /// seulement a l'ajout d'une source tierce, quand c'est l'index qui le donne —
 /// il doit alors etre un identifiant sur.
 fn analyser(octets: &[u8], attendu: Option<&str>) -> Result<Index, String> {
-    // Le format d'abord : un index d'un format futur doit dire « mettez WinTool
+    // Le format d'abord : un index d'un format futur doit dire « mettez Sindry
     // a jour », pas « index illisible ».
     #[derive(Deserialize)]
     struct Entete {
@@ -274,7 +274,7 @@ fn analyser(octets: &[u8], attendu: Option<&str>) -> Result<Index, String> {
         return Err(erreur(
             code::FORMAT,
             format!(
-                "index au format {}, cette version de WinTool lit le format {FORMAT}",
+                "index au format {}, cette version de Sindry lit le format {FORMAT}",
                 entete.format
             ),
         ));
@@ -441,7 +441,7 @@ pub fn refuser_retour_arriere(local: Option<&Index>, distant: &Index) -> Result<
 // Ce qui est installe
 // ---------------------------------------------------------------------------
 
-/// `%LOCALAPPDATA%\WinTool\sources\<id>` : un dossier par source, a part
+/// `%LOCALAPPDATA%\Sindry\sources\<id>` : un dossier par source, a part
 /// des scripts de l'utilisateur. La provenance d'un script se lit dans son
 /// chemin, et deux sources ne peuvent pas se marcher dessus.
 pub fn dossier_source<R: Runtime>(app: &AppHandle<R>, id: &str) -> Result<PathBuf, String> {
@@ -581,7 +581,7 @@ pub struct Bilan {
     /// Presents, mais modifies localement : ils seront remplaces, et la
     /// version modifiee gardee a cote.
     pub remplaces: Vec<Element>,
-    /// A l'index installe, plus a celui-ci. Ils restent sur le disque — WinTool
+    /// A l'index installe, plus a celui-ci. Ils restent sur le disque — Sindry
     /// ne supprime jamais un script — mais redeviennent des scripts locaux,
     /// soumis a l'approbation du §12.1.
     pub retires: Vec<Element>,
@@ -774,7 +774,7 @@ pub(crate) fn client() -> Result<reqwest::Client, String> {
         let _ = rustls::crypto::ring::default_provider().install_default();
     }
     reqwest::Client::builder()
-        .user_agent("WinTool")
+        .user_agent("Sindry")
         .https_only(true)
         .connect_timeout(Duration::from_secs(15))
         .timeout(Duration::from_secs(60))
@@ -1126,7 +1126,7 @@ mod tests {
 
     #[test]
     fn effacer_la_copie_ne_touche_qu_a_l_index_et_aux_scripts_a_plat() {
-        let d = std::env::temp_dir().join(format!("wintool-effacer-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("sindry-effacer-{}", std::process::id()));
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(d.join("sous-dossier")).unwrap();
         for f in [
@@ -1175,7 +1175,7 @@ mod tests {
 
     impl Bac {
         fn neuf(nom: &str) -> Bac {
-            let d = std::env::temp_dir().join(format!("wintool-cat-{}-{nom}", std::process::id()));
+            let d = std::env::temp_dir().join(format!("sindry-cat-{}-{nom}", std::process::id()));
             let _ = fs::remove_dir_all(&d);
             fs::create_dir_all(&d).unwrap();
             Bac(d)
@@ -1305,7 +1305,7 @@ mod tests {
     }
 
     #[test]
-    fn un_format_futur_demande_une_mise_a_jour_de_wintool() {
+    fn un_format_futur_demande_une_mise_a_jour_de_sindry() {
         let e = analyser(br#"{"format":2,"tout":"autre chose"}"#, Some(SOURCE)).unwrap_err();
         assert!(e.starts_with(code::FORMAT), "{e}");
     }
@@ -1687,14 +1687,14 @@ mod tests {
     /// ici. A lancer a la main, avec un index et une cle jetables :
     ///
     /// ```text
-    /// WINTOOL_INDEX_ESSAI=<index.json> WINTOOL_CLE_ESSAI=<cle.pub>
+    /// SINDRY_INDEX_ESSAI=<index.json> SINDRY_CLE_ESSAI=<cle.pub>
     ///   cargo test --lib -- --ignored aller_retour
     /// ```
     #[test]
     #[ignore]
     fn aller_retour_avec_l_outil_de_construction() {
-        let index = std::env::var("WINTOOL_INDEX_ESSAI").expect("WINTOOL_INDEX_ESSAI");
-        let cle = std::env::var("WINTOOL_CLE_ESSAI").expect("WINTOOL_CLE_ESSAI");
+        let index = std::env::var("SINDRY_INDEX_ESSAI").expect("SINDRY_INDEX_ESSAI");
+        let cle = std::env::var("SINDRY_CLE_ESSAI").expect("SINDRY_CLE_ESSAI");
         let cle = fs::read_to_string(cle).unwrap();
         let brut = fs::read(&index).unwrap();
         let signature = fs::read(format!("{index}.sig")).unwrap();
@@ -1705,7 +1705,7 @@ mod tests {
 
     /// Le catalogue officiel publie, par le vrai code reseau (TLS, redirections
     /// de GitHub, plafonds) et la vraie cle compilee, installe dans un dossier
-    /// jetable. A lancer a la main avant chaque release de WinTool :
+    /// jetable. A lancer a la main avant chaque release de Sindry :
     ///
     /// ```text
     /// cargo test --lib -- --ignored catalogue_publie

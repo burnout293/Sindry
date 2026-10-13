@@ -30,7 +30,7 @@
    */
   const SCENARIO = new URLSearchParams(location.search).get('catalogue') || '';
   let catalogueInstalle = !['vide', 'neuf', 'perso', 'signature'].includes(SCENARIO);
-  const CATALOGUE_ROOT = 'C:\\Users\\Buly\\AppData\\Local\\WinTool\\sources\\officiel';
+  const CATALOGUE_ROOT = 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\sources\\officiel';
 
   const CATS = [
     { id: 'entretien', fr: 'Entretien complet', en: 'Full maintenance', icon: 'sparkles', pinned: true, aggregate: true },
@@ -400,7 +400,7 @@
       emettre('script:end', {
         run_id, script_id: s.id, exit_code: tue ? null : 0, success: !tue, killed: tue, duration_ms: 900,
         checkpoint_reached: false, reboot_requested: false, freed: null, analysis: true, changes: [], watched: [],
-        counts_ok: 0, counts_warn: 0, counts_err: 0, log_path: `C:\\Users\\Buly\\AppData\\Local\\WinTool\\logs\\${s.id}-analyse.log`,
+        counts_ok: 0, counts_warn: 0, counts_err: 0, log_path: `C:\\Users\\Buly\\AppData\\Local\\Sindry\\logs\\${s.id}-analyse.log`,
       });
     }, 80 + lignes.length * 120 + 200);
     return { run_id, script_id: s.id, engine: 'winps', engine_path: 'powershell.exe', policy: 'Bypass', log_path: '', pid: 4343, simulated: false };
@@ -454,7 +454,7 @@
   };
 
   const groupes = () => ({
-    root: 'C:\\Users\\Buly\\AppData\\Local\\WinTool\\scripts',
+    root: 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\scripts',
     catalogue_root: CATALOGUE_ROOT,
     problems: [],
     lots: CATS.map((c) => ({
@@ -521,7 +521,7 @@
   const LIGNES = [
     [0, 'stdout', 'INFO', null, '[INFO] Target resolver: Cloudflare (1.1.1.1 / 1.0.0.1)'],
     [120, 'stdout', 'STEP', [1, 4], '[STEP] 1/4 Backing up current configuration'],
-    [260, 'stdout', 'OK', null, '[OK] Exported to %LOCALAPPDATA%\\WinTool\\backup\\dns.reg'],
+    [260, 'stdout', 'OK', null, '[OK] Exported to %LOCALAPPDATA%\\Sindry\\backup\\dns.reg'],
     [400, 'stdout', 'CKPT', null, '[CKPT] Backup complete — safe to interrupt from here'],
     [520, 'stdout', 'STEP', [2, 4], '[STEP] 2/4 Applying to Ethernet'],
     [660, 'stdout', 'OK', null, '[OK] Ethernet → 1.1.1.1 / 1.0.0.1'],
@@ -552,7 +552,7 @@
 
   function lancer(req) {
     const s = TOUS.find((x) => x.id === req?.script_id);
-    // Ce que chaque script aurait recu dans WINTOOL_CONFIG : pour verifier
+    // Ce que chaque script aurait recu dans SINDRY_CONFIG : pour verifier
     // depuis la console que la selection de l'analyse part bien avec.
     (window.__BENCH_CONFIGS ||= []).push({ id: req?.script_id, config: req?.config });
     if (s && !simulable(s) && bilanSimulation().etat === 'activee') throw new Error('SANS_SIMULATION');
@@ -600,7 +600,7 @@
           ]
           : [],
         counts_ok: 2, counts_warn: 1, counts_err: 1,
-        log_path: 'C:\\Users\\Buly\\AppData\\Local\\WinTool\\logs\\2026-09-24_101200-set-dns.log',
+        log_path: 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\logs\\2026-09-24_101200-set-dns.log',
       });
     }, 1500 / 4);
 
@@ -609,7 +609,7 @@
       engine: 'winps',
       engine_path: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
       policy: 'Bypass',
-      log_path: 'C:\\Users\\Buly\\AppData\\Local\\WinTool\\logs\\2026-09-24_101200-set-dns.log',
+      log_path: 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\logs\\2026-09-24_101200-set-dns.log',
       pid: 4242,
       simulated: estSimule,
     };
@@ -619,7 +619,7 @@
     app_info: () => ({ version: '1.8.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
-    // Sans parametre, WinTool est a jour.
+    // Sans parametre, Sindry est a jour.
     check_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
@@ -636,12 +636,12 @@
       }
       if (maj === 'signature') throw new Error('Signature verification failed');
       // Le vrai greffon fermerait l'application ici ; le banc ne peut pas.
-      throw new Error('banc : l’installeur aurait ete lance et WinTool ferme');
+      throw new Error('banc : l’installeur aurait ete lance et Sindry ferme');
     },
     // Structs `catalogue::Etat`, `Bilan`, `Installation`.
     catalogue_state: () => ({
       cle: true,
-      depot: 'https://github.com/burnout293/WinTool-Catalogue',
+      depot: 'https://github.com/burnout293/Sindry-Catalogue',
       dossier: CATALOGUE_ROOT,
       installe: catalogueInstalle ? { version: '1.0.0', published: '2026-10-06', scripts: TOUT.length } : null,
       probleme: null,
@@ -684,7 +684,7 @@
     // `?sources`, un catalogue ajoute, installe : « Scripts de Dupont ».
     sources_state: () => ({
       sources: [
-        { id: 'officiel', nom: 'Catalogue officiel', depot: 'burnout293/WinTool-Catalogue', cle_publique: '', officielle: true, installe: catalogueInstalle },
+        { id: 'officiel', nom: 'Catalogue officiel', depot: 'burnout293/Sindry-Catalogue', cle_publique: '', officielle: true, installe: catalogueInstalle },
         ...tierces,
       ].map((x) => ({
         ...x,
@@ -692,7 +692,7 @@
         active: !reglages.sources_inactives.includes(x.id),
         exclus: (reglages.sources_exclus[x.id] || []).length,
         cle: true,
-        dossier: `C:\\Users\\Buly\\AppData\\Local\\WinTool\\sources\\${x.id}`,
+        dossier: `C:\\Users\\Buly\\AppData\\Local\\Sindry\\sources\\${x.id}`,
         installe: x.installe ? { version: x.id === 'officiel' ? '1.0.0' : '2.1.0', published: '2026-10-06', scripts: x.id === 'officiel' ? TOUT.length : ACTIONS_DUPONT.length } : null,
         probleme: null,
       })),
@@ -769,7 +769,7 @@
       integres: [
         { id: 'windows', chemins: ['C:\\Windows'], tres_sensible: true },
         { id: 'program_files', chemins: ['C:\\Program Files', 'C:\\Program Files (x86)'], tres_sensible: true },
-        { id: 'installation', chemins: ['C:\\Program Files\\WinTool'], tres_sensible: true },
+        { id: 'installation', chemins: ['C:\\Program Files\\Sindry'], tres_sensible: true },
         { id: 'racines_lecteurs', chemins: [], tres_sensible: true },
         { id: 'program_data', chemins: ['C:\\ProgramData'], tres_sensible: false },
         { id: 'profils', chemins: ['C:\\Users'], tres_sensible: false },
@@ -810,7 +810,7 @@
     set_catalogue_check: (a) => { reglages.catalogue_check = a.policy; return JSON.parse(JSON.stringify(reglages)); },
     hide_catalogue_reminder: () => { reglages.catalogue_reminder_hidden = true; return JSON.parse(JSON.stringify(reglages)); },
     engines: () => ({ winps: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', pwsh: null }),
-    scripts_root: () => 'C:\\Users\\Buly\\AppData\\Local\\WinTool\\scripts',
+    scripts_root: () => 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\scripts',
     get_settings: () => JSON.parse(JSON.stringify(reglages)),
     list_scripts_grouped: () => groupes(),
     get_history: () => JSON.parse(JSON.stringify(historique)),
@@ -829,7 +829,7 @@
       title: 'Configurer DNS',
       path: 'Default/102_SET-DNS.ps1',
       hash: 'a'.repeat(64),
-      source: '## WINTOOL:START\n## title : Configurer DNS\n## WINTOOL:END\n\nWrite-Output "[DONE] ok"\n',
+      source: '## SINDRY:START\n## title : Configurer DNS\n## SINDRY:END\n\nWrite-Output "[DONE] ok"\n',
       attention: [{ line: 12, pattern: 'Invoke-Expression', message: 'Exécution de code construit à la volée' }],
       previously_approved_at: null,
     }),
@@ -910,7 +910,7 @@
       return 'created';
     },
     set_show_setting_numbers: (a) => { reglages.show_setting_numbers = !!a.value; return JSON.parse(JSON.stringify(reglages)); },
-    export_settings: () => 'C:\\Users\\Buly\\Documents\\wintool-config.json',
+    export_settings: () => 'C:\\Users\\Buly\\Documents\\sindry-config.json',
     import_settings: () => ({ ok: true, message: 'Configuration importée.' }),
   };
 

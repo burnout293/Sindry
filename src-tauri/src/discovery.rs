@@ -4,9 +4,9 @@
 //! rangement (specification 4.3) :
 //!
 //! ```text
-//! %LOCALAPPDATA%\WinTool\sources\officiel\   catalogue officiel (§16)
-//! %LOCALAPPDATA%\WinTool\sources\<id>\       une source tierce (§16.2)
-//! %LOCALAPPDATA%\WinTool\scripts\             scripts de l'utilisateur
+//! %LOCALAPPDATA%\Sindry\sources\officiel\   catalogue officiel (§16)
+//! %LOCALAPPDATA%\Sindry\sources\<id>\       une source tierce (§16.2)
+//! %LOCALAPPDATA%\Sindry\scripts\             scripts de l'utilisateur
 //! ├─ MesScripts\                              il organise comme il veut
 //! └─ Essais\
 //! ```
@@ -71,7 +71,7 @@ pub struct DiscoveryResult {
     pub problems: Vec<String>,
 }
 
-/// Dossier de travail de l'application : `%LOCALAPPDATA%\WinTool`.
+/// Dossier de travail de l'application : `%LOCALAPPDATA%\Sindry`.
 ///
 /// Une seule definition, parce que plusieurs modules en ont besoin (scripts de
 /// l'utilisateur, journaux) et que deux definitions qui divergent donneraient
@@ -81,10 +81,10 @@ pub fn base_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         .path()
         .local_data_dir()
         .map_err(|e| format!("dossier local introuvable : {e}"))?;
-    Ok(sans_prefixe_long(base.join("WinTool")))
+    Ok(sans_prefixe_long(base.join("Sindry")))
 }
 
-/// Racine des scripts de l'utilisateur : `%LOCALAPPDATA%\WinTool\scripts`.
+/// Racine des scripts de l'utilisateur : `%LOCALAPPDATA%\Sindry\scripts`.
 pub fn scripts_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
     Ok(base_dir(app)?.join("scripts"))
 }
@@ -257,7 +257,7 @@ fn parcourir(
 ///
 /// Les scripts que l'utilisateur a decoches (`exclus`, par id d'index) ne sont
 /// pas montres : leur fichier peut rester sur le disque, d'une installation
-/// anterieure, mais ils n'apparaissent plus dans WinTool.
+/// anterieure, mais ils n'apparaissent plus dans Sindry.
 fn parcourir_catalogue(
     racine: &Path,
     source: &Source,
@@ -387,7 +387,7 @@ pub fn discover<R: Runtime>(app: &AppHandle<R>) -> Result<DiscoveryResult, Strin
 mod tests {
     use super::*;
 
-    const ENTETE: &str = "## WINTOOL:START
+    const ENTETE: &str = "## SINDRY:START
 ## id            : {ID}
 ## lang          : en
 ## title         : {TITRE}
@@ -402,14 +402,14 @@ mod tests {
 ## interruptible : true
 ## reboot        : false
 ## engine        : auto
-## WINTOOL:END
+## SINDRY:END
 ";
 
     struct Bac(PathBuf);
 
     impl Bac {
         fn neuf(nom: &str) -> Bac {
-            let d = std::env::temp_dir().join(format!("wintool-dec-{}-{nom}", std::process::id()));
+            let d = std::env::temp_dir().join(format!("sindry-dec-{}-{nom}", std::process::id()));
             let _ = std::fs::remove_dir_all(&d);
             std::fs::create_dir_all(&d).expect("dossier de test");
             Bac(d)
@@ -522,8 +522,8 @@ mod tests {
         // Un chemin prefixe se resout en zone NoZone cote PowerShell, et
         // RemoteSigned refuse alors d executer un script non signe.
         assert_eq!(
-            sans_prefixe_long(PathBuf::from(r"\\?\D:\WinTool\a.ps1")),
-            PathBuf::from(r"D:\WinTool\a.ps1")
+            sans_prefixe_long(PathBuf::from(r"\\?\D:\Sindry\a.ps1")),
+            PathBuf::from(r"D:\Sindry\a.ps1")
         );
         // Forme UNC : le prefixe redevient un chemin reseau ordinaire.
         assert_eq!(
@@ -532,8 +532,8 @@ mod tests {
         );
         // Un chemin deja normal n est pas touche.
         assert_eq!(
-            sans_prefixe_long(PathBuf::from(r"C:\Program Files\WinTool")),
-            PathBuf::from(r"C:\Program Files\WinTool")
+            sans_prefixe_long(PathBuf::from(r"C:\Program Files\Sindry")),
+            PathBuf::from(r"C:\Program Files\Sindry")
         );
     }
 

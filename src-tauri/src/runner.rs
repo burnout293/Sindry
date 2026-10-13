@@ -8,7 +8,7 @@
 //!
 //! Enchainement :
 //!   1. les valeurs choisies sont serialisees en JSON ;
-//!   2. ce JSON est pose **dans** `WINTOOL_CONFIG` — la variable contient les
+//!   2. ce JSON est pose **dans** `SINDRY_CONFIG` — la variable contient les
 //!      valeurs, jamais le chemin d'un fichier (specification 5.2) ;
 //!   3. **le script original est execute tel quel** — ni reecriture, ni copie
 //!      temporaire, contrairement a la v3 ;
@@ -110,7 +110,7 @@ fn resoudre_moteur(demande: &str, dispo: &Engines) -> Result<(String, String), S
             .map(|p| ("pwsh".into(), p))
             .ok_or_else(|| {
                 "Ce script exige PowerShell 7, qui n'est pas installe sur cette machine. \
-             WinTool ne se rabat pas sur PowerShell 5.1 : la syntaxe pourrait ne pas \
+             Sindry ne se rabat pas sur PowerShell 5.1 : la syntaxe pourrait ne pas \
              etre comprise et le script s'arreterait en cours de route."
                     .into()
             }),
@@ -175,7 +175,7 @@ pub struct RunEnd {
     /// `None` si le script ne l'a pas dit — le bilan affiche alors l'estimation
     /// de l'analyse, precedee de « environ ».
     pub freed: Option<u64>,
-    /// Vrai pour une analyse (`WINTOOL_MODE=scan`) : rien n'a ete modifie, et
+    /// Vrai pour une analyse (`SINDRY_MODE=scan`) : rien n'a ete modifie, et
     /// l'evenement `script:analysis` a precede celui-ci.
     pub analysis: bool,
     /// Le temoin (§12.5) : ce qui a change, pendant le script, dans ce qu'un
@@ -385,7 +385,7 @@ pub struct Cible {
     /// `auto` | `winps` | `pwsh`, tel que declare dans l'entete.
     pub engine: String,
     pub interruptible: bool,
-    /// Lancer l'analyse (`WINTOOL_MODE=scan`) et non l'action (§17).
+    /// Lancer l'analyse (`SINDRY_MODE=scan`) et non l'action (§17).
     pub analyse: bool,
 }
 
@@ -480,11 +480,11 @@ pub fn config_pour_journal(config: &BTreeMap<String, serde_json::Value>) -> Stri
 
 /// Cherche la trappe de substitution dans le bloc d'override d'un script.
 ///
-/// Le contrat pose que `WINTOOL_CONFIG` **contient** le JSON (§5.2). Certains
+/// Le contrat pose que `SINDRY_CONFIG` **contient** le JSON (§5.2). Certains
 /// scripts gardent un repli de l'ancienne epoque :
 ///
 /// ```powershell
-/// $wtJson = $env:WINTOOL_CONFIG
+/// $wtJson = $env:SINDRY_CONFIG
 /// if (-not $wtJson.TrimStart().StartsWith('{')) { $wtJson = Get-Content -LiteralPath $wtJson -Raw }
 /// ```
 ///
@@ -493,17 +493,17 @@ pub fn config_pour_journal(config: &BTreeMap<String, serde_json::Value>) -> Stri
 /// a fermee — un autre processus remplace le fichier entre notre ecriture et
 /// la lecture, et ses valeurs entrent dans `$CONFIG` en administrateur.
 ///
-/// Inerte tant que WinTool met du JSON dans la variable. Mais une trappe
+/// Inerte tant que Sindry met du JSON dans la variable. Mais une trappe
 /// inerte reste une trappe, et le refus ne coute rien.
 ///
 /// **Portee volontairement etroite** : on ne cherche `Get-Content` que dans
-/// les lignes qui parlent de `WINTOOL_CONFIG` ou de la variable qui la porte,
+/// les lignes qui parlent de `SINDRY_CONFIG` ou de la variable qui la porte,
 /// jamais ailleurs. Un script qui lit un fichier pour son propre compte n'est
 /// pas concerne.
 pub fn trappe_de_substitution(source: &str) -> Option<usize> {
     let lignes: Vec<&str> = source.lines().collect();
-    // Variables locales qui recoivent WINTOOL_CONFIG : c'est par elles que le
-    // repli passe (`$wtJson = $env:WINTOOL_CONFIG`).
+    // Variables locales qui recoivent SINDRY_CONFIG : c'est par elles que le
+    // repli passe (`$wtJson = $env:SINDRY_CONFIG`).
     let mut portées: Vec<String> = Vec::new();
 
     for (i, brute) in lignes.iter().enumerate() {
@@ -513,7 +513,9 @@ pub fn trappe_de_substitution(source: &str) -> Option<usize> {
         }
         let bas = ligne.to_ascii_lowercase();
 
-        if bas.contains("$env:wintool_config") {
+        // L'ancien contrat ($env:WINTOOL_CONFIG) est lu jusqu'a la 2.1 : la
+        // trappe doit y etre cherchee aussi.
+        if bas.contains("$env:sindry_config") || bas.contains("$env:wintool_config") {
             if let Some(gauche) = ligne.split('=').next() {
                 let g = gauche.trim();
                 if g.starts_with('$') && !g.contains(' ') {
@@ -536,7 +538,7 @@ pub fn trappe_de_substitution(source: &str) -> Option<usize> {
 /// variable dont le nom commence pareil.
 ///
 /// Une recherche de sous-chaine suffisait a faire refuser un script
-/// parfaitement legitime : avec `$c = $env:WINTOOL_CONFIG`, la ligne
+/// parfaitement legitime : avec `$c = $env:SINDRY_CONFIG`, la ligne
 /// `Get-Content $config` contient bien `$c`, et le script se voyait accuse de
 /// porter la trappe. Un nom de variable s'arrete au premier caractere qui
 /// n'est ni alphanumerique ni `_` — on verifie donc ce qui SUIT.
@@ -586,7 +588,7 @@ pub fn lancer(
     // --- Verrouiller le fichier, puis le verifier ---------------------------
     //
     // Le dossier des scripts est inscriptible par l'utilisateur sans elevation,
-    // alors que WinTool, lui, est eleve. Verifier l'empreinte puis lancer
+    // alors que Sindry, lui, est eleve. Verifier l'empreinte puis lancer
     // `powershell -File <chemin>` laisse un intervalle pendant lequel un
     // processus non eleve peut remplacer le fichier entre les deux : son code
     // s'executerait alors en administrateur. L'intervalle se compte en
@@ -631,7 +633,7 @@ pub fn lancer(
             "Ce script n'a pas ete lance. Sa ligne d'override (ligne {ligne}) lit encore un \
              FICHIER de configuration, un mecanisme retire pour raison de securite : un autre \
              programme pourrait remplacer ce fichier au moment du lancement. Remplacez ce bloc \
-             par ($env:WINTOOL_CONFIG | ConvertFrom-Json) — voir docs/FORMAT_SCRIPT.md."
+             par ($env:SINDRY_CONFIG | ConvertFrom-Json) — voir docs/FORMAT_SCRIPT.md."
         ));
     }
 
@@ -698,7 +700,7 @@ pub fn lancer(
         std::fs::File::create(&fichier_log).map_err(|e| format!("creation du journal : {e}"))?;
     let _ = writeln!(
         journal,
-        "WinTool {}\n\
+        "Sindry {}\n\
          run        : {run_id}\n\
          script     : {} ({})\n\
          fichier    : {}\n\
@@ -715,7 +717,7 @@ pub fn lancer(
         cible.chemin.display(),
         empreinte,
         if cible.analyse {
-            "analyse (WINTOOL_MODE=scan)"
+            "analyse (SINDRY_MODE=scan)"
         } else {
             "action"
         },
@@ -744,6 +746,9 @@ pub fn lancer(
         // l'utilisateur ramenes dans son profil (systeme.rs). Avant les deux
         // suivantes, qui priment.
         .envs(systeme::environnement_enfants().iter().map(|(k, v)| (k, v)))
+        .env("SINDRY_CONFIG", &config_json)
+        // Les scripts a l'ancien contrat lisent encore WINTOOL_CONFIG (lu
+        // jusqu'a la 2.1, voir contract::depuis_ancien_contrat).
         .env("WINTOOL_CONFIG", &config_json)
         // `Import-Module Truc` cherche d'abord dans les dossiers de modules de
         // l'utilisateur, sous Documents, inscriptibles sans elevation : y
@@ -765,9 +770,13 @@ pub fn lancer(
     // decrit, sans rien modifier (§17). Toujours pose ou toujours retire, pour
     // qu'une variable heritee de l'environnement ne decide pas a notre place.
     if cible.analyse {
-        commande.env("WINTOOL_MODE", "scan");
+        commande
+            .env("SINDRY_MODE", "scan")
+            .env("WINTOOL_MODE", "scan");
     } else {
-        commande.env_remove("WINTOOL_MODE");
+        commande
+            .env_remove("SINDRY_MODE")
+            .env_remove("WINTOOL_MODE");
     }
 
     #[cfg(windows)]
@@ -1001,7 +1010,7 @@ pub fn run_script<R: Runtime>(
 
 /// L'analyse d'un script (§17) : meme lanceur durci, meme verrou, meme
 /// approbation prealable que l'action — analyser, c'est executer. Seule
-/// difference : `WINTOOL_MODE=scan`, et la sortie est lue contre l'entete du
+/// difference : `SINDRY_MODE=scan`, et la sortie est lue contre l'entete du
 /// script, puis publiee en `script:analysis` juste avant `script:end`.
 pub fn run_analysis<R: Runtime>(
     app: &AppHandle<R>,
@@ -1145,7 +1154,7 @@ const PROGRAMME_ANALYSE: &str = concat!(
     "$ErrorActionPreference='Stop';",
     "$e=$null;",
     "[void][System.Management.Automation.Language.Parser]::ParseFile(",
-    "$env:WINTOOL_CHECK_PATH,[ref]$null,[ref]$e);",
+    "$env:SINDRY_CHECK_PATH,[ref]$null,[ref]$e);",
     "if($e){$e|ForEach-Object{'{0}|{1}|{2}' -f ",
     "$_.Extent.StartLineNumber,$_.Extent.StartColumnNumber,($_.Message -replace '\r?\n',' ')}}"
 );
@@ -1172,7 +1181,7 @@ pub fn verifier_syntaxe(chemin: &Path) -> Result<CheckResult, String> {
         .arg(PROGRAMME_ANALYSE)
         .current_dir(systeme::emplacements().system32())
         .envs(systeme::environnement_enfants().iter().map(|(k, v)| (k, v)))
-        .env("WINTOOL_CHECK_PATH", chemin)
+        .env("SINDRY_CHECK_PATH", chemin)
         .env("PSModulePath", chemins_modules_systeme(&nom_moteur))
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -1368,7 +1377,7 @@ pub fn verifier_log<R: Runtime>(app: &AppHandle<R>, chemin: &str) -> Result<Path
         .map_err(|e| format!("{chemin} : {e}"))?;
     let canon_dossier = dossier.canonicalize().map_err(|e| e.to_string())?;
     if !canon.starts_with(&canon_dossier) {
-        return Err("Ce fichier n'est pas un journal de WinTool.".into());
+        return Err("Ce fichier n'est pas un journal de Sindry.".into());
     }
     Ok(canon)
 }
@@ -1447,7 +1456,7 @@ mod tests {
     #[test]
     fn zero_veut_dire_pas_de_limite() {
         let dir =
-            std::env::temp_dir().join(format!("wintool-test-plafond-zero-{}", std::process::id()));
+            std::env::temp_dir().join(format!("sindry-test-plafond-zero-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("a.log"), vec![0u8; 1024]).unwrap();
         appliquer_plafond_sur(&dir, 0).unwrap();
@@ -1457,7 +1466,7 @@ mod tests {
 
     #[test]
     fn supprime_les_plus_anciens_jusqu_a_repasser_sous_le_plafond() {
-        let dir = std::env::temp_dir().join(format!("wintool-test-plafond-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sindry-test-plafond-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
 
         // Trois journaux d'1 Mo chacun, ecrits dans l'ordre pour garantir des
@@ -1540,9 +1549,9 @@ mod bout_en_bout {
     Fail    = $false
 }
 
-# --- WinTool override (ne pas supprimer) ---
-if ($env:WINTOOL_CONFIG) {
-    ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
         ForEach-Object { $CONFIG[$_.Name] = $_.Value }
 }
 
@@ -1585,7 +1594,7 @@ exit 0
 
     impl Bac {
         fn neuf(nom: &str) -> Bac {
-            let d = std::env::temp_dir().join(format!("wintool-test-{}-{nom}", std::process::id()));
+            let d = std::env::temp_dir().join(format!("sindry-test-{}-{nom}", std::process::id()));
             std::fs::create_dir_all(&d).expect("dossier de test");
             Bac(d)
         }
@@ -1785,14 +1794,14 @@ exit 0
         );
     }
 
-    /// Une analyse pose `WINTOOL_MODE=scan` ; une action ne le pose jamais, meme
-    /// si la variable traine dans l'environnement de WinTool.
+    /// Une analyse pose `SINDRY_MODE=scan` ; une action ne le pose jamais, meme
+    /// si la variable traine dans l'environnement de Sindry.
     #[test]
-    fn l_analyse_et_l_action_se_distinguent_par_wintool_mode() {
+    fn l_analyse_et_l_action_se_distinguent_par_sindry_mode() {
         let bac = Bac::neuf("mode");
         let sonde = bac.poser(
             "mode.ps1",
-            "Write-Output \"[INFO] mode=[$env:WINTOOL_MODE]\"\nexit 0\n",
+            "Write-Output \"[INFO] mode=[$env:SINDRY_MODE]\"\nexit 0\n",
         );
         for (analyse, attendu) in [(true, "mode=[scan]"), (false, "mode=[]")] {
             let (collecteur, rx) = attelage();
@@ -2005,19 +2014,19 @@ exit 0
     #[test]
     fn repere_le_repli_vers_un_fichier() {
         // Forme exacte portee par 14 des 16 scripts livres.
-        let src = "$wtJson = $env:WINTOOL_CONFIG\n\
+        let src = "$wtJson = $env:SINDRY_CONFIG\n\
                    if (-not $wtJson.TrimStart().StartsWith('{')) { $wtJson = Get-Content -LiteralPath $wtJson -Raw }\n";
         assert_eq!(trappe_de_substitution(src), Some(2));
 
         // Forme sur une seule ligne, l'ancienne du guide.
-        let direct = "(Get-Content $env:WINTOOL_CONFIG -Raw | ConvertFrom-Json)\n";
+        let direct = "(Get-Content $env:SINDRY_CONFIG -Raw | ConvertFrom-Json)\n";
         assert_eq!(trappe_de_substitution(direct), Some(1));
     }
 
     #[test]
     fn laisse_passer_le_contrat_actuel() {
-        let bon = "if ($env:WINTOOL_CONFIG) {\n\
-                   ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |\n\
+        let bon = "if ($env:SINDRY_CONFIG) {\n\
+                   ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |\n\
                    ForEach-Object { $CONFIG[$_.Name] = $_.Value }\n}\n";
         assert_eq!(trappe_de_substitution(bon), None);
     }
@@ -2026,7 +2035,7 @@ exit 0
     fn n_accuse_pas_une_variable_au_nom_voisin() {
         // Faux positif reel : `$config` contient `$c`. Une recherche de
         // sous-chaine faisait refuser ce script parfaitement legitime.
-        let voisin = "$c = $env:WINTOOL_CONFIG\n\
+        let voisin = "$c = $env:SINDRY_CONFIG\n\
                       ($c | ConvertFrom-Json).PSObject.Properties | ForEach-Object { }\n\
                       $config = 'C:\\app\\reglages.json'\n\
                       $x = Get-Content -LiteralPath $config -Raw\n";
@@ -2037,7 +2046,7 @@ exit 0
         );
 
         // Mais la vraie trappe sur la meme variable courte reste vue.
-        let vraie = "$c = $env:WINTOOL_CONFIG\n\
+        let vraie = "$c = $env:SINDRY_CONFIG\n\
                      if (-not $c.StartsWith('{')) { $c = Get-Content -LiteralPath $c -Raw }\n";
         assert_eq!(
             trappe_de_substitution(vraie),
@@ -2051,7 +2060,7 @@ exit 0
         // Un script de maintenance lit evidemment des fichiers. Le controle ne
         // doit viser QUE la configuration injectee, sinon il devient un piege.
         let legitime = "$liste = Get-Content -LiteralPath 'C:\\hosts' -Raw\n\
-                        ($env:WINTOOL_CONFIG | ConvertFrom-Json).PSObject.Properties |\n\
+                        ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |\n\
                         ForEach-Object { $CONFIG[$_.Name] = $_.Value }\n";
         assert_eq!(trappe_de_substitution(legitime), None);
 
@@ -2062,8 +2071,8 @@ exit 0
 
     #[test]
     fn ignore_un_exemple_en_commentaire() {
-        let commente = "# $wt = Get-Content $env:WINTOOL_CONFIG -Raw\n\
-                        ($env:WINTOOL_CONFIG | ConvertFrom-Json)\n";
+        let commente = "# $wt = Get-Content $env:SINDRY_CONFIG -Raw\n\
+                        ($env:SINDRY_CONFIG | ConvertFrom-Json)\n";
         assert_eq!(trappe_de_substitution(commente), None);
     }
 
@@ -2158,7 +2167,7 @@ exit 0
     /// Banc de compatibilite du catalogue — lance a la main, jamais en CI :
     ///
     /// ```text
-    /// WINTOOL_CATALOGUE=..\WinTool-Catalogue\scripts cargo test --lib -- --ignored --nocapture catalogue
+    /// SINDRY_CATALOGUE=..\Sindry-Catalogue\scripts cargo test --lib -- --ignored --nocapture catalogue
     /// ```
     ///
     /// Chaque script est lu par le parseur de l'application ; chaque script
@@ -2170,8 +2179,8 @@ exit 0
     #[test]
     #[ignore]
     fn catalogue_reel_analyses() {
-        let Ok(dossier) = std::env::var("WINTOOL_CATALOGUE") else {
-            eprintln!("WINTOOL_CATALOGUE non defini : rien a verifier");
+        let Ok(dossier) = std::env::var("SINDRY_CATALOGUE") else {
+            eprintln!("SINDRY_CATALOGUE non defini : rien a verifier");
             return;
         };
         let mut fichiers: Vec<PathBuf> = std::fs::read_dir(&dossier)
@@ -2182,7 +2191,7 @@ exit 0
         fichiers.sort();
         let bac = Bac::neuf("catalogue");
         let mut problemes = Vec::new();
-        // WINTOOL_CATALOGUE_EXPORT=<fichier.json> : ce que l'interface recevrait,
+        // SINDRY_CATALOGUE_EXPORT=<fichier.json> : ce que l'interface recevrait,
         // pour le banc d'essai (`?catalogue=reel`, tools/bench/fixtures.js).
         let mut export = Vec::new();
 
@@ -2262,7 +2271,7 @@ exit 0
                 problemes.push(format!("{nom} : l'analyse n'a rien rapporte"));
             }
         }
-        if let Ok(cible) = std::env::var("WINTOOL_CATALOGUE_EXPORT") {
+        if let Ok(cible) = std::env::var("SINDRY_CATALOGUE_EXPORT") {
             std::fs::write(&cible, serde_json::to_vec_pretty(&export).unwrap())
                 .expect("ecriture de l'export");
             println!("export : {cible}");

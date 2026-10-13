@@ -113,18 +113,18 @@
       "titre_aide": { "fr": "Les droits administrateur", "en": "Administrator rights" },
       "resume": { "fr": "Pourquoi, et comment les donner", "en": "Why, and how to grant them" },
       "encart_action": {
-        "fr": "Cette action a besoin des droits administrateur. WinTool tourne avec des droits limités : elle risque d’échouer.",
-        "en": "This action needs administrator rights. WinTool is running with limited rights: it may fail."
+        "fr": "Cette action a besoin des droits administrateur. Sindry tourne avec des droits limités : elle risque d’échouer.",
+        "en": "This action needs administrator rights. Sindry is running with limited rights: it may fail."
       },
       "encart_lot": {
-        "fr": "Certaines actions ont besoin des droits administrateur. WinTool tourne avec des droits limités : elles risquent d’échouer.",
-        "en": "Some actions need administrator rights. WinTool is running with limited rights: they may fail."
+        "fr": "Certaines actions ont besoin des droits administrateur. Sindry tourne avec des droits limités : elles risquent d’échouer.",
+        "en": "Some actions need administrator rights. Sindry is running with limited rights: they may fail."
       },
       "kick": { "fr": "Droits administrateur", "en": "Administrator rights" },
-      "titre": { "fr": "Relancez WinTool en administrateur", "en": "Restart WinTool as administrator" },
+      "titre": { "fr": "Relancez Sindry en administrateur", "en": "Restart Sindry as administrator" },
       "texte": {
-        "fr": "Ici, « Droits limités » : WinTool n’a pas les droits administrateur. Relancez-le avec — Windows vous le demandera une fois, et toutes les actions en hériteront.",
-        "en": "Here, “Limited rights”: WinTool does not have administrator rights. Restart it with them — Windows asks once, and every action inherits them."
+        "fr": "Ici, « Droits limités » : Sindry n’a pas les droits administrateur. Relancez-le avec — Windows vous le demandera une fois, et toutes les actions en hériteront.",
+        "en": "Here, “Limited rights”: Sindry does not have administrator rights. Restart it with them — Windows asks once, and every action inherits them."
       }
     }
   ]

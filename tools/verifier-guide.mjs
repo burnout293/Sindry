@@ -58,7 +58,7 @@ const id = (ou, valeur, deja) => {
   deja.add(valeur);
 };
 
-if (doc.format !== 1) err('format', `vaut ${JSON.stringify(doc.format)}, cette version de WinTool lit le format 1`);
+if (doc.format !== 1) err('format', `vaut ${JSON.stringify(doc.format)}, cette version de Sindry lit le format 1`);
 
 const idsVisites = new Set();
 if (!Array.isArray(doc.visites)) err('visites', 'attendu une liste');
@@ -77,7 +77,7 @@ if (!Array.isArray(doc.visites)) err('visites', 'attendu une liste');
     texte(`${ou}.etapes[${k}].texte`, e?.texte);
   });
 });
-// Deux visites que WinTool lance lui-meme : la bienvenue propose la premiere.
+// Deux visites que Sindry lance lui-meme : la bienvenue propose la premiere.
 if (!idsVisites.has('accueil')) err('visites', 'la visite « accueil » est attendue : la bienvenue la propose');
 
 const idsAlertes = new Set();
