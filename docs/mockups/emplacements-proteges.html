@@ -438,8 +438,8 @@ const INTEGRES = [
     chemins: ['C:\\Windows'] },
   { id: 'program_files', nom: 'Program Files', court: 'Program Files', icone: 'package', tres: true,
     chemins: ['C:\\Program Files', 'C:\\Program Files (x86)'] },
-  { id: 'installation', nom: 'Le dossier de WinTool', court: 'WinTool', icone: 'waves', tres: true,
-    chemins: ['C:\\Program Files\\WinTool'] },
+  { id: 'installation', nom: 'Le dossier de Sindry', court: 'Sindry', icone: 'waves', tres: true,
+    chemins: ['C:\\Program Files\\Sindry'] },
   { id: 'racines_lecteurs', nom: 'La racine de chaque lecteur', court: 'Racines des lecteurs', icone: 'hard-drive', tres: true,
     chemins: ['C:\\', 'D:\\', '…'] },
   { id: 'program_data', nom: 'ProgramData, les données des programmes', court: 'ProgramData', icone: 'database', tres: false,
@@ -610,7 +610,7 @@ function rendreD(bloc, st) {
   noeud(0, 'hard-drive', 'C:\\', 'le lecteur lui-même, comme D:\\, E:\\…', etat('racines_lecteurs'), { id: 'racines_lecteurs', cls: 'lecteur' });
   noeud(1, 'monitor', 'Windows', '', etat('windows'), { id: 'windows' });
   noeud(1, 'package', 'Program Files', 'et Program Files (x86)', etat('program_files'), { id: 'program_files' });
-  noeud(2, 'waves', 'WinTool', '', etat('installation'), { id: 'installation' });
+  noeud(2, 'waves', 'Sindry', '', etat('installation'), { id: 'installation' });
   noeud(1, 'database', 'ProgramData', '', etat('program_data'), { id: 'program_data' });
   noeud(1, 'users', 'Users', 'les autres comptes', etat('profils'), { id: 'profils' });
   noeud(2, 'user', 'Votre profil', '', libre, { cls: 'libre' });

@@ -28,7 +28,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — graphiques à engrenages : l'anneau-engrenage par défaut, la jauge à dents, la double couronne (§17.2) | Fait |
 | | — faits des fiches en icônes et valeurs, provenance à côté du titre (§2) | Fait |
 | | — journal toujours ouvrable, même vide, en Simple comme en Expert (§2) | Fait |
-| | — nouvelle icône ; le nom WinTool reste jusqu'à la 2.0 | Fait |
+| | — nouvelle icône ; l'ancien nom reste jusqu'à la 2.0 | Fait |
 | **1.7** | Pré-version (tag `v1.7.0-beta`) | Pré-version, publiée le 11/10/2026 |
 | | — vagues : la pause suit la fenêtre réduite, plus le focus ; l'eau et les bouées s'arrêtent ensemble (§15.3) | Fait |
 | | — réglages par script : « Actif » et « Nécessite un redémarrage » retirés (§4.2) | Fait |
@@ -38,14 +38,20 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — ambiance **Spatial** (maquette M19, d'abord pensée comme un thème Star Wars) | Fait |
 | | — le graphique du résumé se déclare dans le script (`## chart`) ; le réglage 1.7 disparaît (§17.2) | Fait |
 | | — icône de l'installeur et du désinstalleur (celle de NSIS jusqu'ici) | Fait |
-| | — un thème Star Wars, style Nouvelle République | Plus tard |
 | **1.8** | Bouées de la deuxième rangée recalées sur leur vague ; installeur : « Mettre à jour » et « Réparer » au lieu de désinstaller ; versions bêta au choix (réglage 1.4 « Mises à jour »), réglages rangés par numéro ; plus de vitesse à l'étape « Vérifier », le nombre d'actions au lieu des minutes | Fait |
 | | — catalogues : ajouter, modifier, retirer dans les deux modes ; retirer efface la copie téléchargée, l'officiel compris, qui se réinstalle de zéro | Fait |
 | | — choix multiples : une liste à cocher lisible, compteur, « Tout / Aucun » (maquette M22 B) | Fait |
 | | — **Plan** devient l'ambiance par défaut : grille, roues au trait, cotes (maquette M23 B) | Fait |
 | | Publiée comme dernière version stable (tag `v1.8.0`) | Prête |
-| plus tard | Thèmes exportables et importables, en un seul fichier, pour les partager | Quand il le demandera |
-| **2.0** | WinTool devient **Sindry** | En cours |
+| **2.0** | Pré-version (tag `v2.0.0-beta`) | En cours |
+| | — l'application s'appelle **Sindry** : nom, exécutable, dossiers, registre, dépôts, police, contrat des scripts (`SINDRY:`) ; une installation existante est reprise d'elle-même, et l'ancien contrat est lu jusqu'à la 2.1 (§18) | Fait |
+| | — plus aucune fenêtre de console : point de restauration, relance en administrateur | Fait |
+| | — réglage « Ambiance » renuméroté 1.7 ; le style Plan s'étend au mode Expert | Fait |
+| | — emplacements protégés pour une seule action, dans sa configuration (§12.4) | Fait |
+| | — ambiances partageables : un fichier documenté, couleurs et décor libre, décor isolé, import et export (§15.7) | À faire |
+| | — ligne de commande complète, installation silencieuse (§19) | À faire |
+| | — nouvelle version de l'icône | À faire |
+| après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 
 ## Pourquoi cet ordre

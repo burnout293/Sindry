@@ -19,6 +19,10 @@ Version du document : 0.1 — 22/09/2026
 > été distribué avant la 1.0.0, et afficher « v4.0.0 » à un utilisateur
 > laisserait croire à trois versions publiées qui n'ont pas existé.
 
+> **Le nom.** L'application s'appelle **Sindry** depuis la 2.0. Elle portait un autre nom
+> jusqu'à la 1.8 ; il ne subsiste plus que là où il le faut pour reprendre une ancienne
+> installation et lire les anciens scripts (§18), et disparaîtra en 2.1.
+
 ---
 
 ## 1. Ce qu'est Sindry
@@ -651,6 +655,7 @@ réellement.
 | Ré-analyser tous les scripts (§5.5) | Expert |
 | Politique d'exécution : Bypass / RemoteSigned / Unrestricted (§6.7) | Expert |
 | Emplacements protégés : en retirer, en ajouter — en administrateur (§12.4) | Expert |
+| Emplacements protégés **pour une seule action** (2.0), dans sa configuration — en administrateur (§12.4) | Expert |
 
 Une personne à qui l'on a installé l'outil peut éclaircir ou agrandir son interface sans
 jamais croiser un réglage qu'elle pourrait casser.
@@ -937,6 +942,15 @@ racine des lecteurs) se confirme explicitement. Mais ses changements vivent dans
 retirer un emplacement ne vaut que si un programme sans droits ne peut pas l'exercer à sa
 place. Rangée dans `settings.json`, il lui aurait suffi de réécrire le fichier. Sans droits,
 la liste s'affiche, mais ne se modifie pas.
+
+**Exceptions pour une seule action (2.0).** Retirer `C:\Windows` de la liste pour qu'une
+vérification des fichiers système puisse le recevoir l'ouvrait aussi au nettoyage, et à
+tout script à venir. Depuis la 2.0, la configuration d'une action qui reçoit un texte libre
+porte sa propre liste, « Emplacements protégés pour cette action » : ce qui y est coché
+n'est autorisé que pour elle, la liste commune ne change pas. Mêmes règles : écrit dans
+`HKLM\SOFTWARE\Sindry\Garde\Exceptions` (une valeur par action, nommée par son `id`),
+en administrateur seulement, et un emplacement très sensible se confirme. L'`id` est
+vérifié avant d'être écrit (lettres, chiffres, `-`, `_`, `.` ; 80 caractères au plus).
 
 **Désinstallation.** La page de désinstallation de Sindry remplace celle de Tauri :
 
@@ -1666,5 +1680,68 @@ En conséquence :
 Le bouton « Arrêter » s'applique à l'analyse. Elle ne modifie rien par contrat, et peut donc
 être interrompue à tout instant sans la précaution du §6 : aucune notion de `[CKPT]` ne s'y
 applique.
+
+---
+
+## 18. Reprendre une installation d'avant la 2.0 (2.0)
+
+Jusqu'à la 1.8, Sindry s'appelait **WinTool**. La 2.0 change le nom partout : exécutable,
+dossiers, clés de registre, dépôts, contrat des scripts. Une installation existante ne doit
+rien y perdre, et l'utilisateur ne doit rien avoir à faire.
+
+### 18.1 Ce qui est repris
+
+| Ancien | Nouveau | Comment |
+|---|---|---|
+| `%LOCALAPPDATA%\WinTool` — réglages, historique, journaux, catalogues installés, scripts personnels | `%LOCALAPPDATA%\Sindry` | Déplacé d'un bloc ; si le nouveau dossier existe déjà, entrée par entrée, **sans jamais écraser** ce qui s'y trouve |
+| `HKLM\SOFTWARE\WinTool` — approbations, emplacements protégés, catalogues tiers | `HKLM\SOFTWARE\Sindry` | **Copié** clé par clé, sans écraser une valeur déjà là ; l'ancienne clé n'est retirée qu'une fois la copie réussie |
+| L'application installée | — | Désinstallée en silence, après la reprise. Une désinstallation silencieuse n'efface aucune donnée (§12.4) |
+| `%LOCALAPPDATA%\com.wintool.app` — profil WebView2 | — | Effacé : un cache, et deux préférences d'affichage |
+
+**Une copie, pas un renommage, pour le registre.** L'installeur de Tauri crée
+`HKLM\SOFTWARE\<éditeur>` pour sa propre clé de produit, et l'éditeur se déduit de
+l'identifiant : `SOFTWARE\Sindry` existe donc **avant** la migration — le registre ne
+distingue pas la casse. Renommer l'ancienne clé échouerait. La clé de produit de l'ancienne
+installation n'est pas copiée : elle ne concerne que son désinstalleur.
+
+**Les approbations restent valables.** Elles portent sur l'empreinte exacte des fichiers
+(§12.1), pas sur leur chemin ni sur le nom de l'application.
+
+### 18.2 Quand
+
+- **À l'installation** : le crochet `NSIS_HOOK_POSTINSTALL` lance
+  `sindry.exe --migrer-depuis-wintool`, sans fenêtre, avec les droits de l'installeur :
+  tout est fait d'un coup. Avec cet argument, Sindry migre et s'arrête, sans ouvrir de
+  fenêtre.
+- **À chaque démarrage** : ce qui ne demande pas de droits (le dossier local du compte), et
+  le reste si Sindry est administrateur. C'est ce qui reprend le dossier d'un **autre compte**
+  du même PC, à son premier lancement.
+
+Chaque étape ne fait rien si elle est déjà faite : relancer la migration est sans effet. Ce
+qui a été fait au démarrage s'affiche parmi les anomalies de l'Expert, un échec aussi — sans
+jamais bloquer le lancement.
+
+### 18.3 Les scripts : l'ancien contrat, lu jusqu'à la 2.1
+
+Les scripts écrits pour WinTool commencent par `## WINTOOL:START` et lisent
+`$env:WINTOOL_CONFIG`. Sindry 2.0 les ramène au contrat de Sindry ligne à ligne avant de
+les lire (les numéros de ligne ne bougent pas), pose les **deux** variables au lancement, et
+le signale en Expert (`CONTRAT_ANCIEN`). Le validateur relève une **note**, qui ne fait jamais
+échouer `-Strict` : la CI d'un catalogue reste verte le temps qu'il migre.
+`tools/construire-index-catalogue.ps1` lit les deux formes.
+
+En 2.1, cette lecture disparaît, avec la migration : ce sont les deux seuls endroits du code
+qui nomment encore l'ancien nom (`contract::depuis_ancien_contrat`, `migration.rs`).
+
+### 18.4 Les mises à jour, d'un nom à l'autre
+
+Les dépôts sont renommés sur GitHub (`burnout293/Sindry`, `burnout293/Sindry-Catalogue`).
+GitHub redirige les anciennes adresses : une installation 1.8 continue de trouver ses
+mises à jour et son catalogue, et c'est par elle que la 2.0 arrive. **Le renommage des
+dépôts doit précéder la publication de la 2.0** : la 2.0 ne cherche plus qu'aux nouvelles
+adresses.
+
+La clé de signature des mises à jour ne change pas : la 2.0 est signée par la clé que la
+1.8 connaît.
 
 ---

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WinTool v4 — Maquette de référence v2 (Réglages · Confiance · Premier lancement)</title>
+<title>Sindry v4 — Maquette de référence v2 (Réglages · Confiance · Premier lancement)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
-   WINTOOL v4 — SPÉCIFICATION VISUELLE v2
+   SINDRY v4 — SPÉCIFICATION VISUELLE v2
    Reprend tel quel le bloc de tokens et les composants de reference.html
    (déjà verrouillés) et ajoute les écrans manquants identifiés le 22/09/2026 :
    Réglages, Confiance à la première exécution (§12.1), Premier lancement (§13),
@@ -520,7 +520,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
   <section id="ONBOARDING">
     <div class="onb-card">
       <div class="onb-mark"><svg class="ico i28"><use href="#i-logo"/></svg></div>
-      <h1>Bienvenue dans WinTool</h1>
+      <h1>Bienvenue dans Sindry</h1>
       <p class="lead">Un outil d'entretien pour Windows : nettoyage, performance et vie privée,
       en quelques clics. Vous gardez la main à chaque étape.</p>
 
@@ -528,7 +528,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
         <div class="onb-fact">
           <svg class="ico i20"><use href="#i-shield"/></svg>
           <div><div class="ot">Windows a demandé l'autorisation d'administrateur</div>
-          <div class="od">C'est normal — WinTool en a besoin pour agir sur le système. Un avertissement SmartScreen a pu s'afficher juste avant : WinTool est distribué gratuitement, sans certificat payant.</div></div>
+          <div class="od">C'est normal — Sindry en a besoin pour agir sur le système. Un avertissement SmartScreen a pu s'afficher juste avant : Sindry est distribué gratuitement, sans certificat payant.</div></div>
         </div>
         <div class="onb-fact">
           <svg class="ico i20"><use href="#i-check"/></svg>
@@ -554,7 +554,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
   <div id="MAIN">
     <header class="bar">
       <div class="mark"><svg class="ico"><use href="#i-logo"/></svg></div>
-      <span class="wordmark">WinTool</span>
+      <span class="wordmark">Sindry</span>
 
       <div class="stepper" data-only="simple">
         <div class="sd now" data-go="1"><div class="b">1</div><div class="t">Choisir</div></div>
@@ -802,7 +802,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
             <div class="statebox">
               <svg class="ico i22"><use href="#i-warn"/></svg>
               <div>
-                <p><b>Ce script n'a jamais été approuvé.</b> Comme il vient de l'extérieur de WinTool, il doit être examiné avant sa toute première exécution — c'est le cas pour tout script hors des scripts fournis par défaut (§12.1 de la spécification).</p>
+                <p><b>Ce script n'a jamais été approuvé.</b> Comme il vient de l'extérieur de Sindry, il doit être examiné avant sa toute première exécution — c'est le cas pour tout script hors des scripts fournis par défaut (§12.1 de la spécification).</p>
                 <div class="actions"><button class="btn quiet">Voir le source</button></div>
               </div>
             </div>
@@ -821,7 +821,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
             <div class="statebox">
               <svg class="ico i22"><use href="#i-warn"/></svg>
               <div>
-                <p>Ce script utilise une syntaxe propre à <b>PowerShell 7</b>, qui n'est pas installé. WinTool ne le lance pas avec PowerShell 5.1 par défaut pour éviter un plantage en cours d'exécution.</p>
+                <p>Ce script utilise une syntaxe propre à <b>PowerShell 7</b>, qui n'est pas installé. Sindry ne le lance pas avec PowerShell 5.1 par défaut pour éviter un plantage en cours d'exécution.</p>
                 <div class="actions"><button class="btn"><svg class="ico i14"><use href="#i-down"/></svg>Installer PowerShell 7</button><button class="btn quiet">Ignorer ce script</button></div>
               </div>
             </div>
@@ -854,7 +854,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
             <div class="term-b">
 <div class="ln"><span class="ts">14:32:10</span><span class="k-info">[INFO]</span><span>Résolveur cible : Cloudflare (1.1.1.1 / 1.0.0.1)</span></div>
 <div class="ln"><span class="ts">14:32:10</span><span class="k-step">[STEP]</span><span>1/4  Sauvegarde de la configuration actuelle</span></div>
-<div class="ln"><span class="ts">14:32:10</span><span class="k-ok">[OK]  </span><span>Export → %LOCALAPPDATA%\WinTool\backup\dns-2026-09-21.reg</span></div>
+<div class="ln"><span class="ts">14:32:10</span><span class="k-ok">[OK]  </span><span>Export → %LOCALAPPDATA%\Sindry\backup\dns-2026-09-21.reg</span></div>
 <div class="ln"><span class="ts">14:32:11</span><span class="k-step">[STEP]</span><span>2/4  Application aux cartes réseau</span></div>
 <div class="ln"><span class="ts">14:32:11</span><span class="k-ok">[OK]  </span><span>Ethernet → 1.1.1.1 / 1.0.0.1</span></div>
 <div class="ln"><span class="ts">14:32:11</span><span class="k-warn">[WARN]</span><span>Wi-Fi désactivé — carte ignorée</span></div>
@@ -926,7 +926,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
       <div class="set-group only-expert">
         <h3>Scripts et configuration — mode Expert</h3>
         <div class="setrow">
-          <div><div class="sn">Dossier des scripts</div><div class="ss">%LOCALAPPDATA%\WinTool\scripts\</div></div>
+          <div><div class="sn">Dossier des scripts</div><div class="ss">%LOCALAPPDATA%\Sindry\scripts\</div></div>
           <div class="sr"><button class="btn quiet"><svg class="ico i14"><use href="#i-folder"/></svg>Ouvrir</button></div>
         </div>
         <div class="setrow">
@@ -955,7 +955,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
       <div class="mi"><svg class="ico i22"><use href="#i-shield"/></svg></div>
       <div>
         <h2>Ce script n'a jamais été approuvé</h2>
-        <div class="msub">Il vient de l'extérieur de WinTool — examinez-le avant sa première exécution.</div>
+        <div class="msub">Il vient de l'extérieur de Sindry — examinez-le avant sa première exécution.</div>
         <div class="mpath">MesScripts/nettoyage-forum.ps1 · trouvé aujourd'hui à 09:14</div>
       </div>
     </div>
@@ -966,7 +966,7 @@ html[data-run="done"]     [data-r="progress"]{display:none}
       </div>
       <p style="font-size:12.5px;color:var(--text-2);line-height:1.55">
         Le niveau de risque ci-dessus est écrit par l'auteur du script — il n'a aucune valeur si le
-        script est malveillant. Ce qui suit est détecté automatiquement par WinTool.
+        script est malveillant. Ce qui suit est détecté automatiquement par Sindry.
       </p>
 
       <div class="warnlist">

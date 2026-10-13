@@ -202,7 +202,7 @@ const P = {
     change: ['Grille de 32 px qui s\'estompe vers les bords', 'Roues au trait, cotes « Ø 400 · Z 20 »', 'Coins à 6–8 px, une seule couleur, des chiffres en chasse fixe'] },
   points: { nom: 'C · Points', tag: "Une matrice de points, en noir et blanc, et un seul rouge-orange. Les roues sont tracées en pointillés ronds. Rappelle Nothing ou Teenage Engineering.",
     change: ['Fond pointillé, roues en points', 'Titres en chasse fixe, capitales', 'Tout en pilules, un témoin « ● » rouge'] },
-  acier: { nom: 'D · Acier doux', tag: "Une roue pleine, en acier poli, flottant sur une ombre douce ; de grandes cartes blanches aux ombres légères. Une page de produit Apple, mais pour WinTool.",
+  acier: { nom: 'D · Acier doux', tag: "Une roue pleine, en acier poli, flottant sur une ombre douce ; de grandes cartes blanches aux ombres légères. Une page de produit Apple, mais pour Sindry.",
     change: ['La roue en volume (dégradé d\'acier), plus en trait', 'Ombres larges et douces, coins à 16–24 px', 'Le meilleur en clair'] },
 };
 const IDS = Object.keys(P);
@@ -230,7 +230,7 @@ function decor(p) {
 }
 function ecran(p, m) {
   return `<div class="ecran" data-p="${p}" data-m="${m}"><div class="decor">${decor(p)}</div>
-    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">Sindry</span>
       <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div><span class="ib"><svg class="i"><use href="#terminal"/></svg></span><span class="ib"><svg class="i"><use href="#settings"/></svg></span></div></div>
     <div class="contenu"><h1>Que souhaitez-vous faire ?</h1><p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
       <div class="reco"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span><div><b>Entretien complet <em>Recommandé</em></b><span>On s'occupe de tout — 11 actions</span></div></div>

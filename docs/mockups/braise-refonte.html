@@ -173,7 +173,7 @@ body.calme .ecran *, body.calme .ecran *::before { animation: none !important; }
 <script>
 const P = {
   brasier: { nom: 'A · Brasier', tag: "La houle devient une coulée de lave : une crête incandescente, des étincelles qui montent et s'éteignent, un voile de fumée en haut.",
-    change: ['Garde la houle — la marée de WinTool — mais en feu', 'Crête dorée lumineuse, nappes de lave rouge sombre', 'Étincelles : douze à la fois, jamais plus'] },
+    change: ['Garde la houle — la marée de Sindry — mais en feu', 'Crête dorée lumineuse, nappes de lave rouge sombre', 'Étincelles : douze à la fois, jamais plus'] },
   forge: { nom: 'B · Forge', tag: "Le rouage de l'icône tourne lentement derrière le titre ; la houle est du métal en fusion, des gerbes d'étincelles jaillissent de la crête.",
     change: ["Relie la flamme et l'engrenage de l'icône", 'Bouées en métal chauffé', 'Gerbes sur la crête, comme sous le marteau'] },
   foyer: { nom: 'C · Foyer', tag: "Le plus chaleureux : des flammes stylisées qui lèchent le bas de l'écran, un halo qui respire, des braises qui flottent comme des lucioles.",
@@ -215,7 +215,7 @@ function decor(p) {
 }
 function ecran(p, m) {
   return `<div class="ecran" data-p="${p}" data-m="${m}"><div class="decor">${decor(p)}</div>
-    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">Sindry</span>
       <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div><span class="ib"><svg class="i"><use href="#terminal"/></svg></span></div></div>
     <div class="contenu"><h1>Que souhaitez-vous faire ?</h1><p>Choisissez une option. Vous pourrez revenir en arrière à tout moment.</p>
       <div class="reco"><span class="ri"><svg class="i"><use href="#sparkles"/></svg></span><div><b>Entretien complet</b><span>On s'occupe de tout — 11 actions</span></div></div>

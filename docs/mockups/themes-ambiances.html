@@ -294,7 +294,7 @@ body.calme .ecran *, body.calme .ecran *::before, body.calme .ecran *::after { a
 <div class="vignettes" id="vignettes"></div>
 
 <section class="integration">
-  <h2>Comment ils entreraient dans WinTool</h2>
+  <h2>Comment ils entreraient dans Sindry</h2>
   <ul>
     <li><b>Un réglage « Thème »</b> à la place de « Couleurs » (1.8) : on choisit le thème, puis sa variante ; clair ou sombre reste le réglage 1.1 quand le thème a les deux.</li>
     <li><b>Un thème = des jetons + un décor.</b> Les jetons (fonds, textes, accent, séries des graphiques) changent tout l'écran ; le décor remplace la houle à l'accueil du mode Simple, et les bouées y flottent comme sur l'eau.</li>
@@ -318,7 +318,7 @@ const THEMES = {
   aurore: { nom: 'Aurore', variantes: ['Boréale', 'Australe'], tag: "Nuit polaire : des voiles de lumière ondulent au-dessus de collines et d'un lac immobile.",
     change: ['Décor : aurores animées, collines en silhouette', 'Cartes et bouées en verre dépoli', 'Le plus calme des cinq'], note: '' },
   abysses: { nom: 'Abysses', variantes: ['Abysse', 'Lagon'], tag: "Sous la surface : rais de lumière, bulles qui remontent, bouées qui luisent comme des méduses.",
-    change: ['Prolonge la marée de WinTool : on passe sous l\'eau', 'Bouées bioluminescentes, coins très arrondis', '« Lagon » : eau turquoise et sable clair'], note: '' },
+    change: ['Prolonge la marée de Sindry : on passe sous l\'eau', 'Bouées bioluminescentes, coins très arrondis', '« Lagon » : eau turquoise et sable clair'], note: '' },
 };
 const IDS = Object.keys(THEMES);
 const BOUEES = [
@@ -366,7 +366,7 @@ function decor(t) {
 function ecran(t, v) {
   return `<div class="ecran" data-t="${t}" data-v="${v}">
     <div class="decor">${decor(t)}</div>
-    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">WinTool</span><span class="ver">1.7.0</span>
+    <div class="tb"><img src="../../src/marque.png" alt=""><span class="nom">Sindry</span><span class="ver">1.7.0</span>
       <span class="etape">Choisir <i></i><i></i><i></i><i></i></span>
       <div class="droite"><div class="seg"><span class="on">Simple</span><span>Expert</span></div>
         <span class="pill"><svg class="i"><use href="#shield"/></svg>Administrateur</span>

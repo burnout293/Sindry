@@ -454,7 +454,7 @@ input:disabled { cursor: not-allowed; }
 <div class="page">
   <header class="page-h">
     <h1>L'écran d'analyse, et la norme qui le compose</h1>
-    <p>WinTool examine le PC, montre ce qu'il a trouvé, on coche, et seulement ensuite il agit.
+    <p>Sindry examine le PC, montre ce qu'il a trouvé, on coche, et seulement ensuite il agit.
       Ce que l'écran affiche, <b>ce sont les scripts qui le décrivent</b>, ligne par ligne :
       une barre de progression, des éléments trouvés, des cases, des mesures, des notes.
       Rien de ce qui suit n'est dessiné à la main : chaque écran est fabriqué à partir des lignes
@@ -535,17 +535,17 @@ input:disabled { cursor: not-allowed; }
   <section id="vue-vues" hidden>
     <div class="explication">
       <h2>Une vue par action, choisie par le script — la même dans les deux modes</h2>
-      <p>WinTool dispose les actions (onglet 1) ; chaque script dit comment <b>sa</b> partie s'affiche, d'un mot :
+      <p>Sindry dispose les actions (onglet 1) ; chaque script dit comment <b>sa</b> partie s'affiche, d'un mot :
         <code class="mono">## view : donut</code>. Cette vue sert en Simple comme en Expert : le script écrit ses
         lignes <b>une fois</b>, et ce qui change d'un mode à l'autre se règle ligne par ligne
         (<code class="mono">show=expert</code>). Pour le cas rare d'une vue qui ne convient qu'à un mode :
         <code class="mono">## view : gauge expert=table</code>. Une liste peut aussi choisir la sienne :
         <code class="mono">[items] [view:table]</code>. Sans rien déclarer, c'est la liste à cocher.</p>
       <p><b>« Voir le code »</b>, sur chaque vue : l'entête (la ligne surlignée est la seule propre à la vue),
-        l'analyse en PowerShell, les lignes qu'elle écrit, puis l'action — avec ce que WinTool lui renvoie,
+        l'analyse en PowerShell, les lignes qu'elle écrit, puis l'action — avec ce que Sindry lui renvoie,
         recalculé à chaque case cochée. Les quatorze vues sont branchées sur les mêmes cases : cocher ici coche
         dans les autres onglets.</p>
-      <p>Les vues sont un <b>catalogue fermé</b>, dessiné par WinTool : un script en choisit une, il n'en
+      <p>Les vues sont un <b>catalogue fermé</b>, dessiné par Sindry : un script en choisit une, il n'en
         dessine pas. C'est ce qui garde l'application cohérente, accessible et traduite.</p>
     </div>
     <div class="galerie" id="galerie"></div>
@@ -558,7 +558,7 @@ input:disabled { cursor: not-allowed; }
         (le rappel des variables), <b>Progression</b> (le journal, filtrable : étapes, constats, et les canaux
         que le script ouvre lui-même avec <code class="mono">[LOG] Registry …</code>), <b>Ce qui sera fait</b>
         (la liste exacte, d'après les cases), <b>Ce que reçoit le script</b> (le
-        <code class="mono">WINTOOL_CONFIG</code> réel), <b>Points d'attention</b>, <b>Historique</b>,
+        <code class="mono">SINDRY_CONFIG</code> réel), <b>Points d'attention</b>, <b>Historique</b>,
         <b>Provenance</b>, <b>Espace disque</b>. Le script propose ceux qui s'ouvrent d'office
         (<code class="mono">## panels : plan progress</code>) ; l'utilisateur ajoute ou retire.</p>
       <p>Essayez : « Retirer les restes » (journal avec un canal « Registry »), puis décochez un reste et
@@ -1292,7 +1292,7 @@ function rendreDispositions() {
   const resume = enCours
     ? 'J’examine votre PC. <b>Rien n’est modifié</b> pendant l’analyse.'
     : `Coché : <b>${taille(tl.choisi)}</b>${tl.elements ? ` · ${pluriel(tl.elements, 'élément', 'éléments')}` : ''}${tl.reglages ? ` · ${pluriel(tl.reglages, 'réglage', 'réglages')}` : ''}`;
-  fen.innerHTML = `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">WinTool</span>
+  fen.innerHTML = `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">Sindry</span>
       <span class="crumb"><span>Choisir</span><i class="fait"></i><span class="on">Analyser</span><i class="actif"></i><span>Entretien</span><i></i></span>
       <span class="tb-droite"><span class="winctl"><span>${ico('minus')}</span><span>${ico('square')}</span><span>${ico('x')}</span></span></span></div>
     <div class="scene"><div class="defile">
@@ -1376,10 +1376,10 @@ function entete(ex, { vue = '', vueOption = null } = {}) {
     for (const c of p.cibles) tags[c] = p.cle;
     groupes.push(`## ${p.cle.padEnd(11)}: [group] ${p.label} — ${p.sous}`);
   }
-  const l = ['## WINTOOL:START', '## …          : id, title, desc, icon, risk…', '## scan       : true'];
+  const l = ['## SINDRY:START', '## …          : id, title, desc, icon, risk…', '## scan       : true'];
   if (ex.show) l.push(`## show       : ${ex.show}`);
   if (vue) l.push(`## view       : ${vue}`);
-  l.push('## WINTOOL:END', '', '## WINTOOL:OPTIONS');
+  l.push('## SINDRY:END', '', '## SINDRY:OPTIONS');
   for (const [k, d] of Object.entries(ex.options)) {
     const t = [`[${d.type === 'items' && d.mode ? `items:${d.mode === 'garder-un' ? 'keep-one' : d.mode}` : d.type}]`];
     if (d.scan) t.push('[scan]');
@@ -1388,12 +1388,12 @@ function entete(ex, { vue = '', vueOption = null } = {}) {
     l.push(`## ${k.padEnd(11)}: ${t.join(' ')} ${d.label}`);
     if (d.choix) for (const [c, v] of Object.entries(d.choix)) l.push(`##   ${c.padEnd(9)}: ${tags[`${k}.${c}`] ? `[group:${tags[`${k}.${c}`]}] ` : ''}${v}`);
   }
-  l.push('## WINTOOL:END');
+  l.push('## SINDRY:END');
   if (ex.libelles || ex.notes || groupes.length) {
-    l.push('', '## WINTOOL:REPORT', ...groupes);
+    l.push('', '## SINDRY:REPORT', ...groupes);
     for (const [k, v] of Object.entries(ex.libelles || {})) l.push(`## ${k.padEnd(11)}: ${v}`);
     for (const [k, [n, v]] of Object.entries(ex.notes || {})) l.push(`## ${k.padEnd(11)}: [note:${n}] ${v}`);
-    l.push('## WINTOOL:END');
+    l.push('## SINDRY:END');
   }
   return l.join('\n');
 }
@@ -1430,7 +1430,7 @@ function rendreExemples() {
 function rendreReference() {
   document.getElementById('reference').innerHTML = `
   <div class="ref"><h2>Le principe, en une phrase</h2>
-    <p>Le script <b>décrit</b> ce qu'il a trouvé ; WinTool <b>dessine</b> l'écran et <b>renvoie</b> au script ce que l'utilisateur a coché, par <code>$CONFIG</code>, comme n'importe quel réglage. Le script n'écrit jamais de phrase : sa sortie est en anglais et l'interface bilingue. Il écrit des nombres, des noms (de programmes, de fichiers, de disques) et des jetons ; les libellés viennent de son entête, déjà traduite.</p></div>
+    <p>Le script <b>décrit</b> ce qu'il a trouvé ; Sindry <b>dessine</b> l'écran et <b>renvoie</b> au script ce que l'utilisateur a coché, par <code>$CONFIG</code>, comme n'importe quel réglage. Le script n'écrit jamais de phrase : sa sortie est en anglais et l'interface bilingue. Il écrit des nombres, des noms (de programmes, de fichiers, de disques) et des jetons ; les libellés viennent de son entête, déjà traduite.</p></div>
   <div class="ref"><h2>Dans l'entête</h2><table>
     <tr><th>Déclaration</th><th>Devient</th><th>Revient au script dans <code>$CONFIG</code></th></tr>
     <tr><td><code>[bool]</code></td><td>une case simple, mesurée ou « à faire / déjà en place »</td><td><code>$true</code> / <code>$false</code></td></tr>
@@ -1439,7 +1439,7 @@ function rendreReference() {
     <tr><td><code>[items]</code> <span class="badge acc">nouveau</span></td><td>une liste d'éléments trouvés à la volée, à plat ou en arborescence, filtrable</td><td>la liste des <code>id</code> cochés</td></tr>
     <tr><td><code>[items:keep-one]</code> <span class="badge acc">nouveau</span></td><td>des groupes dont on garde un exemplaire</td><td>la liste des <code>id</code> à supprimer</td></tr>
     <tr><td><code>[scan]</code> sur une option <span class="badge acc">nouveau</span></td><td>un réglage de l'analyse elle-même, au-dessus des résultats, avec « Relancer l'analyse »</td><td>sa valeur, dès l'analyse</td></tr>
-    <tr><td>bloc <code>WINTOOL:REPORT</code> <span class="badge acc">nouveau</span></td><td>les libellés des mesures et des jetons <code>label=</code>, et les notes (<code>[note:info]</code>, <code>[note:warn]</code>) — traduits dans le bloc <code>LANG</code></td><td>—</td></tr>
+    <tr><td>bloc <code>SINDRY:REPORT</code> <span class="badge acc">nouveau</span></td><td>les libellés des mesures et des jetons <code>label=</code>, et les notes (<code>[note:info]</code>, <code>[note:warn]</code>) — traduits dans le bloc <code>LANG</code></td><td>—</td></tr>
   </table></div>
   <div class="ref"><h2>Pendant l'analyse : les lignes</h2><table>
     <tr><th>Ligne</th><th>Rôle</th></tr>
@@ -1455,7 +1455,7 @@ function rendreReference() {
     <tr><td><code>size=</code></td><td>octets</td><td>espace en jeu — affiché « 1,1 Go »</td></tr>
     <tr><td><code>count=</code></td><td>entier</td><td>nombre d'éléments</td></tr>
     <tr><td><code>state=</code></td><td><code>todo</code> · <code>ok</code></td><td>à faire · déjà en place (ne se coche pas)</td></tr>
-    <tr><td><code>checked=</code> <span class="badge acc">nouveau</span></td><td><code>true</code> · <code>false</code></td><td>l'avis du script ; sans lui, WinTool coche ce qui pèse et ce qui est à faire</td></tr>
+    <tr><td><code>checked=</code> <span class="badge acc">nouveau</span></td><td><code>true</code> · <code>false</code></td><td>l'avis du script ; sans lui, Sindry coche ce qui pèse et ce qui est à faire</td></tr>
     <tr><td><code>ms=</code> · <code>current=</code> · <code>recommended=</code></td><td>entier · booléens</td><td>pour un choix unique mesuré</td></tr>
     <tr><td><code>id=</code> · <code>parent=</code> · <code>group=</code></td><td>jetons</td><td>identité d'un élément ; arborescence ; groupe « garder un »</td></tr>
     <tr><td><code>name=</code> · <code>path=</code> · <code>publisher=</code></td><td>texte entre guillemets</td><td>des noms, pas des phrases : affichés tels quels</td></tr>
@@ -1482,7 +1482,7 @@ function rendreReference() {
     <tr><td><code>[FREED] octets</code>, à la fin de l'action</td><td>ce qui a vraiment été libéré : le bilan, et une barre de l'historique</td></tr>
   </table></div>
   <div class="ref"><h2>Un script complet</h2>
-    <p><code>docs/mockups/exemple-analyse.ps1</code> — « Faire de la place » : des choix mesurés, une corbeille, une arborescence de caches de navigateurs, des groupes, une note, une mesure, des lignes réservées à un mode ; puis l'action, qui ne lit que ce que WinTool lui renvoie. Commenté pas à pas.</p></div>
+    <p><code>docs/mockups/exemple-analyse.ps1</code> — « Faire de la place » : des choix mesurés, une corbeille, une arborescence de caches de navigateurs, des groupes, une note, une mesure, des lignes réservées à un mode ; puis l'action, qui ne lit que ce que Sindry lui renvoie. Commenté pas à pas.</p></div>
   <div class="ref"><h2>Ce qui ne change pas</h2>
     <p>Un script sans <code>scan: true</code> fonctionne comme avant. Analyser, c'est exécuter : l'approbation, le lanceur durci et l'arrêt s'appliquent (§17.4). Une ligne qui vise une option non déclarée, une mesure illisible, une note inconnue sont <b>ignorées et relevées</b> — l'onglet Exemples le montre si on en tape une. Et un script ne peut parler que de ses propres cases : jamais faire apparaître une case au nom d'un autre.</p></div>`;
 }
@@ -1720,7 +1720,7 @@ function rendreSimple3() {
   const masquesHtml = masques.length
     ? `<p class="masques">${ico('info', 'i14')}<span>${masques.length === 1 ? 'Une action ne s’affiche' : `${masques.length} actions ne s’affichent`} qu’en mode Expert, à leur demande : ${masques.map((id) => `« ${esc(PAR_ID[id].titre)} »`).join(', ')}.</span></p>`
     : '';
-  fen.innerHTML = `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">WinTool</span>
+  fen.innerHTML = `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">Sindry</span>
       <span class="crumb"><span>Choisir</span><i class="fait"></i><span class="on">Analyser</span><i class="actif"></i><span>Entretien</span><i></i></span>
       <span class="tb-droite"><span class="winctl"><span>${ico('minus')}</span><span>${ico('square')}</span><span>${ico('x')}</span></span></span></div>
     <div class="scene"><div class="defile"><div class="contenu" style="max-width:860px">
@@ -1753,14 +1753,14 @@ const GALERIE = [
   { style: 'treemap', niveau: 3, ex: 'restes', titre: 'Les rectangles, à explorer', decl: '## view : treemap', pour: 'Où est la place, à deux niveaux : on entre dans un programme pour voir ses restes.' },
   { style: 'chronologie', niveau: 3, ex: 'demarrage', titre: 'La chronologie', decl: '## view : timeline', pour: 'Ce qui se passe dans le temps : le démarrage, programme par programme, avant et après.' },
   { style: 'colonnes', niveau: 3, ex: 'dns', titre: 'Le graphique de mesures', decl: '## view : chart', pour: 'Comparer des mesures (temps de réponse, vitesses) et en choisir une.' },
-  { style: 'historique', niveau: 3, ex: 'temp', titre: 'L’historique', decl: '## view : history', pour: 'Ce que l’action a libéré à chaque passage. WinTool le sait : il garde le [FREED] de chaque action.' },
+  { style: 'historique', niveau: 3, ex: 'temp', titre: 'L’historique', decl: '## view : history', pour: 'Ce que l’action a libéré à chaque passage. Sindry le sait : il garde le [FREED] de chaque action.' },
 ];
 const TRI = { col: 'taille', sens: -1, recherche: '' };
 const TM = { programme: null };
 const CODE_OUVERT = new Set();
 
 // Le code PowerShell derriere chaque vue : l'analyse (qui ecrit les lignes) et
-// l'action (qui lit ce que WinTool renvoie). Une meme action garde le meme code
+// l'action (qui lit ce que Sindry renvoie). Une meme action garde le meme code
 // quelle que soit sa vue : seule la ligne `## view` change.
 const SCAN_PS = {
   temp: String.raw`$Folders = @{
@@ -1769,7 +1769,7 @@ const SCAN_PS = {
     update  = Join-Path $env:SystemRoot 'SoftwareDistribution\Download'
 }
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     Write-Output "[STEP] 1/2 Measuring temporary folders"
     foreach ($t in $Folders.Keys) {
         $m = Get-ChildItem -LiteralPath $Folders[$t] -Recurse -File -Force -ErrorAction SilentlyContinue |
@@ -1786,7 +1786,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
 }`,
   restes: String.raw`# Get-Leftovers : votre détection. Chaque reste porte un Id STABLE,
 # le même à l'analyse et à l'action (programme + emplacement, jamais un compteur).
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     Write-Output "[STEP] 1/2 Listing uninstalled programs"
     $programmes = Get-Leftovers
     Write-Output "[STEP] 2/2 Looking for leftovers"
@@ -1806,7 +1806,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
 # décoché ; ce que Windows interdit de retirer, verrouillé.
 $Inutiles = 'king.com.CandyCrushSaga', 'BytedancePte.Ltd.TikTok', 'Microsoft.BingNews'
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     foreach ($a in Get-AppxPackage) {
         $avis = if ($a.NonRemovable) { ' locked=system' }
                 elseif ($Inutiles -notcontains $a.Name) { ' checked=false' }
@@ -1822,7 +1822,7 @@ function Test-Reg($Path, $Name, $Value) {
     (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name -eq $Value
 }
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     $ok = Test-Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' AllowTelemetry 0
     Write-Output "[FIND] Telemetry state=$(if ($ok) { 'ok' } else { 'todo' })"
     $ok = Test-Reg 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo' Enabled 0
@@ -1830,7 +1830,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
     # … une ligne par réglage : Activity, Suggestions, Location
     exit 0
 }`,
-  disques: String.raw`if ($env:WINTOOL_MODE -eq 'scan') {
+  disques: String.raw`if ($env:SINDRY_MODE -eq 'scan') {
     foreach ($d in Get-PhysicalDisk) {
         $r    = $d | Get-StorageReliabilityCounter
         $etat = @{ Healthy = 'ok'; Warning = 'warn'; Unhealthy = 'crit' }["$($d.HealthStatus)"]
@@ -1844,7 +1844,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
     Write-Output "[NOTE] Backup"
     exit 0
 }`,
-  batterie: String.raw`if ($env:WINTOOL_MODE -eq 'scan') {
+  batterie: String.raw`if ($env:SINDRY_MODE -eq 'scan') {
     $plein   = (Get-CimInstance -Namespace root/wmi -ClassName BatteryFullChargedCapacity).FullChargedCapacity
     $origine = (Get-CimInstance -Namespace root/wmi -ClassName BatteryStaticData).DesignedCapacity
     $pct  = [math]::Round(100 * $plein / $origine)
@@ -1856,7 +1856,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
   demarrage: String.raw`# Get-BootSeconds, Get-Publisher, Get-StartupImpact : vos mesures.
 function Get-EntryId($e) { $e.Name -replace '[^\w-]', '-' }
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     $s = Get-BootSeconds
     Write-Output "[METRIC] BootTime value=$s unit=s health=$(if ($s -gt 30) { 'warn' } else { 'ok' })"
     foreach ($e in Get-CimInstance Win32_StartupCommand) {
@@ -1867,7 +1867,7 @@ if ($env:WINTOOL_MODE -eq 'scan') {
 }`,
   dns: String.raw`$Servers = @{ cloudflare = '1.1.1.1'; google = '8.8.8.8'; quad9 = '9.9.9.9' }
 
-if ($env:WINTOOL_MODE -eq 'scan') {
+if ($env:SINDRY_MODE -eq 'scan') {
     Write-Output "[STEP] 1/1 Measuring response times"
     $Servers.isp = (Get-DnsClientServerAddress -AddressFamily IPv4 |
                     Where-Object ServerAddresses | Select-Object -First 1).ServerAddresses[0]
@@ -1896,7 +1896,7 @@ foreach ($t in @($CONFIG.Targets) | Where-Object { $Folders.ContainsKey("$_") })
 if ("$($CONFIG.RecycleBin)" -eq 'True') { Clear-RecycleBin -Force -ErrorAction SilentlyContinue }
 Write-Output "[FREED] $freed"
 exit 0`,
-  restes: String.raw`# WinTool renvoie les Id cochés, jamais un chemin. Le script refait sa
+  restes: String.raw`# Sindry renvoie les Id cochés, jamais un chemin. Le script refait sa
 # détection et ne garde que ce qui a été coché.
 $coches = @($CONFIG.Leftovers)
 foreach ($p in Get-Leftovers) {
@@ -1921,14 +1921,14 @@ if ("$($CONFIG.Telemetry)" -eq 'True') {
 }
 # … de même pour AdId, Activity, Suggestions, Location
 exit 0`,
-  disques: '# Rien : un diagnostic n’a pas de case, WinTool ne relance pas le script.',
-  batterie: '# Rien : un diagnostic n’a pas de case, WinTool ne relance pas le script.',
+  disques: '# Rien : un diagnostic n’a pas de case, Sindry ne relance pas le script.',
+  batterie: '# Rien : un diagnostic n’a pas de case, Sindry ne relance pas le script.',
   demarrage: String.raw`$coches = @($CONFIG.Startup)
 foreach ($e in Get-CimInstance Win32_StartupCommand) {
     if ($coches -contains (Get-EntryId $e)) { Disable-StartupEntry $e }   # votre fonction
 }
 exit 0`,
-  dns: String.raw`# [select] : WinTool renvoie le choix retenu, un seul.
+  dns: String.raw`# [select] : Sindry renvoie le choix retenu, un seul.
 $up = Get-NetAdapter | Where-Object Status -eq 'Up'
 if ("$($CONFIG.Dns)" -eq 'isp') { $up | Set-DnsClientServerAddress -ResetServerAddresses }
 elseif ($Servers.ContainsKey("$($CONFIG.Dns)")) { $up | Set-DnsClientServerAddress -ServerAddresses $Servers["$($CONFIG.Dns)"] }
@@ -1937,11 +1937,11 @@ exit 0`,
 const HISTO_PS = {
   scan: '# Rien de plus à l’analyse : l’historique vient de l’action.',
   action: String.raw`# À la fin de l'action, le script dit ce qu'il a vraiment libéré, en octets.
-# WinTool le garde avec la date : c'est une barre de l'historique.
+# Sindry le garde avec la date : c'est une barre de l'historique.
 Write-Output "[FREED] $freed"`,
 };
 
-/** Ce que WinTool pose dans WINTOOL_CONFIG pour l'action, d'apres les cases. */
+/** Ce que Sindry pose dans SINDRY_CONFIG pour l'action, d'apres les cases. */
 function configDe(ex, m) {
   const s = selection(ex, m);
   const cfg = {};
@@ -1966,11 +1966,11 @@ function codeVue(v) {
   const histo = v.style === 'historique';
   const cfg = configDe(ex, modeles[v.ex]);
   const recu = Object.keys(cfg).length
-    ? `# Ce que WinTool pose dans WINTOOL_CONFIG — la ligne d’override le verse dans $CONFIG :\n${JSON.stringify(cfg, null, 2).split('\n').map((l) => `# ${l}`).join('\n')}\n\n`
+    ? `# Ce que Sindry pose dans SINDRY_CONFIG — la ligne d’override le verse dans $CONFIG :\n${JSON.stringify(cfg, null, 2).split('\n').map((l) => `# ${l}`).join('\n')}\n\n`
     : '';
   return `<div class="vue-code">
     <h4>1 · L’entête — la ligne surlignée est la seule propre à cette vue</h4><pre>${marque(tete)}</pre>
-    <h4>2 · L’analyse — quand WinTool pose WINTOOL_MODE=scan</h4><pre>${esc(histo ? HISTO_PS.scan : SCAN_PS[v.ex])}</pre>
+    <h4>2 · L’analyse — quand Sindry pose SINDRY_MODE=scan</h4><pre>${esc(histo ? HISTO_PS.scan : SCAN_PS[v.ex])}</pre>
     <h4>3 · Ce qu’elle écrit</h4><pre>${esc(SORTIES[v.ex])}</pre>
     <h4>4 · L’action — d’après les cases cochées ci-dessus</h4><pre>${esc(recu + (histo ? HISTO_PS.action : ACTION_PS[v.ex]))}</pre></div>`;
 }
@@ -2174,13 +2174,13 @@ const PANNEAUX_SCRIPT = {
   demarrage: ['plan', 'historique'], 'vie-privee': ['reglages', 'plan'], dns: ['reglages', 'progression'], disques: ['historique', 'progression'],
 };
 const INFOS = {
-  temp: { verbe: 'Supprimer', fichier: '100_CLEAN_TEMP_FILES.ps1', source: 'Catalogue officiel 1.0.0', empreinte: 'af5c96a5e11b…', approbation: 'Signé par le projet WinTool — approuvé d’office', attention: [['Remove-Item -Recurse', 84], ['Clear-RecycleBin', 112]] },
+  temp: { verbe: 'Supprimer', fichier: '100_CLEAN_TEMP_FILES.ps1', source: 'Catalogue officiel 1.0.0', empreinte: 'af5c96a5e11b…', approbation: 'Signé par le projet Sindry — approuvé d’office', attention: [['Remove-Item -Recurse', 84], ['Clear-RecycleBin', 112]] },
   restes: { verbe: 'Supprimer', fichier: 'DUPONT_LEFTOVERS.ps1', source: 'Catalogue « Scripts de Dupont » 2.1.0', empreinte: '4be17c09d2aa…', approbation: 'Approuvé par vous le 3 oct. 2026', attention: [['Remove-Item -Recurse', 132], ['Remove-Item HKLM:', 140], ['Get-ChildItem -Recurse C:\\', 61]] },
-  navigateurs: { verbe: 'Effacer', fichier: '210_BROWSER_CACHE.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '0c93d1e7a420…', approbation: 'Signé par le projet WinTool — approuvé d’office', attention: [['Remove-Item -Recurse', 77]] },
-  demarrage: { verbe: 'Désactiver au démarrage', fichier: '300_STARTUP.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '91f2e04b6c58…', approbation: 'Signé par le projet WinTool — approuvé d’office', attention: [['Set-ItemProperty HKCU:\\…\\Run', 58]] },
-  'vie-privee': { verbe: 'Appliquer', fichier: '400_PRIVACY.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '7d03aa1e95c2…', approbation: 'Signé par le projet WinTool — approuvé d’office', attention: [['Set-ItemProperty HKLM:', 41], ['Stop-Service', 88]] },
+  navigateurs: { verbe: 'Effacer', fichier: '210_BROWSER_CACHE.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '0c93d1e7a420…', approbation: 'Signé par le projet Sindry — approuvé d’office', attention: [['Remove-Item -Recurse', 77]] },
+  demarrage: { verbe: 'Désactiver au démarrage', fichier: '300_STARTUP.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '91f2e04b6c58…', approbation: 'Signé par le projet Sindry — approuvé d’office', attention: [['Set-ItemProperty HKCU:\\…\\Run', 58]] },
+  'vie-privee': { verbe: 'Appliquer', fichier: '400_PRIVACY.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '7d03aa1e95c2…', approbation: 'Signé par le projet Sindry — approuvé d’office', attention: [['Set-ItemProperty HKLM:', 41], ['Stop-Service', 88]] },
   dns: { verbe: 'Changer', fichier: '500_DNS.ps1', source: 'Vos scripts', empreinte: 'e2c4b8a1f093…', approbation: 'Approuvé par vous le 18 sept. 2026', attention: [['Set-DnsClientServerAddress', 36]] },
-  disques: { verbe: '', fichier: '600_DISK_HEALTH.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '5aa0f1c37b6e…', approbation: 'Signé par le projet WinTool — approuvé d’office', attention: [] },
+  disques: { verbe: '', fichier: '600_DISK_HEALTH.ps1', source: 'Catalogue officiel 1.0.0', empreinte: '5aa0f1c37b6e…', approbation: 'Signé par le projet Sindry — approuvé d’office', attention: [] },
 };
 
 function panneauReglages(ex, m) {
@@ -2240,7 +2240,7 @@ function panneauPlan(ex, m) {
   return l.length ? `<ol class="plan">${l.map((x) => `<li>${x}</li>`).join('')}</ol>` : '<span class="muted">Rien : cette action ne fait que mesurer, ou rien n’est coché.</span>';
 }
 function panneauConfig(ex, m) {
-  return `<div class="journal">WINTOOL_CONFIG = ${esc(JSON.stringify(configDe(ex, m), null, 2))}</div>`;
+  return `<div class="journal">SINDRY_CONFIG = ${esc(JSON.stringify(configDe(ex, m), null, 2))}</div>`;
 }
 function panneauHistorique(id) {
   const runs = { temp: [['3 oct.', '1,1 Go'], ['18 sept.', '412 Mo'], ['2 sept.', '1,3 Go']], demarrage: [['1 oct.', '3 désactivés'], ['20 août', '1 désactivé']], disques: [['5 oct.', 'D: à surveiller'], ['5 sept.', 'Tout va bien']] }[id] || [['jamais', '—']];
@@ -2261,7 +2261,7 @@ function panneauHtml(cle, ex, m) {
     plan: () => panneauPlan(ex, m),
     config: () => panneauConfig(ex, m),
     attention: () => (i.attention?.length
-      ? `${i.attention.map(([c, l]) => `<div class="attention-l">${ico('alerte', 'i14')}<span><code>${esc(c)}</code> — ligne ${l}</span></div>`).join('')}<p class="muted" style="margin:6px 0 0">Liste non exhaustive : ce que WinTool repère dans le texte du script (§12.2).</p>`
+      ? `${i.attention.map(([c, l]) => `<div class="attention-l">${ico('alerte', 'i14')}<span><code>${esc(c)}</code> — ligne ${l}</span></div>`).join('')}<p class="muted" style="margin:6px 0 0">Liste non exhaustive : ce que Sindry repère dans le texte du script (§12.2).</p>`
       : '<span class="muted">Rien de repéré.</span>'),
     historique: () => panneauHistorique(ex.id),
     provenance: () => `<div class="kv"><span>Source</span><span>${esc(i.source)}</span><span>Fichier</span><span>${esc(i.fichier)}</span><span>Empreinte</span><span>${esc(i.empreinte)}</span><span>Accord</span><span>${esc(i.approbation)}</span></div>`,
@@ -2279,7 +2279,7 @@ function rendreXp() {
   if (!XP.panneaux) XP.panneaux = new Set(PANNEAUX_SCRIPT[XP.detail]);
   const nav = LOT_XP.map((id) => navAction(id, { attr: `data-xp="${id}"`, actif: XP.detail === id, p: id === XP.detail ? XP.progression : null })).join('');
   const puces = Object.entries(PANNEAUX).map(([k, l]) => `<button type="button" data-panneau="${k}" aria-pressed="${XP.panneaux.has(k)}">${esc(l)}</button>`).join('');
-  fen.innerHTML = `<div class="tb expert"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">WinTool</span>
+  fen.innerHTML = `<div class="tb expert"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">Sindry</span>
       <span class="tb-cherche">${ico('sliders', 'i14')} Filtrer…</span>
       <span class="tb-droite"><span class="seg"><button type="button">Simple</button><button type="button" aria-pressed="true">Expert</button></span>
       <span class="winctl"><span>${ico('minus')}</span><span>${ico('square')}</span><span>${ico('x')}</span></span></span></div>

@@ -69,6 +69,9 @@ alors disponible.
   ce soit, et refuse un installeur qui ne viendrait pas de ce dépôt.
 - **Si vous avez la 1.0.0**, installez la 1.1 à la main une dernière fois : la 1.0.0 ne
   savait pas encore se mettre à jour. Toutes les versions suivantes arriveront seules.
+- **Jusqu'à la 1.8, Sindry portait un autre nom.** La 2.0 reprend d'elle-même ce que
+  l'ancienne installation avait — réglages, historique, journaux, catalogues, scripts
+  personnels, approbations, emplacements protégés —, puis la désinstalle. Rien à faire.
 
 ### Désinstaller
 

@@ -415,6 +415,28 @@ en double-clic, avec ses valeurs par défaut.
 
 ---
 
+## Un script écrit pour WinTool (avant la 2.0)
+
+Jusqu'à la 1.8, l'application s'appelait WinTool, et le contrat aussi : `## WINTOOL:START`,
+`## WINTOOL:OPTIONS`, `$env:WINTOOL_CONFIG`, `$env:WINTOOL_MODE`. **Sindry 2.0 lit encore
+ces scripts, jusqu'à la 2.1** — le temps que les catalogues migrent :
+
+- le script est ramené au contrat de Sindry ligne à ligne, avant toute lecture ; les
+  numéros de ligne ne bougent pas, les autres constats tombent au bon endroit ;
+- au lancement, Sindry pose les deux variables, `SINDRY_CONFIG` et `WINTOOL_CONFIG`
+  (et `_MODE`) : l'ancienne ligne d'override reçoit toujours vos réglages ;
+- l'application le signale en Expert (`CONTRAT_ANCIEN`), le validateur aussi, en
+  **note** : une note ne fait jamais échouer `-Strict`, un catalogue en CI reste vert.
+
+La conversion tient en un remplacement : `WINTOOL` par `SINDRY`, dans les marqueurs et les
+deux variables. Rien d'autre ne change. **Un script modifié doit être approuvé à nouveau**
+(son empreinte change) : pour un catalogue signé, c'est une nouvelle version de l'index.
+
+En 2.1, l'ancien contrat ne sera plus lu : un script resté à `WINTOOL:START` n'aura plus
+d'entête (`ENTETE_ABSENT`), et ses réglages ne lui parviendront plus.
+
+---
+
 ## Les marqueurs de sortie
 
 La sortie est **en anglais** (§10). En mode Simple elle est masquée derrière « Voir le
@@ -1163,7 +1185,8 @@ Dans VS Code : *Sélectionner l'encodage → Enregistrer avec l'encodage → UTF
 ```
 
 `-Strict` traite les avertissements comme des erreurs. Les scripts du catalogue officiel
-doivent passer en `-Strict`.
+doivent passer en `-Strict`. Les **notes** n'échouent jamais, même en `-Strict` : elles
+annoncent un changement à venir, pas une faute.
 
 ### Les contrôles, un par un
 
@@ -1173,6 +1196,7 @@ validateur sans l'ajouter ici est un défaut.**
 | Code | Gravité | Déclencheur |
 |---|---|---|
 | `BOM_ABSENT` | erreur | Fichier non-ASCII sans BOM UTF-8 |
+| `CONTRAT_ANCIEN` | note | Contrat d'avant la 2.0 (`WINTOOL:START`, `$env:WINTOOL_CONFIG`) : lu jusqu'à la 2.1 |
 | `ENTETE_ABSENT` | erreur | Pas de bloc `SINDRY:START` |
 | `ENTETE_NON_FERME` | erreur | `SINDRY:START` sans `SINDRY:END` |
 | `CHAMP_MANQUANT` | erreur | Champ d'entête obligatoire absent |

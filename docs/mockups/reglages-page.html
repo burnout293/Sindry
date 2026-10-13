@@ -6,7 +6,7 @@
 <title>Réglages en pleine page — propositions</title>
 <!--
   Maquette des Reglages en page entiere, une page par section. La fenetre
-  simulee a la taille reelle de WinTool ; la barre de titre y reste active :
+  simulee a la taille reelle de Sindry ; la barre de titre y reste active :
   Simple / Expert se change sans quitter les reglages. Le reglage 3.5 suit le
   choix A + D (docs/mockups/emplacements-proteges.html). Jetons et composants
   repris de src/styles.css.
@@ -302,7 +302,7 @@ button { cursor: pointer; }
 <div class="page">
   <header class="page-h">
     <h1>Réglages en pleine page</h1>
-    <p>Les réglages deviennent une page de WinTool, comme Simple et Expert, avec une page
+    <p>Les réglages deviennent une page de Sindry, comme Simple et Expert, avec une page
       par section. La barre de titre reste active : essayez <b>Simple / Expert</b> dans la
       fenêtre ci-dessous, sans fermer les réglages. La roue dentée, « Retour » ou Échap
       ramènent là où vous étiez.</p>
@@ -387,7 +387,7 @@ const sansAccent = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toL
 
 // --- Etat ------------------------------------------------------------------------------
 const TAILLES = {
-  defaut: [1180, 760, 'Par défaut', '1180 × 760, la taille d’ouverture de WinTool'],
+  defaut: [1180, 760, 'Par défaut', '1180 × 760, la taille d’ouverture de Sindry'],
   minimum: [920, 640, 'Minimum', '920 × 640, la plus petite fenêtre permise'],
 };
 const ETAT = {
@@ -409,7 +409,7 @@ const bouton = (l, c = '') => `<button class="btn compact ${c}" type="button">${
 // --- Le 3.5 : resume (A), plan du disque (D) ------------------------------------------
 const INTEGRES = {
   racines_lecteurs: { court: 'Racines des lecteurs', tres: true }, windows: { court: 'Windows', tres: true },
-  program_files: { court: 'Program Files', tres: true }, installation: { court: 'WinTool', tres: true },
+  program_files: { court: 'Program Files', tres: true }, installation: { court: 'Sindry', tres: true },
   program_data: { court: 'ProgramData' }, profils: { court: 'Autres comptes' }, racine_systeme: { court: 'Dossiers du système' },
 };
 const actif = (id) => !ETAT.garde.retires.has(id);
@@ -443,7 +443,7 @@ function planDisque() {
   noeud(0, 'hard-drive', 'C:\\', 'le lecteur lui-même, comme D:\\, E:\\…', etat('racines_lecteurs'), { id: 'racines_lecteurs', cls: 'lecteur' });
   noeud(1, 'monitor', 'Windows', '', etat('windows'), { id: 'windows' });
   noeud(1, 'package', 'Program Files', 'et Program Files (x86)', etat('program_files'), { id: 'program_files' });
-  noeud(2, 'waves', 'WinTool', '', etat('installation'), { id: 'installation' });
+  noeud(2, 'waves', 'Sindry', '', etat('installation'), { id: 'installation' });
   noeud(1, 'database', 'ProgramData', '', etat('program_data'), { id: 'program_data' });
   noeud(1, 'users', 'Users', 'les autres comptes', etat('profils'), { id: 'profils' });
   noeud(2, 'user', 'Votre profil', '', libre, { cls: 'libre' });
@@ -472,17 +472,17 @@ const HISTO = [
   ['18 sept. 2026, 10:12', 'Faire le ménage', true, '5 min'],
 ];
 const SECTIONS = [
-  { id: 'general', n: '1', nom: 'Général', icone: 'sliders', sous: 'L’apparence, la langue et les mises à jour de WinTool.',
+  { id: 'general', n: '1', nom: 'Général', icone: 'sliders', sous: 'L’apparence, la langue et les mises à jour de Sindry.',
     resume: () => `${{ light: 'Clair', dark: 'Sombre', system: 'Comme Windows' }[ETAT.v.theme]} · ${ETAT.v.langue === 'fr' ? 'Français' : 'English'} · ${Math.round(ETAT.v.echelle * 100)} %`,
     lignes: [
       ['1.1', 'Thème', 'Clair, sombre, ou comme Windows.', () => seg('theme', [['light', 'Clair'], ['dark', 'Sombre'], ['system', 'Système']])],
-      ['1.2', 'Langue', 'La langue de WinTool.', () => seg('langue', [['fr', 'Français'], ['en', 'English']])],
-      ['1.3', 'Taille de l’affichage', 'Agrandit tout WinTool : textes, boutons, icônes.', () => choix('echelle', [['1', '100 %'], ['1.15', '115 %'], ['1.3', '130 %'], ['1.5', '150 %'], ['1.75', '175 %']])],
-      ['1.4', 'Comportement des mises à jour', 'WinTool vous prévient d’une nouvelle version ; rien ne s’installe sans votre accord.', () => choix('maj', [['propose', 'Proposer'], ['never', 'Ne jamais vérifier']])],
+      ['1.2', 'Langue', 'La langue de Sindry.', () => seg('langue', [['fr', 'Français'], ['en', 'English']])],
+      ['1.3', 'Taille de l’affichage', 'Agrandit tout Sindry : textes, boutons, icônes.', () => choix('echelle', [['1', '100 %'], ['1.15', '115 %'], ['1.3', '130 %'], ['1.5', '150 %'], ['1.75', '175 %']])],
+      ['1.4', 'Comportement des mises à jour', 'Sindry vous prévient d’une nouvelle version ; rien ne s’installe sans votre accord.', () => choix('maj', [['propose', 'Proposer'], ['never', 'Ne jamais vérifier']])],
       ['1.5', 'Rechercher une mise à jour', 'Version installée : 1.2.0.', () => bouton('Vérifier maintenant')],
-      ['1.6', 'Présentation de WinTool', 'Les quatre pages du premier démarrage.', () => bouton('Revoir')],
+      ['1.6', 'Présentation de Sindry', 'Les quatre pages du premier démarrage.', () => bouton('Revoir')],
     ] },
-  { id: 'catalogue', n: '2', nom: 'Catalogue', icone: 'package', sous: 'Les entretiens prêts à l’emploi, publiés et signés par le projet WinTool.',
+  { id: 'catalogue', n: '2', nom: 'Catalogue', icone: 'package', sous: 'Les entretiens prêts à l’emploi, publiés et signés par le projet Sindry.',
     resume: () => 'Version 1.0.0 · 24 entretiens',
     lignes: [
       ['2.1', 'Catalogue officiel d’entretiens', 'Version 1.0.0 du 06/10/2026 — 24 entretiens.', () => bouton('Vérifier')],
@@ -493,15 +493,15 @@ const SECTIONS = [
     lignes: [
       ['3.1', 'En cas d’échec dans une catégorie', 'Quand un script d’un lot échoue.', () => choix('echec', [['continue', 'Continuer les autres scripts'], ['stop', 'Arrêter la catégorie']])],
       ['3.2', 'Taille maximale des journaux', 'Au-delà, les plus anciens journaux sont effacés.', () => `<input class="sel" type="number" value="${ETAT.v.journaux}" min="0" step="10" style="width:90px"> <span class="muted">Mo</span>`],
-      ['3.3', 'Politique d’exécution PowerShell', 'Ne s’applique qu’aux scripts lancés par WinTool, jamais à votre système.', () => choix('politique', [['bypass', 'Bypass'], ['remotesigned', 'RemoteSigned'], ['unrestricted', 'Unrestricted']])],
+      ['3.3', 'Politique d’exécution PowerShell', 'Ne s’applique qu’aux scripts lancés par Sindry, jamais à votre système.', () => choix('politique', [['bypass', 'Bypass'], ['remotesigned', 'RemoteSigned'], ['unrestricted', 'Unrestricted']])],
       ['3.4', 'Afficher les numéros des réglages', 'Des repères comme « 3.5 », pour désigner un réglage sans ambiguïté.', () => inter('numeros')],
       ['3.5', 'Emplacements protégés', 'Ce qu’aucun réglage de script ne peut désigner.', null, resumeProteges],
     ] },
   { id: 'outils', n: '4', nom: 'Outils', icone: 'wrench', expert: true, sous: 'Pour qui écrit ou modifie ses propres scripts.',
     resume: () => 'Dossier des scripts, conformité',
     lignes: [
-      ['4.1', 'Dossier des scripts', 'Déposez-y vos scripts : ils apparaissent dans WinTool.', () => bouton('Ouvrir'), null, '%LOCALAPPDATA%\\WinTool\\scripts'],
-      ['4.2', 'Ré-analyser tous les scripts', 'Après une modification faite hors de WinTool.', () => bouton('Ré-analyser')],
+      ['4.1', 'Dossier des scripts', 'Déposez-y vos scripts : ils apparaissent dans Sindry.', () => bouton('Ouvrir'), null, '%LOCALAPPDATA%\\Sindry\\scripts'],
+      ['4.2', 'Ré-analyser tous les scripts', 'Après une modification faite hors de Sindry.', () => bouton('Ré-analyser')],
       ['4.3', 'Rapport de conformité', 'Vérifie que chaque script suit le format attendu.', () => bouton('Afficher')],
     ] },
   { id: 'config', n: '5', nom: 'Configuration', icone: 'save', expert: true, sous: 'Sauvegarder vos réglages, les reprendre sur un autre PC, ou repartir de zéro.',
@@ -605,7 +605,7 @@ function barreTitre() {
   const W = TAILLES[ETAT.taille][0];
   const gauche = ETAT.ouvert ? '<span class="tb-lieu">Réglages</span>'
     : ETAT.mode === 'expert' ? `<span class="tb-cherche">${ico('search')} Filtrer…</span>` : '<span class="tb-lieu">Choisir</span>';
-  return `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">WinTool</span>
+  return `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">Sindry</span>
     <span class="brand-ver">1.2.0</span>${gauche}
     <span class="tb-droite">
       <span class="seg"><button type="button" data-mode="simple" aria-pressed="${ETAT.mode === 'simple'}">Simple</button>

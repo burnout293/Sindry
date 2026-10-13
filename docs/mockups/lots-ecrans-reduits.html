@@ -254,7 +254,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 <div class="page">
   <header class="page-h">
     <h1>Écran « Choisir » — les lots quand la place manque</h1>
-    <p>La fenêtre ci-dessous a la vraie taille de WinTool, réduite pour tenir dans la page :
+    <p>La fenêtre ci-dessous a la vraie taille de Sindry, réduite pour tenir dans la page :
       on y fait défiler et on y choisit comme dans l'application. Changez la taille de la
       fenêtre et le nombre de lots pour mettre chaque proposition à l'épreuve.</p>
   </header>
@@ -275,7 +275,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
   <section class="choix">
     <h2>Mon conseil : 1, la mer s'agrandit</h2>
-    <p>C'est la seule qui garde ce qui fait WinTool — les bouées sur l'eau — à toutes les
+    <p>C'est la seule qui garde ce qui fait Sindry — les bouées sur l'eau — à toutes les
       tailles. Ce qui casse aujourd'hui, ce n'est pas l'idée de la mer : c'est de vouloir la
       faire tenir dans la fenêtre. <b>Si tu as souvent plus de 12 lots, la 3</b> : le débutant
       voit moins de choix d'un coup, et l'ordre que tu fixes en Expert décide lesquels.</p>
@@ -335,7 +335,7 @@ const LOTS = [
   ['Imprimantes', 'printer', 2], ['Clavier', 'keyboard', 1], ['Batterie', 'battery', 1],
 ];
 const TAILLES = {
-  defaut: [1180, 760, 'Par défaut', '1180 × 760, la taille d’ouverture de WinTool'],
+  defaut: [1180, 760, 'Par défaut', '1180 × 760, la taille d’ouverture de Sindry'],
   minimum: [920, 640, 'Minimum', '920 × 640, la plus petite fenêtre permise'],
   zoom: [708, 492, 'Minimum à 130 %', '920 × 640 avec l’affichage à 130 % : il reste la place de 708 × 492'],
 };
@@ -349,7 +349,7 @@ const PROPS = {
     essai: 'Passez à 18 lots, ou à la fenêtre minimum.' },
   mer: { n: '1', nom: 'La mer s’agrandit',
     texte: '<p>Les bouées restent sur l’eau, mais la mer n’a plus à tenir dans la fenêtre : chaque rangée a sa vague, avec un vrai espace entre elles, et la page défile. Plus on descend, plus l’eau est profonde.</p>',
-    pour: ['Garde l’identité de WinTool à toutes les tailles.', 'Jamais de bouée coupée ni recouverte.'],
+    pour: ['Garde l’identité de Sindry à toutes les tailles.', 'Jamais de bouée coupée ni recouverte.'],
     contre: ['Beaucoup de lots = un long défilement.'],
     essai: 'Essayez la fenêtre « Minimum à 130 % » avec 18 lots.' },
   tuiles: { n: '2', nom: 'Grandes tuiles dans l’eau',
@@ -365,7 +365,7 @@ const PROPS = {
   liste: { n: '4', nom: 'Une liste',
     texte: '<p>De grandes lignes, comme un menu : une icône, le nom, la durée, et un rond qui se coche. Une ou deux colonnes selon la largeur ; la vague ne reste qu’en décor, en bas.</p>',
     pour: ['Le plus lisible : rien à deviner.', 'Le choix se voit au rond coché.'],
-    contre: ['Le moins « WinTool » : la mer devient un décor.'],
+    contre: ['Le moins « Sindry » : la mer devient un décor.'],
     essai: 'Passez à la fenêtre « Minimum à 130 % ».' },
 };
 
@@ -423,7 +423,7 @@ function barre() {
     <button class="btn primary big" type="button">Continuer ${ico('arrow-right')}</button></div>`;
 }
 function barreTitre(W) {
-  return `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">WinTool</span>
+  return `<div class="tb"><span class="brand-mark">${ico('waves')}</span><span class="brand-name">Sindry</span>
     <span class="brand-ver">1.2.0</span>
     <span class="crumb">Choisir <i class="on"></i><i></i><i></i></span>
     <span class="tb-droite">

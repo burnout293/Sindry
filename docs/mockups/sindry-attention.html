@@ -167,7 +167,7 @@ body.calme :is(.fx-halo, .fx-respire, .fx-balise, .fx-braise, .fx-epaule, .fx-re
 .fiche-style div b { display: block; color: #A49DB6; font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
 @media (max-width: 760px) { .fiche-style { grid-template-columns: 1fr; } }
 
-/* La réplique de WinTool, écran Expert. */
+/* La réplique de Sindry, écran Expert. */
 .app { position: relative; background: var(--bg); color: var(--text); border: 1px solid var(--border-2); border-radius: 16px; overflow: hidden; height: 500px; display: flex; flex-direction: column; }
 .tb { height: 54px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .tb img { width: 26px; height: 26px; }
@@ -317,7 +317,7 @@ body.calme .bulle, body.calme .calque.entre * { animation: none; }
 <!-- ======================================================================= -->
 <section class="partie">
   <h2>2. Le mode guide</h2>
-  <p>Cliquez sur <b>Exécuter</b> dans la réplique : l'action demande les droits administrateur, et WinTool tourne avec
+  <p>Cliquez sur <b>Exécuter</b> dans la réplique : l'action demande les droits administrateur, et Sindry tourne avec
      des droits limités. Changez la forme pour comparer. « Visite guidée » enchaîne quatre étapes avec la même forme.
      Échap ferme, les flèches avancent et reculent.</p>
   <div class="commandes">
@@ -337,7 +337,7 @@ body.calme .bulle, body.calme .calque.entre * { animation: none; }
   <div class="app" id="app">
     <div class="tb">
       <img src="../../src/marque.png" alt="">
-      <span class="nom">WinTool</span><span class="ver">1.7.0</span>
+      <span class="nom">Sindry</span><span class="ver">1.7.0</span>
       <div class="seg" id="cMode"><span>Simple</span><span class="on">Expert</span></div>
       <div class="droite">
         <span class="pill off"><svg class="i"><use href="#shield"/></svg>Simulation</span>
@@ -464,13 +464,13 @@ const el = (id) => document.getElementById(id);
 const ALERTE = [{
   cible: 'cDroits', alerte: true, kick: 'Droits administrateur',
   titre: 'Cette action a besoin des droits administrateur',
-  texte: "WinTool tourne avec des droits limités : « Réduire la télémétrie » risque d'échouer. Relancez WinTool en administrateur — Windows vous le demandera une fois.",
+  texte: "Sindry tourne avec des droits limités : « Réduire la télémétrie » risque d'échouer. Relancez Sindry en administrateur — Windows vous le demandera une fois.",
   primaire: 'Relancer en administrateur', secondaire: 'Plus tard',
 }];
 const VISITE = [
   { cible: 'cMode', kick: 'Visite', titre: 'Deux façons de travailler', texte: "Simple vous guide pas à pas. Expert vous laisse tout régler, action par action." },
   { cible: 'cJournal', kick: 'Visite', titre: 'Le journal', texte: "Tout ce que font les actions s'écrit ici. Il s'ouvre à tout moment, même vide." },
-  { cible: 'cDroits', kick: 'Visite', titre: 'Vos droits', texte: "En orange, WinTool tourne avec des droits limités : certaines actions demanderont de le relancer en administrateur." },
+  { cible: 'cDroits', kick: 'Visite', titre: 'Vos droits', texte: "En orange, Sindry tourne avec des droits limités : certaines actions demanderont de le relancer en administrateur." },
   { cible: 'cExec', kick: 'Visite', titre: 'Lancer une action', texte: "« Exécuter » passe d'abord par l'analyse : rien n'est modifié sans votre accord." },
 ];
 
@@ -566,7 +566,7 @@ calque.addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-act]'); if (!b || !courant) return;
   const a = b.dataset.act;
   if (a === 'fermer') fermer();
-  else if (a === 'admin') { fermer(); toast('→ WinTool se relancerait en administrateur (invite Windows)'); }
+  else if (a === 'admin') { fermer(); toast('→ Sindry se relancerait en administrateur (invite Windows)'); }
   else if (a === 'suiv') { if (courant.i < courant.etapes.length - 1) { courant.i++; dessiner(); } else fermer(); }
   else if (a === 'prec') { courant.i = Math.max(0, courant.i - 1); dessiner(); }
 });
@@ -587,7 +587,7 @@ function retirerEncart() { el('zoneEncart').innerHTML = ''; }
 function alerteDroits() {
   if (forme === 'encart') {
     el('zoneEncart').innerHTML = `<div class="encart"><svg class="i"><use href="#warn"/></svg>
-      <p><b>Cette action a besoin des droits administrateur.</b> WinTool tourne avec des droits limités : elle risque d'échouer.</p>
+      <p><b>Cette action a besoin des droits administrateur.</b> Sindry tourne avec des droits limités : elle risque d'échouer.</p>
       <button class="b" id="cMontrer">Me montrer</button></div>`;
     el('cMontrer').onclick = () => montrer(ALERTE, 'projecteur');
     return;
