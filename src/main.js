@@ -6,7 +6,7 @@
  * fichier, ca marche, sans etape de build.
  */
 
-import { t, setLang, currentLang } from './i18n.js';
+import { t, tDans, setLang, currentLang } from './i18n.js';
 import * as A from './analyse.js';
 import { montrerGuide, lancerVisite, fermerGuide } from './guide.js';
 
@@ -74,8 +74,10 @@ async function iconeSVG(nom) {
    comme un autre (specification 8), au meme endroit que la langue.
    ------------------------------------------------------------------------- */
 function themeEffectif() {
-  // Terminal et Aurore n'existent qu'en sombre (1.7).
-  if (SOMBRE_SEUL.has(document.documentElement.dataset.accent)) return 'dark';
+  // Terminal et Aurore n'existent qu'en sombre (1.7) ; une ambiance installee
+  // peut n'exister que dans l'un des deux modes (2.0).
+  const impose = modeImpose();
+  if (impose) return impose;
   const choisi = document.documentElement.dataset.theme;
   if (choisi) return choisi;
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -86,38 +88,151 @@ function themeEffectif() {
 function appliquerTheme(valeur, persister = true) {
   if (valeur === 'system') delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = valeur;
+  // Une ambiance installee porte ses couleurs en ligne, mode par mode : elles
+  // changent avec le theme, la feuille ne peut pas le faire pour elle.
+  appliquerAmbiancePerso();
   if (persister) invoke('set_theme', { theme: valeur }).catch((e) => console.error('set_theme a echoue :', e));
 }
 
-/** L'ambiance (reglage 1.8) : Braise — Ardente ou Crepuscule —, ou l'un des
- *  thèmes d'ambiance de la 1.7. Ardente est celle des tokens : aucun attribut.
- *  Les autres posent `data-accent`, que la feuille surcharge. Une valeur
- *  d'avant la 1.6 (orange, maree, bleu…) retombe sur Ardente. */
+/** L'ambiance (reglage 1.7) : Braise — Ardente ou Crepuscule —, l'un des
+ *  thèmes d'ambiance de la 1.7, ou une ambiance installee (2.0). Ardente est
+ *  celle des tokens : aucun attribut. Les autres livrees posent `data-accent`,
+ *  que la feuille surcharge. Une valeur d'avant la 1.6 (orange, maree, bleu…)
+ *  retombe sur Plan. */
 const ACCENTS = ['plan', 'ardente', 'crepuscule', 'synthwave', 'spatial', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
 /** Celles qui n'existent qu'en sombre : le reglage clair / sombre n'a pas de prise. */
 const SOMBRE_SEUL = new Set(['terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe']);
+
+/* Les ambiances installees (2.0, specification 15.7, docs/FORMAT_AMBIANCE.md).
+   Des fichiers `.sindry-ambiance` dans %LOCALAPPDATA%\Sindry\ambiances, lus et
+   verifies par Rust (ambiance.rs) au demarrage et a l'ouverture des reglages.
+   Leur valeur de reglage est `perso:<id>` ; `data-accent` vaut alors `perso`,
+   et leurs couleurs sont posees en ligne sur la racine. */
+const PREFIXE_PERSO = 'perso:';
+let ambiancesInstallees = { dossier: '', ambiances: [], ignorees: [] };
+/** L'ambiance appliquee, telle que le reglage la nomme (`plan`, `perso:foret`…). */
+let accentCourant = 'plan';
+/** Les jetons qu'une ambiance installee peut poser — ceux de ambiance.rs. */
+const JETONS_AMBIANCE = ['bg', 'surface', 'surface-2', 'surface-3', 'border', 'border-2', 'text', 'text-2', 'text-3', 'ink',
+  'ok', 'warn', 'err', 'ok-s', 'warn-s', 'err-s', 'acc', 'acc-2', 'acc-on', 'surface-soft', 'acc-soft', 'knob-off',
+  'serie-1', 'serie-2', 'serie-3', 'serie-4', 'serie-5', 'serie-6', 'rouage-a', 'rouage-b', 'eau-a', 'eau-b',
+  'term-bg', 'term-text', 'term-dim', 'eau-fond', 'eau-surface'];
+/** Les ombres ne font pas partie du format : celles des ambiances livrees. */
+const OMBRES = {
+  clair: ['0 1px 2px rgba(31, 20, 38, .05), 0 6px 18px rgba(31, 20, 38, .05)', '0 10px 34px rgba(31, 20, 38, .10)'],
+  sombre: ['0 2px 10px rgba(0, 0, 0, .4)', '0 16px 46px rgba(0, 0, 0, .6)'],
+};
+
+function ambiancePerso(valeur) {
+  if (typeof valeur !== 'string' || !valeur.startsWith(PREFIXE_PERSO)) return null;
+  const id = valeur.slice(PREFIXE_PERSO.length);
+  return ambiancesInstallees.ambiances.find((a) => a.id === id) || null;
+}
+
+/** Le mode qu'impose une ambiance (`dark`, `light`), ou null si elle suit le
+ *  reglage 1.1. */
+function modeImpose(valeur = accentCourant) {
+  const a = ambiancePerso(valeur);
+  if (a) return a.clair && a.sombre ? null : (a.sombre ? 'dark' : 'light');
+  return SOMBRE_SEUL.has(valeur) ? 'dark' : null;
+}
+
 // Plan est l'ambiance par defaut depuis la 1.8 : un reglage vide (jamais choisi)
-// ou inconnu y mene. Qui avait choisi Braise ardente la garde.
-const accentValide = (valeur) => (ACCENTS.includes(valeur) ? valeur : 'plan');
+// ou inconnu y mene — une ambiance installee dont le fichier a disparu aussi.
+// Qui avait choisi Braise ardente la garde.
+const accentValide = (valeur) => (ACCENTS.includes(valeur) || ambiancePerso(valeur) ? valeur : 'plan');
 function appliquerAccent(valeur) {
   const v = accentValide(valeur);
+  accentCourant = v;
   if (v === 'ardente') delete document.documentElement.dataset.accent;
-  else document.documentElement.dataset.accent = v;
+  else document.documentElement.dataset.accent = ambiancePerso(v) ? 'perso' : v;
+  appliquerAmbiancePerso();
   majCommandesTheme();
 }
 
+/** Pose — ou retire — les couleurs et le decor de l'ambiance installee
+ *  choisie, pour le mode affiche. Sans effet pour une ambiance livree. */
+function appliquerAmbiancePerso() {
+  const racine = document.documentElement;
+  const cadre = document.getElementById('ambPerso');
+  const a = ambiancePerso(accentCourant);
+  if (!a) {
+    if (racine.dataset.persoPose) {
+      for (const k of [...JETONS_AMBIANCE, 'sh', 'sh-2', 'ui']) racine.style.removeProperty(`--${k}`);
+      racine.style.removeProperty('color-scheme');
+      delete racine.dataset.persoPose;
+    }
+    if (cadre?.hasAttribute('srcdoc')) cadre.removeAttribute('srcdoc');
+    return;
+  }
+  const mode = themeEffectif() === 'dark' ? 'sombre' : 'clair';
+  const jetons = a[mode] || a.sombre || a.clair;
+  // Par le CSSOM, pas par un attribut style : rien ici ne depend de la CSP.
+  for (const [k, v] of Object.entries(jetons)) racine.style.setProperty(`--${k}`, v);
+  racine.style.setProperty('--sh', OMBRES[mode][0]);
+  racine.style.setProperty('--sh-2', OMBRES[mode][1]);
+  if (a.police === 'chasse-fixe') racine.style.setProperty('--ui', 'var(--mono)');
+  else racine.style.removeProperty('--ui');
+  racine.style.setProperty('color-scheme', mode === 'sombre' ? 'dark' : 'light');
+  racine.dataset.persoPose = '1';
+  if (cadre) {
+    const doc = documentDecor(a, mode, jetons);
+    if (!doc) cadre.removeAttribute('srcdoc');
+    else if (cadre.getAttribute('srcdoc') !== doc) cadre.setAttribute('srcdoc', doc);
+  }
+}
+
+/** Le document du decor : les couleurs du mode en variables CSS, `data-mode`
+ *  sur la racine, la feuille et le balisage de l'auteur — verifies par Rust,
+ *  et de toute facon isoles par le cadre. La CSP du document resserre celle
+ *  qu'il herite : rien d'autre que des images `data:`. Moins d'animations si
+ *  Windows le demande, sans que l'auteur ait a y penser. */
+function documentDecor(a, mode, jetons) {
+  if (!a.decor.balisage && !a.decor.css) return '';
+  const variables = Object.entries(jetons).map(([k, v]) => `--${k}:${v}`).join(';');
+  return '<!doctype html>'
+    + `<html data-mode="${mode}"><head><meta charset="utf-8">`
+    + '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'">'
+    + `<style>:root{color-scheme:normal;${variables}}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}</style>`
+    + `<style>${a.decor.css}</style>`
+    + '<style>@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}</style>'
+    + `</head><body>${a.decor.balisage}</body></html>`;
+}
+
+/** Relit le dossier des ambiances. Rend vrai si l'ambiance appliquee a change
+ *  (son fichier a disparu, ou a ete remplace). */
+async function chargerAmbiances() {
+  const avant = JSON.stringify(ambiancePerso(accentCourant));
+  try {
+    ambiancesInstallees = await invoke('list_ambiances');
+  } catch (e) {
+    console.error('list_ambiances a echoue :', e);
+  }
+  return JSON.stringify(ambiancePerso(accentCourant)) !== avant;
+}
+
 /** Le bouton soleil / lune et le reglage 1.1 n'ont pas de prise sur une ambiance
- *  sombre seulement : ils le disent au lieu de ne rien faire. */
+ *  qui n'existe que dans un mode : ils le disent au lieu de ne rien faire. */
 function majCommandesTheme() {
-  const seul = SOMBRE_SEUL.has(document.documentElement.dataset.accent);
+  const impose = modeImpose();
   const btn = document.getElementById('themeBtn');
   if (btn) {
-    btn.disabled = seul;
-    btn.dataset.tip = t(seul ? 'chrome.theme_sombre_seul' : 'chrome.basculer_theme');
+    btn.disabled = Boolean(impose);
+    btn.dataset.tip = t(libelleThemeImpose(impose, 'chrome'));
+    btn.setAttribute('aria-label', btn.dataset.tip);
   }
-  document.querySelectorAll('#setThemeSeg [data-set-theme]').forEach((b) => { b.disabled = seul; });
+  document.querySelectorAll('#setThemeSeg [data-set-theme]').forEach((b) => { b.disabled = Boolean(impose); });
   const note = document.getElementById('setThemeNote');
-  if (note) note.hidden = !seul;
+  if (note) {
+    note.hidden = !impose;
+    if (impose) note.textContent = t(libelleThemeImpose(impose, 'reglages'));
+  }
+}
+
+function libelleThemeImpose(impose, ou) {
+  if (impose === 'dark') return `${ou}.theme_sombre_seul`;
+  if (impose === 'light') return `${ou}.theme_clair_seul`;
+  return ou === 'chrome' ? 'chrome.basculer_theme' : '';
 }
 
 /* -------------------------------------------------------------------------
@@ -3062,7 +3177,7 @@ function appliquerTraductionsStatiques() {
     el.dataset.tip = texte;
     el.setAttribute('aria-label', texte);
   };
-  cible('themeBtn', t(SOMBRE_SEUL.has(document.documentElement.dataset.accent) ? 'chrome.theme_sombre_seul' : 'chrome.basculer_theme'));
+  cible('themeBtn', t(libelleThemeImpose(modeImpose(), 'chrome')));
   cible('btnSettings', t('reglages.titre'));
   cible('btnJournal', t('console.journal_tip'));
   cible('btnAide', t('aide.tip'));
@@ -4971,11 +5086,10 @@ function appliquerTraductionsReglages() {
   document.getElementById('setLangueLabel').textContent = t('reglages.langue');
   document.getElementById('setMajLabel').textContent = t('reglages.maj_comportement');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
-  document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
+  document.querySelectorAll('#setAccentChoix [data-set-accent]:not(.perso)').forEach((b) => {
     b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
   });
-  const noteTheme = document.getElementById('setThemeNote');
-  if (noteTheme) noteTheme.textContent = t('reglages.theme_sombre_seul');
+  rendreAmbiancesPerso();
   majCommandesTheme();
   document.querySelector('#setMajSelect [value="propose"]').textContent = t('reglages.maj_proposer');
   document.querySelector('#setMajSelect [value="beta"]').textContent = t('reglages.maj_beta');
@@ -5042,6 +5156,201 @@ function appliquerTraductionsReglages() {
 
 /** Reflete `reglages` dans les commandes de l'ecran Reglages, sans rien
  *  ecrire : ouvrir l'ecran ne doit jamais modifier quoi que ce soit. */
+/* -------------------------------------------------------------------------
+   Reglages 1.7 et 1.8 : choisir, importer, exporter, retirer une ambiance
+   (2.0, specification 15.7)
+   ------------------------------------------------------------------------- */
+
+const nomAmbiance = (a) => a.nom[currentLang()] || a.nom.fr;
+
+async function choisirAmbiance(valeur) {
+  appliquerAccent(valeur);
+  reglagesActuels = await invoke('set_accent', { accent: valeur });
+  remplirFormulaireReglages(reglagesActuels);
+  // Les graphiques de l'analyse prennent la couleur d'accent : on les redessine.
+  rafraichirZonesAnalyse();
+}
+
+function resultatAmbiance(texte, refus = false) {
+  const p = document.getElementById('ambianceResultat');
+  p.textContent = texte;
+  p.classList.toggle('refus', refus);
+  p.hidden = !texte;
+}
+
+/** Les pastilles des ambiances installees, a la suite des livrees — leur
+ *  pastille tiree de leurs couleurs —, et les fichiers ignores (1.8). */
+function rendreAmbiancesPerso() {
+  const choix = document.getElementById('setAccentChoix');
+  if (!choix) return;
+  choix.querySelectorAll('.perso').forEach((b) => b.remove());
+  for (const a of ambiancesInstallees.ambiances) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.className = 'accent-pastille perso';
+    b.dataset.setAccent = PREFIXE_PERSO + a.id;
+    b.textContent = nomAmbiance(a);
+    const j = a.sombre || a.clair;
+    b.style.setProperty('--pal', `linear-gradient(135deg, ${j.acc}, ${j['acc-2']} 55%, ${j.bg})`);
+    const details = [
+      a.auteur && t('ambiance.par', { auteur: a.auteur }),
+      a.version && t('ambiance.version', { version: a.version }),
+      a.description?.[currentLang()],
+    ].filter(Boolean);
+    if (details.length) b.dataset.tip = details.join(' · ');
+    b.setAttribute('aria-checked', String(b.dataset.setAccent === accentCourant));
+    choix.append(b);
+  }
+
+  const zone = document.getElementById('ambiancesIgnorees');
+  zone.replaceChildren();
+  const ignorees = ambiancesInstallees.ignorees || [];
+  if (ignorees.length) {
+    zone.append(document.createTextNode(t('ambiance.ignorees')));
+    for (const i of ignorees) {
+      const ligne = document.createElement('span');
+      const nom = document.createElement('span');
+      nom.className = 'fic';
+      nom.textContent = i.fichier;
+      const autres = i.constats.length > 1 ? ` (+${i.constats.length - 1})` : '';
+      ligne.append(nom, ` — ${i.constats[0]?.message || ''}${autres}`);
+      ligne.dataset.tip = i.constats.map((c) => c.message).join('\n');
+      zone.append(ligne);
+    }
+  }
+  zone.hidden = !ignorees.length;
+  document.getElementById('btnRetirerAmbiance').hidden = !ambiancePerso(accentCourant);
+}
+
+/** Installe une ambiance — un fichier importe, ou la copie d'une ambiance
+ *  livree. Demande avant d'en remplacer une du meme id ; montre tous les
+ *  constats d'un refus. Rend l'ambiance installee, ou null. */
+async function installerAmbiance(contenu, choisir = true) {
+  let r = await invoke('import_ambiance', { contenu, remplacer: false });
+  if (r.etat === 'existe') {
+    const version = (a) => (a.version ? t('ambiance.version', { version: a.version }) : t('ambiance.sans_version'));
+    const question = t('ambiance.remplacer', { nom: nomAmbiance(r.actuelle), actuelle: version(r.actuelle), nouvelle: version(r.nouvelle) });
+    if (!confirm(question)) return null;
+    r = await invoke('import_ambiance', { contenu, remplacer: true });
+  }
+  if (r.etat === 'refusee') {
+    resultatAmbiance([t('ambiance.refusee'), ...r.constats.map((c) => `• ${c.message}`)].join('\n'), true);
+    return null;
+  }
+  await chargerAmbiances();
+  rendreAmbiancesPerso();
+  // Remplacee alors qu'elle est appliquee : ses nouvelles couleurs tout de suite.
+  if (choisir) await choisirAmbiance(PREFIXE_PERSO + r.ambiance.id);
+  else appliquerAccent(accentCourant);
+  return r.ambiance;
+}
+
+/** Les couleurs d'une ambiance livree, telles que la feuille les donne, lues
+ *  dans un cadre invisible du meme document : la page, elle, ne bouge pas —
+ *  aucun changement de theme a l'ecran, aucune transition declenchee. Le
+ *  decor d'une ambiance livree fait partie de Sindry : il ne s'exporte pas. */
+async function copieAmbianceLivree(accent) {
+  const cadre = document.createElement('iframe');
+  cadre.setAttribute('aria-hidden', 'true');
+  cadre.tabIndex = -1;
+  cadre.style.cssText = 'position:fixed;left:-10000px;top:0;width:8px;height:8px;border:0;visibility:hidden';
+  document.body.append(cadre);
+  try {
+    const doc = cadre.contentDocument;
+    await new Promise((ok, ko) => {
+      const lien = doc.createElement('link');
+      lien.rel = 'stylesheet';
+      lien.href = new URL('styles.css', document.baseURI).href;
+      lien.onload = ok;
+      lien.onerror = () => ko(new Error('styles.css'));
+      doc.head.append(lien);
+    });
+    const lire = (theme) => {
+      const r = doc.documentElement;
+      if (accent === 'ardente') delete r.dataset.accent;
+      else r.dataset.accent = accent;
+      r.dataset.theme = theme;
+      const style = cadre.contentWindow.getComputedStyle(r);
+      return Object.fromEntries(JETONS_AMBIANCE.map((k) => {
+        const v = style.getPropertyValue(`--${k}`).trim();
+        return [k, k === 'eau-fond' || k === 'eau-surface' ? Number(v) : v.toUpperCase()];
+      }));
+    };
+    const cle = `accent.${accent.replace('-', '_')}`;
+    const copie = {
+      _commentaire: `${tDans('fr', cle)} — copie des couleurs, exportée par Sindry. Format : docs/FORMAT_AMBIANCE.md`,
+      format: 1,
+      id: `${accent}-copie`,
+      nom: { fr: tDans('fr', 'ambiance.copie', { nom: tDans('fr', cle) }), en: tDans('en', 'ambiance.copie', { nom: tDans('en', cle) }) },
+      version: '1.0',
+      police: accent.startsWith('terminal') ? 'chasse-fixe' : 'normale',
+    };
+    if (!SOMBRE_SEUL.has(accent)) copie.clair = lire('light');
+    copie.sombre = lire('dark');
+    return copie;
+  } finally {
+    cadre.remove();
+  }
+}
+
+function cablerPartageAmbiances() {
+  const echec = (e) => resultatAmbiance(t('ambiance.echec', { erreur: String(e) }), true);
+
+  document.getElementById('btnImporterAmbiance').onclick = () => document.getElementById('fichierImportAmbiance').click();
+  document.getElementById('fichierImportAmbiance').onchange = async (ev) => {
+    const fichier = ev.target.files?.[0];
+    ev.target.value = '';
+    if (!fichier) return;
+    try {
+      resultatAmbiance('');
+      const a = await installerAmbiance(await fichier.text());
+      if (a) resultatAmbiance(t('ambiance.ajoutee', { nom: nomAmbiance(a) }));
+    } catch (e) {
+      echec(e);
+    }
+  };
+
+  // Installee : son fichier, montre dans l'Explorateur. Livree : une copie
+  // modifiable de ses couleurs, installee a cote — sans quitter l'ambiance.
+  document.getElementById('btnExporterAmbiance').onclick = async () => {
+    try {
+      resultatAmbiance('');
+      const a = ambiancePerso(accentCourant);
+      if (a) {
+        await invoke('reveal_ambiance', { id: a.id });
+        resultatAmbiance(t('ambiance.exportee', { nom: nomAmbiance(a) }));
+        return;
+      }
+      const origine = t(`accent.${accentCourant.replace('-', '_')}`);
+      const copie = await copieAmbianceLivree(accentCourant);
+      const installee = await installerAmbiance(`${JSON.stringify(copie, null, 2)}\n`, false);
+      if (!installee) return;
+      resultatAmbiance(t('ambiance.copiee', { nom: nomAmbiance(installee), fichier: installee.fichier, origine }));
+      await invoke('reveal_ambiance', { id: installee.id });
+    } catch (e) {
+      echec(e);
+    }
+  };
+
+  document.getElementById('btnRetirerAmbiance').onclick = async () => {
+    const a = ambiancePerso(accentCourant);
+    if (!a || !confirm(t('ambiance.retirer_confirmer', { nom: nomAmbiance(a) }))) return;
+    try {
+      await invoke('remove_ambiance', { id: a.id });
+      await chargerAmbiances();
+      rendreAmbiancesPerso();
+      await choisirAmbiance('plan');
+      resultatAmbiance(t('ambiance.retiree', { nom: nomAmbiance(a) }));
+    } catch (e) {
+      echec(e);
+    }
+  };
+
+  document.getElementById('btnDossierAmbiances').onclick = () => invoke('reveal_ambiance', { id: null }).catch(echec);
+  document.getElementById('btnGuideAmbiance').onclick = () => invoke('open_ambiance_guide').catch(echec);
+}
+
 function remplirFormulaireReglages(reglages) {
   document.querySelectorAll('#setThemeSeg [data-set-theme]').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.setTheme === reglages.theme));
@@ -5053,6 +5362,7 @@ function remplirFormulaireReglages(reglages) {
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
+  document.getElementById('btnRetirerAmbiance').hidden = !ambiancePerso(accentValide(reglages.accent));
   document.getElementById('setCatalogueSelect').value = reglages.catalogue_check || 'startup';
   rendreReglagesCatalogue();
   document.getElementById('setEchecSelect').value = reglages.failure_policy;
@@ -5099,6 +5409,12 @@ function ouvrirReglages() {
   // La page d'un catalogue se rouvre sur la liste : son contenu a pu changer.
   if (sectionReglages === 'source') sectionReglages = 'catalogue';
   chargerSources();
+  document.getElementById('ambianceResultat').hidden = true;
+  chargerAmbiances().then((changee) => {
+    if (changee) appliquerAccent(reglagesActuels.accent);
+    rendreAmbiancesPerso();
+    remplirFormulaireReglages(reglagesActuels);
+  });
   document.getElementById('settingsPage').hidden = false;
   document.body.classList.add('reglages-ouverts');
   document.getElementById('btnSettings').setAttribute('aria-pressed', 'true');
@@ -5568,7 +5884,8 @@ async function rendreVisite() {
   if (donnees.type === 'bienvenue') {
     // Les reglages qui comptent avant tout le reste (1.7) : langue, ambiance,
     // clair ou sombre, taille. Chacun s'applique aussitot.
-    const sombreSeul = SOMBRE_SEUL.has(visite.accent);
+    const impose = modeImpose(visite.accent);
+    const sombreSeul = Boolean(impose);
     const choix = (attr, valeur, actuelle, libelle, inactif = false) =>
       `<button type="button" data-${attr}="${valeur}" aria-pressed="${valeur === actuelle}"${inactif ? ' disabled' : ''}>${esc(libelle)}</button>`;
     const ambiances = ACCENTS.map((a) => `<button type="button" role="radio" class="accent-pastille" data-set-accent="${a}" data-onb-accent="${a}"
@@ -5591,7 +5908,7 @@ async function rendreVisite() {
           <span class="lbl">${esc(t('onb.theme'))}</span>
           <div class="seg">${choix('onb-theme', 'light', visite.theme, t('onb.theme_clair'), sombreSeul)}${choix('onb-theme', 'dark', visite.theme, t('onb.theme_sombre'), sombreSeul)}${choix('onb-theme', 'system', visite.theme, t('onb.theme_systeme'), sombreSeul)}</div>
         </div>
-        ${sombreSeul ? `<p class="onb-text">${esc(t('reglages.theme_sombre_seul'))}</p>` : ''}
+        ${impose ? `<p class="onb-text">${esc(t(libelleThemeImpose(impose, 'reglages')))}</p>` : ''}
         <div class="grp">
           <span class="lbl">${esc(t('onb.taille'))}</span>
           <div class="seg">${tailles}</div>
@@ -5696,15 +6013,12 @@ function cablerReglages() {
     };
   });
 
-  document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
-    b.onclick = async () => {
-      appliquerAccent(b.dataset.setAccent);
-      reglagesActuels = await invoke('set_accent', { accent: b.dataset.setAccent });
-      remplirFormulaireReglages(reglagesActuels);
-      // Les graphiques de l'analyse prennent la couleur d'accent : on les redessine.
-      rafraichirZonesAnalyse();
-    };
-  });
+  // Delegation : les pastilles des ambiances installees vont et viennent.
+  document.getElementById('setAccentChoix').onclick = (ev) => {
+    const b = ev.target.closest('[data-set-accent]');
+    if (b) choisirAmbiance(b.dataset.setAccent);
+  };
+  cablerPartageAmbiances();
   document.getElementById('setMajSelect').onchange = async (ev) => {
     reglagesActuels = await invoke('set_update_policy', { policy: ev.target.value });
   };
@@ -5973,7 +6287,11 @@ async function demarrer() {
   setLang(reglages.lang);
   document.documentElement.lang = currentLang();
   appliquerTheme(reglages.theme, false);
+  await chargerAmbiances();
   appliquerAccent(reglages.accent);
+  // Le mode de Windows change pendant que Sindry tourne : une ambiance
+  // installee reprend les couleurs du nouveau mode.
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => appliquerAmbiancePerso());
   appliquerTraductionsStatiques();
   appliquerTraductionsReglages();
 

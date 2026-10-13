@@ -57,6 +57,14 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // L'ambiance d'exemple de la documentation (§15.7), installee d'office sur
+  // le banc : `list_ambiances` la rend comme Rust la rendrait.
+  if (chemin === '/__ambiance-exemple.json') {
+    const corps = await readFile(join(ICI, '..', '..', 'docs', 'ambiances', 'foret-de-nuit.sindry-ambiance'));
+    res.writeHead(200, { 'content-type': TYPES['.json'] });
+    return res.end(corps);
+  }
+
   const cible = normalize(join(RACINE, chemin));
   // Un chemin qui remonte hors de src/ est refuse : meme un banc local ne
   // sert pas le disque entier.

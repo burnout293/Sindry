@@ -1,3 +1,4 @@
+mod ambiance;
 mod analyse;
 mod approval;
 mod catalogue;
@@ -628,16 +629,9 @@ fn open_scripts_folder(app: tauri::AppHandle) -> Result<(), String> {
 /// toujours l'ouvrir. Meme cause que le refus de PowerShell sous RemoteSigned
 /// (voir `discovery::sans_prefixe_long`).
 fn ouvrir_dans_l_explorateur(chemin: std::path::PathBuf) -> Result<(), String> {
-    let texte = chemin.to_string_lossy();
-    let prefixe_unc = r"\\\\?\UNC\";
-    let prefixe = r"\\\\?\";
-    let court = if let Some(reste) = texte.strip_prefix(prefixe_unc) {
-        format!(r"\\{reste}")
-    } else if let Some(reste) = texte.strip_prefix(prefixe) {
-        reste.to_string()
-    } else {
-        texte.to_string()
-    };
+    // Jusqu'a la 1.8, le prefixe cherche ici comptait quatre antislashs : il ne
+    // correspondait a aucun chemin, et un chemin canonicalise partait tel quel.
+    let court = discovery::sans_prefixe_long(chemin);
     tauri_plugin_opener::open_path(court, None::<String>).map_err(|e| e.to_string())
 }
 
@@ -1324,13 +1318,75 @@ fn set_ui_scale(app: tauri::AppHandle, value: f32) -> Result<Settings, String> {
 /// Couleur d'accent de l'interface (§15.4, reglage 1.8).
 #[tauri::command]
 fn set_accent(app: tauri::AppHandle, accent: String) -> Result<Settings, String> {
-    if !settings::ACCENTS.contains(&accent.as_str()) {
+    // Une ambiance livree, ou une ambiance installee (`perso:<id>`, §15.7) :
+    // son fichier peut disparaitre ensuite, l'interface retombe alors sur Plan.
+    let perso = accent
+        .strip_prefix("perso:")
+        .is_some_and(ambiance::id_valide);
+    if !perso && !settings::ACCENTS.contains(&accent.as_str()) {
         return Err(format!("couleur inconnue : {accent}"));
     }
     with_settings(&app, |s| {
         s.accent = accent;
         Ok(())
     })
+}
+
+/// Les ambiances installees (§15.7), et les fichiers du dossier ignores, avec
+/// leurs raisons.
+#[tauri::command]
+fn list_ambiances(app: tauri::AppHandle) -> Result<ambiance::Liste, String> {
+    Ok(ambiance::lister_dans(&ambiance::dossier(&app)?))
+}
+
+/// Installe une ambiance a partir du contenu d'un fichier. Une ambiance du meme
+/// `id` n'est remplacee que sur `remplacer` : l'interface demande d'abord.
+#[tauri::command]
+fn import_ambiance(
+    app: tauri::AppHandle,
+    contenu: String,
+    remplacer: bool,
+) -> Result<ambiance::Import, String> {
+    ambiance::importer_dans(&ambiance::dossier(&app)?, &contenu, remplacer)
+}
+
+/// Retire une ambiance installee : son fichier est efface.
+#[tauri::command]
+fn remove_ambiance(app: tauri::AppHandle, id: String) -> Result<String, String> {
+    ambiance::retirer_dans(&ambiance::dossier(&app)?, &id)
+}
+
+/// Montre une ambiance installee dans l'Explorateur, son fichier selectionne —
+/// c'est le fichier a partager —, ou le dossier des ambiances. Comme pour le
+/// dossier des scripts, l'interface ne fournit pas de chemin : un `id`, que
+/// Rust retrouve dans son propre dossier.
+#[tauri::command]
+fn reveal_ambiance(app: tauri::AppHandle, id: Option<String>) -> Result<(), String> {
+    let dossier = ambiance::dossier(&app)?;
+    std::fs::create_dir_all(&dossier).map_err(|e| format!("{} : {e}", dossier.display()))?;
+    let fichier = id.and_then(|id| {
+        ambiance::lister_dans(&dossier)
+            .ambiances
+            .into_iter()
+            .find(|a| a.id == id)
+            .map(|a| dossier.join(a.fichier))
+    });
+    match fichier {
+        Some(f) => tauri_plugin_opener::reveal_item_in_dir(discovery::sans_prefixe_long(f))
+            .map_err(|e| e.to_string()),
+        None => ouvrir_dans_l_explorateur(dossier),
+    }
+}
+
+/// Le guide du format des ambiances, sur GitHub. L'adresse est ecrite ici, la
+/// page ne fournit rien : pas de permission `opener` a lui accorder.
+#[tauri::command]
+fn open_ambiance_guide() -> Result<(), String> {
+    tauri_plugin_opener::open_url(
+        "https://github.com/burnout293/Sindry/blob/main/docs/FORMAT_AMBIANCE.md",
+        None::<String>,
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Place libre sur le disque du systeme, pour le panneau « Espace disque » de
@@ -1544,6 +1600,11 @@ pub fn run() {
             run_script,
             scan_script,
             set_accent,
+            list_ambiances,
+            import_ambiance,
+            remove_ambiance,
+            reveal_ambiance,
+            open_ambiance_guide,
             disk_space,
             simulation_state,
             set_simulation_all,

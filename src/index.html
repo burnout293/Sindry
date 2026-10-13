@@ -117,6 +117,11 @@
           <div class="au-voile v1"></div><div class="au-voile v2"></div><div class="au-voile v3"></div>
           <svg class="au-collines" viewBox="0 0 960 140" preserveAspectRatio="none"><path d="M0 140 L0 50 C120 10 220 70 330 40 C450 6 540 80 660 36 C780 0 880 56 960 30 L960 140Z" /><path d="M0 140 L0 100 C160 70 300 120 480 96 C650 72 800 112 960 92 L960 140Z" /></svg>
         </div>
+        <!-- Le decor d'une ambiance installee (2.0, §15.7) : il vient de n'importe
+             qui, il s'affiche donc isole — sandbox sans aucune permission (ni
+             script, ni origine, ni formulaire, ni navigation), CSP heritee et
+             resserree dans le document. Rempli par appliquerAmbiancePerso. -->
+        <iframe class="amb-perso" id="ambPerso" sandbox="" tabindex="-1" aria-hidden="true" referrerpolicy="no-referrer"></iframe>
       </div>
       <!-- Nappe de fond : une periode par motif, la plus lente. -->
       <svg class="water fond" viewBox="0 0 2360 760" preserveAspectRatio="none" aria-hidden="true">
@@ -463,6 +468,18 @@
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="terminal-ambre"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="aurore-boreale"></button>
                     <button type="button" role="radio" class="accent-pastille" data-set-accent="aurore-australe"></button>
+                    <!-- Les ambiances installees (§15.7) suivent : rendreAmbiancesPerso. -->
+                  </div>
+                </div>
+                <div class="setrow amb-partage" data-num="1.8">
+                  <span class="setrow-txt"><span class="num">1.8</span><span class="rg-libelle"><b data-i18n="ambiance.titre"></b><span class="desc" data-i18n="ambiance.d_partage"></span><span class="maj-etat" id="ambianceResultat" aria-live="polite" hidden></span><span class="amb-ignorees" id="ambiancesIgnorees" hidden></span></span></span>
+                  <div class="amb-actions">
+                    <button class="btn compact" type="button" id="btnImporterAmbiance" data-i18n="ambiance.importer"></button>
+                    <button class="btn compact" type="button" id="btnExporterAmbiance" data-i18n="ambiance.exporter"></button>
+                    <button class="btn compact danger" type="button" id="btnRetirerAmbiance" data-i18n="ambiance.retirer" hidden></button>
+                    <button class="btn compact" type="button" id="btnDossierAmbiances" data-i18n="ambiance.dossier"></button>
+                    <button class="btn compact" type="button" id="btnGuideAmbiance" data-i18n="ambiance.guide"></button>
+                    <input type="file" id="fichierImportAmbiance" accept=".sindry-ambiance,application/json" hidden />
                   </div>
                 </div>
               </div>

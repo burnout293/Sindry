@@ -48,7 +48,8 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — plus aucune fenêtre de console : point de restauration, relance en administrateur | Fait |
 | | — réglage « Ambiance » renuméroté 1.7 ; le style Plan s'étend au mode Expert | Fait |
 | | — emplacements protégés pour une seule action, dans sa configuration (§12.4) | Fait |
-| | — ambiances partageables : un fichier documenté, couleurs et décor libre, décor isolé, import et export (§15.7) | À faire |
+| | — ambiances partageables : un fichier `.sindry-ambiance` documenté (`docs/FORMAT_AMBIANCE.md`, exemple « Forêt de nuit »), couleurs et décor libre, décor isolé, contrastes vérifiés, import, export, retrait (§15.7) | Fait |
+| | — texte atténué du journal de Braise sombre, Ardente et Crépuscule, porté à 4,6:1 (3,5:1) : trouvé en passant les ambiances livrées au validateur | Fait |
 | | — ligne de commande complète, installation silencieuse (§19) | À faire |
 | | — nouvelle version de l'icône | À faire |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |

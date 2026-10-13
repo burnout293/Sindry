@@ -145,7 +145,7 @@
     --serie-1: #FEC923; --serie-2: #FD5632; --serie-3: #DC1178; --serie-4: #4AB2E7; --serie-5: #775FD7; --serie-6: #FD9E21;
     --rouage-a: #4AB2E7; --rouage-b: #CA28B1;
     --eau-a: #D9482E; --eau-b: #7A1F45; --eau-fond: .4; --eau-surface: .55;
-    --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #6F6080;
+    --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #837396;
     --sh: 0 2px 10px rgba(0, 0, 0, .35);
     --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
   }
@@ -162,7 +162,7 @@
   --serie-1: #FEC923; --serie-2: #FD5632; --serie-3: #DC1178; --serie-4: #4AB2E7; --serie-5: #775FD7; --serie-6: #FD9E21;
   --rouage-a: #4AB2E7; --rouage-b: #CA28B1;
   --eau-a: #D9482E; --eau-b: #7A1F45; --eau-fond: .4; --eau-surface: .55;
-  --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #6F6080;
+  --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #837396;
   --sh: 0 2px 10px rgba(0, 0, 0, .35);
   --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
 }
@@ -194,7 +194,7 @@
     --ok-s: #10291F; --warn-s: #2D2115; --err-s: #2F1424;
     --acc-on: #FF86B0; --surface-soft: #150D21; --acc-soft: #2C1229; --knob-off: #6E5E86;
     --eau-a: #A8235F; --eau-b: #561A5E; --eau-fond: .45; --eau-surface: .6;
-    --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #73628A;
+    --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #84729B;
   }
 }
 :root[data-theme="dark"][data-accent="crepuscule"] {
@@ -205,7 +205,7 @@
   --ok-s: #10291F; --warn-s: #2D2115; --err-s: #2F1424;
   --acc-on: #FF86B0; --surface-soft: #150D21; --acc-soft: #2C1229; --knob-off: #6E5E86;
   --eau-a: #A8235F; --eau-b: #561A5E; --eau-fond: .45; --eau-surface: .6;
-  --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #73628A;
+  --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #84729B;
 }
 
 /* --- Thèmes d'ambiance (1.7) --------------------------------------------------
@@ -950,6 +950,12 @@ body[data-mode="expert"] .water { display: none; }
    pas de décor : on y lit des listes et des journaux. */
 .ambiance { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; pointer-events: none; translate: 0 var(--maree, 0px); }
 .ambiance > div { display: none; position: absolute; inset: 0; }
+/* Le decor d'une ambiance installee (2.0, §15.7) : un cadre isole, transparent,
+   qui ne recoit aucun clic. `color-scheme: normal` des deux cotes du cadre :
+   s'ils different, le navigateur peint un fond opaque derriere le document. */
+.ambiance > .amb-perso { display: none; position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; background: transparent; color-scheme: normal; pointer-events: none; }
+:root[data-accent="perso"] .ambiance > .amb-perso { display: block; }
 :root[data-accent="synthwave"] .amb-synthwave,
 :root[data-accent^="aurore"] .amb-aurore,
 :root[data-accent="spatial"] .amb-spatial,
@@ -3112,3 +3118,18 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .accent-pastille[data-set-accent="terminal-ambre"]  { --pal: radial-gradient(circle, #FFB000 0 35%, #0C0700 75%); }
 .accent-pastille[data-set-accent="aurore-boreale"]  { --pal: linear-gradient(135deg, #3CFFB4, #38C6FF 55%, #06101E); }
 .accent-pastille[data-set-accent="aurore-australe"] { --pal: linear-gradient(135deg, #FF6FB5, #B48CFF 55%, #0E0820); }
+/* Une ambiance installee (§15.7) : sa pastille est tiree de ses couleurs,
+   posee par rendreAmbiancesPerso. Un liseré pointille la distingue des
+   ambiances livrees. */
+.accent-pastille.perso { border-style: dashed; }
+.accent-pastille.perso[aria-checked="true"] { border-style: solid; }
+
+/* Reglage 1.8, partager une ambiance (§15.7). */
+.setrow.amb-partage { flex-wrap: wrap; align-items: flex-start; }
+.amb-partage .setrow-txt { flex: 1 1 300px; }
+.amb-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 460px; }
+.amb-partage .maj-etat { white-space: pre-line; }
+.amb-partage .maj-etat.refus { color: var(--err); }
+.amb-ignorees { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--warn); }
+.amb-ignorees > span { color: var(--text-3); }
+.amb-ignorees .fic { font-family: var(--mono); font-weight: 500; color: var(--warn); letter-spacing: 0; }

@@ -110,7 +110,7 @@ pub fn scripts_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
 /// Contrepartie assumee : on reperd la capacite d'adresser des chemins de plus
 /// de 260 caracteres. Les scripts vivent dans le dossier d'installation ou
 /// sous `%LOCALAPPDATA%`, tres loin de cette limite.
-fn sans_prefixe_long(chemin: PathBuf) -> PathBuf {
+pub(crate) fn sans_prefixe_long(chemin: PathBuf) -> PathBuf {
     let texte = chemin.to_string_lossy();
     if let Some(reste) = texte.strip_prefix(r"\\?\UNC\") {
         return PathBuf::from(format!(r"\\{reste}"));

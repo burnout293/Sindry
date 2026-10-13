@@ -582,6 +582,28 @@ const DICO = {
     'accent.aurore_australe': 'Aurore australe',
     'reglages.theme_sombre_seul': 'Cette ambiance n’existe qu’en sombre.',
     'chrome.theme_sombre_seul': 'Cette ambiance n’existe qu’en sombre',
+    'reglages.theme_clair_seul': 'Cette ambiance n’existe qu’en clair.',
+    'chrome.theme_clair_seul': 'Cette ambiance n’existe qu’en clair',
+    'ambiance.titre': 'Partager une ambiance',
+    'ambiance.d_partage': 'Une ambiance tient dans un fichier .sindry-ambiance : importez celles qu’on vous envoie, exportez la vôtre, ou déposez-les dans leur dossier.',
+    'ambiance.importer': 'Importer…',
+    'ambiance.exporter': 'Exporter',
+    'ambiance.retirer': 'Retirer',
+    'ambiance.dossier': 'Ouvrir le dossier',
+    'ambiance.guide': 'Guide du format',
+    'ambiance.ajoutee': 'Ambiance « {nom} » installée.',
+    'ambiance.remplacer': 'Une ambiance « {nom} » est déjà installée ({actuelle}).\n\nLa remplacer par celle-ci ({nouvelle}) ?',
+    'ambiance.version': 'version {version}',
+    'ambiance.sans_version': 'sans numéro de version',
+    'ambiance.refusee': 'Ce fichier n’est pas une ambiance valide :',
+    'ambiance.exportee': 'Le fichier de « {nom} » est sélectionné dans l’Explorateur : c’est lui qu’on partage.',
+    'ambiance.copiee': 'Copie modifiable créée : « {nom} », dans {fichier}. Ses couleurs sont celles de « {origine} » ; son décor fait partie de Sindry et ne s’exporte pas.',
+    'ambiance.copie': '{nom} (copie)',
+    'ambiance.retirer_confirmer': 'Retirer l’ambiance « {nom} » ?\n\nSon fichier sera effacé, et Sindry reviendra à Plan.',
+    'ambiance.retiree': 'Ambiance « {nom} » retirée.',
+    'ambiance.ignorees': 'Fichiers ignorés dans le dossier des ambiances :',
+    'ambiance.par': 'par {auteur}',
+    'ambiance.echec': 'Impossible : {erreur}',
     'an.analyser': 'Analyser',
     'an.analyser_tip': 'Demande au script ce qu’il ferait, sans rien modifier',
     'an.relancer': 'Relancer l’analyse',
@@ -1286,6 +1308,28 @@ const DICO = {
     'accent.aurore_australe': 'Southern lights',
     'reglages.theme_sombre_seul': 'This look only exists in dark.',
     'chrome.theme_sombre_seul': 'This look only exists in dark',
+    'reglages.theme_clair_seul': 'This look only exists in light.',
+    'chrome.theme_clair_seul': 'This look only exists in light',
+    'ambiance.titre': 'Share a look',
+    'ambiance.d_partage': 'A look fits in a single .sindry-ambiance file: import the ones you are sent, export yours, or drop them in their folder.',
+    'ambiance.importer': 'Import…',
+    'ambiance.exporter': 'Export',
+    'ambiance.retirer': 'Remove',
+    'ambiance.dossier': 'Open folder',
+    'ambiance.guide': 'Format guide',
+    'ambiance.ajoutee': 'Look “{nom}” installed.',
+    'ambiance.remplacer': 'A look “{nom}” is already installed ({actuelle}).\n\nReplace it with this one ({nouvelle})?',
+    'ambiance.version': 'version {version}',
+    'ambiance.sans_version': 'no version number',
+    'ambiance.refusee': 'This file is not a valid look:',
+    'ambiance.exportee': 'The file of “{nom}” is selected in Explorer: that is the one to share.',
+    'ambiance.copiee': 'Editable copy created: “{nom}”, in {fichier}. Its colours are those of “{origine}”; its scenery is part of Sindry and is not exported.',
+    'ambiance.copie': '{nom} (copy)',
+    'ambiance.retirer_confirmer': 'Remove the look “{nom}”?\n\nIts file will be deleted, and Sindry will go back to Blueprint.',
+    'ambiance.retiree': 'Look “{nom}” removed.',
+    'ambiance.ignorees': 'Files ignored in the looks folder:',
+    'ambiance.par': 'by {auteur}',
+    'ambiance.echec': 'Failed: {erreur}',
     'an.analyser': 'Check',
     'an.analyser_tip': 'Asks the script what it would do, without changing anything',
     'an.relancer': 'Check again',
@@ -1429,6 +1473,14 @@ export function setLang(l) {
 
 export function currentLang() {
   return langue;
+}
+
+/** Un texte dans une langue donnee, quelle que soit celle de l'interface : le
+ *  nom bilingue d'une copie d'ambiance (§15.7). */
+export function tDans(l, cle, vars) {
+  const chaine = DICO[l]?.[cle] ?? DICO.fr[cle] ?? cle;
+  if (!vars) return chaine;
+  return chaine.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? `{${k}}`));
 }
 
 /** Substitution `{cle}` simple : pas de pluriel/genre savant, le projet n'en a pas besoin. */

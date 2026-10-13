@@ -912,7 +912,62 @@
     set_show_setting_numbers: (a) => { reglages.show_setting_numbers = !!a.value; return JSON.parse(JSON.stringify(reglages)); },
     export_settings: () => 'C:\\Users\\Buly\\Documents\\sindry-config.json',
     import_settings: () => ({ ok: true, message: 'Configuration importée.' }),
+
+    // Ambiances installees (§15.7) — `ambiance::Liste`, `ambiance::Import`.
+    // L'exemple de la documentation est installe d'office ; `?ambiances=aucune`
+    // part d'un dossier vide. La verification complete est celle de Rust : le
+    // banc ne fait que remettre le fichier dans la forme rendue.
+    list_ambiances: async () => {
+      if (ambiancesBanc === null) {
+        ambiancesBanc = [];
+        if (new URLSearchParams(location.search).get('ambiances') !== 'aucune') {
+          const texte = await (await fetch('/__ambiance-exemple.json')).text();
+          ambiancesBanc.push(ambianceRendue(texte, 'foret-de-nuit.sindry-ambiance'));
+        }
+      }
+      return {
+        dossier: 'C:\\Users\\Buly\\AppData\\Local\\Sindry\\ambiances',
+        ambiances: JSON.parse(JSON.stringify(ambiancesBanc)),
+        ignorees: [{ fichier: 'brouillon.sindry-ambiance', constats: [
+          { code: 'CONTRASTE', message: 'sombre : « text-3 » #20242C sur « bg » #0B0F16 = 1.29:1, il faut 4.5:1 au moins.' },
+          { code: 'JETON_MANQUANT', message: 'clair : il manque ink.' },
+        ] }],
+      };
+    },
+    import_ambiance: (a) => {
+      let nouvelle;
+      try {
+        nouvelle = ambianceRendue(a.contenu, '');
+      } catch (e) {
+        return { etat: 'refusee', constats: [{ code: 'JSON_INVALIDE', message: `ce n'est pas du JSON valide : ${e.message}.` }] };
+      }
+      nouvelle.fichier = `${nouvelle.id}.sindry-ambiance`;
+      const actuelle = ambiancesBanc.find((x) => x.id === nouvelle.id);
+      if (actuelle && !a.remplacer) return { etat: 'existe', actuelle, nouvelle };
+      ambiancesBanc = ambiancesBanc.filter((x) => x.id !== nouvelle.id).concat([nouvelle]);
+      return { etat: 'ajoutee', ambiance: nouvelle };
+    },
+    remove_ambiance: (a) => {
+      ambiancesBanc = ambiancesBanc.filter((x) => x.id !== a.id);
+      return `C:\\Users\\Buly\\AppData\\Local\\Sindry\\ambiances\\${a.id}.sindry-ambiance`;
+    },
   };
+
+  let ambiancesBanc = null;
+  /** Un fichier d'ambiance dans la forme de `ambiance::Ambiance` : nom en deux
+   *  langues, couleurs en majuscules, opacites en texte. */
+  function ambianceRendue(texte, fichier) {
+    const v = JSON.parse(texte);
+    const nom = typeof v.nom === 'string' ? { fr: v.nom, en: v.nom } : { fr: v.nom.fr || v.nom.en, en: v.nom.en || v.nom.fr };
+    const mode = (m) => (m ? Object.fromEntries(Object.entries(m).filter(([k]) => !k.startsWith('_'))
+      .map(([k, x]) => [k, typeof x === 'number' ? String(x) : x.toUpperCase()])) : null);
+    return {
+      id: v.id, nom, description: v.description ? (typeof v.description === 'string' ? { fr: v.description, en: v.description } : v.description) : null,
+      auteur: v.auteur || '', version: v.version || '', police: v.police || 'normale',
+      clair: mode(v.clair), sombre: mode(v.sombre),
+      decor: { balisage: v.decor?.balisage || '', css: v.decor?.css || '' }, fichier,
+    };
+  }
 
   const invoke = async (cmd, args) => {
     const f = REPONSES[cmd];

@@ -643,7 +643,8 @@ réellement.
 | Thème (clair / sombre / Windows) | **partout**, icône engrenage |
 | Langue | **partout** |
 | Mises à jour (1.4) : proposer uniquement les versions stables, proposer aussi les versions bêta (1.8 : la release publiée la plus récente, pré-version comprise, prise dans la liste des releases plutôt qu'à `releases/latest`), ne jamais proposer | **partout** |
-| Ambiance (1.8) : **Plan** par défaut (1.8), Braise ardente, Braise crépuscule, Synthwave, Spatial, Terminal vert ou ambre, Aurore boréale ou australe (§15.4) | **partout** |
+| Ambiance (1.7 ; numérotée 1.8 dans la version 1.8) : **Plan** par défaut (1.8), Braise ardente, Braise crépuscule, Synthwave, Spatial, Terminal vert ou ambre, Aurore boréale ou australe (§15.4), et les ambiances installées (2.0, §15.7) | **partout** |
+| Partager une ambiance (1.8, 2.0) : importer, exporter, retirer, ouvrir le dossier, guide du format (§15.7) | **partout** |
 | Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
 | Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2). Depuis la 1.8, dans les deux modes ; retirer efface la copie téléchargée du catalogue, l'officiel compris, qui se réinstalle alors de zéro | **partout** |
 | Comportement en cas d'échec | Expert |
@@ -897,6 +898,7 @@ chemin identifié.
 | Lancement | Dossier courant = dossier du script, inscriptible : `cmd /c outil` et `Process.Start("outil.exe")` y cherchent l'exécutable avant le système | Dossier courant **System32**, et `NoDefaultCurrentDirectoryInExePath` (1.2) |
 | Environnement | Les variables de l'utilisateur (`HKCU\Environment`) sont héritées par le processus élevé : `COR_PROFILER_PATH` et `DOTNET_STARTUP_HOOKS` font charger du code dans PowerShell, `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` lance un autre moteur d'interface, `windir`, `SystemRoot` ou `TEMP` redéfinis font viser un autre dossier aux scripts | Familles `COR_`, `CORECLR_`, `COMPLUS_`, `DOTNET_`, `WEBVIEW2_` **retirées au démarrage** du processus de Sindry — l'environnement de l'utilisateur n'est pas modifié, et une version de développement les garde —, avec une alerte pour celles qui chargent du code ; variables du système **rétablies depuis `HKLM`** pour chaque script ; `TEMP`, `TMP`, `LOCALAPPDATA`, `APPDATA`, `USERPROFILE` ramenées dans le profil s'ils visent un emplacement protégé (1.2) |
 | Réglages | `settings.json` est inscriptible, et ses valeurs partent à un script élevé : écrire `C:\Windows` dans les dossiers à vider du nettoyage suffit | **Garde** : chaque valeur doit avoir le type et faire partie des choix déclarés ; un texte libre ne peut pas viser un **emplacement protégé** — chemins résolus avant comparaison ; liste modifiable par l'utilisateur, mais rangée dans `HKLM` et modifiable **en administrateur seulement** (1.2) |
+| Ambiances (2.0) | Un fichier d'ambiance vient de n'importe qui, et son décor s'affiche dans l'interface élevée ; son dossier est inscriptible : une jonction à sa place ferait écrire ou effacer ailleurs | Décor dans un cadre **sans aucune permission** (`sandbox=""` : ni script, ni origine, ni navigation), CSP héritée et resserrée (images `data:` seulement), aucun clic reçu ; couleurs contrôlées (format, contraste) ; **refus d'écrire** si le dossier ou son parent est une jonction ; fichiers nommés par l'`id` vérifié, extension imposée (§15.7) |
 | Désinstallation | Le désinstalleur, administrateur, efface dans des dossiers inscriptibles par l'utilisateur : une jonction glissée à la place de `logs` lui ferait effacer le dossier visé | **Jamais `RMDir /r`**, qui suit les jonctions — y compris là où le modèle de Tauri l'employait : effacement parcouru par Sindry, qui retire une jonction rencontrée **comme un lien**, sans descendre dedans ; **rien du tout** si le dossier de base est lui-même une jonction — éprouvé sur une arborescence piégée (1.2) |
 | Journal | Une valeur secrète (mot de passe de sauvegarde) écrite en clair dans le journal technique | Valeurs des clés `Password`, `Secret`, `Token` **masquées** (1.2) |
 | Bouton Arrêter | `taskkill` résolu par le `PATH`, exécuté en administrateur | **Chemin absolu**, lu dans `HKLM` |
@@ -1292,6 +1294,58 @@ Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/si
   **jamais seul en plein travail** : il répond à un geste. Les visites en enchaînent
   plusieurs (Suivant, Précédent, Passer, flèches du clavier) ; une zone allongée — le champ
   de bouées — est éclairée en ellipse plutôt qu'en cercle (§13).
+
+### 15.7 Ambiances partageables (2.0)
+
+Une ambiance tient dans **un fichier** `.sindry-ambiance` : ses couleurs — les jetons de
+l'interface, en clair, en sombre ou les deux — et un **décor libre**, balisage SVG ou HTML
+et sa feuille de style. La communauté les construit à la main, d'après un format documenté
+(`docs/FORMAT_AMBIANCE.md`) et un exemple complet (`docs/ambiances/`) ; Sindry n'a pas
+d'éditeur. Elles se partagent comme des images : on envoie le fichier, on l'importe.
+
+**Où elles vivent.** `%LOCALAPPDATA%\Sindry\ambiances\`. Y déposer un fichier suffit — le
+principe des scripts : il apparaît dans le réglage 1.7 à la prochaine ouverture des
+réglages. La valeur du réglage est `perso:<id>` ; si le fichier disparaît, Sindry revient à
+Plan.
+
+**Une seule vérification, partout.** `ambiance.rs` lit chaque fichier — à l'import, à
+chaque lecture du dossier, et par la ligne de commande (§19) — et rend **tous** les
+problèmes d'un coup, chacun avec son code. Un fichier refusé n'empêche pas les autres : le
+réglage 1.8 liste ceux qu'il ignore, et pourquoi.
+
+- **Toutes les couleurs, aucune de trop** : les 35 couleurs et les 2 opacités de la houle,
+  par mode fourni ; une clé inconnue est refusée avec la plus proche suggérée (les clés en
+  `_` tiennent lieu de commentaires).
+- **Lisible, sans exception** : chaque texte sur chacun de ses fonds à **4,5:1** au moins —
+  les paires qui ont servi à mesurer les ambiances livrées. Un test passe chaque ambiance
+  livrée, exportée, au même validateur : les mêmes règles pour tous. C'est lui qui a trouvé
+  le texte atténué du journal de Braise sombre à 3,5:1, corrigé en 2.0.
+- **Les identifiants des ambiances livrées sont réservés.**
+
+**Le décor est isolé.** Il s'affiche là où s'affichent les décors livrés — à l'accueil du
+mode Simple, derrière la houle — dans un cadre `sandbox=""` : pas de script, une origine
+opaque, ni formulaire ni navigation, aucun clic reçu (`pointer-events: none`). Son document
+hérite de la CSP de l'application et la resserre : `default-src 'none'`, images `data:`
+seulement. Il ne voit rien de l'interface ; il reçoit les couleurs du mode affiché en
+variables CSS et `data-mode` sur sa racine, et il est redessiné quand le mode change. Le
+validateur double cette isolation — balises qui exécutent, chargent, naviguent ou reçoivent
+une saisie, gestionnaires d'événements, liens hors ancre et image embarquée, `@import`,
+échappements CSS — pour que l'auteur sache tout de suite ce qui ne s'afficherait pas.
+
+Les couleurs, elles, s'appliquent **par le CSSOM** (`style.setProperty` sur la racine),
+jamais par une feuille ou un attribut : rien ne dépend de la CSP, et une ambiance ne peut
+pas restyler l'interface au-delà de ses jetons. Pas d'ombres ni de formes dans le format :
+une ambiance installée ne peut pas masquer un avertissement ni maquiller un bouton.
+
+**Réglage 1.8.** Importer (un fichier du même `id` remplace l'ancien après confirmation,
+les deux versions nommées) ; Exporter — le fichier d'une ambiance installée, montré dans
+l'Explorateur ; pour une ambiance livrée, **une copie modifiable de ses couleurs**
+(`<id>-copie`), lue dans la feuille de style par un cadre invisible, sans changer
+l'ambiance affichée ; son décor fait partie de Sindry et ne s'exporte pas — ; Retirer
+(efface le fichier, après confirmation) ; Ouvrir le dossier ; Guide du format (GitHub).
+
+Une ambiance n'exécute rien : elle n'a pas d'approbation comme un script (§12.1). Un
+programme qui en déposerait une n'obtiendrait qu'un décor isolé et des couleurs lisibles.
 
 ## 16. Sources de scripts
 
