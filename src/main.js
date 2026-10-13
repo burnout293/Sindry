@@ -446,8 +446,59 @@ function rendreConfiguration(entree) {
       <div class="opts">
         ${options.map((o) => rendreOption(entree, o)).join('')}
         ${rendreReglagesWinTool(entree)}
+        ${rendreExceptionsScript(entree)}
       </div>
     </div>`;
+}
+
+/**
+ * Les emplacements proteges que cette action, et elle seule, a le droit de
+ * recevoir (2.0, §12.4). Seulement pour une action qui a un reglage en texte
+ * libre : c'est le seul que la garde controle sur les chemins. Les cases
+ * cochees sont les emplacements autorises pour elle ; ceux retires pour tous
+ * dans les Reglages le sont deja et n'apparaissent pas. Administrateur
+ * seulement : la liste vit dans HKLM.
+ */
+function rendreExceptionsScript(entree) {
+  const libre = (entree.meta.options || []).some((o) => !['bool', 'number', 'select', 'multi', 'items'].includes(o.kind));
+  const g = gardeActuelle;
+  if (!libre || !g) return '';
+  const autorises = g.exceptions?.[entree.id] || [];
+  const ids = g.integres.map((i) => i.id).filter((id) => !g.retires.includes(id));
+  if (!ids.length) return '';
+  const cases = ids.map((id) => {
+    const on = autorises.includes(id);
+    return `<button class="choix" type="button" role="checkbox" data-value="${esc(id)}" aria-pressed="${on}" aria-checked="${on}"${
+      g.modifiable ? '' : ' disabled'}><span class="case"><svg class="ico" aria-hidden="true"><use href="#check" /></svg></span><span>${esc(t(`garde.id.${id}`))}</span></button>`;
+  }).join('');
+  return `
+    <div class="opt wintool empilee" data-exceptions-pour="${esc(entree.id)}">
+      <div class="opt-body">
+        <div class="opt-label">${esc(t('garde.exceptions_titre'))}</div>
+        <div class="opt-desc">${esc(t(g.modifiable ? 'garde.exceptions_desc' : 'garde.exceptions_droits'))}</div>
+      </div>
+      <div class="opt-ctl"><div class="multi"><div class="opt-choices liste" data-exceptions="${esc(entree.id)}">${cases}</div></div></div>
+    </div>`;
+}
+
+/** Enregistre les exceptions d'une action, apres confirmation pour un
+ *  emplacement tres sensible (Windows, Program Files…). */
+async function persisterExceptions(liste) {
+  const scriptId = liste.dataset.exceptions;
+  const ids = [...liste.querySelectorAll('[aria-pressed="true"]')].map((b) => b.dataset.value);
+  const avant = gardeActuelle?.exceptions?.[scriptId] || [];
+  const nouveaux = ids.filter((id) => !avant.includes(id));
+  const sensibles = nouveaux.filter((id) => gardeActuelle.integres.find((i) => i.id === id)?.tres_sensible);
+  if (sensibles.length && !confirm(t('garde.exception_confirmer', { liste: sensibles.map((id) => t(`garde.id.${id}`)).join(', ') }))) {
+    return void rendreDetail();
+  }
+  try {
+    await invoke('set_script_exceptions', { scriptId, ids });
+  } catch (e) {
+    console.error('Exceptions :', e);
+  }
+  gardeActuelle = await invoke('protected_paths').catch(() => gardeActuelle);
+  rendreDetail();
 }
 
 /**
@@ -3259,7 +3310,7 @@ function cablerInteractions() {
     }
 
     const choix = basculerChoixMulti(ev.target);
-    if (choix) return void persisterReglage(choix);
+    if (choix) return void (choix.dataset.exceptions ? persisterExceptions(choix) : persisterReglage(choix));
 
     const scriptDuLot = ev.target.closest('#scriptsDuLot .row.script');
     if (scriptDuLot) return void selectionner('script', scriptDuLot.dataset.script);
@@ -5907,6 +5958,7 @@ async function demarrer() {
   await injecterSprite();
   initTerminal();
   await chargerGuide();
+  gardeActuelle = await invoke('protected_paths').catch(() => null);
 
   // La fenetre est creee invisible (tauri.conf.json) : on peut charger les
   // reglages et poser langue/theme sans jamais laisser voir un flash de

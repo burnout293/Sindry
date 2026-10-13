@@ -173,11 +173,30 @@ pub fn integres(e: &Emplacements, installation: Option<&Path>) -> Vec<Integre> {
 }
 
 /// Ce que l'utilisateur a change a la liste : des emplacements integres retires
-/// (par identifiant), des emplacements ajoutes.
+/// (par identifiant), des emplacements ajoutes — et, depuis la 2.0, des
+/// exceptions **par script** : tel script a le droit de recevoir tel emplacement
+/// integre (« verifier les fichiers de Windows » et `C:\Windows`), sans que la
+/// porte s'ouvre aux autres. Par identifiant de script.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ConfigGarde {
     pub retires: Vec<String>,
     pub ajouts: Vec<String>,
+    #[serde(default)]
+    pub exceptions: BTreeMap<String, Vec<String>>,
+}
+
+impl ConfigGarde {
+    /// Les emplacements integres retires pour ce script : ceux de toute la
+    /// liste, plus ses exceptions a lui.
+    pub fn retires_pour(&self, script_id: &str) -> Vec<String> {
+        let mut r = self.retires.clone();
+        for id in self.exceptions.get(script_id).into_iter().flatten() {
+            if !r.contains(id) {
+                r.push(id.clone());
+            }
+        }
+        r
+    }
 }
 
 /// Emplacement de `ConfigGarde`, sous `HKEY_LOCAL_MACHINE` : rien ne s'y ecrit
@@ -197,9 +216,27 @@ pub fn charger_depuis(racine: &windows_registry::Key, chemin: &str) -> ConfigGar
             .filter(|s| !s.is_empty())
             .collect()
     };
+    // Les exceptions : une valeur par script, sous `Exceptions`.
+    let mut exceptions = BTreeMap::new();
+    if let Ok(sous) = cle.open("Exceptions") {
+        if let Ok(valeurs) = sous.values() {
+            for (script, _) in valeurs {
+                let ids: Vec<String> = sous
+                    .get_multi_string(&script)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|i| IDS_INTEGRES.contains(&i.as_str()))
+                    .collect();
+                if !ids.is_empty() {
+                    exceptions.insert(script, ids);
+                }
+            }
+        }
+    }
     ConfigGarde {
         retires: liste("Retires"),
         ajouts: liste("Ajouts"),
+        exceptions,
     }
 }
 
@@ -218,6 +255,20 @@ pub fn enregistrer_dans(
         } else {
             cle.set_multi_string(nom.to_string(), valeurs.as_slice())
                 .map_err(|e| format!("ecriture de la liste des emplacements proteges : {e}"))?;
+        }
+    }
+    // Les exceptions sont reecrites en entier : ce qui n'est plus dans `c`
+    // disparait.
+    let _ = cle.remove_tree("Exceptions");
+    if !c.exceptions.is_empty() {
+        let sous = cle
+            .create("Exceptions")
+            .map_err(|e| format!("ecriture des exceptions : {e}"))?;
+        for (script, ids) in &c.exceptions {
+            if !ids.is_empty() {
+                sous.set_multi_string(script.clone(), ids.as_slice())
+                    .map_err(|e| format!("ecriture des exceptions : {e}"))?;
+            }
         }
     }
     Ok(())
@@ -258,6 +309,20 @@ pub struct Zones {
 }
 
 impl Zones {
+    /// Les zones pour un script donne : ses exceptions s'ajoutent aux
+    /// emplacements retires de toute la liste.
+    pub fn pour_script(
+        e: &Emplacements,
+        profil: &Path,
+        installation: Option<&Path>,
+        config: &ConfigGarde,
+        script_id: &str,
+    ) -> Zones {
+        let mut c = config.clone();
+        c.retires = config.retires_pour(script_id);
+        Zones::nouvelles(e, profil, installation, &c)
+    }
+
     pub fn nouvelles(
         e: &Emplacements,
         profil: &Path,
@@ -546,6 +611,7 @@ mod tests {
         let config = ConfigGarde {
             retires: Vec::new(),
             ajouts: ajouts.to_vec(),
+            ..Default::default()
         };
         Zones::nouvelles(systeme::emplacements(), &profil(), None, &config)
     }
@@ -554,8 +620,21 @@ mod tests {
         let config = ConfigGarde {
             retires: retires.iter().map(|r| r.to_string()).collect(),
             ajouts: Vec::new(),
+            ..Default::default()
         };
         Zones::nouvelles(systeme::emplacements(), &profil(), None, &config)
+    }
+
+    #[test]
+    fn une_exception_ne_vaut_que_pour_son_script() {
+        let e = systeme::emplacements();
+        let mut config = ConfigGarde::default();
+        config.exceptions.insert("verifier-windows".into(), vec!["windows".into()]);
+        let pour = |id: &str| Zones::pour_script(e, &profil(), None, &config, id);
+        assert!(!pour("verifier-windows").protege(&e.windows), "le script autorise recoit le dossier de Windows");
+        assert!(pour("autre-script").protege(&e.windows), "les autres non");
+        assert!(pour("verifier-windows").protege(&e.program_data), "le reste de la liste tient");
+        assert!(pour("").protege(&e.windows), "sans script : la liste commune");
     }
 
     fn opt(key: &str, kind: &str, choix: &[&str], defaut: Option<DefaultValue>) -> Opt {
@@ -683,10 +762,12 @@ mod tests {
         use windows_registry::CURRENT_USER;
         let chemin = format!(r"SOFTWARE\WinTool-tests-{}-garde", std::process::id());
         let _ = CURRENT_USER.remove_tree(&chemin);
-        let c = ConfigGarde {
+        let mut c = ConfigGarde {
             retires: vec!["windows".into()],
             ajouts: vec![r"D:\Archives".into()],
+            ..Default::default()
         };
+        c.exceptions.insert("sfc".into(), vec!["windows".into(), "program_data".into()]);
         enregistrer_dans(CURRENT_USER, &chemin, &c).unwrap();
         assert_eq!(charger_depuis(CURRENT_USER, &chemin), c);
         // Vider une liste efface la valeur, et se relit comme une liste vide.

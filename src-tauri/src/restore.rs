@@ -62,8 +62,16 @@ pub fn creer_point_de_restauration(description: &str) -> Result<RestoreOutcome, 
     );
 
     // Chemin absolu, lu dans HKLM : ce processus est eleve (specification 12.4).
-    let sortie = Command::new(crate::systeme::emplacements().powershell())
-        .args(["-NoProfile", "-NonInteractive", "-Command", &commande])
+    let mut c = Command::new(crate::systeme::emplacements().powershell());
+    c.args(["-NoProfile", "-NonInteractive", "-Command", &commande]);
+    // Sans ce drapeau, PowerShell ouvrait sa console noire le temps du point de
+    // restauration, juste avant le premier script (2.0).
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let sortie = c
         .output()
         .map_err(|e| format!("lancement de Checkpoint-Computer impossible : {e}"))?;
 

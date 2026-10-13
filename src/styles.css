@@ -1061,6 +1061,20 @@ body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-st
 :root[data-accent="plan"] .buoy .blabel { border-radius: 8px; }
 :root[data-accent="plan"] .buoy .bd { font-family: var(--mono); font-size: 10.5px; }
 :root[data-accent="plan"] .btn.primary.big { border-radius: 10px; }
+/* Plan dans l'Expert (2.0) : la meme grammaire que l'accueil — grille fine
+   sous le detail, filets d'un pixel, coins serres, chiffres en chasse fixe,
+   selection marquee d'un trait. Pas de roues : on y lit des listes. */
+:root[data-accent="plan"] body[data-mode="expert"] .detail {
+  background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px);
+  background-size: 32px 32px; background-attachment: local;
+}
+:root[data-accent="plan"] .card, :root[data-accent="plan"] .conf, :root[data-accent="plan"] .opt { border-radius: 8px; }
+:root[data-accent="plan"] .btn { border-radius: 8px; }
+:root[data-accent="plan"] .card-icon { border-radius: 8px; }
+:root[data-accent="plan"] .row.script .rn, :root[data-accent="plan"] .card-path, :root[data-accent="plan"] .conf-compte { font-family: var(--mono); }
+:root[data-accent="plan"] .row[aria-current="true"] { box-shadow: inset 2px 0 0 var(--acc); border-radius: 4px; }
+:root[data-accent="plan"] .lots-onglets [aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--acc); border-radius: 4px 4px 0 0; }
+:root[data-accent="plan"] .chip { border-radius: 4px; }
 
 /* Terminal : tout en chasse fixe (jetons), lignes de balayage et lueur du
    phosphore sur tout l'écran, une ligne d'eau en pointillés, un curseur. */

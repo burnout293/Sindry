@@ -777,6 +777,7 @@
       ],
       retires: garde.retires,
       ajouts: garde.ajouts,
+      exceptions: { ...(garde.exceptions || {}) },
       modifiable: !new URLSearchParams(location.search).has('sansadmin'),
       lecteur: 'C:',
       profil: 'C:\\Users\\Buly',
@@ -789,6 +790,14 @@
       if (mauvais) throw new Error(`CHEMIN_NON_ABSOLU:${mauvais}`);
       garde.retires = [...(a.retires || [])];
       garde.ajouts = propres;
+      return null;
+    },
+    // Exceptions par script (2.0) : `lib::set_script_exceptions`.
+    set_script_exceptions: (a) => {
+      if (new URLSearchParams(location.search).has('sansadmin')) throw new Error('GARDE_SANS_DROITS');
+      garde.exceptions = garde.exceptions || {};
+      if (a.ids.length) garde.exceptions[a.scriptId] = [...a.ids];
+      else delete garde.exceptions[a.scriptId];
       return null;
     },
     complete_onboarding: (a) => {

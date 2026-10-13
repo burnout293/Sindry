@@ -147,47 +147,54 @@ fn script_approuve(entree: &discovery::ScriptEntry) -> Result<bool, String> {
 /// Relance WinTool avec les droits administrateur, puis ferme l'instance
 /// courante.
 ///
-/// Passe par `Start-Process -Verb RunAs`, qui declenche l'invite UAC standard.
-/// Le chemin de l'executable voyage par une variable d'environnement et non
-/// dans le texte de la commande : aucun caractere du chemin ne peut en changer
-/// le sens (meme regle que pour `WINTOOL_CONFIG` et l'analyse de syntaxe).
+/// Demande a Windows de relancer l'application en administrateur : l'invite
+/// UAC standard, directement (`ShellExecuteW`, verbe « runas »). Jusqu'a la
+/// 1.8, un PowerShell intermediaire faisait `Start-Process -Verb RunAs` — un
+/// processus de plus, et une console qui pouvait apparaitre (2.0).
+///
+/// Rend la main quand l'utilisateur a repondu. S'il refuse, il retrouve
+/// l'application telle qu'il l'a laissee : la fermeture est declenchee par
+/// l'interface une fois la nouvelle fenetre apparue.
 #[tauri::command]
-fn relaunch_elevated(app: tauri::AppHandle) -> Result<(), String> {
+async fn relaunch_elevated() -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| format!("executable introuvable : {e}"))?;
-    let moteurs = runner::engines();
-    let shell = moteurs
-        .winps
-        .or(moteurs.pwsh)
-        .ok_or("aucun interpreteur PowerShell pour relancer")?;
+    tauri::async_runtime::spawn_blocking(move || relancer_en_administrateur(&exe))
+        .await
+        .map_err(|e| e.to_string())?
+}
 
-    let mut commande = std::process::Command::new(shell);
-    commande
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            "Start-Process -FilePath $env:WINTOOL_EXE -Verb RunAs",
-        ])
-        .env("WINTOOL_EXE", &exe)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
-
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        commande.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+#[cfg(windows)]
+fn relancer_en_administrateur(exe: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::UI::Shell::ShellExecuteW;
+    use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    let large = |s: &std::ffi::OsStr| s.encode_wide().chain(Some(0)).collect::<Vec<u16>>();
+    let verbe = large(std::ffi::OsStr::new("runas"));
+    let fichier = large(exe.as_os_str());
+    // SAFETY: deux chaines UTF-16 terminees par un zero, qui vivent jusqu'au
+    // retour de l'appel ; les autres pointeurs sont nuls, comme le permet l'API.
+    let r = unsafe {
+        ShellExecuteW(
+            std::ptr::null_mut(),
+            verbe.as_ptr(),
+            fichier.as_ptr(),
+            std::ptr::null(),
+            std::ptr::null(),
+            SW_SHOWNORMAL,
+        )
+    };
+    // Une valeur superieure a 32 signale le succes ; en dessous, un code
+    // d'erreur — dont le refus de l'invite UAC.
+    if (r as isize) > 32 {
+        Ok(())
+    } else {
+        Err(format!("relance impossible (code {})", r as isize))
     }
+}
 
-    commande
-        .spawn()
-        .map_err(|e| format!("relance impossible : {e}"))?;
-
-    // On ne ferme pas immediatement : si l'utilisateur refuse l'invite UAC,
-    // il doit retrouver l'application telle qu'il l'a laissee. La fermeture
-    // est declenchee par l'interface une fois la nouvelle fenetre apparue.
-    let _ = app;
-    Ok(())
+#[cfg(not(windows))]
+fn relancer_en_administrateur(_exe: &std::path::Path) -> Result<(), String> {
+    Err("disponible sous Windows seulement".into())
 }
 
 /// Etat de l'interrupteur general de simulation, deduit des scripts (§6.9).
@@ -261,7 +268,7 @@ fn scan_script(
             .iter()
             .any(|o| &o.key == cle && o.kind != "items")
     });
-    let zones = zones_protegees(&app)?;
+    let zones = zones_protegees(&app, &entree.id)?;
     let e = systeme::emplacements();
     req.config = garde::verifier_config(&entree.meta, &req.config, &zones, e, &e.system32())
         .map_err(|r| r.message())?;
@@ -314,7 +321,7 @@ fn run_script(
     // aucun texte libre ne doit viser un emplacement protege. C'est un refus,
     // pas un constat : il s'agit d'execution avec les droits administrateur.
     let reglages = settings::load(&app)?;
-    let zones = zones_protegees(&app)?;
+    let zones = zones_protegees(&app, &entree.id)?;
     let e = systeme::emplacements();
     req.config = garde::verifier_config(&entree.meta, &req.config, &zones, e, &e.system32())
         .map_err(|r| r.message())?;
@@ -437,9 +444,13 @@ fn approve_script(hash: String) -> Result<(), String> {
     approval::enregistrer(&hash)
 }
 
-/// Les emplacements proteges : la liste integree, moins ce que l'utilisateur
-/// en a retire, plus ce qu'il y a ajoute (`garde`, lue dans HKLM).
-fn zones_protegees<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<garde::Zones, String> {
+/// Les emplacements proteges pour un script : la liste integree, moins ce que
+/// l'utilisateur en a retire — pour tous, ou pour ce script seulement (2.0) —,
+/// plus ce qu'il y a ajoute (`garde`, lue dans HKLM).
+fn zones_protegees<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    script_id: &str,
+) -> Result<garde::Zones, String> {
     let profil = app
         .path()
         .home_dir()
@@ -447,11 +458,12 @@ fn zones_protegees<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<garde
     let installation = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|d| d.to_path_buf()));
-    Ok(garde::Zones::nouvelles(
+    Ok(garde::Zones::pour_script(
         systeme::emplacements(),
         &profil,
         installation.as_deref(),
         &garde::charger(),
+        script_id,
     ))
 }
 
@@ -460,6 +472,8 @@ struct EmplacementsProteges {
     integres: Vec<garde::Integre>,
     retires: Vec<String>,
     ajouts: Vec<String>,
+    /// Par script : les emplacements integres qu'il a le droit de recevoir.
+    exceptions: std::collections::BTreeMap<String, Vec<String>>,
     /// Faux sans droits administrateur : la liste se lit, elle ne se modifie
     /// pas (elle vit dans HKLM).
     modifiable: bool,
@@ -482,6 +496,7 @@ fn protected_paths(app: tauri::AppHandle) -> EmplacementsProteges {
         integres: garde::integres(e, installation.as_deref()),
         retires: config.retires,
         ajouts: config.ajouts,
+        exceptions: config.exceptions,
         modifiable: is_elevated(),
         lecteur: e.lecteur.clone(),
         profil: app.path().home_dir().ok().map(|p| p.display().to_string()),
@@ -501,7 +516,11 @@ fn set_protected_paths(retires: Vec<String>, ajouts: Vec<String>) -> Result<(), 
     if !is_elevated() {
         return Err(GARDE_SANS_DROITS.to_string());
     }
-    let mut config = garde::ConfigGarde::default();
+    // Les exceptions par script ne se touchent pas d'ici : elles ont leur commande.
+    let mut config = garde::ConfigGarde {
+        exceptions: garde::charger().exceptions,
+        ..Default::default()
+    };
     for r in retires {
         if !garde::IDS_INTEGRES.contains(&r.as_str()) {
             return Err(format!("emplacement integre inconnu : {r}"));
@@ -520,6 +539,38 @@ fn set_protected_paths(retires: Vec<String>, ajouts: Vec<String>) -> Result<(), 
         if !config.ajouts.iter().any(|x| x.eq_ignore_ascii_case(p)) {
             config.ajouts.push(p.to_string());
         }
+    }
+    garde::enregistrer(&config)
+}
+
+/// Les emplacements integres qu'un script a le droit de recevoir, en plus de
+/// ceux retires pour tous (2.0). Administrateur seulement, comme toute la
+/// liste : c'est elle qu'un programme sans droits voudrait elargir.
+#[tauri::command]
+fn set_script_exceptions(script_id: String, ids: Vec<String>) -> Result<(), String> {
+    if !is_elevated() {
+        return Err(GARDE_SANS_DROITS.to_string());
+    }
+    let sur = !script_id.is_empty()
+        && script_id.len() <= 80
+        && script_id.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c));
+    if !sur {
+        return Err(format!("identifiant de script refuse : {script_id}"));
+    }
+    let mut config = garde::charger();
+    let mut propres: Vec<String> = Vec::new();
+    for id in ids {
+        if !garde::IDS_INTEGRES.contains(&id.as_str()) {
+            return Err(format!("emplacement integre inconnu : {id}"));
+        }
+        if !propres.contains(&id) {
+            propres.push(id);
+        }
+    }
+    if propres.is_empty() {
+        config.exceptions.remove(&script_id);
+    } else {
+        config.exceptions.insert(script_id, propres);
     }
     garde::enregistrer(&config)
 }
@@ -1449,7 +1500,7 @@ pub fn run() {
             // depuis HKLM, dossiers de l'utilisateur ramenes dans son profil
             // s'ils visent un emplacement protege.
             let handle = app.handle();
-            if let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle)) {
+            if let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle, "")) {
                 let corrigees =
                     systeme::preparer_environnement_enfants(&profil, |p| zones.protege(p));
                 if !corrigees.is_empty() {
@@ -1527,6 +1578,7 @@ pub fn run() {
             set_log_cap,
             protected_paths,
             set_protected_paths,
+            set_script_exceptions,
             complete_onboarding,
             reset_settings,
             export_settings,

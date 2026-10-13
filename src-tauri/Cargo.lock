@@ -5208,6 +5208,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-updater",
  "windows-registry",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

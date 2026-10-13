@@ -45,6 +45,9 @@ base64 = "0.22"
 # (specification 12.4). Deja dans l'arbre, par le greffon de mise a jour.
 [target.'cfg(windows)'.dependencies]
 windows-registry = "0.6"
+# La relance en administrateur (ShellExecuteW, verbe « runas ») et la console de
+# la ligne de commande (AttachConsole). Deja dans l'arbre, a cette version.
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_System_Console"] }
 
 [profile.release]
 codegen-units = 1
