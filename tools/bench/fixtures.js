@@ -488,7 +488,11 @@
     sources_exclus: {},
     // Le banc saute l'accueil par defaut ; `?onboarding=1` le rejoue.
     onboarded: !new URLSearchParams(location.search).has('onboarding'),
+    // `?accent=synthwave&theme=dark` : une ambiance et un mode d'office, pour
+    // comparer des captures (Edge sans tete).
+    accent: new URLSearchParams(location.search).get('accent') || '',
   };
+  if (new URLSearchParams(location.search).get('theme')) reglages.theme = new URLSearchParams(location.search).get('theme');
 
   /** Struct `history::History` — un objet, jamais un tableau. */
   const historique = {
@@ -914,15 +918,16 @@
     import_settings: () => ({ ok: true, message: 'Configuration importée.' }),
 
     // Ambiances installees (§15.7) — `ambiance::Liste`, `ambiance::Import`.
-    // L'exemple de la documentation est installe d'office ; `?ambiances=aucune`
-    // part d'un dossier vide. La verification complete est celle de Rust : le
-    // banc ne fait que remettre le fichier dans la forme rendue.
+    // Les trois de base d'office ; `?ambiances=toutes` ajoute celles du depot,
+    // `?ambiances=aucune` part d'un dossier vide. La verification complete est
+    // celle de Rust : le banc ne fait que remettre le fichier dans la forme rendue.
     list_ambiances: async () => {
       if (ambiancesBanc === null) {
         ambiancesBanc = [];
-        if (new URLSearchParams(location.search).get('ambiances') !== 'aucune') {
-          const texte = await (await fetch('/__ambiance-exemple.json')).text();
-          ambiancesBanc.push(ambianceRendue(texte, 'foret-de-nuit.sindry-ambiance'));
+        const choix = new URLSearchParams(location.search).get('ambiances');
+        if (choix !== 'aucune') {
+          const fichiers = await (await fetch(`/__ambiances.json?toutes=${choix === 'toutes' ? 1 : 0}`)).json();
+          for (const f of fichiers) ambiancesBanc.push(ambianceRendue(f.texte, f.fichier));
         }
       }
       return {
@@ -947,6 +952,7 @@
       ambiancesBanc = ambiancesBanc.filter((x) => x.id !== nouvelle.id).concat([nouvelle]);
       return { etat: 'ajoutee', ambiance: nouvelle };
     },
+    reinstall_base_ambiances: () => [],
     remove_ambiance: (a) => {
       ambiancesBanc = ambiancesBanc.filter((x) => x.id !== a.id);
       return `C:\\Users\\Buly\\AppData\\Local\\Sindry\\ambiances\\${a.id}.sindry-ambiance`;
@@ -961,11 +967,13 @@
     const nom = typeof v.nom === 'string' ? { fr: v.nom, en: v.nom } : { fr: v.nom.fr || v.nom.en, en: v.nom.en || v.nom.fr };
     const mode = (m) => (m ? Object.fromEntries(Object.entries(m).filter(([k]) => !k.startsWith('_'))
       .map(([k, x]) => [k, typeof x === 'number' ? String(x) : x.toUpperCase()])) : null);
+    const forme = { bouees: 'rondes', titres: 'normaux', coins: 'doux', ligne_eau: 'vague', chiffres: 'normaux', expert: 'normal',
+      equerres: false, lueur: false, balayage: false, ...(v.forme || {}) };
     return {
       id: v.id, nom, description: v.description ? (typeof v.description === 'string' ? { fr: v.description, en: v.description } : v.description) : null,
       auteur: v.auteur || '', version: v.version || '', police: v.police || 'normale',
       clair: mode(v.clair), sombre: mode(v.sombre),
-      decor: { balisage: v.decor?.balisage || '', css: v.decor?.css || '' }, fichier,
+      decor: { balisage: v.decor?.balisage || '', css: v.decor?.css || '' }, forme, fichier,
     };
   }
 
@@ -1001,6 +1009,20 @@
   // Signal de fin pour un pilote automatise : la page previent le serveur
   // quand le demarrage asynchrone est termine. `--dump-dom` rend la main
   // avant, et `--virtual-time-budget` ne le retarde pas.
+  // `?mode=expert` : l'ecran Expert d'office ; `?reglages=apparence` : une
+  // section des Reglages ouverte — pour les captures.
+  const parametres = new URLSearchParams(location.search);
+  if (parametres.get('mode') === 'expert' || parametres.get('reglages')) {
+    const t = setInterval(() => {
+      if (!document.documentElement.dataset.benchVisible) return;
+      clearInterval(t);
+      if (parametres.get('mode') === 'expert') document.querySelector('[data-mode-btn="expert"]')?.click();
+      if (parametres.get('reglages')) {
+        document.getElementById('btnSettings')?.click();
+        setTimeout(() => document.querySelector(`[data-rg-section="${parametres.get('reglages')}"]`)?.click(), 150);
+      }
+    }, 50);
+  }
   window.__BENCH_PRET = new Promise((resolve) => {
     const t = setInterval(() => {
       if (document.documentElement.dataset.benchVisible) {

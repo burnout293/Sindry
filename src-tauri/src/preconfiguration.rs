@@ -14,7 +14,7 @@
 //! toute facon changer lui-meme —, et ce qui part a un script passe toujours
 //! par la garde (§12.4).
 
-use crate::settings::{self, Settings};
+use crate::settings::Settings;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -125,15 +125,12 @@ pub fn depuis_options(arguments: &[String]) -> Result<(Preconfiguration, bool), 
                 );
             }
             ("/AMBIANCE", Some(v)) => {
+                // Une ambiance de base, ou une a installer ensuite : son id.
                 let v = v.to_ascii_lowercase();
-                if settings::ACCENTS.contains(&v.as_str()) {
-                    p.ambiance = Some(v);
-                } else if crate::ambiance::id_valide(&v) {
-                    // Une ambiance a installer ensuite : elle n'existe pas encore.
-                    p.ambiance = Some(format!("perso:{v}"));
-                } else {
+                if !crate::ambiance::id_valide(&v) {
                     return Err(format!("/AMBIANCE={v} : le nom d'une ambiance."));
                 }
+                p.ambiance = Some(v);
             }
             ("/SANSBIENVENUE" | "/NOWELCOME", None) => p.bienvenue = Some(false),
             ("/CONFIG", Some(v)) => {
@@ -252,6 +249,7 @@ fn prevenir_changement_environnement() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::settings;
 
     fn args(a: &[&str]) -> Vec<String> {
         a.iter().map(|s| s.to_string()).collect()
@@ -274,7 +272,7 @@ mod tests {
         assert!(chemin);
         assert_eq!(p.langue.as_deref(), Some("en"));
         assert_eq!(p.theme.as_deref(), Some("dark"));
-        assert_eq!(p.ambiance.as_deref(), Some("perso:foret-de-nuit"));
+        assert_eq!(p.ambiance.as_deref(), Some("foret-de-nuit"));
         assert_eq!(p.bienvenue, Some(false));
         let (p, _) = depuis_options(&args(&["/AMBIANCE=Synthwave"])).unwrap();
         assert_eq!(p.ambiance.as_deref(), Some("synthwave"));

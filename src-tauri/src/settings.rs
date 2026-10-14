@@ -180,26 +180,18 @@ pub struct Settings {
     /// version ajoute arrivent coches ; on ne retient que les refus.
     #[serde(default)]
     pub sources_exclus: BTreeMap<String, Vec<String>>,
-    /// Variante de couleurs de l'interface (§15.4) : une de [`ACCENTS`]. Vide,
-    /// ou une valeur d'avant la 1.6 (orange, maree…) : Plan, l'ambiance par
-    /// defaut depuis la 1.8.
+    /// L'ambiance (reglage 2.3, §15.7) : l'`id` d'un fichier du dossier des
+    /// ambiances. Introuvable ou vide : Plan, l'allure de secours de la feuille.
+    /// Jusqu'a la 2.0.0, une ambiance livree (`synthwave`…) ou installee
+    /// (`perso:<id>`) : `ambiance::passer_aux_fichiers` la ramene a un id.
     #[serde(default)]
     pub accent: String,
+    /// Le passage aux ambiances en fichiers (2.0.1) est fait : les ambiances de
+    /// base ont ete posees une fois. Retirees ensuite, elles ne reviennent que
+    /// sur demande.
+    #[serde(default)]
+    pub ambiances_fichiers: bool,
 }
-
-/// Ambiances (reglage 1.8) : Braise — Ardente (defaut) et Crepuscule — et les
-/// themes d'ambiance de la 1.7. Terminal et Aurore n'existent qu'en sombre.
-pub const ACCENTS: [&str; 9] = [
-    "plan",
-    "ardente",
-    "crepuscule",
-    "synthwave",
-    "spatial",
-    "terminal-vert",
-    "terminal-ambre",
-    "aurore-boreale",
-    "aurore-australe",
-];
 
 /// Valeurs admises pour `catalogue_source` une fois la decision prise.
 pub const SOURCES_CATALOGUE: [&str; 2] = ["official", "none"];
@@ -324,6 +316,7 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         sources_inactives: Vec::new(),
         sources_exclus: BTreeMap::new(),
         accent: String::new(),
+        ambiances_fichiers: false,
     }
 }
 

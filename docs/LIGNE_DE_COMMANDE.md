@@ -90,7 +90,7 @@ la lecture et l'approbation, il est refusé.
 |---|---|
 | `theme` | `clair`, `sombre`, `systeme` (`light`, `dark`, `system`) |
 | `langue` | `fr`, `en` |
-| `ambiance` | une ambiance livrée (`plan`, `synthwave`…) ou installée |
+| `ambiance` | l'`id` d'une ambiance installée (`plan`, `foret-de-nuit`…) |
 | `mises-a-jour` | `proposer`, `beta`, `jamais` |
 | `echec` | `continuer`, `arreter` |
 | `journaux` | une taille en Mo ; `0` : pas de limite |
@@ -174,7 +174,7 @@ une autre.
 | `/S` | Silencieuse : aucune fenêtre (NSIS). `/P` : passive, une barre de progression |
 | `/LANG=fr\|en` | La langue de l'interface |
 | `/THEME=clair\|sombre\|systeme` | |
-| `/AMBIANCE=<id>` | Une ambiance livrée, ou installée ensuite (`sindry ambiance importer`) |
+| `/AMBIANCE=<id>` | Une ambiance de base (`plan`, `foret-de-nuit`, `aurore-australe`), ou installée ensuite (`sindry ambiance importer`) |
 | `/SANSBIENVENUE` | Pas de bienvenue au premier lancement (`/NOWELCOME`) |
 | `/CONFIG=<fichier>` | Une configuration exportée (`config exporter`, Réglages 5.4) : lots, réglages par action, préférences. Lue et vérifiée à l'installation, puis copiée — le fichier d'origine n'est plus nécessaire |
 | `/PATH` | Ajoute le dossier d'installation au `PATH` du système : `sindry` dans toute console. Retiré à la désinstallation |

@@ -189,6 +189,65 @@ pub struct Decor {
     pub css: String,
 }
 
+/// L'allure de l'interface, au-dela des couleurs (2.0.1) : des **listes
+/// fermees**, que l'interface traduit en regles CSS qu'elle ecrit elle-meme.
+/// Une ambiance ne fournit jamais de CSS pour l'interface — elle pourrait
+/// masquer un avertissement ou maquiller un bouton (§15.7) ; elle choisit
+/// parmi des allures verifiees.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct Forme {
+    pub bouees: String,
+    pub titres: String,
+    pub coins: String,
+    pub ligne_eau: String,
+    pub chiffres: String,
+    pub expert: String,
+    pub equerres: bool,
+    pub lueur: bool,
+    pub balayage: bool,
+}
+
+impl Default for Forme {
+    fn default() -> Self {
+        Forme {
+            bouees: "rondes".into(),
+            titres: "normaux".into(),
+            coins: "doux".into(),
+            ligne_eau: "vague".into(),
+            chiffres: "normaux".into(),
+            expert: "normal".into(),
+            equerres: false,
+            lueur: false,
+            balayage: false,
+        }
+    }
+}
+
+/// Chaque reglage de forme et ses valeurs, la premiere par defaut.
+pub const FORMES: [(&str, &[&str]); 6] = [
+    (
+        "bouees",
+        &[
+            "rondes",
+            "arrondies",
+            "losanges",
+            "neon",
+            "pointillees",
+            "verre",
+        ],
+    ),
+    ("titres", &["normaux", "nets", "neon", "espaces", "invite"]),
+    ("coins", &["doux", "serres", "droits", "aucun"]),
+    (
+        "ligne_eau",
+        &["vague", "trait", "neon", "pointilles", "points"],
+    ),
+    ("chiffres", &["normaux", "chasse-fixe"]),
+    ("expert", &["normal", "plan"]),
+];
+/// Les interrupteurs de forme : `true` ou `false`.
+pub const INTERRUPTEURS: [&str; 3] = ["equerres", "lueur", "balayage"];
+
 /// Une ambiance valide, prete a s'appliquer : couleurs normalisees
 /// (`#RRGGBB`), opacites en texte (`0.4`).
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -203,6 +262,7 @@ pub struct Ambiance {
     pub clair: Option<BTreeMap<String, String>>,
     pub sombre: Option<BTreeMap<String, String>>,
     pub decor: Decor,
+    pub forme: Forme,
     /// Le fichier d'ou elle vient, une fois installee.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub fichier: String,
@@ -249,6 +309,7 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
             "clair",
             "sombre",
             "decor",
+            "forme",
         ],
         "",
         &mut c,
@@ -273,13 +334,6 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
             format!(
                 "« id » vaut {} : minuscules, chiffres et tirets, 40 caracteres au plus (« foret-de-nuit »).",
                 objet.get("id").cloned().unwrap_or(Value::Null)
-            ),
-        ));
-    } else if crate::settings::ACCENTS.contains(&id) || id == "perso" {
-        c.push(constat(
-            "ID_RESERVE",
-            format!(
-                "« {id} » est le nom d'une ambiance livree avec Sindry : choisissez-en un autre."
             ),
         ));
     }
@@ -310,6 +364,7 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
     }
 
     let decor = decor(objet.get("decor"), &mut c);
+    let forme = forme(objet.get("forme"), &mut c);
 
     if !c.is_empty() {
         return Err(c);
@@ -324,8 +379,67 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
         clair,
         sombre,
         decor,
+        forme,
         fichier: String::new(),
     })
+}
+
+/// La forme : chaque reglage pris dans sa liste, chaque interrupteur un booleen.
+fn forme(valeur: Option<&Value>, c: &mut Vec<Constat>) -> Forme {
+    let mut f = Forme::default();
+    let Some(valeur) = valeur else {
+        return f;
+    };
+    let Some(o) = valeur.as_object() else {
+        c.push(constat(
+            "FORME_INCONNUE",
+            "« forme » doit etre un objet : { \"bouees\": \"losanges\", … }.",
+        ));
+        return f;
+    };
+    let connues: Vec<&str> = FORMES
+        .iter()
+        .map(|(k, _)| *k)
+        .chain(INTERRUPTEURS)
+        .collect();
+    cles_connues(o, &connues, "forme : ", c);
+    for (cle, valeurs) in FORMES {
+        let Some(v) = o.get(cle) else {
+            continue;
+        };
+        match v.as_str() {
+            Some(x) if valeurs.contains(&x) => {
+                let champ = match cle {
+                    "bouees" => &mut f.bouees,
+                    "titres" => &mut f.titres,
+                    "coins" => &mut f.coins,
+                    "ligne_eau" => &mut f.ligne_eau,
+                    "chiffres" => &mut f.chiffres,
+                    _ => &mut f.expert,
+                };
+                *champ = x.to_string();
+            }
+            _ => c.push(constat(
+                "FORME_INCONNUE",
+                format!("forme : « {cle} » vaut {v} : {}.", valeurs.join(", ")),
+            )),
+        }
+    }
+    for cle in INTERRUPTEURS {
+        match o.get(cle) {
+            None => {}
+            Some(Value::Bool(b)) => match cle {
+                "equerres" => f.equerres = *b,
+                "lueur" => f.lueur = *b,
+                _ => f.balayage = *b,
+            },
+            Some(v) => c.push(constat(
+                "FORME_INCONNUE",
+                format!("forme : « {cle} » vaut {v} : true ou false."),
+            )),
+        }
+    }
+    f
 }
 
 /// `id` : la forme des noms d'icones et des ids de visite.
@@ -776,6 +890,101 @@ fn verifier_css(css: &str, ou: &str, c: &mut Vec<Constat>) {
 }
 
 /* ------------------------------------------------------------------------
+Les ambiances livrees avec Sindry (2.0.1)
+   ------------------------------------------------------------------------ */
+
+/// Les trois ambiances de base : des fichiers comme les autres — exportables,
+/// supprimables —, poses dans le dossier au premier lancement de la 2.0.1 et
+/// reinstallables d'un clic. Plan est aussi l'allure de secours de la feuille
+/// de style, quand aucune ambiance n'est installee.
+pub const DE_BASE: [(&str, &str); 3] = [
+    (
+        "plan",
+        include_str!("../../ambiances/base/plan.sindry-ambiance"),
+    ),
+    (
+        "foret-de-nuit",
+        include_str!("../../ambiances/base/foret-de-nuit.sindry-ambiance"),
+    ),
+    (
+        "aurore-australe",
+        include_str!("../../ambiances/base/aurore-australe.sindry-ambiance"),
+    ),
+];
+
+/// Les ambiances livrees jusqu'a la 2.0.0, publiees depuis dans un depot a
+/// part (`ambiances/depot/`). Embarquees pour une seule raison : qui en avait
+/// choisi une la retrouve, installee, a la mise a jour.
+pub const D_AVANT: [(&str, &str); 7] = [
+    (
+        "ardente",
+        include_str!("../../ambiances/depot/ardente.sindry-ambiance"),
+    ),
+    (
+        "crepuscule",
+        include_str!("../../ambiances/depot/crepuscule.sindry-ambiance"),
+    ),
+    (
+        "synthwave",
+        include_str!("../../ambiances/depot/synthwave.sindry-ambiance"),
+    ),
+    (
+        "spatial",
+        include_str!("../../ambiances/depot/spatial.sindry-ambiance"),
+    ),
+    (
+        "terminal-vert",
+        include_str!("../../ambiances/depot/terminal-vert.sindry-ambiance"),
+    ),
+    (
+        "terminal-ambre",
+        include_str!("../../ambiances/depot/terminal-ambre.sindry-ambiance"),
+    ),
+    (
+        "aurore-boreale",
+        include_str!("../../ambiances/depot/aurore-boreale.sindry-ambiance"),
+    ),
+];
+
+/// Ecrit dans le dossier les ambiances de base qui n'y sont pas. Rend leurs
+/// ids. Une ambiance du meme id deja installee — modifiee, par exemple — n'est
+/// pas remplacee.
+pub fn installer_de_base(dossier: &Path) -> Result<Vec<String>, String> {
+    let deja: Vec<String> = lister_dans(dossier)
+        .ambiances
+        .into_iter()
+        .map(|a| a.id)
+        .collect();
+    let mut poses = Vec::new();
+    for (id, contenu) in DE_BASE {
+        if deja.iter().any(|d| d == id) {
+            continue;
+        }
+        if let Import::Ajoutee { .. } = importer_dans(dossier, contenu, false)? {
+            poses.push(id.to_string());
+        }
+    }
+    Ok(poses)
+}
+
+/// Le passage a la 2.0.1, une fois : les ambiances de base, et celle que
+/// l'utilisateur avait choisie si elle a quitte Sindry. Rend la valeur du
+/// reglage a garder — l'id seul, sans le `perso:` de la 2.0.0 ; vide devient
+/// Plan.
+pub fn passer_aux_fichiers(dossier: &Path, accent: &str) -> Result<String, String> {
+    installer_de_base(dossier)?;
+    let id = accent.strip_prefix("perso:").unwrap_or(accent);
+    let id = if id.is_empty() { "plan" } else { id };
+    let installee = lister_dans(dossier).ambiances.iter().any(|a| a.id == id);
+    if !installee {
+        if let Some((_, contenu)) = D_AVANT.iter().find(|(i, _)| *i == id) {
+            importer_dans(dossier, contenu, false)?;
+        }
+    }
+    Ok(id.to_string())
+}
+
+/* ------------------------------------------------------------------------
 Le dossier des ambiances : %LOCALAPPDATA%\Sindry\ambiances
 ------------------------------------------------------------------------ */
 
@@ -1005,8 +1214,8 @@ mod tests {
     fn l_exemple_de_la_documentation_est_valide() {
         let racine = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let exemple =
-            fs::read_to_string(racine.join("docs/ambiances/foret-de-nuit.sindry-ambiance"))
-                .expect("exemple de docs/ambiances");
+            fs::read_to_string(racine.join("ambiances/base/foret-de-nuit.sindry-ambiance"))
+                .expect("exemple de ambiances/base");
         let a = valider(&exemple).unwrap_or_else(|c| panic!("{c:#?}"));
         assert!(
             a.clair.is_some() && a.sombre.is_some(),
@@ -1053,148 +1262,107 @@ mod tests {
         }
     }
 
-    /// Les jetons de `:root` dans `src/styles.css`, resolus comme le ferait le
-    /// navigateur pour `data-accent` et `data-theme` donnes (Windows en sombre :
-    /// les blocs de la `@media` s'appliquent, ils doublent ceux de `data-theme`).
-    fn jetons_livres(css: &str, accent: &str, theme: &str) -> Map<String, Value> {
-        /// (dans la `@media` sombre, selecteur, declarations)
-        type Regle = (bool, String, Vec<(String, String)>);
-        fn regles(css: &str, media: bool, sortie: &mut Vec<Regle>) {
-            let mut k = 0;
-            while let Some(a) = css[k..].find('{').map(|a| a + k) {
-                let tete = css[k..a].trim();
-                let mut prof = 0;
-                let mut b = a;
-                for (j, ch) in css[a..].char_indices() {
-                    match ch {
-                        '{' => prof += 1,
-                        '}' => {
-                            prof -= 1;
-                            if prof == 0 {
-                                b = a + j;
-                                break;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                let corps = &css[a + 1..b];
-                if tete.starts_with("@media") {
-                    if tete.contains("prefers-color-scheme: dark") {
-                        regles(corps, true, sortie);
-                    }
-                } else if !tete.starts_with('@') {
-                    let decls: Vec<(String, String)> = corps
-                        .split(';')
-                        .filter_map(|d| {
-                            let (k, v) = d.trim().strip_prefix("--")?.split_once(':')?;
-                            Some((k.trim().to_string(), v.trim().to_string()))
-                        })
-                        .collect();
-                    for sel in tete.split(',').map(str::trim) {
-                        if sel.starts_with(":root") && !sel.contains(' ') && !decls.is_empty() {
-                            sortie.push((media, sel.to_string(), decls.clone()));
-                        }
-                    }
-                }
-                k = b + 1;
+    /// Chaque ambiance du depot — de base et a publier — passe le validateur
+    /// des fichiers de la communaute : memes regles pour toutes. Sous sa forme
+    /// de feuille de style, c'est ce controle qui a trouve le texte attenue du
+    /// journal de Braise sombre a 3,5:1 (2.0).
+    #[test]
+    fn toutes_les_ambiances_du_depot_sont_valides() {
+        let racine = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("ambiances");
+        let mut vues = 0;
+        for sous in ["base", "depot"] {
+            for entree in fs::read_dir(racine.join(sous))
+                .expect("ambiances/")
+                .flatten()
+            {
+                let texte = fs::read_to_string(entree.path()).unwrap();
+                let a = valider(&texte)
+                    .unwrap_or_else(|c| panic!("{} : {c:#?}", entree.path().display()));
+                assert_eq!(
+                    format!("{}.{EXTENSION}", a.id),
+                    entree.file_name().to_string_lossy(),
+                    "le fichier porte le nom de son id"
+                );
+                vues += 1;
             }
         }
-        let mut sans_commentaires = String::new();
-        let mut reste = css;
-        while let Some(i) = reste.find("/*") {
-            sans_commentaires.push_str(&reste[..i]);
-            reste = reste[i..].find("*/").map_or("", |j| &reste[i + j + 2..]);
+        assert_eq!(vues, DE_BASE.len() + D_AVANT.len());
+        // Ce qui est embarque est bien ce qui est dans le depot.
+        for (id, contenu) in DE_BASE.iter().chain(D_AVANT.iter()) {
+            assert_eq!(valider(contenu).unwrap().id, *id);
         }
-        sans_commentaires.push_str(reste);
-        let mut toutes = Vec::new();
-        regles(&sans_commentaires, false, &mut toutes);
-
-        let accent_pose = (accent != "ardente").then_some(accent);
-        let mut gagnant: BTreeMap<String, ((usize, usize), String)> = BTreeMap::new();
-        for (ordre, (_media, sel, decls)) in toutes.iter().enumerate() {
-            // Les conditions : [a="v"], [a^="v"], :not([a="v"]).
-            let mut spec = 1;
-            let mut ok = true;
-            for morceau in sel[":root".len()..].split('[').skip(1) {
-                let neg = sel.contains(&format!(":not([{morceau}"));
-                let cond = morceau.split(']').next().unwrap_or("");
-                let (nom, op, val) = if let Some((n, v)) = cond.split_once("^=") {
-                    (n, "^=", v)
-                } else if let Some((n, v)) = cond.split_once('=') {
-                    (n, "=", v)
-                } else {
-                    (cond, "", "")
-                };
-                let val = val.trim_matches('"');
-                let pose = match nom {
-                    "data-accent" => accent_pose,
-                    "data-theme" => Some(theme),
-                    _ => None,
-                };
-                let vrai = pose.is_some_and(|p| {
-                    if op == "^=" {
-                        p.starts_with(val)
-                    } else {
-                        p == val
-                    }
-                });
-                ok &= vrai != neg;
-                spec += 1;
-            }
-            if !ok {
-                continue;
-            }
-            for (k, v) in decls {
-                let rang = (spec, ordre);
-                if gagnant.get(k).is_none_or(|(r, _)| rang >= *r) {
-                    gagnant.insert(k.clone(), (rang, v.clone()));
-                }
-            }
-        }
-        let mut jetons = Map::new();
-        for k in COULEURS {
-            jetons.insert(k.into(), Value::String(gagnant[k].1.clone()));
-        }
-        for k in NOMBRES {
-            let n: f64 = gagnant[k].1.parse().expect("opacite numerique");
-            jetons.insert(k.into(), serde_json::json!(n));
-        }
-        jetons
+        // Plan est l'allure de secours : elle doit exister, en clair et en sombre.
+        let plan = valider(DE_BASE[0].1).unwrap();
+        assert!(plan.clair.is_some() && plan.sombre.is_some());
     }
 
-    /// Une ambiance livree, exportee (§15.7), doit passer le validateur des
-    /// fichiers de la communaute : memes regles pour tous. C'est ce test qui a
-    /// trouve le texte atenue du journal de Braise sombre a 3,5:1 (2.0).
     #[test]
-    fn les_ambiances_livrees_passent_le_validateur() {
-        let racine = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
-        let css = fs::read_to_string(racine.join("src/styles.css")).expect("styles.css");
-        let sombre_seul = [
-            "terminal-vert",
-            "terminal-ambre",
-            "aurore-boreale",
-            "aurore-australe",
-        ];
-        for accent in crate::settings::ACCENTS {
-            let mut v = json!({ "format": 1, "id": "copie", "nom": accent });
-            v["sombre"] = Value::Object(jetons_livres(&css, accent, "dark"));
-            if !sombre_seul.contains(&accent) {
-                v["clair"] = Value::Object(jetons_livres(&css, accent, "light"));
-            }
-            if let Err(c) = valider(&v.to_string()) {
-                panic!("{accent} : {c:#?}");
-            }
-        }
-        // Et le resolveur voit bien les variantes : Synthwave n'est pas Plan.
-        assert_ne!(
-            jetons_livres(&css, "synthwave", "dark")["acc"],
-            jetons_livres(&css, "plan", "dark")["acc"]
+    fn la_forme_se_choisit_dans_des_listes_fermees() {
+        let mut v = minimale();
+        v["forme"] = json!({ "bouees": "losanges", "coins": "droits", "equerres": true });
+        let a = valider(&v.to_string()).expect("valide");
+        assert_eq!(
+            (a.forme.bouees.as_str(), a.forme.coins.as_str()),
+            ("losanges", "droits")
+        );
+        assert!(a.forme.equerres && !a.forme.lueur);
+        assert_eq!(
+            a.forme.titres, "normaux",
+            "ce qui n'est pas dit garde sa valeur par defaut"
         );
         assert_eq!(
-            jetons_livres(&css, "ardente", "light")["bg"],
-            json!("#FBF6F2")
+            valider(&minimale().to_string()).unwrap().forme,
+            Forme::default()
         );
+
+        v["forme"] = json!({ "bouees": "etoiles", "lueur": "oui", "css": "body{}" });
+        let c = valider(&v.to_string()).unwrap_err();
+        let codes: Vec<&str> = c.iter().map(|x| x.code).collect();
+        assert_eq!(
+            codes.iter().filter(|c| **c == "FORME_INCONNUE").count(),
+            2,
+            "{c:?}"
+        );
+        assert!(
+            codes.contains(&"CLE_INCONNUE"),
+            "pas de CSS pour l'interface : {c:?}"
+        );
+    }
+
+    #[test]
+    fn le_passage_aux_fichiers_garde_l_ambiance_choisie() {
+        let dossier = std::env::temp_dir().join(format!("sindry-passage-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dossier);
+        // Synthwave a quitte Sindry : qui l'avait la retrouve, installee.
+        assert_eq!(
+            passer_aux_fichiers(&dossier, "synthwave").unwrap(),
+            "synthwave"
+        );
+        let ids: Vec<String> = lister_dans(&dossier)
+            .ambiances
+            .into_iter()
+            .map(|a| a.id)
+            .collect();
+        for id in ["plan", "foret-de-nuit", "aurore-australe", "synthwave"] {
+            assert!(ids.iter().any(|i| i == id), "{id} absent de {ids:?}");
+        }
+        assert_eq!(ids.len(), 4, "les autres restent au depot");
+        // Une ambiance installee en 2.0.0 (perso:) : son id seul. Rien : Plan.
+        assert_eq!(
+            passer_aux_fichiers(&dossier, "perso:foret-de-nuit").unwrap(),
+            "foret-de-nuit"
+        );
+        assert_eq!(passer_aux_fichiers(&dossier, "").unwrap(), "plan");
+        // Une ambiance de base retiree revient sur demande, pas toute seule.
+        retirer_dans(&dossier, "aurore-australe").unwrap();
+        assert_eq!(
+            installer_de_base(&dossier).unwrap(),
+            vec!["aurore-australe"]
+        );
+        assert!(installer_de_base(&dossier).unwrap().is_empty());
+        let _ = fs::remove_dir_all(&dossier);
     }
 
     #[test]
@@ -1236,13 +1404,10 @@ mod tests {
     }
 
     #[test]
-    fn un_mode_au_moins_et_les_ids_livres_sont_reserves() {
+    fn un_mode_au_moins_et_tous_les_jetons() {
         let mut v = minimale();
         v.as_object_mut().unwrap().remove("sombre");
         assert_eq!(codes(&v), vec!["MODE_ABSENT"]);
-        let mut v = minimale();
-        v["id"] = json!("synthwave");
-        assert_eq!(codes(&v), vec!["ID_RESERVE"]);
         let mut v = minimale();
         v["sombre"].as_object_mut().unwrap().remove("ink");
         assert_eq!(codes(&v), vec!["JETON_MANQUANT"]);

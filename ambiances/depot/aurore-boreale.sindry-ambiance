@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "id": "aurore-boreale",
+  "nom": {
+    "fr": "Aurore boréale",
+    "en": "Northern lights"
+  },
+  "description": {
+    "fr": "Des voiles de lumière au-dessus des collines, un lac sombre.",
+    "en": "Veils of light above the hills, a dark lake."
+  },
+  "auteur": "Sindry",
+  "version": "1.0",
+  "police": "normale",
+  "sombre": {
+    "bg": "#06101E",
+    "surface": "#0D1B2E",
+    "surface-2": "#13263D",
+    "surface-3": "#1B3350",
+    "border": "#1F3550",
+    "border-2": "#2C4A6B",
+    "text": "#EAF6FF",
+    "text-2": "#A9C4D8",
+    "text-3": "#8AA6BD",
+    "ink": "#02121A",
+    "ok": "#4BE3A0",
+    "warn": "#FFC85A",
+    "err": "#FF7A8A",
+    "ok-s": "#0C2A24",
+    "warn-s": "#2A2312",
+    "err-s": "#2E1420",
+    "acc": "#3CFFB4",
+    "acc-2": "#38C6FF",
+    "acc-on": "#7DFFD0",
+    "surface-soft": "#0A1626",
+    "acc-soft": "#0F2A33",
+    "knob-off": "#5A7590",
+    "serie-1": "#3CFFB4",
+    "serie-2": "#38C6FF",
+    "serie-3": "#8E6BFF",
+    "serie-4": "#FF6FB5",
+    "serie-5": "#FFC85A",
+    "serie-6": "#7DE3FF",
+    "rouage-a": "#38C6FF",
+    "rouage-b": "#8E6BFF",
+    "eau-a": "#1E6E8A",
+    "eau-b": "#0A2238",
+    "term-bg": "#030A14",
+    "term-text": "#D6EAF8",
+    "term-dim": "#7894AB",
+    "eau-fond": 0.45,
+    "eau-surface": 0.55
+  },
+  "forme": {
+    "bouees": "verre"
+  },
+  "decor": {
+    "balisage": "<div class=\"au-voile v1\"></div><div class=\"au-voile v2\"></div><div class=\"au-voile v3\"></div><svg class=\"au-collines\" viewBox=\"0 0 960 140\" preserveAspectRatio=\"none\"><path d=\"M0 140 L0 50 C120 10 220 70 330 40 C450 6 540 80 660 36 C780 0 880 56 960 30 L960 140Z\" /><path d=\"M0 140 L0 100 C160 70 300 120 480 96 C650 72 800 112 960 92 L960 140Z\" /></svg>",
+    "css": ".au-voile { position: absolute; height: 150px; border-radius: 50%; filter: blur(28px); opacity: .42; mix-blend-mode: screen; animation: au-ondule 14s ease-in-out infinite alternate; }\n.au-voile.v1 { left: -10%; width: 70%; top: 70px; background: linear-gradient(90deg, transparent, var(--acc), transparent); transform: skewY(-8deg); }\n.au-voile.v2 { left: 30%; width: 75%; top: 30px; background: linear-gradient(90deg, transparent, var(--acc-2), transparent); transform: skewY(6deg); animation-duration: 18s; }\n.au-voile.v3 { left: 8%; width: 60%; top: 170px; background: linear-gradient(90deg, transparent, var(--serie-3), transparent); transform: skewY(-3deg); animation-duration: 22s; opacity: .28; }\n@keyframes au-ondule { from { translate: -40px 0; scale: 1 .8; } to { translate: 40px 12px; scale: 1.1 1.15; } }\n.au-collines { position: absolute; left: 0; width: 100%; top: 330px; height: 140px; }\n.au-collines path { fill: color-mix(in srgb, var(--bg) 55%, #000); }\n.au-collines path + path { fill: color-mix(in srgb, var(--bg) 30%, #000); }\n"
+  }
+}

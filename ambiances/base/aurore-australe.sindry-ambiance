@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "id": "aurore-australe",
+  "nom": {
+    "fr": "Aurore australe",
+    "en": "Southern lights"
+  },
+  "description": {
+    "fr": "Des voiles roses et violets au-dessus des collines.",
+    "en": "Pink and violet veils above the hills."
+  },
+  "auteur": "Sindry",
+  "version": "1.0",
+  "police": "normale",
+  "sombre": {
+    "bg": "#0E0820",
+    "surface": "#170F2E",
+    "surface-2": "#20163D",
+    "surface-3": "#2B1E50",
+    "border": "#2E2150",
+    "border-2": "#44306E",
+    "text": "#F9EEFF",
+    "text-2": "#C7B3DB",
+    "text-3": "#A890C2",
+    "ink": "#1A0620",
+    "ok": "#4BE3A0",
+    "warn": "#FFC85A",
+    "err": "#FF7A9A",
+    "ok-s": "#0E2A26",
+    "warn-s": "#2C2214",
+    "err-s": "#301428",
+    "acc": "#FF6FB5",
+    "acc-2": "#B48CFF",
+    "acc-on": "#FF9CCB",
+    "surface-soft": "#120B26",
+    "acc-soft": "#2E1236",
+    "knob-off": "#6E5A8E",
+    "serie-1": "#FF6FB5",
+    "serie-2": "#B48CFF",
+    "serie-3": "#6FD3FF",
+    "serie-4": "#4BE3A0",
+    "serie-5": "#FFC85A",
+    "serie-6": "#FF9C6F",
+    "rouage-a": "#B48CFF",
+    "rouage-b": "#FF6FB5",
+    "eau-a": "#5A2A7A",
+    "eau-b": "#1C0E33",
+    "term-bg": "#08041A",
+    "term-text": "#EADCF8",
+    "term-dim": "#9583B3",
+    "eau-fond": 0.45,
+    "eau-surface": 0.55
+  },
+  "forme": {
+    "bouees": "verre"
+  },
+  "decor": {
+    "balisage": "<div class=\"au-voile v1\"></div><div class=\"au-voile v2\"></div><div class=\"au-voile v3\"></div><svg class=\"au-collines\" viewBox=\"0 0 960 140\" preserveAspectRatio=\"none\"><path d=\"M0 140 L0 50 C120 10 220 70 330 40 C450 6 540 80 660 36 C780 0 880 56 960 30 L960 140Z\" /><path d=\"M0 140 L0 100 C160 70 300 120 480 96 C650 72 800 112 960 92 L960 140Z\" /></svg>",
+    "css": ".au-voile { position: absolute; height: 150px; border-radius: 50%; filter: blur(28px); opacity: .42; mix-blend-mode: screen; animation: au-ondule 14s ease-in-out infinite alternate; }\n.au-voile.v1 { left: -10%; width: 70%; top: 70px; background: linear-gradient(90deg, transparent, var(--acc), transparent); transform: skewY(-8deg); }\n.au-voile.v2 { left: 30%; width: 75%; top: 30px; background: linear-gradient(90deg, transparent, var(--acc-2), transparent); transform: skewY(6deg); animation-duration: 18s; }\n.au-voile.v3 { left: 8%; width: 60%; top: 170px; background: linear-gradient(90deg, transparent, var(--serie-3), transparent); transform: skewY(-3deg); animation-duration: 22s; opacity: .28; }\n@keyframes au-ondule { from { translate: -40px 0; scale: 1 .8; } to { translate: 40px 12px; scale: 1.1 1.15; } }\n.au-collines { position: absolute; left: 0; width: 100%; top: 330px; height: 140px; }\n.au-collines path { fill: color-mix(in srgb, var(--bg) 55%, #000); }\n.au-collines path + path { fill: color-mix(in srgb, var(--bg) 30%, #000); }\n"
+  }
+}

@@ -12,7 +12,7 @@
  */
 
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -57,12 +57,19 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  // L'ambiance d'exemple de la documentation (§15.7), installee d'office sur
-  // le banc : `list_ambiances` la rend comme Rust la rendrait.
-  if (chemin === '/__ambiance-exemple.json') {
-    const corps = await readFile(join(ICI, '..', '..', 'docs', 'ambiances', 'foret-de-nuit.sindry-ambiance'));
+  // Les ambiances du depot (§15.7) : `list_ambiances` les rend comme Rust le
+  // ferait. Les trois de base d'office ; `?ambiances=toutes`, les autres aussi.
+  if (chemin === '/__ambiances.json') {
+    const toutes = url.searchParams.get('toutes') === '1';
+    const contenus = [];
+    for (const sous of toutes ? ['base', 'depot'] : ['base']) {
+      const dossier = join(ICI, '..', '..', 'ambiances', sous);
+      for (const f of (await readdir(dossier)).filter((x) => x.endsWith('.sindry-ambiance')).sort()) {
+        contenus.push({ fichier: f, texte: await readFile(join(dossier, f), 'utf8') });
+      }
+    }
     res.writeHead(200, { 'content-type': TYPES['.json'] });
-    return res.end(corps);
+    return res.end(JSON.stringify(contenus));
   }
 
   const cible = normalize(join(RACINE, chemin));

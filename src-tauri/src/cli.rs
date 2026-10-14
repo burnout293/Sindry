@@ -463,6 +463,9 @@ fn application() -> Res<tauri::App> {
     if let Some(message) = preparer_enfants(app.handle()) {
         eprintln!("sindry : {message}");
     }
+    if let Err(e) = preparer_ambiances(app.handle()) {
+        eprintln!("sindry : ambiances de base non installees : {e}");
+    }
     Ok(app)
 }
 
@@ -1780,10 +1783,12 @@ fn regler(h: &tauri::AppHandle, cle: &str, v: &str, o: &Options) -> Res<i32> {
         "langue" | "lang" | "language" => set_lang(h.clone(), valeur_parmi(v, &[(&["fr"], "fr"), (&["en"], "en")], cle)?)?,
         "ambiance" | "look" => {
             let bas = v.to_lowercase();
-            let accent = if settings::ACCENTS.contains(&bas.as_str()) {
+            let accent = if ambiance::lister_dans(&ambiance::dossier(h)?)
+                .ambiances
+                .iter()
+                .any(|a| a.id == bas)
+            {
                 bas
-            } else if ambiance::lister_dans(&ambiance::dossier(h)?).ambiances.iter().any(|a| a.id == bas) {
-                format!("perso:{bas}")
             } else {
                 return Err(introuvable(l!(
                     format!("aucune ambiance « {v} » (sindry ambiances)."),
@@ -2213,7 +2218,7 @@ fn ambiance(h: &tauri::AppHandle, reste: &[String], o: &Options) -> Res<i32> {
             }
             let chemin = ambiance::retirer_dans(&dossier, id).map_err(introuvable)?;
             let s = settings::load(h)?;
-            if s.accent == format!("perso:{id}") {
+            if s.accent == id {
                 set_accent(h.clone(), "plan".to_string())?;
             }
             if o.json {

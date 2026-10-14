@@ -90,78 +90,76 @@ function appliquerTheme(valeur, persister = true) {
   else document.documentElement.dataset.theme = valeur;
   // Une ambiance installee porte ses couleurs en ligne, mode par mode : elles
   // changent avec le theme, la feuille ne peut pas le faire pour elle.
-  appliquerAmbiancePerso();
+  appliquerAmbiance();
   if (persister) invoke('set_theme', { theme: valeur }).catch((e) => console.error('set_theme a echoue :', e));
 }
 
-/** L'ambiance (reglage 1.7) : Braise — Ardente ou Crepuscule —, l'un des
- *  thèmes d'ambiance de la 1.7, ou une ambiance installee (2.0). Ardente est
- *  celle des tokens : aucun attribut. Les autres livrees posent `data-accent`,
- *  que la feuille surcharge. Une valeur d'avant la 1.6 (orange, maree, bleu…)
- *  retombe sur Plan. */
-const ACCENTS = ['plan', 'ardente', 'crepuscule', 'synthwave', 'spatial', 'terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe'];
-/** Celles qui n'existent qu'en sombre : le reglage clair / sombre n'a pas de prise. */
-const SOMBRE_SEUL = new Set(['terminal-vert', 'terminal-ambre', 'aurore-boreale', 'aurore-australe']);
-
-/* Les ambiances installees (2.0, specification 15.7, docs/FORMAT_AMBIANCE.md).
-   Des fichiers `.sindry-ambiance` dans %LOCALAPPDATA%\Sindry\ambiances, lus et
-   verifies par Rust (ambiance.rs) au demarrage et a l'ouverture des reglages.
-   Leur valeur de reglage est `perso:<id>` ; `data-accent` vaut alors `perso`,
-   et leurs couleurs sont posees en ligne sur la racine. */
-const PREFIXE_PERSO = 'perso:';
+/* L'ambiance (reglage 2.3, specification 15.7, docs/FORMAT_AMBIANCE.md).
+   Depuis la 2.0.1, toute ambiance est un fichier `.sindry-ambiance` du
+   dossier %LOCALAPPDATA%\Sindry\ambiances — les trois de base comprises (Plan,
+   Foret de nuit, Aurore australe), posees au premier lancement. Rust les lit
+   et les verifie (ambiance.rs) ; l'interface en pose les couleurs en ligne sur
+   la racine, la forme en `data-f-*` (regles de la feuille, listes fermees), et
+   le decor dans un cadre isole. Le reglage vaut l'`id` de l'ambiance ; sans
+   elle — fichier retire, dossier vide —, Plan, l'allure de secours de la
+   feuille. */
 let ambiancesInstallees = { dossier: '', ambiances: [], ignorees: [] };
-/** L'ambiance appliquee, telle que le reglage la nomme (`plan`, `perso:foret`…). */
-let accentCourant = 'plan';
-/** Les jetons qu'une ambiance installee peut poser — ceux de ambiance.rs. */
+/** L'id de l'ambiance appliquee, ou '' : l'allure de secours. */
+let accentCourant = '';
+/** Les jetons qu'une ambiance pose — ceux de ambiance.rs. */
 const JETONS_AMBIANCE = ['bg', 'surface', 'surface-2', 'surface-3', 'border', 'border-2', 'text', 'text-2', 'text-3', 'ink',
   'ok', 'warn', 'err', 'ok-s', 'warn-s', 'err-s', 'acc', 'acc-2', 'acc-on', 'surface-soft', 'acc-soft', 'knob-off',
   'serie-1', 'serie-2', 'serie-3', 'serie-4', 'serie-5', 'serie-6', 'rouage-a', 'rouage-b', 'eau-a', 'eau-b',
   'term-bg', 'term-text', 'term-dim', 'eau-fond', 'eau-surface'];
-/** Les ombres ne font pas partie du format : celles des ambiances livrees. */
+/** Les ombres ne font pas partie du format. */
 const OMBRES = {
   clair: ['0 1px 2px rgba(31, 20, 38, .05), 0 6px 18px rgba(31, 20, 38, .05)', '0 10px 34px rgba(31, 20, 38, .10)'],
   sombre: ['0 2px 10px rgba(0, 0, 0, .4)', '0 16px 46px rgba(0, 0, 0, .6)'],
 };
+/** La forme de secours, celle de Plan (ambiances/base/plan.sindry-ambiance). */
+const FORME_SECOURS = { bouees: 'arrondies', titres: 'nets', coins: 'serres', ligne_eau: 'trait', chiffres: 'chasse-fixe', expert: 'plan',
+  equerres: false, lueur: false, balayage: false };
 
-function ambiancePerso(valeur) {
-  if (typeof valeur !== 'string' || !valeur.startsWith(PREFIXE_PERSO)) return null;
-  const id = valeur.slice(PREFIXE_PERSO.length);
+/** Une ambiance installee, par son id. `perso:` : la valeur d'une ambiance
+ *  installee en 2.0.0, que Rust a deja ramenee a son id au demarrage. */
+function ambianceDe(valeur) {
+  if (typeof valeur !== 'string' || !valeur) return null;
+  const id = valeur.startsWith('perso:') ? valeur.slice(6) : valeur;
   return ambiancesInstallees.ambiances.find((a) => a.id === id) || null;
 }
 
 /** Le mode qu'impose une ambiance (`dark`, `light`), ou null si elle suit le
- *  reglage 1.1. */
+ *  reglage 2.1 : celle qui ne donne qu'un mode n'existe que dans celui-la. */
 function modeImpose(valeur = accentCourant) {
-  const a = ambiancePerso(valeur);
-  if (a) return a.clair && a.sombre ? null : (a.sombre ? 'dark' : 'light');
-  return SOMBRE_SEUL.has(valeur) ? 'dark' : null;
+  const a = ambianceDe(valeur);
+  if (!a) return null;
+  return a.clair && a.sombre ? null : (a.sombre ? 'dark' : 'light');
 }
 
-// Plan est l'ambiance par defaut depuis la 1.8 : un reglage vide (jamais choisi)
-// ou inconnu y mene — une ambiance installee dont le fichier a disparu aussi.
-// Qui avait choisi Braise ardente la garde.
-const accentValide = (valeur) => (ACCENTS.includes(valeur) || ambiancePerso(valeur) ? valeur : 'plan');
+/** L'ambiance a appliquer : celle du reglage si elle est installee, sinon Plan
+ *  si elle l'est, sinon '' — l'allure de secours de la feuille. */
+function accentValide(valeur) {
+  if (ambianceDe(valeur)) return ambianceDe(valeur).id;
+  return ambianceDe('plan') ? 'plan' : '';
+}
+
 function appliquerAccent(valeur) {
-  const v = accentValide(valeur);
-  accentCourant = v;
-  if (v === 'ardente') delete document.documentElement.dataset.accent;
-  else document.documentElement.dataset.accent = ambiancePerso(v) ? 'perso' : v;
-  appliquerAmbiancePerso();
+  accentCourant = accentValide(valeur);
+  appliquerAmbiance();
   majCommandesTheme();
 }
 
-/** Pose — ou retire — les couleurs et le decor de l'ambiance installee
- *  choisie, pour le mode affiche. Sans effet pour une ambiance livree. */
-function appliquerAmbiancePerso() {
+/** Pose les couleurs, la forme et le decor de l'ambiance appliquee, pour le
+ *  mode affiche ; sans ambiance, retire tout : la feuille porte Plan. */
+function appliquerAmbiance() {
   const racine = document.documentElement;
   const cadre = document.getElementById('ambPerso');
-  const a = ambiancePerso(accentCourant);
+  const a = ambianceDe(accentCourant);
+  appliquerForme(a ? a.forme : FORME_SECOURS);
   if (!a) {
-    if (racine.dataset.persoPose) {
-      for (const k of [...JETONS_AMBIANCE, 'sh', 'sh-2', 'ui']) racine.style.removeProperty(`--${k}`);
-      racine.style.removeProperty('color-scheme');
-      delete racine.dataset.persoPose;
-    }
+    for (const k of [...JETONS_AMBIANCE, 'sh', 'sh-2', 'ui']) racine.style.removeProperty(`--${k}`);
+    racine.style.removeProperty('color-scheme');
+    delete racine.dataset.decor;
     if (cadre?.hasAttribute('srcdoc')) cadre.removeAttribute('srcdoc');
     return;
   }
@@ -174,11 +172,25 @@ function appliquerAmbiancePerso() {
   if (a.police === 'chasse-fixe') racine.style.setProperty('--ui', 'var(--mono)');
   else racine.style.removeProperty('--ui');
   racine.style.setProperty('color-scheme', mode === 'sombre' ? 'dark' : 'light');
-  racine.dataset.persoPose = '1';
+  const doc = documentDecor(a, mode, jetons);
+  if (doc) racine.dataset.decor = a.id;
+  else delete racine.dataset.decor;
   if (cadre) {
-    const doc = documentDecor(a, mode, jetons);
     if (!doc) cadre.removeAttribute('srcdoc');
     else if (cadre.getAttribute('srcdoc') !== doc) cadre.setAttribute('srcdoc', doc);
+  }
+}
+
+/** La forme en attributs `data-f-*` : des valeurs deja verifiees par Rust
+ *  (listes fermees), que seules les regles de la feuille interpretent. */
+function appliquerForme(f) {
+  const racine = document.documentElement;
+  for (const k of ['bouees', 'titres', 'coins', 'ligne_eau', 'chiffres', 'expert']) {
+    racine.setAttribute(`data-f-${k.replace('_', '-')}`, f[k]);
+  }
+  for (const k of ['equerres', 'lueur', 'balayage']) {
+    if (f[k]) racine.setAttribute(`data-f-${k}`, '');
+    else racine.removeAttribute(`data-f-${k}`);
   }
 }
 
@@ -202,13 +214,13 @@ function documentDecor(a, mode, jetons) {
 /** Relit le dossier des ambiances. Rend vrai si l'ambiance appliquee a change
  *  (son fichier a disparu, ou a ete remplace). */
 async function chargerAmbiances() {
-  const avant = JSON.stringify(ambiancePerso(accentCourant));
+  const avant = JSON.stringify(ambianceDe(accentCourant));
   try {
     ambiancesInstallees = await invoke('list_ambiances');
   } catch (e) {
     console.error('list_ambiances a echoue :', e);
   }
-  return JSON.stringify(ambiancePerso(accentCourant)) !== avant;
+  return JSON.stringify(ambianceDe(accentCourant)) !== avant;
 }
 
 /** Le bouton soleil / lune et le reglage 1.1 n'ont pas de prise sur une ambiance
@@ -5111,10 +5123,7 @@ function appliquerTraductionsReglages() {
   document.getElementById('setLangueLabel').textContent = t('reglages.langue');
   document.getElementById('setMajLabel').textContent = t('reglages.maj_comportement');
   document.getElementById('setAccentLabel').textContent = t('reglages.accent');
-  document.querySelectorAll('#setAccentChoix [data-set-accent]:not(.perso)').forEach((b) => {
-    b.textContent = t(`accent.${b.dataset.setAccent.replace('-', '_')}`);
-  });
-  rendreAmbiancesPerso();
+  rendreAmbiances();
   majCommandesTheme();
   document.querySelector('#setMajSelect [value="propose"]').textContent = t('reglages.maj_proposer');
   document.querySelector('#setMajSelect [value="beta"]').textContent = t('reglages.maj_beta');
@@ -5190,7 +5199,7 @@ const nomAmbiance = (a) => a.nom[currentLang()] || a.nom.fr;
 
 async function choisirAmbiance(valeur) {
   appliquerAccent(valeur);
-  reglagesActuels = await invoke('set_accent', { accent: valeur });
+  reglagesActuels = await invoke('set_accent', { accent: accentCourant || 'plan' });
   remplirFormulaireReglages(reglagesActuels);
   // Les graphiques de l'analyse prennent la couleur d'accent : on les redessine.
   rafraichirZonesAnalyse();
@@ -5203,30 +5212,33 @@ function resultatAmbiance(texte, refus = false) {
   p.hidden = !texte;
 }
 
-/** Les pastilles des ambiances installees, a la suite des livrees — leur
- *  pastille tiree de leurs couleurs —, et les fichiers ignores (1.8). */
-function rendreAmbiancesPerso() {
-  const choix = document.getElementById('setAccentChoix');
-  if (!choix) return;
-  choix.querySelectorAll('.perso').forEach((b) => b.remove());
-  for (const a of ambiancesInstallees.ambiances) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('role', 'radio');
-    b.className = 'accent-pastille perso';
-    b.dataset.setAccent = PREFIXE_PERSO + a.id;
-    b.textContent = nomAmbiance(a);
+/** Une pastille par ambiance installee — tiree de ses couleurs —, dans le
+ *  reglage 2.3 comme dans la bienvenue, et les fichiers ignores (2.4). */
+function pastillesAmbiances(attributs = '') {
+  return ambiancesInstallees.ambiances.map((a) => {
     const j = a.sombre || a.clair;
-    b.style.setProperty('--pal', `linear-gradient(135deg, ${j.acc}, ${j['acc-2']} 55%, ${j.bg})`);
     const details = [
       a.auteur && t('ambiance.par', { auteur: a.auteur }),
       a.version && t('ambiance.version', { version: a.version }),
       a.description?.[currentLang()],
-    ].filter(Boolean);
-    if (details.length) b.dataset.tip = details.join(' · ');
-    b.setAttribute('aria-checked', String(b.dataset.setAccent === accentCourant));
-    choix.append(b);
-  }
+    ].filter(Boolean).join(' · ');
+    // La pastille : une variable CSS posee par le CSSOM apres coup (voir
+    // poserPastilles), jamais un attribut style.
+    return `<button type="button" role="radio" class="accent-pastille" data-set-accent="${esc(a.id)}" ${attributs.replace('{id}', esc(a.id))}
+      data-pal="${esc(`linear-gradient(135deg, ${j.acc}, ${j['acc-2']} 55%, ${j.bg})`)}"
+      ${details ? `data-tip="${esc(details)}"` : ''} aria-checked="${a.id === accentCourant}">${esc(nomAmbiance(a))}</button>`;
+  }).join('');
+}
+
+function poserPastilles(racine) {
+  racine.querySelectorAll('[data-pal]').forEach((b) => b.style.setProperty('--pal', b.dataset.pal));
+}
+
+function rendreAmbiances() {
+  const choix = document.getElementById('setAccentChoix');
+  if (!choix) return;
+  choix.innerHTML = pastillesAmbiances() || `<p class="muted">${esc(t('ambiance.aucune'))}</p>`;
+  poserPastilles(choix);
 
   const zone = document.getElementById('ambiancesIgnorees');
   zone.replaceChildren();
@@ -5245,13 +5257,20 @@ function rendreAmbiancesPerso() {
     }
   }
   zone.hidden = !ignorees.length;
-  document.getElementById('btnRetirerAmbiance').hidden = !ambiancePerso(accentCourant);
+  majActionsAmbiance();
 }
 
-/** Installe une ambiance — un fichier importe, ou la copie d'une ambiance
- *  livree. Demande avant d'en remplacer une du meme id ; montre tous les
- *  constats d'un refus. Rend l'ambiance installee, ou null. */
-async function installerAmbiance(contenu, choisir = true) {
+/** Exporter et Retirer visent l'ambiance appliquee : sans elle, rien a viser. */
+function majActionsAmbiance() {
+  const a = ambianceDe(accentCourant);
+  document.getElementById('btnRetirerAmbiance').hidden = !a;
+  document.getElementById('btnExporterAmbiance').disabled = !a;
+}
+
+/** Installe une ambiance a partir d'un fichier importe. Demande avant d'en
+ *  remplacer une du meme id ; montre tous les constats d'un refus. Rend
+ *  l'ambiance installee, ou null. */
+async function installerAmbiance(contenu) {
   let r = await invoke('import_ambiance', { contenu, remplacer: false });
   if (r.etat === 'existe') {
     const version = (a) => (a.version ? t('ambiance.version', { version: a.version }) : t('ambiance.sans_version'));
@@ -5264,59 +5283,9 @@ async function installerAmbiance(contenu, choisir = true) {
     return null;
   }
   await chargerAmbiances();
-  rendreAmbiancesPerso();
-  // Remplacee alors qu'elle est appliquee : ses nouvelles couleurs tout de suite.
-  if (choisir) await choisirAmbiance(PREFIXE_PERSO + r.ambiance.id);
-  else appliquerAccent(accentCourant);
+  rendreAmbiances();
+  await choisirAmbiance(r.ambiance.id);
   return r.ambiance;
-}
-
-/** Les couleurs d'une ambiance livree, telles que la feuille les donne, lues
- *  dans un cadre invisible du meme document : la page, elle, ne bouge pas —
- *  aucun changement de theme a l'ecran, aucune transition declenchee. Le
- *  decor d'une ambiance livree fait partie de Sindry : il ne s'exporte pas. */
-async function copieAmbianceLivree(accent) {
-  const cadre = document.createElement('iframe');
-  cadre.setAttribute('aria-hidden', 'true');
-  cadre.tabIndex = -1;
-  cadre.style.cssText = 'position:fixed;left:-10000px;top:0;width:8px;height:8px;border:0;visibility:hidden';
-  document.body.append(cadre);
-  try {
-    const doc = cadre.contentDocument;
-    await new Promise((ok, ko) => {
-      const lien = doc.createElement('link');
-      lien.rel = 'stylesheet';
-      lien.href = new URL('styles.css', document.baseURI).href;
-      lien.onload = ok;
-      lien.onerror = () => ko(new Error('styles.css'));
-      doc.head.append(lien);
-    });
-    const lire = (theme) => {
-      const r = doc.documentElement;
-      if (accent === 'ardente') delete r.dataset.accent;
-      else r.dataset.accent = accent;
-      r.dataset.theme = theme;
-      const style = cadre.contentWindow.getComputedStyle(r);
-      return Object.fromEntries(JETONS_AMBIANCE.map((k) => {
-        const v = style.getPropertyValue(`--${k}`).trim();
-        return [k, k === 'eau-fond' || k === 'eau-surface' ? Number(v) : v.toUpperCase()];
-      }));
-    };
-    const cle = `accent.${accent.replace('-', '_')}`;
-    const copie = {
-      _commentaire: `${tDans('fr', cle)} — copie des couleurs, exportée par Sindry. Format : docs/FORMAT_AMBIANCE.md`,
-      format: 1,
-      id: `${accent}-copie`,
-      nom: { fr: tDans('fr', 'ambiance.copie', { nom: tDans('fr', cle) }), en: tDans('en', 'ambiance.copie', { nom: tDans('en', cle) }) },
-      version: '1.0',
-      police: accent.startsWith('terminal') ? 'chasse-fixe' : 'normale',
-    };
-    if (!SOMBRE_SEUL.has(accent)) copie.clair = lire('light');
-    copie.sombre = lire('dark');
-    return copie;
-  } finally {
-    cadre.remove();
-  }
 }
 
 function cablerPartageAmbiances() {
@@ -5336,37 +5305,41 @@ function cablerPartageAmbiances() {
     }
   };
 
-  // Installee : son fichier, montre dans l'Explorateur. Livree : une copie
-  // modifiable de ses couleurs, installee a cote — sans quitter l'ambiance.
+  // Toute ambiance est un fichier : l'exporter, c'est le montrer dans
+  // l'Explorateur — c'est lui qu'on partage, decor compris.
   document.getElementById('btnExporterAmbiance').onclick = async () => {
+    const a = ambianceDe(accentCourant);
+    if (!a) return;
     try {
       resultatAmbiance('');
-      const a = ambiancePerso(accentCourant);
-      if (a) {
-        await invoke('reveal_ambiance', { id: a.id });
-        resultatAmbiance(t('ambiance.exportee', { nom: nomAmbiance(a) }));
-        return;
-      }
-      const origine = t(`accent.${accentCourant.replace('-', '_')}`);
-      const copie = await copieAmbianceLivree(accentCourant);
-      const installee = await installerAmbiance(`${JSON.stringify(copie, null, 2)}\n`, false);
-      if (!installee) return;
-      resultatAmbiance(t('ambiance.copiee', { nom: nomAmbiance(installee), fichier: installee.fichier, origine }));
-      await invoke('reveal_ambiance', { id: installee.id });
+      await invoke('reveal_ambiance', { id: a.id });
+      resultatAmbiance(t('ambiance.exportee', { nom: nomAmbiance(a) }));
     } catch (e) {
       echec(e);
     }
   };
 
   document.getElementById('btnRetirerAmbiance').onclick = async () => {
-    const a = ambiancePerso(accentCourant);
+    const a = ambianceDe(accentCourant);
     if (!a || !confirm(t('ambiance.retirer_confirmer', { nom: nomAmbiance(a) }))) return;
     try {
       await invoke('remove_ambiance', { id: a.id });
       await chargerAmbiances();
-      rendreAmbiancesPerso();
+      rendreAmbiances();
       await choisirAmbiance('plan');
       resultatAmbiance(t('ambiance.retiree', { nom: nomAmbiance(a) }));
+    } catch (e) {
+      echec(e);
+    }
+  };
+
+  document.getElementById('btnBaseAmbiances').onclick = async () => {
+    try {
+      const poses = await invoke('reinstall_base_ambiances');
+      await chargerAmbiances();
+      appliquerAccent(reglagesActuels.accent);
+      rendreAmbiances();
+      resultatAmbiance(poses.length ? PLURIEL('ambiance.base_faite', poses.length) : t('ambiance.base_deja'));
     } catch (e) {
       echec(e);
     }
@@ -5387,7 +5360,7 @@ function remplirFormulaireReglages(reglages) {
   document.querySelectorAll('#setAccentChoix [data-set-accent]').forEach((b) => {
     b.setAttribute('aria-checked', String(b.dataset.setAccent === accentValide(reglages.accent)));
   });
-  document.getElementById('btnRetirerAmbiance').hidden = !ambiancePerso(accentValide(reglages.accent));
+  majActionsAmbiance();
   document.getElementById('setCatalogueSelect').value = reglages.catalogue_check || 'startup';
   rendreReglagesCatalogue();
   document.getElementById('setEchecSelect').value = reglages.failure_policy;
@@ -5437,7 +5410,7 @@ function ouvrirReglages() {
   document.getElementById('ambianceResultat').hidden = true;
   chargerAmbiances().then((changee) => {
     if (changee) appliquerAccent(reglagesActuels.accent);
-    rendreAmbiancesPerso();
+    rendreAmbiances();
     remplirFormulaireReglages(reglagesActuels);
   });
   document.getElementById('settingsPage').hidden = false;
@@ -5791,7 +5764,7 @@ function textePresentation(textes, valeurs = {}) {
 /** Etat de la visite. `premiere` : on ne revient pas avant (relancee depuis les
  *  Reglages, elle commence apres la page de bienvenue : langue, ambiance,
  *  apparence et taille sont deja reglees). */
-let visite = { etape: 0, premiere: 0, depuisReglages: false, lang: 'fr', theme: 'system', accent: 'ardente', echelle: 1 };
+let visite = { etape: 0, premiere: 0, depuisReglages: false, lang: 'fr', theme: 'system', accent: 'plan', echelle: 1 };
 
 async function ouvrirVisite({ depuisReglages = false } = {}) {
   await chargerPresentation();
@@ -5915,8 +5888,8 @@ async function rendreVisite() {
     const sombreSeul = Boolean(impose);
     const choix = (attr, valeur, actuelle, libelle, inactif = false) =>
       `<button type="button" data-${attr}="${valeur}" aria-pressed="${valeur === actuelle}"${inactif ? ' disabled' : ''}>${esc(libelle)}</button>`;
-    const ambiances = ACCENTS.map((a) => `<button type="button" role="radio" class="accent-pastille" data-set-accent="${a}" data-onb-accent="${a}"
-      aria-checked="${a === visite.accent}">${esc(t(`accent.${a.replace('-', '_')}`))}</button>`).join('');
+    // Les ambiances installees : les trois de base, au premier lancement.
+    const ambiances = pastillesAmbiances('data-onb-accent="{id}"');
     const tailles = [1, 1.15, 1.3, 1.5].map((e) => choix('onb-echelle', e, visite.echelle, `${Math.round(e * 100)} %`)).join('');
     page.innerHTML = `
       <img class="onb-logo" src="marque.png" alt="" draggable="false">
@@ -5941,6 +5914,7 @@ async function rendreVisite() {
           <div class="seg">${tailles}</div>
         </div>
       </div>`;
+    poserPastilles(page);
   } else if (donnees.type === 'pret') {
     const icones = { carte: (await iconeSVG(donnees.icone || 'map')) || '' };
     page.innerHTML = `
@@ -6318,7 +6292,7 @@ async function demarrer() {
   appliquerAccent(reglages.accent);
   // Le mode de Windows change pendant que Sindry tourne : une ambiance
   // installee reprend les couleurs du nouveau mode.
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => appliquerAmbiancePerso());
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => appliquerAmbiance());
   appliquerTraductionsStatiques();
   appliquerTraductionsReglages();
 

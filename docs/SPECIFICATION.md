@@ -1201,38 +1201,35 @@ Deux obligations :
 Un **accent unique** pour tout ce qui est interactif, actif ou sélectionné — boutons,
 repères, marée.
 
-**Thème Braise (1.6).** La palette vient de l'icône de Sindry : la
-flamme — or, ambre, vermillon, magenta — pour ce qui agit ; l'engrenage — ciel, roi,
-violet, orchidée — pour le contour des graphiques. Deux variantes au choix (réglage 1.8),
-chacune en clair et en sombre :
+**Toute ambiance est un fichier (2.0.1).** Les jetons de couleur, l'allure de l'interface
+(la forme) et le décor viennent d'un fichier `.sindry-ambiance` (§15.7), y compris pour
+les ambiances que Sindry livre. Trois sont livrées avec lui, **de base** — des fichiers
+comme les autres, qu'on exporte, retire et réinstalle d'un clic :
 
-| Variante | Accent (clair) | Accent (sombre) | Fond (clair / sombre) |
-|---|---|---|---|
-| **Ardente** (défaut) | `#FD9E21` → `#FD5632` | `#FEC923` → `#FD5632` | `#FBF6F2` / `#0F0A14` |
-| **Crépuscule** | `#FF7A45` → `#F0428E` | `#FF7A45` → `#F0428E` | `#FBF5FA` / `#110A1C` |
-
-La houle de l'eau prend la couleur de la braise.
-
-**Thèmes d'ambiance (1.7, maquette M17).** Le réglage 1.8 devient « Ambiance » et propose,
-outre Braise, trois thèmes qui changent l'ambiance entière : leurs jetons, et un décor
-derrière la houle de l'accueil du mode Simple. L'eau reste — les bouées sont calées sur elle —
-mais chaque thème l'habille.
-
-| Ambiance | Variantes | Décor |
+| Ambiance | Modes | Allure |
 |---|---|---|
-| **Synthwave** | Miami (clair), Nuit (sombre) — suit le réglage 1.1 | Soleil rayé, montagnes, grille de néon qui défile ; ligne d'eau en néon ; titre en italique lumineux |
-| **Spatial** | Hangar (clair), Patrouille (sombre) — suit le réglage 1.1 | Planète holographique en fil de fer qui tourne sur l'anneau d'un projecteur, étoiles, traînées ; bouées en balises de carte (losanges) ; capitales fines et espacées, équerres autour de la carte choisie (maquette M19) |
-| **Terminal** | Vert, Ambre — sombre seulement | Chasse fixe partout, lignes de balayage, lueur du phosphore ; ligne d'eau en pointillés ; curseur qui clignote |
-| **Aurore** | Boréale, Australe — sombre seulement | Voiles de lumière animés, collines ; bouées et carte en verre dépoli |
+| **Plan** (par défaut, 1.8) | clair et sombre | Grille fine, deux roues tracées au trait et leurs cotes ; bouées en cartouches, coins serrés, chiffres en chasse fixe ; en Expert, la grille sous le détail |
+| **Forêt de nuit** (2.0) | clair et sombre | Sapins sous la lune, lucioles en sombre |
+| **Aurore australe** (1.7) | sombre seulement | Voiles roses et violets, collines ; bouées et carte en verre dépoli |
 
-Sur une ambiance sombre seulement, le bouton soleil / lune et le réglage 1.1 sont désactivés
-et le disent. L'Expert prend les jetons, pas le décor. Chaque variante est mesurée au seuil
-ci-dessous (pire cas : 4,95, Spatial clair). Un thème Star Wars à proprement parler, style
-Nouvelle République, viendra plus tard : la maquette M19 qui le cherchait est devenue Spatial. Une variante est un jeu complet — fonds,
-textes, accent, texte d'accent, états, séries des graphiques (`--serie-1` à `--serie-6`),
-contour d'engrenage, journal — mesuré au seuil ci-dessous ; changer de variante ne change
-rien d'autre. Les couleurs de la 1.5 (orange, Marée, bleu, violet, framboise) sont
-retirées : un réglage qui en désignait une revient à Ardente.
+Les autres ambiances livrées jusqu'à la 2.0.0 — **Braise ardente et crépuscule** (1.6, la
+palette de l'icône), **Synthwave**, **Spatial** (maquette M19), **Terminal vert et ambre**,
+**Aurore boréale** (1.7, maquette M17) — sont publiées à part, comme fichiers, dans le dépôt
+des ambiances (`ambiances/depot/`), à partager où l'on veut. Qui en avait choisi une la
+retrouve, installée, à la mise à jour (`ambiance::passer_aux_fichiers`, une fois par compte).
+Converties sans changer d'allure : leurs captures avant et après la conversion ne diffèrent
+que par la phase des animations.
+
+**Plan est l'allure de secours.** La feuille de style porte ses jetons et sa forme ; sans
+ambiance installée — tout retiré, fichier illisible —, Sindry garde l'allure de Plan, sans
+décor.
+
+Sur une ambiance qui n'existe que dans un mode, le bouton soleil / lune et le réglage 2.1
+sont désactivés et le disent. L'Expert prend les couleurs et la forme, pas le décor. Une
+ambiance est un jeu complet — fonds, textes, accent, texte d'accent, états, séries des
+graphiques (`serie-1` à `serie-6`), contour d'engrenage, journal — mesuré au seuil
+ci-dessous. Un thème Star Wars, style Nouvelle République, viendra après la 2.0, sous forme
+d'ambiance partageable.
 
 Trois couleurs sémantiques qui ne disent **qu'un état** : réussi, attention, échec. Rien
 d'autre n'est coloré : une icône de lot reste neutre tant qu'elle n'est pas choisie.
@@ -1296,27 +1293,32 @@ Choisis parmi six effets et cinq formes de guide (maquette M16, `docs/mockups/si
 Une ambiance tient dans **un fichier** `.sindry-ambiance` : ses couleurs — les jetons de
 l'interface, en clair, en sombre ou les deux — et un **décor libre**, balisage SVG ou HTML
 et sa feuille de style. La communauté les construit à la main, d'après un format documenté
-(`docs/FORMAT_AMBIANCE.md`) et un exemple complet (`docs/ambiances/`) ; Sindry n'a pas
+(`docs/FORMAT_AMBIANCE.md`) et des exemples complets — les ambiances livrées
+(`ambiances/`) ; Sindry n'a pas
 d'éditeur. Elles se partagent comme des images : on envoie le fichier, on l'importe.
 
 **Où elles vivent.** `%LOCALAPPDATA%\Sindry\ambiances\`. Y déposer un fichier suffit — le
-principe des scripts : il apparaît dans le réglage 1.7 à la prochaine ouverture des
+principe des scripts : il apparaît dans le réglage 2.3 à la prochaine ouverture des
 réglages. La valeur du réglage est `perso:<id>` ; si le fichier disparaît, Sindry revient à
 Plan.
 
 **Une seule vérification, partout.** `ambiance.rs` lit chaque fichier — à l'import, à
 chaque lecture du dossier, et par la ligne de commande (§19) — et rend **tous** les
 problèmes d'un coup, chacun avec son code. Un fichier refusé n'empêche pas les autres : le
-réglage 1.8 liste ceux qu'il ignore, et pourquoi.
+réglage 2.4 liste ceux qu'il ignore, et pourquoi.
 
 - **Toutes les couleurs, aucune de trop** : les 35 couleurs et les 2 opacités de la houle,
   par mode fourni ; une clé inconnue est refusée avec la plus proche suggérée (les clés en
   `_` tiennent lieu de commentaires).
 - **Lisible, sans exception** : chaque texte sur chacun de ses fonds à **4,5:1** au moins —
   les paires qui ont servi à mesurer les ambiances livrées. Un test passe chaque ambiance
-  livrée, exportée, au même validateur : les mêmes règles pour tous. C'est lui qui a trouvé
+  du dépôt (`ambiances/`) au même validateur : les mêmes règles pour toutes. C'est lui qui a trouvé
   le texte atténué du journal de Braise sombre à 3,5:1, corrigé en 2.0.
-- **Les identifiants des ambiances livrées sont réservés.**
+- **La forme** (2.0.1) : l'allure de l'interface au-delà des couleurs — bouées, titres, coins,
+  ligne d'eau, chiffres, vue Expert, équerres, lueur, balayage — se choisit dans des **listes
+  fermées**, que l'interface traduit en règles qu'elle écrit elle-même (`data-f-*`). Une
+  ambiance ne fournit jamais de CSS pour l'interface : c'est ce qui a permis aux ambiances
+  livrées de devenir des fichiers sans rien perdre de leur allure.
 
 **Le décor est isolé.** Il s'affiche là où s'affichent les décors livrés — à l'accueil du
 mode Simple, derrière la houle — dans un cadre `sandbox=""` : pas de script, une origine
@@ -1333,12 +1335,11 @@ jamais par une feuille ou un attribut : rien ne dépend de la CSP, et une ambian
 pas restyler l'interface au-delà de ses jetons. Pas d'ombres ni de formes dans le format :
 une ambiance installée ne peut pas masquer un avertissement ni maquiller un bouton.
 
-**Réglage 1.8.** Importer (un fichier du même `id` remplace l'ancien après confirmation,
-les deux versions nommées) ; Exporter — le fichier d'une ambiance installée, montré dans
-l'Explorateur ; pour une ambiance livrée, **une copie modifiable de ses couleurs**
-(`<id>-copie`), lue dans la feuille de style par un cadre invisible, sans changer
-l'ambiance affichée ; son décor fait partie de Sindry et ne s'exporte pas — ; Retirer
-(efface le fichier, après confirmation) ; Ouvrir le dossier ; Guide du format (GitHub).
+**Réglage 2.4.** Importer (un fichier du même `id` remplace l'ancien après confirmation,
+les deux versions nommées) ; Exporter — le fichier de l'ambiance choisie, montré dans
+l'Explorateur : c'est lui qu'on partage, décor compris ; Retirer (efface le fichier, après
+confirmation ; Sindry revient à Plan) ; Ouvrir le dossier ; Réinstaller les ambiances de
+base (celles qui manquent) ; Guide du format (GitHub).
 
 Une ambiance n'exécute rien : elle n'a pas d'approbation comme un script (§12.1). Un
 programme qui en déposerait une n'obtiendrait qu'un décor isolé et des couleurs lisibles.

@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "id": "terminal-ambre",
+  "nom": {
+    "fr": "Terminal ambre",
+    "en": "Amber terminal"
+  },
+  "description": {
+    "fr": "Phosphore ambre, lignes de balayage, tout en chasse fixe.",
+    "en": "Amber phosphor, scanlines, all in monospace."
+  },
+  "auteur": "Sindry",
+  "version": "1.0",
+  "police": "chasse-fixe",
+  "sombre": {
+    "bg": "#0C0700",
+    "surface": "#160D02",
+    "surface-2": "#211405",
+    "surface-3": "#2E1C08",
+    "border": "#4A3010",
+    "border-2": "#6B4716",
+    "text": "#FFC14D",
+    "text-2": "#E0A23A",
+    "text-3": "#C38A2C",
+    "ink": "#140C00",
+    "ok": "#A8F07A",
+    "warn": "#FFE45C",
+    "err": "#FF7A66",
+    "ok-s": "#16260C",
+    "warn-s": "#2C2608",
+    "err-s": "#2E100A",
+    "acc": "#FFB000",
+    "acc-2": "#FFC94D",
+    "acc-on": "#FFD27A",
+    "surface-soft": "#110A01",
+    "acc-soft": "#2E1E06",
+    "knob-off": "#7A5A22",
+    "serie-1": "#FFB000",
+    "serie-2": "#FF7A33",
+    "serie-3": "#FFE45C",
+    "serie-4": "#A8F07A",
+    "serie-5": "#5AC8FF",
+    "serie-6": "#E07AFF",
+    "rouage-a": "#FFB000",
+    "rouage-b": "#FFC94D",
+    "eau-a": "#FFB000",
+    "eau-b": "#3D2A06",
+    "term-bg": "#070400",
+    "term-text": "#FFD27A",
+    "term-dim": "#C08A30",
+    "eau-fond": 0.0,
+    "eau-surface": 0.0
+  },
+  "forme": {
+    "bouees": "pointillees",
+    "titres": "invite",
+    "coins": "aucun",
+    "ligne_eau": "pointilles",
+    "balayage": true
+  }
+}

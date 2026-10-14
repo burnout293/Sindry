@@ -45,440 +45,13 @@
   src: url('fonts/sindry-mono-500.woff2') format('woff2');
 }
 
-/* --- Braise, variante Ardente : theme clair (defaut) ----------------------
-   La palette de l'icone de Sindry (§15.4) : la flamme (or, ambre, vermillon,
-   magenta) pour ce qui agit, l'engrenage (ciel, roi, violet, orchidee) pour le
-   contour des graphiques. Deux variantes, Ardente (ici) et Crepuscule (plus
-   bas), chacune en clair et en sombre. Chaque jeu est mesure : textes, --acc-on,
-   etats et marqueurs du journal au-dessus de 4,5:1 sur leurs fonds, --ink sur
-   --acc et --acc-2 aussi. */
+/* --- Les jetons : Plan, l'allure de secours (2.0.1) ----------------------
+   Depuis la 2.0.1, chaque ambiance est un fichier (§15.7) dont l'interface
+   pose les couleurs en ligne sur la racine. Ces jetons-ci ne servent que si
+   aucune ambiance n'est installee — ce sont ceux de Plan, l'ambiance de base,
+   tires de ambiances/base/plan.sindry-ambiance. Jusqu'a la 2.0.0, chaque
+   ambiance livree avait ici ses blocs, en clair et en sombre. */
 :root {
-  --bg: #FBF6F2;
-  --surface: #FFFFFF;
-  --surface-2: #F6EEE8;
-  --surface-3: #EFE4DB;
-  --border: #EADFD6;
-  --border-2: #DCCBBE;
-  --text: #1F1426;
-  --text-2: #6A5873;
-  --text-3: #76637F;
-  --ink: #1A0B12;
-
-  --ok: #0E7550;
-  --warn: #8F5D0C;
-  --err: #C0263F;
-  --ok-s: #E6F5EC;
-  --warn-s: #FBF3E2;
-  --err-s: #FBEAEC;
-
-  /* Accent unique : la couleur ne decore pas, elle signale. */
-  --acc: #FD9E21;
-  --acc-2: #FD5632;
-  --acc-on: #B23A0C;
-  /* Fond d'une ligne de reglage, et fond d'une ligne selectionnee dans la
-     colonne des lots : deux aplats opaques et non translucides — une
-     transparence par-dessus l'eau animee donnerait une teinte qui bouge. */
-  --surface-soft: #FDF9F6;
-  --acc-soft: #FFF0E4;
-  /* Pastille d'un interrupteur eteint. */
-  --knob-off: #8A7A86;
-
-  /* Les graphiques (§17) : leurs series, et le contour d'engrenage de
-     l'anneau, de la jauge a dents et de la double couronne. */
-  --serie-1: #FD9E21;
-  --serie-2: #FD5632;
-  --serie-3: #DC1178;
-  --serie-4: #332BD9;
-  --serie-5: #775FD7;
-  --serie-6: #4AB2E7;
-  --rouage-a: #332BD9;
-  --rouage-b: #CA28B1;
-
-  /* La houle de braise : le degrade de l'eau et l'opacite de ses deux nappes. */
-  --eau-a: #FDB45A;
-  --eau-b: #FD5632;
-  --eau-fond: .18;
-  --eau-surface: .3;
-
-  /* Pastilles du reglage 1.8 : chaque variante, telle qu'elle sera. */
-  --pal-ardente: linear-gradient(135deg, #FEC923, #FD5632);
-  --pal-crepuscule: linear-gradient(135deg, #FF7A45, #DC1178);
-
-  --term-bg: #1E1222;
-  --term-text: #E6DCEB;
-  --term-dim: #8C7B95;
-
-  /* Marqueurs du journal — palette PROPRE, jamais celle du theme : le panneau
-     est sombre dans les deux themes, alors que --ok/--warn/--err sont calibres
-     pour un fond clair. Mesurees sur chaque --term-bg, la plus faible passe
-     4,5:1. */
-  --term-info: #7DB8E8;
-  --term-step: #2DD4BF;
-  --term-ok:   #4ADE80;
-  --term-warn: #FBBF24;
-  --term-err:  #F87171;
-
-  --sh: 0 1px 2px rgba(31, 20, 38, .05), 0 6px 18px rgba(31, 20, 38, .05);
-  --sh-2: 0 10px 34px rgba(31, 20, 38, .10);
-
-  --ui: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'Sindry Mono', 'Cascadia Mono', Consolas, monospace;
-
-  --titlebar-h: 54px;
-}
-
-/* --- Theme sombre --------------------------------------------------------
-   La @media est de PREMIER niveau, pas imbriquee : aucune dependance au CSS
-   Nesting selon la version de WebView2 installee sur la machine.
-     . la @media    suit le reglage de Windows quand rien n'a ete choisi
-     . [data-theme] la bascule manuelle, qui l'emporte dans les deux sens
-   ------------------------------------------------------------------------- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0F0A14; --surface: #18111F; --surface-2: #211829; --surface-3: #2B2034;
-    --border: #2C2236; --border-2: #3D3049;
-    --text: #F7F1FA; --text-2: #B9A9C6; --text-3: #94849F;
-    --ok: #3FD69B; --warn: #FFB340; --err: #FF6B7A;
-    --ok-s: #0F2A21; --warn-s: #2C2113; --err-s: #2E1720;
-    --acc: #FEC923; --acc-2: #FD5632; --acc-on: #FFB35C;
-    --surface-soft: #140E1A; --acc-soft: #2A1A14; --knob-off: #6E5F7A;
-    --serie-1: #FEC923; --serie-2: #FD5632; --serie-3: #DC1178; --serie-4: #4AB2E7; --serie-5: #775FD7; --serie-6: #FD9E21;
-    --rouage-a: #4AB2E7; --rouage-b: #CA28B1;
-    --eau-a: #D9482E; --eau-b: #7A1F45; --eau-fond: .4; --eau-surface: .55;
-    --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #837396;
-    --sh: 0 2px 10px rgba(0, 0, 0, .35);
-    --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #0F0A14; --surface: #18111F; --surface-2: #211829; --surface-3: #2B2034;
-  --border: #2C2236; --border-2: #3D3049;
-  --text: #F7F1FA; --text-2: #B9A9C6; --text-3: #94849F;
-  --ok: #3FD69B; --warn: #FFB340; --err: #FF6B7A;
-  --ok-s: #0F2A21; --warn-s: #2C2113; --err-s: #2E1720;
-  --acc: #FEC923; --acc-2: #FD5632; --acc-on: #FFB35C;
-  --surface-soft: #140E1A; --acc-soft: #2A1A14; --knob-off: #6E5F7A;
-  --serie-1: #FEC923; --serie-2: #FD5632; --serie-3: #DC1178; --serie-4: #4AB2E7; --serie-5: #775FD7; --serie-6: #FD9E21;
-  --rouage-a: #4AB2E7; --rouage-b: #CA28B1;
-  --eau-a: #D9482E; --eau-b: #7A1F45; --eau-fond: .4; --eau-surface: .55;
-  --term-bg: #0B0710; --term-text: #D9CFE2; --term-dim: #837396;
-  --sh: 0 2px 10px rgba(0, 0, 0, .35);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
-}
-
-/* --- Braise, variante Crepuscule (reglage 1.8) ----------------------------
-   Le magenta et le violet du bas de l'icone. Ses jeux sombres sont plus
-   specifiques que le clair, declare apres le theme sombre : sans cela, la
-   surcharge claire l'emporterait sur lui.
-   ------------------------------------------------------------------------- */
-:root[data-accent="crepuscule"] {
-  --bg: #FBF5FA; --surface: #FFFFFF; --surface-2: #F5ECF5; --surface-3: #EDE0EE;
-  --border: #EAD9EA; --border-2: #D9C2DB;
-  --text: #22102C; --text-2: #6B5378; --text-3: #78607F; --ink: #1C0614;
-  --ok: #0E7550; --warn: #8C5B0E; --err: #C0214A;
-  --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEF;
-  --acc: #FF7A45; --acc-2: #F0428E; --acc-on: #B0145F;
-  --surface-soft: #FDF8FC; --acc-soft: #FCE8F1; --knob-off: #8E7A94;
-  --serie-1: #FD7D26; --serie-2: #DC1178; --serie-3: #CA28B1; --serie-4: #775FD7; --serie-5: #4AB2E7; --serie-6: #FEC923;
-  --rouage-a: #775FD7; --rouage-b: #CA28B1;
-  --eau-a: #F0428E; --eau-b: #8816BF; --eau-fond: .14; --eau-surface: .22;
-  --term-bg: #20122C; --term-text: #EADDF2; --term-dim: #8E7AA0;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-accent="crepuscule"]:not([data-theme="light"]) {
-    --bg: #110A1C; --surface: #1A1128; --surface-2: #231833; --surface-3: #2E2042;
-    --border: #2D2140; --border-2: #423058;
-    --text: #F8F0FC; --text-2: #BCA9D0; --text-3: #9783AC;
-    --ok: #45DCA3; --warn: #FFBF57; --err: #FF6B8F;
-    --ok-s: #10291F; --warn-s: #2D2115; --err-s: #2F1424;
-    --acc-on: #FF86B0; --surface-soft: #150D21; --acc-soft: #2C1229; --knob-off: #6E5E86;
-    --eau-a: #A8235F; --eau-b: #561A5E; --eau-fond: .45; --eau-surface: .6;
-    --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #84729B;
-  }
-}
-:root[data-theme="dark"][data-accent="crepuscule"] {
-  --bg: #110A1C; --surface: #1A1128; --surface-2: #231833; --surface-3: #2E2042;
-  --border: #2D2140; --border-2: #423058;
-  --text: #F8F0FC; --text-2: #BCA9D0; --text-3: #9783AC;
-  --ok: #45DCA3; --warn: #FFBF57; --err: #FF6B8F;
-  --ok-s: #10291F; --warn-s: #2D2115; --err-s: #2F1424;
-  --acc-on: #FF86B0; --surface-soft: #150D21; --acc-soft: #2C1229; --knob-off: #6E5E86;
-  --eau-a: #A8235F; --eau-b: #561A5E; --eau-fond: .45; --eau-surface: .6;
-  --term-bg: #0A0612; --term-text: #DDD0EA; --term-dim: #84729B;
-}
-
-/* --- Thèmes d'ambiance (1.7) --------------------------------------------------
-   Des thèmes qui changent l'ambiance entière (maquette M17) : leurs jetons
-   ci-dessous, leur décor plus bas (« Le décor des ambiances »). Valeur du
-   réglage 1.8 (`accent`), posée en `data-accent`. Chaque jeu est mesuré comme
-   Braise : textes, accent, états et journal au-dessus de 4,5:1.
-
-   Synthwave suit le réglage clair / sombre comme Braise : Miami en clair, Nuit
-   en sombre. Terminal et Aurore n'existent qu'en SOMBRE : leurs sélecteurs
-   couvrent les trois cas de `data-theme` (absent, clair, sombre) avec une
-   spécificité de (0,3,0), égale à celle du sombre de Braise sous la @media
-   et déclarée après lui — elle l'emporte donc toujours.
-   ------------------------------------------------------------------------- */
-:root[data-accent="synthwave"] {
-  --bg: #FFF2F9;
-  --surface: #FFFFFF;
-  --surface-2: #FFE6F3;
-  --surface-3: #FFD3EA;
-  --border: #F6CFE4;
-  --border-2: #EBA9CD;
-  --text: #2A0B3D;
-  --text-2: #6E4A82;
-  --text-3: #7A5690;
-  --ink: #2A0B3D;
-  --ok: #0E7550;
-  --warn: #8C5B0E;
-  --err: #C0214A;
-  --ok-s: #E6F5EC;
-  --warn-s: #FBF3E2;
-  --err-s: #FBEAEF;
-  --acc: #FF3EA5;
-  --acc-2: #00B8D4;
-  --acc-on: #B0106A;
-  --surface-soft: #FFF8FC;
-  --acc-soft: #FFE1F1;
-  --knob-off: #9B7AA8;
-  --serie-1: #FF3EA5;
-  --serie-2: #00A9C4;
-  --serie-3: #FFB020;
-  --serie-4: #9A4DFF;
-  --serie-5: #FF6A3D;
-  --serie-6: #12A37A;
-  --rouage-a: #00B8D4;
-  --rouage-b: #FF3EA5;
-  --eau-a: #FF8CC8;
-  --eau-b: #00B8D4;
-  --eau-fond: .16;
-  --eau-surface: .24;
-  --term-bg: #2A0B3D;
-  --term-text: #FBE8FF;
-  --term-dim: #BFA0D2;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-accent="synthwave"]:not([data-theme="light"]) {
-    --bg: #120326;
-    --surface: #1C0838;
-    --surface-2: #260D4A;
-    --surface-3: #33145E;
-    --border: #3A1A66;
-    --border-2: #52267F;
-    --text: #FBF0FF;
-    --text-2: #CDB6EE;
-    --text-3: #A98DD2;
-    --ink: #12001F;
-    --ok: #3DF5A6;
-    --warn: #FFD24D;
-    --err: #FF6B95;
-    --ok-s: #0C2A2A;
-    --warn-s: #2E2410;
-    --err-s: #3A0D2A;
-    --acc: #FF2BD6;
-    --acc-2: #00E5FF;
-    --acc-on: #FF8BEA;
-    --surface-soft: #170530;
-    --acc-soft: #2E0B45;
-    --knob-off: #7A5C9E;
-    --serie-1: #FF2BD6;
-    --serie-2: #00E5FF;
-    --serie-3: #FFD24D;
-    --serie-4: #B26BFF;
-    --serie-5: #FF7A45;
-    --serie-6: #3DF5A6;
-    --rouage-a: #00E5FF;
-    --rouage-b: #FF2BD6;
-    --eau-a: #FF2BD6;
-    --eau-b: #00E5FF;
-    --eau-fond: .10;
-    --eau-surface: .16;
-    --term-bg: #0A0118;
-    --term-text: #F2DDFF;
-    --term-dim: #A58BCB;
-    --sh: 0 2px 10px rgba(0, 0, 0, .4);
-    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-  }
-}
-:root[data-theme="dark"][data-accent="synthwave"] {
-  --bg: #120326;
-  --surface: #1C0838;
-  --surface-2: #260D4A;
-  --surface-3: #33145E;
-  --border: #3A1A66;
-  --border-2: #52267F;
-  --text: #FBF0FF;
-  --text-2: #CDB6EE;
-  --text-3: #A98DD2;
-  --ink: #12001F;
-  --ok: #3DF5A6;
-  --warn: #FFD24D;
-  --err: #FF6B95;
-  --ok-s: #0C2A2A;
-  --warn-s: #2E2410;
-  --err-s: #3A0D2A;
-  --acc: #FF2BD6;
-  --acc-2: #00E5FF;
-  --acc-on: #FF8BEA;
-  --surface-soft: #170530;
-  --acc-soft: #2E0B45;
-  --knob-off: #7A5C9E;
-  --serie-1: #FF2BD6;
-  --serie-2: #00E5FF;
-  --serie-3: #FFD24D;
-  --serie-4: #B26BFF;
-  --serie-5: #FF7A45;
-  --serie-6: #3DF5A6;
-  --rouage-a: #00E5FF;
-  --rouage-b: #FF2BD6;
-  --eau-a: #FF2BD6;
-  --eau-b: #00E5FF;
-  --eau-fond: .10;
-  --eau-surface: .16;
-  --term-bg: #0A0118;
-  --term-text: #F2DDFF;
-  --term-dim: #A58BCB;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-/* Spatial (maquette M19, d'abord pensee comme un theme Star Wars) : suit le
-   reglage clair / sombre comme Braise — Hangar en clair, Patrouille en sombre.
-   `--holo` : la couleur de l'hologramme ; `--etoile` : celle des etoiles. */
-:root[data-accent="spatial"] {
-  --bg: #EEF1F4;
-  --surface: #FFFFFF;
-  --surface-2: #E6EAEF;
-  --surface-3: #D8DEE6;
-  --border: #D3DAE3;
-  --border-2: #B8C3D0;
-  --text: #111A26;
-  --text-2: #4B5A6B;
-  --text-3: #56657A;
-  --ink: #1A0A00;
-  --ok: #0E7550;
-  --warn: #8F5D0C;
-  --err: #C0263F;
-  --ok-s: #E6F5EC;
-  --warn-s: #FBF3E2;
-  --err-s: #FBEAEC;
-  --acc: #F06A12;
-  --acc-2: #FF8A3D;
-  --acc-on: #A84A08;
-  --surface-soft: #F6F8FA;
-  --acc-soft: #FDEBDD;
-  --knob-off: #8794A3;
-  --serie-1: #1C7FD0;
-  --serie-2: #F06A12;
-  --serie-3: #0E9F6E;
-  --serie-4: #7A5AF8;
-  --serie-5: #D9A400;
-  --serie-6: #D6336C;
-  --rouage-a: #1C7FD0;
-  --rouage-b: #5FA8E8;
-  --eau-a: #1C7FD0;
-  --eau-b: #A9C9E8;
-  --eau-fond: 0;
-  --eau-surface: .06;
-  --holo: #1C7FD0;
-  --etoile: rgba(30, 60, 100, .3);
-  --term-bg: #111A26;
-  --term-text: #E3EAF2;
-  --term-dim: #8FA0B4;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-accent="spatial"]:not([data-theme="light"]) {
-    --bg: #070B12;
-    --surface: #0E1622;
-    --surface-2: #142033;
-    --surface-3: #1B2A40;
-    --border: #1E2D42;
-    --border-2: #2C4060;
-    --text: #E8EEF5;
-    --text-2: #97A8BC;
-    --text-3: #8193A8;
-    --ink: #1A0A00;
-    --ok: #4BE3A0;
-    --warn: #FFC24D;
-    --err: #FF6B7A;
-    --ok-s: #0C2620;
-    --warn-s: #2A2210;
-    --err-s: #2E141C;
-    --acc: #FF7A1F;
-    --acc-2: #FF9A4D;
-    --acc-on: #FF9A4D;
-    --surface-soft: #0A111B;
-    --acc-soft: #2A1A10;
-    --knob-off: #5A6B80;
-    --serie-1: #5FE3FF;
-    --serie-2: #FF7A1F;
-    --serie-3: #4BE3A0;
-    --serie-4: #B48CFF;
-    --serie-5: #FFC24D;
-    --serie-6: #FF6B9A;
-    --rouage-a: #5FE3FF;
-    --rouage-b: #2E8BFF;
-    --eau-a: #5FE3FF;
-    --eau-b: #0E3A5C;
-    --eau-fond: 0;
-    --eau-surface: .05;
-    --holo: #5FE3FF;
-    --etoile: rgba(220, 235, 255, .8);
-    --term-bg: #04070C;
-    --term-text: #D6E4F2;
-    --term-dim: #7D90A6;
-    --sh: 0 2px 10px rgba(0, 0, 0, .4);
-    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-  }
-}
-:root[data-theme="dark"][data-accent="spatial"] {
-  --bg: #070B12;
-  --surface: #0E1622;
-  --surface-2: #142033;
-  --surface-3: #1B2A40;
-  --border: #1E2D42;
-  --border-2: #2C4060;
-  --text: #E8EEF5;
-  --text-2: #97A8BC;
-  --text-3: #8193A8;
-  --ink: #1A0A00;
-  --ok: #4BE3A0;
-  --warn: #FFC24D;
-  --err: #FF6B7A;
-  --ok-s: #0C2620;
-  --warn-s: #2A2210;
-  --err-s: #2E141C;
-  --acc: #FF7A1F;
-  --acc-2: #FF9A4D;
-  --acc-on: #FF9A4D;
-  --surface-soft: #0A111B;
-  --acc-soft: #2A1A10;
-  --knob-off: #5A6B80;
-  --serie-1: #5FE3FF;
-  --serie-2: #FF7A1F;
-  --serie-3: #4BE3A0;
-  --serie-4: #B48CFF;
-  --serie-5: #FFC24D;
-  --serie-6: #FF6B9A;
-  --rouage-a: #5FE3FF;
-  --rouage-b: #2E8BFF;
-  --eau-a: #5FE3FF;
-  --eau-b: #0E3A5C;
-  --eau-fond: 0;
-  --eau-surface: .05;
-  --holo: #5FE3FF;
-  --etoile: rgba(220, 235, 255, .8);
-  --term-bg: #04070C;
-  --term-text: #D6E4F2;
-  --term-dim: #7D90A6;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-/* Plan (1.8, maquette M23 B) : l'ambiance par defaut. Un plan technique —
-   grille fine, roues au trait, cotes — en clair et en sombre, qui suit le
-   reglage 1.1. `--grille` : les lignes de la grille. */
-:root[data-accent="plan"] {
   --bg: #F6F4EF;
   --surface: #FFFFFF;
   --surface-2: #EFECE5;
@@ -511,15 +84,33 @@
   --rouage-b: #F0782A;
   --eau-a: #E2640F;
   --eau-b: #B6AE9F;
-  --eau-fond: 0;
-  --eau-surface: 0;
-  --grille: #E6E2D9;
   --term-bg: #141A24;
   --term-text: #E3EAF2;
   --term-dim: #8FA0B4;
+  --eau-fond: 0;
+  --eau-surface: 0;
+
+  /* Ce que le format des ambiances ne porte pas. */
+  --term-info: #7DB8E8;
+  --term-step: #2DD4BF;
+  --term-ok:   #4ADE80;
+  --term-warn: #FBBF24;
+  --term-err:  #F87171;
+  --sh: 0 1px 2px rgba(31, 20, 38, .05), 0 6px 18px rgba(31, 20, 38, .05);
+  --sh-2: 0 10px 34px rgba(31, 20, 38, .10);
+  --ui: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Sindry Mono', 'Cascadia Mono', Consolas, monospace;
+  --titlebar-h: 54px;
 }
+
+/* --- Theme sombre --------------------------------------------------------
+   La @media est de PREMIER niveau, pas imbriquee : aucune dependance au CSS
+   Nesting selon la version de WebView2 installee sur la machine.
+     . la @media    suit le reglage de Windows quand rien n'a ete choisi
+     . [data-theme] la bascule manuelle, qui l'emporte dans les deux sens
+   ------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
-  :root[data-accent="plan"]:not([data-theme="light"]) {
+  :root:not([data-theme="light"]) {
     --bg: #0B0F16;
     --surface: #0F1520;
     --surface-2: #141C2A;
@@ -552,17 +143,17 @@
     --rouage-b: #FF9447;
     --eau-a: #FD7D26;
     --eau-b: #42506A;
-    --eau-fond: 0;
-    --eau-surface: 0;
-    --grille: #1C2533;
     --term-bg: #070A10;
     --term-text: #D6E0EC;
     --term-dim: #7D8BA0;
-    --sh: 0 2px 10px rgba(0, 0, 0, .4);
-    --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+    --eau-fond: 0;
+    --eau-surface: 0;
+    --sh: 0 2px 10px rgba(0, 0, 0, .35);
+    --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
   }
 }
-:root[data-theme="dark"][data-accent="plan"] {
+
+:root[data-theme="dark"] {
   --bg: #0B0F16;
   --surface: #0F1520;
   --surface-2: #141C2A;
@@ -595,188 +186,13 @@
   --rouage-b: #FF9447;
   --eau-a: #FD7D26;
   --eau-b: #42506A;
-  --eau-fond: 0;
-  --eau-surface: 0;
-  --grille: #1C2533;
   --term-bg: #070A10;
   --term-text: #D6E0EC;
   --term-dim: #7D8BA0;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-:root[data-accent="terminal-vert"]:not([data-theme="light"]),
-:root[data-accent="terminal-vert"][data-theme="light"] {
-  color-scheme: dark;
-  --ui: var(--mono);
-  --bg: #020A04;
-  --surface: #06140A;
-  --surface-2: #0B1F10;
-  --surface-3: #123018;
-  --border: #164A24;
-  --border-2: #1F6A33;
-  --text: #6CFF94;
-  --text-2: #4CCF72;
-  --text-3: #3BB15E;
-  --ink: #021006;
-  --ok: #9DFFB9;
-  --warn: #FFD84D;
-  --err: #FF7070;
-  --ok-s: #0B2A14;
-  --warn-s: #2A2408;
-  --err-s: #2E0E0E;
-  --acc: #6CFF94;
-  --acc-2: #2EE86A;
-  --acc-on: #8DFFAD;
-  --surface-soft: #041007;
-  --acc-soft: #0E2A16;
-  --knob-off: #2E6B40;
-  --serie-1: #6CFF94;
-  --serie-2: #2EC4B6;
-  --serie-3: #FFD84D;
-  --serie-4: #B8FF6C;
-  --serie-5: #4DA3FF;
-  --serie-6: #FF9F5A;
-  --rouage-a: #2EE86A;
-  --rouage-b: #6CFF94;
-  --eau-a: #2EE86A;
-  --eau-b: #0B3D1A;
   --eau-fond: 0;
   --eau-surface: 0;
-  --term-bg: #000700;
-  --term-text: #8DFFAD;
-  --term-dim: #45AE66;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-:root[data-accent="terminal-ambre"]:not([data-theme="light"]),
-:root[data-accent="terminal-ambre"][data-theme="light"] {
-  color-scheme: dark;
-  --ui: var(--mono);
-  --bg: #0C0700;
-  --surface: #160D02;
-  --surface-2: #211405;
-  --surface-3: #2E1C08;
-  --border: #4A3010;
-  --border-2: #6B4716;
-  --text: #FFC14D;
-  --text-2: #E0A23A;
-  --text-3: #C38A2C;
-  --ink: #140C00;
-  --ok: #A8F07A;
-  --warn: #FFE45C;
-  --err: #FF7A66;
-  --ok-s: #16260C;
-  --warn-s: #2C2608;
-  --err-s: #2E100A;
-  --acc: #FFB000;
-  --acc-2: #FFC94D;
-  --acc-on: #FFD27A;
-  --surface-soft: #110A01;
-  --acc-soft: #2E1E06;
-  --knob-off: #7A5A22;
-  --serie-1: #FFB000;
-  --serie-2: #FF7A33;
-  --serie-3: #FFE45C;
-  --serie-4: #A8F07A;
-  --serie-5: #5AC8FF;
-  --serie-6: #E07AFF;
-  --rouage-a: #FFB000;
-  --rouage-b: #FFC94D;
-  --eau-a: #FFB000;
-  --eau-b: #3D2A06;
-  --eau-fond: 0;
-  --eau-surface: 0;
-  --term-bg: #070400;
-  --term-text: #FFD27A;
-  --term-dim: #C08A30;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-:root[data-accent="aurore-boreale"]:not([data-theme="light"]),
-:root[data-accent="aurore-boreale"][data-theme="light"] {
-  color-scheme: dark;
-  --bg: #06101E;
-  --surface: #0D1B2E;
-  --surface-2: #13263D;
-  --surface-3: #1B3350;
-  --border: #1F3550;
-  --border-2: #2C4A6B;
-  --text: #EAF6FF;
-  --text-2: #A9C4D8;
-  --text-3: #8AA6BD;
-  --ink: #02121A;
-  --ok: #4BE3A0;
-  --warn: #FFC85A;
-  --err: #FF7A8A;
-  --ok-s: #0C2A24;
-  --warn-s: #2A2312;
-  --err-s: #2E1420;
-  --acc: #3CFFB4;
-  --acc-2: #38C6FF;
-  --acc-on: #7DFFD0;
-  --surface-soft: #0A1626;
-  --acc-soft: #0F2A33;
-  --knob-off: #5A7590;
-  --serie-1: #3CFFB4;
-  --serie-2: #38C6FF;
-  --serie-3: #8E6BFF;
-  --serie-4: #FF6FB5;
-  --serie-5: #FFC85A;
-  --serie-6: #7DE3FF;
-  --rouage-a: #38C6FF;
-  --rouage-b: #8E6BFF;
-  --eau-a: #1E6E8A;
-  --eau-b: #0A2238;
-  --eau-fond: .45;
-  --eau-surface: .55;
-  --term-bg: #030A14;
-  --term-text: #D6EAF8;
-  --term-dim: #7894AB;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
-}
-:root[data-accent="aurore-australe"]:not([data-theme="light"]),
-:root[data-accent="aurore-australe"][data-theme="light"] {
-  color-scheme: dark;
-  --bg: #0E0820;
-  --surface: #170F2E;
-  --surface-2: #20163D;
-  --surface-3: #2B1E50;
-  --border: #2E2150;
-  --border-2: #44306E;
-  --text: #F9EEFF;
-  --text-2: #C7B3DB;
-  --text-3: #A890C2;
-  --ink: #1A0620;
-  --ok: #4BE3A0;
-  --warn: #FFC85A;
-  --err: #FF7A9A;
-  --ok-s: #0E2A26;
-  --warn-s: #2C2214;
-  --err-s: #301428;
-  --acc: #FF6FB5;
-  --acc-2: #B48CFF;
-  --acc-on: #FF9CCB;
-  --surface-soft: #120B26;
-  --acc-soft: #2E1236;
-  --knob-off: #6E5A8E;
-  --serie-1: #FF6FB5;
-  --serie-2: #B48CFF;
-  --serie-3: #6FD3FF;
-  --serie-4: #4BE3A0;
-  --serie-5: #FFC85A;
-  --serie-6: #FF9C6F;
-  --rouage-a: #B48CFF;
-  --rouage-b: #FF6FB5;
-  --eau-a: #5A2A7A;
-  --eau-b: #1C0E33;
-  --eau-fond: .45;
-  --eau-surface: .55;
-  --term-bg: #08041A;
-  --term-text: #EADCF8;
-  --term-dim: #9583B3;
-  --sh: 0 2px 10px rgba(0, 0, 0, .4);
-  --sh-2: 0 16px 46px rgba(0, 0, 0, .6);
+  --sh: 0 2px 10px rgba(0, 0, 0, .35);
+  --sh-2: 0 16px 46px rgba(0, 0, 0, .55);
 }
 
 
@@ -942,175 +358,110 @@ svg { display: block; }
 body.inactive .water, body.inactive .buoy.houle { animation-play-state: paused; }
 body[data-mode="expert"] .water { display: none; }
 
-/* --- Le décor des ambiances (1.7) ----------------------------------------------
-   Chaque thème d'ambiance pose son décor derrière la houle, à l'accueil du
-   mode Simple : ancré en bas sur 760 px comme l'eau, il suit la marée
-   (--maree) quand le champ de bouées défile. L'eau reste — les bouées sont
-   calées sur elle (retardHoule) — mais chaque thème l'habille. L'Expert n'a
-   pas de décor : on y lit des listes et des journaux. */
+/* --- Le decor d'une ambiance (§15.7) -----------------------------------------
+   Derriere la houle, a l'accueil du mode Simple : ancre en bas sur 760 px
+   comme l'eau, il suit la maree (--maree) quand le champ de bouees defile.
+   Depuis la 2.0.1, tout decor — celui des ambiances de base compris — vient
+   d'un fichier et s'affiche dans un cadre isole, transparent, qui ne recoit
+   aucun clic. `color-scheme: normal` des deux cotes du cadre : s'ils
+   different, le navigateur peint un fond opaque derriere le document.
+   L'Expert n'a pas de decor : on y lit des listes et des journaux. */
 .ambiance { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; pointer-events: none; translate: 0 var(--maree, 0px); }
-.ambiance > div { display: none; position: absolute; inset: 0; }
-/* Le decor d'une ambiance installee (2.0, §15.7) : un cadre isole, transparent,
-   qui ne recoit aucun clic. `color-scheme: normal` des deux cotes du cadre :
-   s'ils different, le navigateur peint un fond opaque derriere le document. */
 .ambiance > .amb-perso { display: none; position: absolute; inset: 0; width: 100%; height: 100%;
   border: 0; background: transparent; color-scheme: normal; pointer-events: none; }
-:root[data-accent="perso"] .ambiance > .amb-perso { display: block; }
-:root[data-accent="synthwave"] .amb-synthwave,
-:root[data-accent^="aurore"] .amb-aurore,
-:root[data-accent="spatial"] .amb-spatial,
-:root[data-accent="plan"] .amb-plan { display: block; }
+:root[data-decor] .ambiance > .amb-perso { display: block; }
 body[data-mode="expert"] .ambiance { display: none; }
-body.inactive .ambiance *, body.inactive .ambiance *::before { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .ambiance *, .ambiance *::before { animation: none !important; } }
 
-/* Synthwave : un soleil rayé posé sur l'horizon, des montagnes, une grille de
-   néon qui défile vers soi. La ligne d'eau devient un trait de néon. */
-.sw-ciel { position: absolute; left: 0; right: 0; top: 0; height: 446px;
-  background: linear-gradient(transparent 35%, color-mix(in srgb, var(--acc) 26%, transparent)); }
-.sw-soleil { position: absolute; left: 50%; top: 236px; width: 230px; height: 230px; margin-left: -115px; border-radius: 50%;
-  background: linear-gradient(#FFE14D, #FF2B8A 78%);
-  -webkit-mask: linear-gradient(#000 0 0) top / 100% 48% no-repeat, repeating-linear-gradient(#000 0 9px, transparent 9px 15px) bottom / 100% 52% no-repeat;
-  mask: linear-gradient(#000 0 0) top / 100% 48% no-repeat, repeating-linear-gradient(#000 0 9px, transparent 9px 15px) bottom / 100% 52% no-repeat;
-  filter: drop-shadow(0 0 28px #FF2B8A); }
-.sw-montagnes { position: absolute; left: 0; width: 100%; top: 396px; height: 52px; }
-.sw-montagnes path { fill: color-mix(in srgb, var(--surface-3) 80%, #000); }
-.sw-sol-cadre { position: absolute; left: 0; right: 0; top: 446px; bottom: 0; perspective: 300px; perspective-origin: 50% 0; overflow: hidden;
-  background: color-mix(in srgb, var(--bg) 85%, #000); }
-.sw-sol { position: absolute; left: -60%; right: -60%; top: 0; height: 250px; transform-origin: 50% 0; transform: rotateX(72deg);
-  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--acc-2) 70%, transparent) 0 2px, transparent 2px 64px),
-                    repeating-linear-gradient(0deg, color-mix(in srgb, var(--acc-2) 70%, transparent) 0 2px, transparent 2px 36px);
-  animation: sw-sol 1.2s linear infinite; }
-@keyframes sw-sol { to { background-position: 0 0, 0 36px; } }
-:root[data-accent="synthwave"] .water.surface path:last-child { stroke: var(--acc-2); filter: drop-shadow(0 0 6px var(--acc-2)); opacity: .9; }
-:root[data-accent="synthwave"] #s1Titre { text-transform: uppercase; font-style: italic; letter-spacing: .02em;
+/* --- La forme d'une ambiance (2.0.1, §15.7) ----------------------------------------
+   L'allure de l'interface au-dela des couleurs, choisie par l'ambiance dans des
+   listes fermees (ambiance.rs, `FORMES`) et posee en `data-f-*` sur la racine.
+   Une ambiance n'ecrit jamais de CSS pour l'interface : elle choisit parmi ces
+   regles-ci. Sans ambiance, Plan (appliquerForme). Jusqu'a la 2.0.0, chaque
+   ambiance livree avait ses propres regles, ici. */
+
+/* La ligne d'eau. */
+:root[data-f-ligne-eau="trait"] .water.surface path:last-child { stroke: var(--acc); stroke-width: 1.5; opacity: .7; }
+:root[data-f-ligne-eau="neon"] .water.surface path:last-child { stroke: var(--acc-2); filter: drop-shadow(0 0 6px var(--acc-2)); opacity: .9; }
+:root[data-f-ligne-eau="pointilles"] .water.surface path:last-child { stroke-dasharray: 2 8; opacity: .8; }
+:root[data-f-ligne-eau="points"] .water.surface path:last-child { stroke: var(--rouage-a); stroke-dasharray: 1 6; opacity: .45; }
+
+/* Les titres : celui de l'accueil, ceux des bouees, la carte recommandee. */
+:root[data-f-titres="nets"] #s1Titre { font-weight: 650; letter-spacing: -1px; }
+:root[data-f-titres="neon"] #s1Titre { text-transform: uppercase; font-style: italic; letter-spacing: .02em;
   text-shadow: 0 0 12px color-mix(in srgb, var(--acc) 75%, transparent); }
-:root[data-accent="synthwave"] .buoy .bi { border-color: var(--acc-2); box-shadow: 0 0 14px color-mix(in srgb, var(--acc-2) 50%, transparent); }
-:root[data-accent="synthwave"] .buoy .blabel { border-color: color-mix(in srgb, var(--acc) 60%, transparent); }
-:root[data-accent="synthwave"] .buoy .bt { text-transform: uppercase; letter-spacing: .05em; font-style: italic; }
-:root[data-accent="synthwave"] .btn.primary { box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent); }
-/* Le libelle du champ passe devant le soleil : un halo du fond le detache. */
-:root[data-accent="synthwave"] .sect-champ { text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg); color: var(--text); }
+:root[data-f-titres="neon"] .buoy .bt { text-transform: uppercase; letter-spacing: .05em; font-style: italic; }
+/* Le libelle du champ passe devant le decor : un halo du fond le detache. */
+:root[data-f-titres="neon"] .sect-champ { text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg); color: var(--text); }
+:root[data-f-titres="espaces"] #s1Titre { text-transform: uppercase; font-weight: 300; letter-spacing: .14em; }
+:root[data-f-titres="espaces"] .buoy .bt { text-transform: uppercase; letter-spacing: .1em; font-size: 11.5px; }
+:root[data-f-titres="espaces"] .reco .rt { text-transform: uppercase; letter-spacing: .1em; font-size: 16px; font-weight: 650; }
+:root[data-f-titres="espaces"] .btn.primary.big { text-transform: uppercase; letter-spacing: .16em; font-size: 13.5px; }
+:root[data-f-titres="invite"] #s1Titre::before { content: '> '; color: var(--text-2); }
+:root[data-f-titres="invite"] #s1Titre::after { content: '_'; animation: curseur 1s steps(1) infinite; }
+@keyframes curseur { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { :root[data-f-titres="invite"] #s1Titre::after { animation: none; } }
 
-/* Spatial : une planete holographique en fil de fer qui tourne, posee sur
-   l'anneau d'un projecteur, des etoiles qui derivent, des trainees de lumiere.
-   Les bouees deviennent des balises de carte (losanges) ; capitales fines et
-   espacees, coins droits, equerres autour de la carte choisie. */
-.sp-etoiles { position: absolute; inset: 0;
-  background-image:
-    radial-gradient(1.6px 1.6px at 20px 30px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1px 1px at 140px 90px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1px 1px at 230px 170px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1.6px 1.6px at 60px 220px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1px 1px at 300px 40px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1px 1px at 190px 250px, var(--etoile) 50%, transparent 51%),
-    radial-gradient(1.2px 1.2px at 280px 140px, var(--etoile) 50%, transparent 51%);
-  background-size: 340px 260px; animation: sp-derive 140s linear infinite; }
-@keyframes sp-derive { to { background-position: -340px 0; } }
-.sp-trainee { position: absolute; left: 0; height: 1px; opacity: 0;
-  background: linear-gradient(90deg, transparent, var(--holo), transparent); animation: sp-trainee 7s ease-in infinite; }
-.sp-trainee.t1 { top: 120px; width: 180px; animation-delay: 1s; }
-.sp-trainee.t2 { top: 190px; width: 120px; animation-delay: 4.2s; }
-@keyframes sp-trainee { 0% { transform: translateX(-200px); opacity: 0; } 8% { opacity: .7; } 22%, 100% { transform: translateX(2400px); opacity: 0; } }
-.sp-holo { position: absolute; left: 50%; bottom: -260px; width: 560px; height: 560px; margin-left: -280px; }
-.sp-holo svg { width: 100%; height: 100%; overflow: visible; }
-.sp-contour { fill: color-mix(in srgb, var(--holo) 9%, transparent); stroke: var(--holo); stroke-width: 1.4; opacity: .85; }
-.sp-lat { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .4; }
-.sp-mer { fill: none; stroke: var(--holo); stroke-width: .8; opacity: .5; transform-box: fill-box; transform-origin: center;
-  animation: sp-tourne 14s linear infinite; }
-/* Un meridien qui tourne, c'est une ellipse dont la largeur suit un cosinus. */
-@keyframes sp-tourne { 0% { transform: scaleX(1); } 25% { transform: scaleX(0); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
-.sp-orbite { fill: none; stroke: var(--acc); stroke-width: 1; stroke-dasharray: 3 6; opacity: .7; }
-.sp-anneau { position: absolute; left: 50%; bottom: 8px; width: 760px; height: 70px; margin-left: -380px; border-radius: 50%;
-  border: 1.5px solid var(--holo); opacity: .45;
-  box-shadow: 0 0 30px color-mix(in srgb, var(--holo) 20%, transparent), inset 0 0 30px color-mix(in srgb, var(--holo) 20%, transparent); }
-:root[data-accent="spatial"] .water.surface path:last-child { stroke: var(--holo); stroke-dasharray: 1 6; opacity: .45; }
-:root[data-accent="spatial"] #s1Titre { text-transform: uppercase; font-weight: 300; letter-spacing: .14em; }
-:root[data-accent="spatial"] .buoy .bi { width: 44px; height: 44px; margin: 7px auto; border-radius: 3px; transform: rotate(45deg);
-  border: 1.5px solid var(--holo); box-shadow: 0 0 14px color-mix(in srgb, var(--holo) 25%, transparent); }
-:root[data-accent="spatial"] .buoy .bi svg { transform: rotate(-45deg); width: 20px; height: 20px; }
-:root[data-accent="spatial"] .buoy .blabel { border-radius: 2px; border-left: 2px solid var(--holo); }
-:root[data-accent="spatial"] .buoy .bt { text-transform: uppercase; letter-spacing: .1em; font-size: 11.5px; }
-:root[data-accent="spatial"] .reco { position: relative; border-radius: 3px; border-width: 1px; }
-:root[data-accent="spatial"] .reco .ri { border-radius: 2px; }
-:root[data-accent="spatial"] .reco .rt { text-transform: uppercase; letter-spacing: .1em; font-size: 16px; font-weight: 650; }
-:root[data-accent="spatial"] .reco[aria-current="true"]::before,
-:root[data-accent="spatial"] .reco[aria-current="true"]::after {
+/* Les bouees. */
+:root[data-f-bouees="arrondies"] .buoy .bi { border-radius: 12px; border-width: 1px; }
+:root[data-f-bouees="arrondies"] .buoy .blabel { border-radius: 8px; }
+:root[data-f-bouees="neon"] .buoy .bi { border-color: var(--acc-2); box-shadow: 0 0 14px color-mix(in srgb, var(--acc-2) 50%, transparent); }
+:root[data-f-bouees="neon"] .buoy .blabel { border-color: color-mix(in srgb, var(--acc) 60%, transparent); }
+/* Des balises de carte : des losanges, d'un trait froid (`rouage-a`). */
+:root[data-f-bouees="losanges"] .buoy .bi { width: 44px; height: 44px; margin: 7px auto; border-radius: 3px; transform: rotate(45deg);
+  border: 1.5px solid var(--rouage-a); box-shadow: 0 0 14px color-mix(in srgb, var(--rouage-a) 25%, transparent); }
+:root[data-f-bouees="losanges"] .buoy .bi svg { transform: rotate(-45deg); width: 20px; height: 20px; }
+:root[data-f-bouees="losanges"] .buoy .blabel { border-radius: 2px; border-left: 2px solid var(--rouage-a); }
+:root[data-f-bouees="pointillees"] .buoy .bi { border-radius: 0; border-style: dashed; box-shadow: none; }
+/* En verre depoli : bouees, etiquettes et carte recommandee. */
+:root[data-f-bouees="verre"] .buoy .bi, :root[data-f-bouees="verre"] .buoy .blabel, :root[data-f-bouees="verre"] .reco {
+  background: color-mix(in srgb, var(--surface) 62%, transparent); backdrop-filter: blur(10px) saturate(1.2);
+}
+
+/* Les coins : cartes, boutons, carte recommandee, pastilles. */
+:root[data-f-coins="serres"] .reco { border-radius: 10px; border-width: 1px; }
+:root[data-f-coins="serres"] .reco[aria-current="true"] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--acc) 14%, transparent); }
+:root[data-f-coins="serres"] .reco .ri { border-radius: 8px; background: var(--acc); }
+:root[data-f-coins="serres"] .btn.primary.big { border-radius: 10px; }
+:root[data-f-coins="serres"] .card, :root[data-f-coins="serres"] .conf, :root[data-f-coins="serres"] .opt,
+:root[data-f-coins="serres"] .btn, :root[data-f-coins="serres"] .card-icon { border-radius: 8px; }
+:root[data-f-coins="serres"] .chip { border-radius: 4px; }
+:root[data-f-coins="droits"] .reco { position: relative; border-radius: 3px; border-width: 1px; }
+:root[data-f-coins="droits"] .reco .ri { border-radius: 2px; }
+:root[data-f-coins="droits"] .btn.primary.big { border-radius: 3px; }
+:root[data-f-coins="aucun"] .buoy .blabel, :root[data-f-coins="aucun"] .reco, :root[data-f-coins="aucun"] .reco .ri { border-radius: 0; }
+
+/* Des equerres autour de la carte choisie. */
+:root[data-f-equerres] .reco { position: relative; }
+:root[data-f-equerres] .reco[aria-current="true"]::before,
+:root[data-f-equerres] .reco[aria-current="true"]::after {
   content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--acc); pointer-events: none;
 }
-:root[data-accent="spatial"] .reco[aria-current="true"]::before { top: -7px; left: -7px; border-right: none; border-bottom: none; }
-:root[data-accent="spatial"] .reco[aria-current="true"]::after { bottom: -7px; right: -7px; border-left: none; border-top: none; }
-:root[data-accent="spatial"] .btn.primary.big { border-radius: 3px; text-transform: uppercase; letter-spacing: .16em; font-size: 13.5px;
-  box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 40%, transparent); }
+:root[data-f-equerres] .reco[aria-current="true"]::before { top: -7px; left: -7px; border-right: none; border-bottom: none; }
+:root[data-f-equerres] .reco[aria-current="true"]::after { bottom: -7px; right: -7px; border-left: none; border-top: none; }
 
-/* Plan : une grille fine qui s'estompe vers les bords, deux roues tracees au
-   trait qui s'engrenent, leurs cotes, et la ligne d'eau devenue une courbe
-   d'epure. Les bouees sont des cartouches a coins serres. */
-.pl-grille { position: absolute; inset: 0;
-  background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px);
-  background-size: 32px 32px; background-position: center bottom;
-  -webkit-mask: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 80%); mask: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 80%); }
-.pl-roue { position: absolute; fill: none; stroke: var(--acc); opacity: .28; }
-.pl-roue.g { left: calc(50% - 330px); top: 150px; width: 420px; height: 420px; animation: pl-tourne 50s linear infinite; }
-.pl-roue.p { left: calc(50% + 60px); top: 280px; width: 240px; height: 240px; animation: pl-tourne 30s linear infinite reverse; }
-@keyframes pl-tourne { to { transform: rotate(360deg); } }
-.pl-cote { position: absolute; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--acc-on); opacity: .75; }
-.pl-cote::before { content: ''; position: absolute; top: 50%; right: calc(100% + 6px); width: 46px; border-top: 1px dashed var(--acc); }
-.pl-cote.g { left: calc(50% + 120px); top: 560px; }
-.pl-cote.p { left: calc(50% + 310px); top: 410px; }
-:root[data-accent="plan"] .water.surface path:last-child { stroke: var(--acc); stroke-width: 1.5; opacity: .7; }
-:root[data-accent="plan"] #s1Titre { font-weight: 650; letter-spacing: -1px; }
-:root[data-accent="plan"] .reco { border-radius: 10px; border-width: 1px; }
-:root[data-accent="plan"] .reco[aria-current="true"] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--acc) 14%, transparent); }
-:root[data-accent="plan"] .reco .ri { border-radius: 8px; background: var(--acc); }
-:root[data-accent="plan"] .buoy .bi { border-radius: 12px; border-width: 1px; }
-:root[data-accent="plan"] .buoy .blabel { border-radius: 8px; }
-:root[data-accent="plan"] .buoy .bd { font-family: var(--mono); font-size: 10.5px; }
-:root[data-accent="plan"] .btn.primary.big { border-radius: 10px; }
-/* Plan dans l'Expert (2.0) : la meme grammaire que l'accueil — grille fine
-   sous le detail, filets d'un pixel, coins serres, chiffres en chasse fixe,
-   selection marquee d'un trait. Pas de roues : on y lit des listes. */
-:root[data-accent="plan"] body[data-mode="expert"] .detail {
-  background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px);
+/* Une lueur sous les boutons principaux. */
+:root[data-f-lueur] .btn.primary { box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent); }
+
+/* Les chiffres en chasse fixe : comptes des bouees, numeros, chemins. */
+:root[data-f-chiffres="chasse-fixe"] .buoy .bd { font-family: var(--mono); font-size: 10.5px; }
+:root[data-f-chiffres="chasse-fixe"] .row.script .rn, :root[data-f-chiffres="chasse-fixe"] .card-path,
+:root[data-f-chiffres="chasse-fixe"] .conf-compte { font-family: var(--mono); }
+
+/* L'Expert en plan : une grille fine sous le detail, la selection d'un trait. */
+:root[data-f-expert="plan"] body[data-mode="expert"] .detail {
+  background-image: linear-gradient(var(--surface-3) 1px, transparent 1px), linear-gradient(90deg, var(--surface-3) 1px, transparent 1px);
   background-size: 32px 32px; background-attachment: local;
 }
-:root[data-accent="plan"] .card, :root[data-accent="plan"] .conf, :root[data-accent="plan"] .opt { border-radius: 8px; }
-:root[data-accent="plan"] .btn { border-radius: 8px; }
-:root[data-accent="plan"] .card-icon { border-radius: 8px; }
-:root[data-accent="plan"] .row.script .rn, :root[data-accent="plan"] .card-path, :root[data-accent="plan"] .conf-compte { font-family: var(--mono); }
-:root[data-accent="plan"] .row[aria-current="true"] { box-shadow: inset 2px 0 0 var(--acc); border-radius: 4px; }
-:root[data-accent="plan"] .lots-onglets [aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--acc); border-radius: 4px 4px 0 0; }
-:root[data-accent="plan"] .chip { border-radius: 4px; }
+:root[data-f-expert="plan"] .row[aria-current="true"] { box-shadow: inset 2px 0 0 var(--acc); border-radius: 4px; }
+:root[data-f-expert="plan"] .lots-onglets [aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--acc); border-radius: 4px 4px 0 0; }
 
-/* Terminal : tout en chasse fixe (jetons), lignes de balayage et lueur du
-   phosphore sur tout l'écran, une ligne d'eau en pointillés, un curseur. */
-/* La chasse fixe est plus large : un rien de resserrement garde les libelles entiers. */
-:root[data-accent^="terminal"] body { text-shadow: 0 0 3px color-mix(in srgb, currentColor 35%, transparent); letter-spacing: -.02em; }
-:root[data-accent^="terminal"] body::after {
+/* Le balayage : la lueur du phosphore sur les textes, des lignes de balayage
+   sur tout l'ecran. La chasse fixe est plus large : un rien de resserrement
+   garde les libelles entiers. */
+:root[data-f-balayage] body { text-shadow: 0 0 3px color-mix(in srgb, currentColor 35%, transparent); letter-spacing: -.02em; }
+:root[data-f-balayage] body::after {
   content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 3px);
-}
-:root[data-accent^="terminal"] .water.surface path:last-child { stroke-dasharray: 2 8; opacity: .8; }
-:root[data-accent^="terminal"] #s1Titre::before { content: '> '; color: var(--text-2); }
-:root[data-accent^="terminal"] #s1Titre::after { content: '_'; animation: curseur 1s steps(1) infinite; }
-@keyframes curseur { 50% { opacity: 0; } }
-:root[data-accent^="terminal"] .buoy .bi { border-radius: 0; border-style: dashed; box-shadow: none; }
-:root[data-accent^="terminal"] .buoy .blabel, :root[data-accent^="terminal"] .reco, :root[data-accent^="terminal"] .reco .ri { border-radius: 0; }
-@media (prefers-reduced-motion: reduce) { :root[data-accent^="terminal"] #s1Titre::after { animation: none; } }
-
-/* Aurore : des voiles de lumière au-dessus de collines, un lac sombre ; bouées
-   et carte en verre dépoli. */
-.au-voile { position: absolute; height: 150px; border-radius: 50%; filter: blur(28px); opacity: .42; mix-blend-mode: screen;
-  animation: au-ondule 14s ease-in-out infinite alternate; }
-.au-voile.v1 { left: -10%; width: 70%; top: 70px; background: linear-gradient(90deg, transparent, var(--acc), transparent); transform: skewY(-8deg); }
-.au-voile.v2 { left: 30%; width: 75%; top: 30px; background: linear-gradient(90deg, transparent, var(--acc-2), transparent); transform: skewY(6deg); animation-duration: 18s; }
-.au-voile.v3 { left: 8%; width: 60%; top: 170px; background: linear-gradient(90deg, transparent, var(--serie-3), transparent); transform: skewY(-3deg); animation-duration: 22s; opacity: .28; }
-@keyframes au-ondule { from { translate: -40px 0; scale: 1 .8; } to { translate: 40px 12px; scale: 1.1 1.15; } }
-.au-collines { position: absolute; left: 0; width: 100%; top: 330px; height: 140px; }
-.au-collines path { fill: color-mix(in srgb, var(--bg) 55%, #000); }
-.au-collines path + path { fill: color-mix(in srgb, var(--bg) 30%, #000); }
-:root[data-accent^="aurore"] .buoy .bi, :root[data-accent^="aurore"] .buoy .blabel, :root[data-accent^="aurore"] .reco {
-  background: color-mix(in srgb, var(--surface) 62%, transparent); backdrop-filter: blur(10px) saturate(1.2);
 }
 
 /* --- Utilitaires ----------------------------------------------------------- */
@@ -3109,20 +2460,8 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .accent-pastille::before { content: ''; width: 24px; height: 24px; border-radius: 50%; background: var(--pal); flex-shrink: 0; }
 .accent-pastille:hover { border-color: var(--text-3); color: var(--text); }
 .accent-pastille[aria-checked="true"] { border-color: var(--acc); color: var(--text); box-shadow: 0 0 0 1px var(--acc); }
-.accent-pastille[data-set-accent="plan"]            { --pal: linear-gradient(135deg, #0B0F16 0 48%, #FD7D26 48% 56%, #F6F4EF 56%); }
-.accent-pastille[data-set-accent="ardente"]         { --pal: linear-gradient(135deg, #FEC923, #FD5632); }
-.accent-pastille[data-set-accent="crepuscule"]      { --pal: linear-gradient(135deg, #FF7A45, #DC1178); }
-.accent-pastille[data-set-accent="synthwave"]       { --pal: linear-gradient(135deg, #FF2BD6, #00E5FF); }
-.accent-pastille[data-set-accent="spatial"]         { --pal: radial-gradient(circle at 40% 40%, #5FE3FF 0 22%, #0E1622 60%, #FF7A1F 61% 70%, #0E1622 71%); }
-.accent-pastille[data-set-accent="terminal-vert"]   { --pal: radial-gradient(circle, #6CFF94 0 35%, #020A04 75%); }
-.accent-pastille[data-set-accent="terminal-ambre"]  { --pal: radial-gradient(circle, #FFB000 0 35%, #0C0700 75%); }
-.accent-pastille[data-set-accent="aurore-boreale"]  { --pal: linear-gradient(135deg, #3CFFB4, #38C6FF 55%, #06101E); }
-.accent-pastille[data-set-accent="aurore-australe"] { --pal: linear-gradient(135deg, #FF6FB5, #B48CFF 55%, #0E0820); }
-/* Une ambiance installee (§15.7) : sa pastille est tiree de ses couleurs,
-   posee par rendreAmbiancesPerso. Un liseré pointille la distingue des
-   ambiances livrees. */
-.accent-pastille.perso { border-style: dashed; }
-.accent-pastille.perso[aria-checked="true"] { border-style: solid; }
+/* La pastille d'une ambiance est tiree de ses couleurs (--pal), posee par
+   poserPastilles (2.0.1). */
 
 /* Avance, 5.7 : l'historique sous un intertitre, pas une carte de plus — la
    liste qui suit est son contenu (2.0.1). */

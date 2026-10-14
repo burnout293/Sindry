@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "id": "terminal-vert",
+  "nom": {
+    "fr": "Terminal vert",
+    "en": "Green terminal"
+  },
+  "description": {
+    "fr": "Phosphore vert, lignes de balayage, tout en chasse fixe.",
+    "en": "Green phosphor, scanlines, all in monospace."
+  },
+  "auteur": "Sindry",
+  "version": "1.0",
+  "police": "chasse-fixe",
+  "sombre": {
+    "bg": "#020A04",
+    "surface": "#06140A",
+    "surface-2": "#0B1F10",
+    "surface-3": "#123018",
+    "border": "#164A24",
+    "border-2": "#1F6A33",
+    "text": "#6CFF94",
+    "text-2": "#4CCF72",
+    "text-3": "#3BB15E",
+    "ink": "#021006",
+    "ok": "#9DFFB9",
+    "warn": "#FFD84D",
+    "err": "#FF7070",
+    "ok-s": "#0B2A14",
+    "warn-s": "#2A2408",
+    "err-s": "#2E0E0E",
+    "acc": "#6CFF94",
+    "acc-2": "#2EE86A",
+    "acc-on": "#8DFFAD",
+    "surface-soft": "#041007",
+    "acc-soft": "#0E2A16",
+    "knob-off": "#2E6B40",
+    "serie-1": "#6CFF94",
+    "serie-2": "#2EC4B6",
+    "serie-3": "#FFD84D",
+    "serie-4": "#B8FF6C",
+    "serie-5": "#4DA3FF",
+    "serie-6": "#FF9F5A",
+    "rouage-a": "#2EE86A",
+    "rouage-b": "#6CFF94",
+    "eau-a": "#2EE86A",
+    "eau-b": "#0B3D1A",
+    "term-bg": "#000700",
+    "term-text": "#8DFFAD",
+    "term-dim": "#45AE66",
+    "eau-fond": 0.0,
+    "eau-surface": 0.0
+  },
+  "forme": {
+    "bouees": "pointillees",
+    "titres": "invite",
+    "coins": "aucun",
+    "ligne_eau": "pointilles",
+    "balayage": true
+  }
+}

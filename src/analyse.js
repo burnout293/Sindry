@@ -34,7 +34,10 @@ const SERIES_EN_PLUS = ['#2DD4BF', '#A3E635', '#F472B6', '#60A5FA', '#94A3B8', '
 let paletteMemo = { cle: null, couleurs: [] };
 function palette() {
   const r = document.documentElement;
-  const cle = `${r.dataset.accent || ''}|${r.dataset.theme || ''}|${matchMedia('(prefers-color-scheme: dark)').matches}`;
+  // Une ambiance pose ses couleurs en ligne sur la racine (2.0.1) : la cle les
+  // lit la, sans recalcul de style — un changement d'ambiance ou de mode la
+  // change.
+  const cle = `${r.style.getPropertyValue('--serie-1')}|${r.style.getPropertyValue('--serie-2')}|${r.dataset.theme || ''}|${matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (paletteMemo.cle !== cle) {
     const cs = getComputedStyle(r);
     const lues = [1, 2, 3, 4, 5, 6].map((i) => cs.getPropertyValue(`--serie-${i}`).trim()).filter((c) => /^#[0-9a-f]{6}$/i.test(c));

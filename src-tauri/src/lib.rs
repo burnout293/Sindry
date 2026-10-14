@@ -1355,13 +1355,10 @@ fn set_ui_scale(app: tauri::AppHandle, value: f32) -> Result<Settings, String> {
 /// Couleur d'accent de l'interface (§15.4, reglage 1.8).
 #[tauri::command]
 fn set_accent(app: tauri::AppHandle, accent: String) -> Result<Settings, String> {
-    // Une ambiance livree, ou une ambiance installee (`perso:<id>`, §15.7) :
-    // son fichier peut disparaitre ensuite, l'interface retombe alors sur Plan.
-    let perso = accent
-        .strip_prefix("perso:")
-        .is_some_and(ambiance::id_valide);
-    if !perso && !settings::ACCENTS.contains(&accent.as_str()) {
-        return Err(format!("couleur inconnue : {accent}"));
+    // L'id d'une ambiance (§15.7) : son fichier peut disparaitre ensuite,
+    // l'interface retombe alors sur Plan.
+    if !ambiance::id_valide(&accent) {
+        return Err(format!("ambiance inconnue : {accent}"));
     }
     with_settings(&app, |s| {
         s.accent = accent;
@@ -1385,6 +1382,30 @@ fn import_ambiance(
     remplacer: bool,
 ) -> Result<ambiance::Import, String> {
     ambiance::importer_dans(&ambiance::dossier(&app)?, &contenu, remplacer)
+}
+
+/// Remet les ambiances de base qui manquent (Plan, Foret de nuit, Aurore
+/// australe). Rend leurs ids.
+#[tauri::command]
+fn reinstall_base_ambiances(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    ambiance::installer_de_base(&ambiance::dossier(&app)?)
+}
+
+/// Le passage aux ambiances en fichiers (2.0.1), une fois par compte : les
+/// ambiances de base, et celle que l'utilisateur avait choisie si elle a quitte
+/// Sindry. L'interface et la ligne de commande le font au demarrage.
+fn preparer_ambiances<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+    let s = settings::load(app)?;
+    if s.ambiances_fichiers {
+        return Ok(());
+    }
+    let id = ambiance::passer_aux_fichiers(&ambiance::dossier(app)?, &s.accent)?;
+    with_settings(app, |s| {
+        s.accent = id;
+        s.ambiances_fichiers = true;
+        Ok(())
+    })
+    .map(|_| ())
 }
 
 /// Retire une ambiance installee : son fichier est efface.
@@ -1654,6 +1675,9 @@ pub fn run() {
             if let Some(message) = preparer_enfants(app.handle()) {
                 systeme::signaler(message);
             }
+            if let Err(e) = preparer_ambiances(app.handle()) {
+                systeme::signaler(format!("Ambiances de base non installees : {e}"));
+            }
             // La fenetre n'est pas creee d'office (`create: false`) : la ligne
             // de commande construit la meme application, sans elle.
             let fenetre = app
@@ -1679,6 +1703,7 @@ pub fn run() {
             list_ambiances,
             import_ambiance,
             remove_ambiance,
+            reinstall_base_ambiances,
             reveal_ambiance,
             open_ambiance_guide,
             disk_space,

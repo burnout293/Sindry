@@ -1,5 +1,4 @@
 {
-  "_commentaire": "Exemple du format des ambiances de Sindry : docs/FORMAT_AMBIANCE.md. Copiez-le, changez l'id et le nom, puis les couleurs.",
   "format": 1,
   "id": "foret-de-nuit",
   "nom": {

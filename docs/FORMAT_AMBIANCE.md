@@ -1,24 +1,26 @@
 # Créer une ambiance Sindry
 
-Une ambiance habille Sindry : ses couleurs, en clair, en sombre ou les deux, et un décor
-derrière la houle de l'accueil. Elle tient dans **un seul fichier** `.sindry-ambiance`, qui
+Une ambiance habille Sindry : ses couleurs, en clair, en sombre ou les deux, l'allure de
+l'interface (sa forme), et un décor derrière la houle de l'accueil. Elle tient dans **un seul fichier** `.sindry-ambiance`, qui
 se partage comme une image : on l'envoie, on l'importe, c'est fait.
 
 Tout ce qui est décrit ici est **vérifié par Sindry** à l'import, à chaque lecture du dossier
 des ambiances, et par la ligne de commande. Un fichier qui ne respecte pas une règle est
 refusé avec **la liste complète** de ce qui ne va pas — vous corrigez tout en une fois.
 
-Référence : `docs/SPECIFICATION.md` §15.7. Exemple complet, vérifié à chaque
-compilation : [`docs/ambiances/foret-de-nuit.sindry-ambiance`](ambiances/foret-de-nuit.sindry-ambiance).
+Référence : `docs/SPECIFICATION.md` §15.7. **Exemples complets** : les ambiances que Sindry
+livre sont elles-mêmes des fichiers de ce format, vérifiés à chaque compilation —
+[`ambiances/base/`](../ambiances/base) (Plan, Forêt de nuit, Aurore australe) et
+[`ambiances/depot/`](../ambiances/depot) (Braise, Synthwave, Spatial, Terminal, Aurore
+boréale).
 
 ---
 
 ## En deux minutes
 
-1. **Partez d'un fichier qui marche.** Copiez l'exemple ci-dessus, ou, dans Sindry,
-   choisissez une ambiance livrée (Réglages → 2.3 « Ambiance ») et cliquez **Exporter** :
-   une copie modifiable de ses couleurs apparaît dans le dossier des ambiances, et
-   l'Explorateur s'ouvre dessus.
+1. **Partez d'un fichier qui marche.** Copiez une ambiance des exemples ci-dessus, ou, dans
+   Sindry, choisissez-en une (Réglages → 2 « Apparence ») et cliquez **Exporter** :
+   l'Explorateur s'ouvre sur son fichier. Copiez-le avant de le modifier.
 2. Changez `id` (minuscules, chiffres, tirets) et `nom`.
 3. Changez les couleurs, ajoutez un décor si vous voulez.
 4. **Vérifiez** : `sindry ambiance verifier mon-ambiance.sindry-ambiance`, ou importez-la —
@@ -53,12 +55,13 @@ refusée — une faute de frappe se voit, avec la bonne clé suggérée.
 | Clé | | Ce qu'elle contient |
 |---|---|---|
 | `format` | obligatoire | `1` |
-| `id` | obligatoire | Minuscules, chiffres et tirets, 40 caractères au plus. C'est lui qui identifie l'ambiance : un fichier du même `id` la **remplace** (Sindry demande avant). Les noms des ambiances livrées sont réservés. |
+| `id` | obligatoire | Minuscules, chiffres et tirets, 40 caractères au plus. C'est lui qui identifie l'ambiance : un fichier du même `id` la **remplace** (Sindry demande avant) — même une ambiance de base. |
 | `nom` | obligatoire | 40 caractères au plus. Un texte, ou `{ "fr": …, "en": … }` ; une seule langue sert pour les deux. |
 | `description` | facultatif | 200 caractères au plus, même forme que `nom`. |
 | `auteur` | facultatif | 60 caractères au plus. |
 | `version` | facultatif | 20 caractères au plus. Montrée quand une ambiance en remplace une autre. |
 | `police` | facultatif | `normale` (par défaut) ou `chasse-fixe` : toute l'interface dans la police du journal, comme l'ambiance Terminal. |
+| `forme` | facultatif | L'allure de l'interface (plus bas). |
 | `clair`, `sombre` | **l'un au moins** | Les couleurs de chaque mode (ci-dessous). Avec un seul des deux, l'ambiance n'existe que dans ce mode : le bouton clair / sombre le dit et ne fait rien. |
 | `decor` | facultatif | Le décor (plus bas). |
 
@@ -135,6 +138,34 @@ avertissement à quelqu'un qui s'apprête à lancer une action en administrateur
 
 ---
 
+## La forme
+
+Au-delà des couleurs, une ambiance peut changer l'allure de l'interface. Elle ne le fait
+**jamais en écrivant du CSS pour l'interface** — un fichier venu de n'importe où pourrait
+masquer un avertissement ou maquiller un bouton —, mais en choisissant, réglage par
+réglage, dans des **listes fermées** ; Sindry traduit ces choix en règles qu'il écrit
+lui-même. Tout est facultatif : ce qui n'est pas dit garde la première valeur.
+
+```json
+"forme": { "bouees": "losanges", "titres": "espaces", "coins": "droits", "ligne_eau": "points", "equerres": true, "lueur": true }
+```
+
+| Réglage | Valeurs | |
+|---|---|---|
+| `bouees` | `rondes`, `arrondies`, `losanges`, `neon`, `pointillees`, `verre` | Les bouées de l'accueil et leurs étiquettes : cartouches (Plan), balises de carte d'un trait froid — `rouage-a` — (Spatial), néon (Synthwave), au trait pointillé (Terminal), verre dépoli (Aurore) |
+| `titres` | `normaux`, `nets`, `neon`, `espaces`, `invite` | Le titre de l'accueil, ceux des bouées, la carte recommandée : serré et gras, en italique lumineux, en capitales fines et espacées, en invite de commande avec un curseur |
+| `coins` | `doux`, `serres`, `droits`, `aucun` | Les arrondis des cartes, boutons et pastilles |
+| `ligne_eau` | `vague`, `trait`, `neon`, `pointilles`, `points` | La ligne qui court sur la houle |
+| `chiffres` | `normaux`, `chasse-fixe` | Les comptes des bouées, numéros et chemins, dans la police du journal |
+| `expert` | `normal`, `plan` | L'Expert sur une grille fine (couleur `surface-3`), la sélection d'un trait |
+| `equerres` | `true`, `false` | Des équerres autour de la carte choisie |
+| `lueur` | `true`, `false` | Une lueur d'accent sous les boutons principaux |
+| `balayage` | `true`, `false` | Des lignes de balayage sur tout l'écran et la lueur du phosphore sur les textes |
+
+Avec `"police": "chasse-fixe"`, toute l'interface passe dans la police du journal.
+
+---
+
 ## Le décor
 
 ```json
@@ -147,8 +178,7 @@ avertissement à quelqu'un qui s'apprête à lancer une action en administrateur
 - **`balisage`** : du SVG ou du HTML — formes, dégradés, images embarquées, texte.
 - **`css`** : sa feuille de style. Les animations CSS sont permises.
 
-**Où il s'affiche.** Là où s'affichent les décors des ambiances livrées : à l'accueil du mode
-Simple, **derrière la houle et les bouées**, sur toute la largeur de la fenêtre et 760 px de
+**Où il s'affiche.** À l'accueil du mode Simple, **derrière la houle et les bouées**, sur toute la largeur de la fenêtre et 760 px de
 haut, ancré en bas. Il suit la marée quand le champ de bouées défile. Le mode Expert n'a pas
 de décor : on y lit des listes et des journaux.
 
@@ -195,17 +225,19 @@ fichier `.sindry-ambiance` dans ce dossier suffit : il apparaît dans le réglag
 prochaine ouverture des réglages. Un fichier refusé n'empêche pas les autres : le réglage
 liste ceux qu'il ignore, et pourquoi.
 
-Dans **Réglages → 2 « Apparence »** :
+Dans **Réglages → 2 « Apparence »**, sous les ambiances (2.4) :
 
-- **Importer…** — choisit un fichier, le vérifie, l'installe. Une ambiance du même `id`
-  existe déjà ? Sindry montre les deux versions et demande avant de remplacer.
-- **Exporter** — pour une ambiance installée, l'Explorateur s'ouvre sur son fichier : c'est
-  lui qu'on partage. Pour une ambiance livrée, une copie de ses couleurs (`<nom>-copie`)
-  est créée dans le dossier, prête à modifier ; son décor fait partie de Sindry et ne
-  s'exporte pas.
+- **Importer…** — choisit un fichier, le vérifie, l'installe et le choisit. Une ambiance du
+  même `id` existe déjà ? Sindry montre les deux versions et demande avant de remplacer.
+- **Exporter** — l'Explorateur s'ouvre sur le fichier de l'ambiance choisie : c'est lui
+  qu'on partage, décor compris.
 - **Retirer** — efface le fichier de l'ambiance choisie, après confirmation. Sindry revient
   à Plan.
 - **Ouvrir le dossier**.
+- **Réinstaller les ambiances de base** — remet Plan, Forêt de nuit et Aurore australe, si
+  elles manquent. Une ambiance de base retirée ne revient que sur demande.
+
+Sans aucune ambiance installée, Sindry garde l'allure de Plan, sans décor.
 
 Une ambiance n'a aucun pouvoir sur le PC : elle ne s'exécute pas, et Sindry ne l'approuve
 donc pas comme un script. Le dossier est inscriptible sans élévation ; un programme qui y
@@ -222,9 +254,9 @@ déposerait un fichier n'obtiendrait qu'un décor, isolé comme les autres.
 | `CLE_INCONNUE` | Une clé que le format ne connaît pas (et qui ne commence pas par `_`) — suggestion si proche |
 | `FORMAT_INCONNU` | `format` absent, ou autre que `1` |
 | `ID_INVALIDE` | `id` absent, ou hors minuscules, chiffres et tirets, ou plus de 40 caractères |
-| `ID_RESERVE` | `id` d'une ambiance livrée avec Sindry |
 | `TEXTE_INVALIDE` | `nom` absent ou vide ; un texte trop long, ou qui contient un caractère de contrôle |
 | `POLICE_INCONNUE` | `police` hors `normale` et `chasse-fixe` |
+| `FORME_INCONNUE` | Un réglage de `forme` hors de sa liste, un interrupteur qui n'est pas `true` ou `false`, ou `forme` qui n'est pas un objet |
 | `MODE_ABSENT` | Ni `clair` ni `sombre` |
 | `MODE_INVALIDE` | `clair` ou `sombre` n'est pas un objet |
 | `JETON_MANQUANT` | Une couleur ou une opacité manque dans un mode |
