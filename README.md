@@ -85,6 +85,28 @@ doit rester :
 
 ---
 
+## En ligne de commande
+
+Tout ce que fait Sindry se fait aussi depuis une console, avec `sindry.com`, installé à côté
+de `sindry.exe` :
+
+```powershell
+sindry scripts                       # les actions installées
+sindry lancer lot:cleaning --simuler # un lot, en simulation
+sindry analyser <id> --json          # ce qu'une action ferait, en JSON
+```
+
+Mêmes contrôles que l'interface — approbation, emplacements protégés, simulation —, sortie
+JSON, codes de sortie stables. Et l'installation sans un clic, avec ses options :
+
+```powershell
+.\Sindry_2.0.0_x64-setup.exe /S /LANG=en /SANSBIENVENUE /PATH
+```
+
+Le détail : [`docs/LIGNE_DE_COMMANDE.md`](docs/LIGNE_DE_COMMANDE.md).
+
+---
+
 ## La simulation
 
 Un script **simulé** montre ce qu'il ferait, sans rien modifier. Chaque script se règle

@@ -513,6 +513,202 @@ impl Memoire {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Ce que Sindry coche d'office (2.0, ligne de commande)
+// ---------------------------------------------------------------------------
+
+/// La selection d'office d'une analyse : ce que l'interface coche avant que
+/// l'utilisateur ne touche a rien, et ce qui repartira vers le script.
+///
+/// **Le meme calcul que `selection`, `configAnalyse` et `aFaire` dans
+/// `src/analyse.js`** — la ligne de commande lance ce que le mode Simple
+/// lancerait sans qu'on decoche rien. Les deux sont tenus d'accord par
+/// `tools/selection-cas.json` : `tools/verifier-selection.mjs` y passe le
+/// JavaScript, le test `la_selection_d_office_est_celle_de_l_interface` le Rust.
+#[derive(Debug, Clone, Default, Serialize, PartialEq)]
+pub struct SelectionOffice {
+    /// Les valeurs a poser dans `SINDRY_CONFIG`, en plus des reglages figes.
+    pub config: BTreeMap<String, serde_json::Value>,
+    /// Quelque chose est-il coche ? Sinon l'action n'est pas lancee : elle ne
+    /// ferait que s'inscrire « faite » dans l'historique.
+    pub a_faire: bool,
+}
+
+/// Un champ « vrai » au sens de l'interface : present et non vide (`locked=open`).
+fn present(champs: &BTreeMap<String, String>, cle: &str) -> bool {
+    champs.get(cle).is_some_and(|v| !v.is_empty())
+}
+
+fn vaut(champs: &BTreeMap<String, String>, cle: &str, valeur: &str) -> bool {
+    champs.get(cle).is_some_and(|v| v == valeur)
+}
+
+fn positif(champs: &BTreeMap<String, String>, cle: &str) -> bool {
+    champs
+        .get(cle)
+        .and_then(|v| v.trim().parse::<f64>().ok())
+        .is_some_and(|n| n > 0.0)
+}
+
+/// L'avis du script, sinon la regle de Sindry : ce qui pese ou est a faire.
+fn coche(c: &BTreeMap<String, String>) -> bool {
+    match c.get("checked") {
+        Some(v) => v == "true",
+        None => {
+            vaut(c, "state", "todo")
+                || (!vaut(c, "state", "ok") && (positif(c, "size") || positif(c, "count")))
+        }
+    }
+}
+
+/// Un element « A verifier » (`confidence=low`) n'est jamais coche d'office.
+fn coche_element(e: &BTreeMap<String, String>) -> bool {
+    let verrou = present(e, "locked");
+    match e.get("checked") {
+        Some(v) => v == "true" && !verrou,
+        None => !verrou && !vaut(e, "state", "ok") && !vaut(e, "confidence", "low"),
+    }
+}
+
+pub fn selection_office(meta: &Script, analyse: &Analyse) -> SelectionOffice {
+    let mut sel = SelectionOffice::default();
+    for d in meta.options.iter().filter(|o| !o.scan) {
+        let k = d.key.as_str();
+        // Comme le modele de l'interface : le dernier `[FIND]` sans choix
+        // l'emporte ; un choix garde sa premiere place, ses champs les derniers.
+        let mut find: Option<&BTreeMap<String, String>> = None;
+        let mut finds: Vec<(&str, &BTreeMap<String, String>)> = Vec::new();
+        for f in analyse.finds.iter().filter(|f| f.option == k) {
+            if f.choice.is_empty() {
+                find = Some(&f.fields);
+            } else if let Some(place) = finds.iter_mut().find(|(c, _)| *c == f.choice) {
+                place.1 = &f.fields;
+            } else {
+                finds.push((f.choice.as_str(), &f.fields));
+            }
+        }
+        // L'ordre d'un objet JavaScript : les cles entieres (« 16 ») d'abord,
+        // croissantes, puis les autres dans l'ordre d'arrivee. C'est celui
+        // de `Object.entries(o.finds)` dans l'interface.
+        let entier = |c: &str| {
+            (c == "0" || (!c.starts_with('0') && !c.is_empty()))
+                && c.bytes().all(|b| b.is_ascii_digit())
+                && c.parse::<u32>().is_ok_and(|n| n < u32::MAX)
+        };
+        finds.sort_by_key(|(c, _)| {
+            if entier(c) {
+                (0, c.parse::<u32>().unwrap_or(0))
+            } else {
+                (1, 0)
+            }
+        });
+        let elements: Vec<&BTreeMap<String, String>> = analyse
+            .items
+            .iter()
+            .filter(|e| e.option == k)
+            .map(|e| &e.fields)
+            .collect();
+        let id = |e: &BTreeMap<String, String>| e.get("id").cloned().unwrap_or_default();
+
+        match d.kind.as_str() {
+            "bool" => {
+                if let Some(f) = find {
+                    let oui = coche(f) && !vaut(f, "state", "ok");
+                    sel.config
+                        .insert(k.to_string(), serde_json::Value::Bool(oui));
+                    sel.a_faire |= oui;
+                }
+            }
+            "multi" if !finds.is_empty() => {
+                let choisis: Vec<serde_json::Value> = finds
+                    .iter()
+                    .filter(|(_, f)| coche(f))
+                    .map(|(c, _)| serde_json::Value::String(c.to_string()))
+                    .collect();
+                sel.a_faire |= !choisis.is_empty();
+                sel.config
+                    .insert(k.to_string(), serde_json::Value::Array(choisis));
+            }
+            "select" if !finds.is_empty() => {
+                let choisi = finds
+                    .iter()
+                    .find(|(_, f)| vaut(f, "recommended", "true"))
+                    .or_else(|| finds.iter().find(|(_, f)| vaut(f, "current", "true")))
+                    .or(finds.first())
+                    .map(|(c, _)| c.to_string())
+                    .unwrap_or_default();
+                let actuel = finds
+                    .iter()
+                    .find(|(_, f)| vaut(f, "current", "true"))
+                    .map(|(c, _)| *c);
+                sel.a_faire |= actuel != Some(choisi.as_str());
+                sel.config
+                    .insert(k.to_string(), serde_json::Value::String(choisi));
+            }
+            "items" => {
+                // Un premier avis par id : un doublon ne change pas la case.
+                let mut cases: BTreeMap<String, bool> = BTreeMap::new();
+                for e in &elements {
+                    cases.entry(id(e)).or_insert_with(|| coche_element(e));
+                }
+                let ids: Vec<String> = if d.keep_one {
+                    // Par groupe, l'exemplaire `keep=true`, sinon le premier ;
+                    // tout le reste part, sauf ce qui est verrouille.
+                    let groupe = |e: &BTreeMap<String, String>| {
+                        e.get("group")
+                            .filter(|g| !g.is_empty())
+                            .cloned()
+                            .unwrap_or_else(|| id(e))
+                    };
+                    let mut garder: BTreeMap<String, String> = BTreeMap::new();
+                    for e in &elements {
+                        let g = groupe(e);
+                        if garder.contains_key(&g) {
+                            continue;
+                        }
+                        let membres: Vec<&&BTreeMap<String, String>> =
+                            elements.iter().filter(|x| groupe(x) == g).collect();
+                        let garde = membres
+                            .iter()
+                            .find(|x| vaut(x, "keep", "true"))
+                            .or(membres.first())
+                            .map(|x| id(x))
+                            .unwrap_or_default();
+                        garder.insert(g, garde);
+                    }
+                    elements
+                        .iter()
+                        .filter(|e| garder.get(&groupe(e)) != Some(&id(e)) && !present(e, "locked"))
+                        .map(|e| id(e))
+                        .collect()
+                } else {
+                    // Les feuilles : sans enfant, ni verrouillees ni deja en place.
+                    elements
+                        .iter()
+                        .filter(|e| {
+                            let i = id(e);
+                            !elements.iter().any(|x| x.get("parent") == Some(&i))
+                                && !present(e, "locked")
+                                && !vaut(e, "state", "ok")
+                        })
+                        .filter(|e| cases.get(&id(e)).copied().unwrap_or(false))
+                        .map(|e| id(e))
+                        .collect()
+                };
+                sel.a_faire |= !ids.is_empty();
+                sel.config.insert(
+                    k.to_string(),
+                    serde_json::Value::Array(
+                        ids.into_iter().map(serde_json::Value::String).collect(),
+                    ),
+                );
+            }
+            _ => {}
+        }
+    }
+    sel
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -694,5 +890,78 @@ $CONFIG = @{
             ("name".to_string(), "Mozilla Firefox".to_string())
         );
         assert_eq!(champs[2].1, r"C:\a b");
+    }
+
+    /// Le contrat commun avec l'interface : `tools/selection-cas.json`, que
+    /// `tools/verifier-selection.mjs` passe au JavaScript.
+    #[test]
+    fn la_selection_d_office_est_celle_de_l_interface() {
+        use serde_json::Value;
+        let chemin = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("tools")
+            .join("selection-cas.json");
+        let doc: Value = serde_json::from_str(&std::fs::read_to_string(chemin).expect("cas"))
+            .expect("JSON des cas");
+        let texte = |v: &Value| v.as_str().unwrap_or_default().to_string();
+        let champs = |v: &Value| -> BTreeMap<String, String> {
+            v.as_object()
+                .map(|o| o.iter().map(|(k, x)| (k.clone(), texte(x))).collect())
+                .unwrap_or_default()
+        };
+        let cas = doc["cas"].as_array().expect("cas");
+        assert!(cas.len() >= 10);
+        for c in cas {
+            let meta = Script {
+                options: c["options"]
+                    .as_array()
+                    .expect("options")
+                    .iter()
+                    .map(|o| crate::contract::Opt {
+                        key: texte(&o["key"]),
+                        kind: texte(&o["kind"]),
+                        keep_one: o["keep_one"].as_bool().unwrap_or(false),
+                        scan: o["scan"].as_bool().unwrap_or(false),
+                        ..Default::default()
+                    })
+                    .collect(),
+                ..Default::default()
+            };
+            let analyse = Analyse {
+                finds: c["analyse"]["finds"]
+                    .as_array()
+                    .expect("finds")
+                    .iter()
+                    .map(|f| Constat {
+                        option: texte(&f["option"]),
+                        choice: texte(&f["choice"]),
+                        fields: champs(&f["fields"]),
+                    })
+                    .collect(),
+                items: c["analyse"]["items"]
+                    .as_array()
+                    .expect("items")
+                    .iter()
+                    .map(|e| Element {
+                        option: texte(&e["option"]),
+                        fields: champs(&e["fields"]),
+                    })
+                    .collect(),
+                ..Default::default()
+            };
+            let obtenu = selection_office(&meta, &analyse);
+            let attendu = &c["attendu"];
+            let nom = texte(&c["nom"]);
+            assert_eq!(
+                Value::Object(obtenu.config.clone().into_iter().collect()),
+                attendu["config"],
+                "cas « {nom} »"
+            );
+            assert_eq!(
+                Value::Bool(obtenu.a_faire),
+                attendu["a_faire"],
+                "cas « {nom} »"
+            );
+        }
     }
 }

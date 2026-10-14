@@ -680,7 +680,18 @@ fn read_factory_lots<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<Lot>, String>
 }
 
 pub fn load<R: Runtime>(app: &AppHandle<R>) -> Result<Settings, String> {
-    load_from(&settings_path(app)?, read_factory_lots(app)?)
+    let chemin = settings_path(app)?;
+    // Premier lancement de ce compte : la preconfiguration d'une installation
+    // silencieuse (§19.3), s'il y en a une. Un compte qui a deja ses reglages
+    // — repris de l'ancien nom compris — les garde.
+    if !chemin.exists() {
+        if let Some(pre) = crate::preconfiguration::lire() {
+            let s = pre.appliquer(default_settings(read_factory_lots(app)?));
+            save_to(&chemin, &s)?;
+            return Ok(s);
+        }
+    }
+    load_from(&chemin, read_factory_lots(app)?)
 }
 
 pub fn save<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> Result<(), String> {

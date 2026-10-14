@@ -199,6 +199,9 @@ pub struct RunEnd {
 pub trait Sortie: Send + Sync + 'static {
     fn ligne(&self, ligne: Ligne);
     fn fin(&self, fin: RunEnd);
+    /// Ce qu'une analyse a rapporte, juste avant sa `fin`. Rien a faire pour
+    /// une destination qui ne s'en sert pas.
+    fn analyse(&self, _fin: AnalysisEnd) {}
 }
 
 /// Adaptateur vers l'interface : les evenements `script:line` et `script:end`.
@@ -212,6 +215,9 @@ impl<R: Runtime> Sortie for VersInterface<R> {
     }
     fn fin(&self, fin: RunEnd) {
         let _ = self.app.emit("script:end", fin);
+    }
+    fn analyse(&self, fin: AnalysisEnd) {
+        let _ = self.app.emit("script:analysis", fin);
     }
 }
 
@@ -639,7 +645,7 @@ pub fn lancer(
 
     if !cible.hash.is_empty() && empreinte != cible.hash {
         return Err(format!(
-            "Le contenu de « {} » ne correspond plus a ce qui a ete analyse.              Le fichier a ete modifie entre-temps ; il n'a pas ete execute.",
+            "Le contenu de « {} » ne correspond plus a ce qui a ete analyse. Le fichier a ete modifie entre-temps ; il n'a pas ete execute.",
             cible.chemin.display()
         ));
     }
@@ -997,15 +1003,21 @@ pub fn run_script<R: Runtime>(
     req: RunRequest,
     entree: discovery::ScriptEntry,
 ) -> Result<RunStarted, String> {
+    let sortie = Arc::new(VersInterface { app: app.clone() });
+    run_script_vers(&discovery::base_dir(app)?, runner, req, entree, sortie)
+}
+
+/// [`run_script`], vers une autre destination que l'interface : la ligne de
+/// commande (2.0) affiche les lignes dans le terminal.
+pub fn run_script_vers(
+    base: &Path,
+    runner: Arc<Runner>,
+    req: RunRequest,
+    entree: discovery::ScriptEntry,
+    sortie: Arc<dyn Sortie>,
+) -> Result<RunStarted, String> {
     let cible = preparer(&req, entree, false)?;
-    lancer(
-        cible,
-        req.config,
-        req.policy,
-        &discovery::base_dir(app)?,
-        runner,
-        Arc::new(VersInterface { app: app.clone() }),
-    )
+    lancer(cible, req.config, req.policy, base, runner, sortie)
 }
 
 /// L'analyse d'un script (§17) : meme lanceur durci, meme verrou, meme
@@ -1019,24 +1031,37 @@ pub fn run_analysis<R: Runtime>(
     entree: discovery::ScriptEntry,
     memoire: Arc<crate::analyse::Memoire>,
 ) -> Result<RunStarted, String> {
+    let suite = Arc::new(VersInterface { app: app.clone() });
+    run_analysis_vers(
+        &discovery::base_dir(app)?,
+        runner,
+        req,
+        entree,
+        memoire,
+        suite,
+    )
+}
+
+/// [`run_analysis`], vers une autre destination que l'interface.
+pub fn run_analysis_vers(
+    base: &Path,
+    runner: Arc<Runner>,
+    req: RunRequest,
+    entree: discovery::ScriptEntry,
+    memoire: Arc<crate::analyse::Memoire>,
+    suite: Arc<dyn Sortie>,
+) -> Result<RunStarted, String> {
     let meta = entree.meta.clone();
     let hash = entree.hash.clone();
     let cible = preparer(&req, entree, true)?;
     let sortie = Arc::new(VersAnalyse {
-        app: app.clone(),
+        suite,
         meta,
         hash,
         lignes: Mutex::new(Vec::new()),
         memoire,
     });
-    lancer(
-        cible,
-        req.config,
-        req.policy,
-        &discovery::base_dir(app)?,
-        runner,
-        sortie,
-    )
+    lancer(cible, req.config, req.policy, base, runner, sortie)
 }
 
 fn preparer(
@@ -1068,8 +1093,9 @@ fn preparer(
 
 /// Ce que publie une analyse : chaque ligne, comme une execution ordinaire, et a
 /// la fin ce qu'elle a rapporte, lu contre l'entete du script.
-struct VersAnalyse<R: Runtime> {
-    app: AppHandle<R>,
+struct VersAnalyse {
+    /// Ou vont les lignes, puis le resultat : l'interface, ou le terminal.
+    suite: Arc<dyn Sortie>,
     meta: crate::contract::Script,
     hash: String,
     /// Les seules lignes qui comptent pour l'analyse, dans l'ordre.
@@ -1088,7 +1114,7 @@ pub struct AnalysisEnd {
     pub analysis: crate::analyse::Analyse,
 }
 
-impl<R: Runtime> Sortie for VersAnalyse<R> {
+impl Sortie for VersAnalyse {
     fn ligne(&self, ligne: Ligne) {
         let compte = ligne.stream == "stdout"
             && ligne
@@ -1103,7 +1129,7 @@ impl<R: Runtime> Sortie for VersAnalyse<R> {
                 }
             }
         }
-        let _ = self.app.emit("script:line", ligne);
+        self.suite.ligne(ligne);
     }
 
     fn fin(&self, fin: RunEnd) {
@@ -1113,16 +1139,13 @@ impl<R: Runtime> Sortie for VersAnalyse<R> {
         if fin.success {
             self.memoire.retenir(&fin.script_id, &self.hash, &analyse);
         }
-        let _ = self.app.emit(
-            "script:analysis",
-            AnalysisEnd {
-                run_id: fin.run_id.clone(),
-                script_id: fin.script_id.clone(),
-                success: fin.success,
-                analysis: analyse,
-            },
-        );
-        let _ = self.app.emit("script:end", fin);
+        self.suite.analyse(AnalysisEnd {
+            run_id: fin.run_id.clone(),
+            script_id: fin.script_id.clone(),
+            success: fin.success,
+            analysis: analyse,
+        });
+        self.suite.fin(fin);
     }
 }
 

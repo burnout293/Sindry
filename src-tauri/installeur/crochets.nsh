@@ -277,8 +277,35 @@ FunctionEnd
 ; desinstalle (voir src-tauri/src/migration.rs). Sans effet s'il n'y a rien a
 ; reprendre — une mise a jour de Sindry par exemple.
 !macro NSIS_HOOK_POSTINSTALL
+  ; La ligne de commande (2.0, §19) : Tauri installe d'office les autres
+  ; binaires du paquet, dont sindry-cli.exe. Il prend ici le nom sindry.com —
+  ; « sindry » dans une console le trouve avant sindry.exe (ordre de PATHEXT).
+  ; Renomme, pas copie : un seul exemplaire sur le disque.
+  Delete "$INSTDIR\sindry.com"
+  Rename "$INSTDIR\sindry-cli.exe" "$INSTDIR\sindry.com"
+
   nsExec::Exec '"$INSTDIR\${MAINBINARYNAME}.exe" --migrer-depuis-wintool'
   Pop $0
+
+  ; Installation silencieuse avec options (§19.3) : /LANG= /THEME= /AMBIANCE=
+  ; /SANSBIENVENUE /CONFIG= /PATH. sindry.com les lit dans la ligne de commande
+  ; de l'installeur, les verifie, et ecrit preconfiguration.json a cote de lui.
+  ; Sans option, il n'ecrit rien. Une mise a jour n'y touche pas.
+  ${If} $UpdateMode <> 1
+    nsExec::ExecToLog '"$INSTDIR\sindry.com" --installeur preconfigurer $CMDLINE'
+    Pop $0
+  ${EndIf}
+!macroend
+
+!macro NSIS_HOOK_PREUNINSTALL
+  ${If} $UpdateMode <> 1
+    ; Le dossier d'installation quitte le PATH du systeme, s'il y etait (/PATH),
+    ; et la preconfiguration part avec Sindry.
+    nsExec::Exec '"$INSTDIR\sindry.com" --installeur chemin retirer'
+    Pop $0
+    Delete "$INSTDIR\preconfiguration.json"
+  ${EndIf}
+  Delete "$INSTDIR\sindry.com"
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL

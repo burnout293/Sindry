@@ -77,11 +77,29 @@ pub struct DiscoveryResult {
 /// l'utilisateur, journaux) et que deux definitions qui divergent donneraient
 /// deux arborescences.
 pub fn base_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    if let Some(essai) = dossier_essai() {
+        return Ok(essai);
+    }
     let base = app
         .path()
         .local_data_dir()
         .map_err(|e| format!("dossier local introuvable : {e}"))?;
     Ok(sans_prefixe_long(base.join("Sindry")))
+}
+
+/// Version de developpement seulement : `SINDRY_DOSSIER_ESSAI` remplace
+/// `%LOCALAPPDATA%\Sindry`, et coupe la migration depuis l'ancien nom — pour
+/// essayer la ligne de commande sur un PC ou la version installee garde ses
+/// donnees, sans les deplacer. La version publiee l'ignore : l'emplacement des
+/// donnees ne se decide pas par une variable d'environnement.
+#[cfg(debug_assertions)]
+pub fn dossier_essai() -> Option<PathBuf> {
+    std::env::var_os("SINDRY_DOSSIER_ESSAI").map(PathBuf::from)
+}
+
+#[cfg(not(debug_assertions))]
+pub fn dossier_essai() -> Option<PathBuf> {
+    None
 }
 
 /// Racine des scripts de l'utilisateur : `%LOCALAPPDATA%\Sindry\scripts`.

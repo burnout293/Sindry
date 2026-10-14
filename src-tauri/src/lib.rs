@@ -2,11 +2,13 @@ mod ambiance;
 mod analyse;
 mod approval;
 mod catalogue;
+mod cli;
 mod contract;
 mod discovery;
 mod garde;
 mod history;
 mod migration;
+mod preconfiguration;
 mod restore;
 mod runner;
 mod security;
@@ -247,9 +249,26 @@ fn scan_script(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<runner::Runner>>,
     memoire: tauri::State<'_, Arc<analyse::Memoire>>,
-    mut req: runner::RunRequest,
+    req: runner::RunRequest,
 ) -> Result<runner::RunStarted, String> {
-    let decouverte = discovery::discover(&app)?;
+    let (req, entree) = preparer_analyse(&app, req)?;
+    runner::run_analysis(
+        &app,
+        state.inner().clone(),
+        req,
+        entree,
+        memoire.inner().clone(),
+    )
+}
+
+/// Ce qu'une analyse doit passer avant de partir au moteur — l'interface et la
+/// ligne de commande (2.0) par le meme chemin : script analysable, approuve,
+/// reglages gardes.
+fn preparer_analyse<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    mut req: runner::RunRequest,
+) -> Result<(runner::RunRequest, discovery::ScriptEntry), String> {
+    let decouverte = discovery::discover(app)?;
     let entree = decouverte
         .scripts
         .iter()
@@ -270,17 +289,11 @@ fn scan_script(
             .iter()
             .any(|o| &o.key == cle && o.kind != "items")
     });
-    let zones = zones_protegees(&app, &entree.id)?;
+    let zones = zones_protegees(app, &entree.id)?;
     let e = systeme::emplacements();
     req.config = garde::verifier_config(&entree.meta, &req.config, &zones, e, &e.system32())
         .map_err(|r| r.message())?;
-    runner::run_analysis(
-        &app,
-        state.inner().clone(),
-        req,
-        entree,
-        memoire.inner().clone(),
-    )
+    Ok((req, entree))
 }
 
 /// Lance un script. Rend la main immediatement : la suite arrive par les
@@ -290,8 +303,28 @@ fn run_script(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<runner::Runner>>,
     memoire: tauri::State<'_, Arc<analyse::Memoire>>,
-    mut req: runner::RunRequest,
+    req: runner::RunRequest,
 ) -> Result<runner::RunStarted, String> {
+    let (req, entree, simule) = preparer_action(&app, &memoire, req, false)?;
+    // Un `Arc` plutot qu'un etat emprunte : le fil qui attend la fin du
+    // processus doit pouvoir liberer l'emplacement bien apres le retour de
+    // cette commande.
+    let mut demarre = runner::run_script(&app, state.inner().clone(), req, entree)?;
+    demarre.simulated = simule;
+    Ok(demarre)
+}
+
+/// Ce qu'une action doit passer avant de partir au moteur — l'interface et la
+/// ligne de commande (2.0) par le meme chemin. Rend la demande gardee, l'entree
+/// approuvee, et si l'action sera simulee. `forcer_simulation` : la ligne de
+/// commande `--simuler`, qui simule ce lancement quels que soient les reglages
+/// — et refuse, comme l'interface, un script qui ne sait pas se simuler.
+fn preparer_action<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    memoire: &analyse::Memoire,
+    mut req: runner::RunRequest,
+    forcer_simulation: bool,
+) -> Result<(runner::RunRequest, discovery::ScriptEntry, bool), String> {
     // La seule exception au principe "constater, jamais bloquer" (§5.4,
     // §12.1) : ici, refuser est le comportement voulu, pas un defaut a
     // corriger. On retrouve l'origine par une nouvelle decouverte plutot que
@@ -305,7 +338,7 @@ fn run_script(
     // decouverte : deux substitutions rapides du fichier, l'une avant
     // l'approbation, l'autre avant la seconde decouverte, faisaient executer
     // un contenu que personne n'avait approuve.
-    let decouverte = discovery::discover(&app)?;
+    let decouverte = discovery::discover(app)?;
     let entree = decouverte
         .scripts
         .iter()
@@ -322,8 +355,8 @@ fn run_script(
     // script eleve. Chaque valeur doit avoir le type que le script declare, et
     // aucun texte libre ne doit viser un emplacement protege. C'est un refus,
     // pas un constat : il s'agit d'execution avec les droits administrateur.
-    let reglages = settings::load(&app)?;
-    let zones = zones_protegees(&app, &entree.id)?;
+    let reglages = settings::load(app)?;
+    let zones = zones_protegees(app, &entree.id)?;
     let e = systeme::emplacements();
     req.config = garde::verifier_config(&entree.meta, &req.config, &zones, e, &e.system32())
         .map_err(|r| r.message())?;
@@ -360,7 +393,16 @@ fn run_script(
         &reglages,
         decouverte.scripts.iter().map(|s| (s.id.as_str(), &s.meta)),
     );
-    match simulation::decision(&reglages, &entree.id, &entree.meta, &general) {
+    let decision = if forcer_simulation {
+        if simulation::simulable(&entree.meta) {
+            simulation::Decision::Simuler
+        } else {
+            simulation::Decision::Refuser
+        }
+    } else {
+        simulation::decision(&reglages, &entree.id, &entree.meta, &general)
+    };
+    match decision {
         simulation::Decision::Refuser => return Err(SANS_SIMULATION.to_string()),
         simulation::Decision::Simuler => {
             req.config
@@ -375,12 +417,7 @@ fn run_script(
         }
     }
 
-    // Un `Arc` plutot qu'un etat emprunte : le fil qui attend la fin du
-    // processus doit pouvoir liberer l'emplacement bien apres le retour de
-    // cette commande.
-    let mut demarre = runner::run_script(&app, state.inner().clone(), req, entree)?;
-    demarre.simulated = simule;
-    Ok(demarre)
+    Ok((req, entree, simule))
 }
 
 /// Le contenu et le hash affiches a l'ecran de confiance viennent de la
@@ -1522,26 +1559,38 @@ fn reorder_lot_scripts(
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    // Lance par l'installeur (crochet NSIS_HOOK_POSTINSTALL), en administrateur
-    // et sans fenetre : reprendre ce que WinTool laisse, puis s'arreter.
-    if std::env::args().any(|a| a == "--migrer-depuis-wintool") {
-        let _ = migration::donnees_utilisateur();
-        let _ = migration::systeme();
-        return;
-    }
-    // Et a chaque demarrage, ce qui resterait : sans droits, le dossier local ;
-    // avec, le registre et l'ancienne installation. Deja fait : sans effet.
-    for fait in migration::donnees_utilisateur() {
-        systeme::signaler(format!("Migration depuis WinTool : {fait}."));
-    }
-    if is_elevated() {
-        for fait in migration::systeme() {
-            systeme::signaler(format!("Migration depuis WinTool : {fait}."));
+/// Le contexte de l'application (configuration, interface embarquee) : une
+/// seule expansion de `generate_context!`, pour l'interface et pour la ligne
+/// de commande — deux expansions embarqueraient l'interface deux fois.
+fn contexte() -> tauri::Context {
+    tauri::generate_context!()
+}
+
+/// Point d'entree de `sindry.com`, la ligne de commande (2.0, §19).
+pub fn ligne_de_commande() -> i32 {
+    cli::principal()
+}
+
+/// Ce que tout processus de Sindry fait avant le moindre fil et le moindre
+/// lancement — l'interface comme la ligne de commande. Rend ce qui merite
+/// d'etre dit.
+fn assainir_processus() -> Vec<String> {
+    let mut messages = Vec::new();
+    // Ce que l'ancienne installation laisserait : sans droits, le dossier
+    // local ; avec, le registre et l'ancienne installation. Deja fait : sans
+    // effet. Jamais sur un dossier d'essai (version de developpement).
+    if discovery::dossier_essai().is_none() {
+        for fait in migration::donnees_utilisateur() {
+            messages.push(format!("Migration depuis WinTool : {fait}."));
+        }
+        if is_elevated() {
+            for fait in migration::systeme() {
+                messages.push(format!("Migration depuis WinTool : {fait}."));
+            }
         }
     }
-    // En tout premier, avant le moindre fil et la moindre vue : WebView2 lit
-    // ces variables en creant son moteur, et chaque processus lance en herite.
+    // Avant toute vue : WebView2 lit ces variables en creant son moteur, et
+    // chaque processus lance en herite.
     //
     // Seulement dans la version publiee : une version de developpement
     // (`npm run dev`) les garde, pour qui debogue l'interface avec
@@ -1555,7 +1604,7 @@ pub fn run() {
             .filter(|n| systeme::charge_du_code(n))
             .collect();
         if !suspectes.is_empty() {
-            systeme::signaler(format!(
+            messages.push(format!(
                 "Variables d'environnement qui font charger du code dans PowerShell ou dans \
                  l'interface : {}. Sindry ne les transmet pas. Elles servent aux outils de \
                  developpement et de diagnostic ; si vous n'en utilisez pas, une analyse \
@@ -1564,6 +1613,37 @@ pub fn run() {
             ));
         }
     }
+    messages
+}
+
+/// Environnement de chaque script : variables du systeme retablies depuis
+/// HKLM, dossiers de l'utilisateur ramenes dans son profil s'ils visent un
+/// emplacement protege.
+fn preparer_enfants<R: tauri::Runtime>(handle: &tauri::AppHandle<R>) -> Option<String> {
+    let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle, "")) else {
+        return None;
+    };
+    let corrigees = systeme::preparer_environnement_enfants(&profil, |p| zones.protege(p));
+    (!corrigees.is_empty()).then(|| {
+        format!(
+            "Variables d'environnement corrigees pour les scripts : {}. Elles visaient \
+             un emplacement du systeme, ou manquaient.",
+            corrigees.join(", ")
+        )
+    })
+}
+
+pub fn run() {
+    // Lance par l'installeur (crochet NSIS_HOOK_POSTINSTALL), en administrateur
+    // et sans fenetre : reprendre ce que WinTool laisse, puis s'arreter.
+    if std::env::args().any(|a| a == "--migrer-depuis-wintool") {
+        let _ = migration::donnees_utilisateur();
+        let _ = migration::systeme();
+        return;
+    }
+    for message in assainir_processus() {
+        systeme::signaler(message);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -1571,23 +1651,19 @@ pub fn run() {
         .setup(|app| {
             app.manage(Arc::new(runner::Runner::default()));
             app.manage(Arc::new(analyse::Memoire::default()));
-
-            // Environnement de chaque script : variables du systeme retablies
-            // depuis HKLM, dossiers de l'utilisateur ramenes dans son profil
-            // s'ils visent un emplacement protege.
-            let handle = app.handle();
-            if let (Ok(profil), Ok(zones)) = (handle.path().home_dir(), zones_protegees(handle, ""))
-            {
-                let corrigees =
-                    systeme::preparer_environnement_enfants(&profil, |p| zones.protege(p));
-                if !corrigees.is_empty() {
-                    systeme::signaler(format!(
-                        "Variables d'environnement corrigees pour les scripts : {}. Elles visaient \
-                         un emplacement du systeme, ou manquaient.",
-                        corrigees.join(", ")
-                    ));
-                }
+            if let Some(message) = preparer_enfants(app.handle()) {
+                systeme::signaler(message);
             }
+            // La fenetre n'est pas creee d'office (`create: false`) : la ligne
+            // de commande construit la meme application, sans elle.
+            let fenetre = app
+                .config()
+                .app
+                .windows
+                .first()
+                .cloned()
+                .ok_or("fenetre absente de tauri.conf.json")?;
+            tauri::WebviewWindowBuilder::from_config(app.handle(), &fenetre)?.build()?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -1666,6 +1742,6 @@ pub fn run() {
             export_settings,
             import_settings
         ])
-        .run(tauri::generate_context!())
+        .run(contexte())
         .expect("erreur au lancement de l'application Tauri");
 }

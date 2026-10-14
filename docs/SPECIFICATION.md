@@ -1799,3 +1799,85 @@ La clé de signature des mises à jour ne change pas : la 2.0 est signée par la
 1.8 connaît.
 
 ---
+
+## 19. Ligne de commande et installation silencieuse (2.0)
+
+Tout ce que fait Sindry se fait aussi depuis une console. Guide d'usage :
+`docs/LIGNE_DE_COMMANDE.md`.
+
+### 19.1 Un programme console, pas l'application attachee a une console
+
+`sindry.com`, pose par l'installeur a cote de `sindry.exe`, est un second binaire du meme
+paquet (`src/bin/sindry-cli.rs`, la logique dans `cli.rs`). L'application graphique qui
+s'attacherait a la console de son parent ne convient pas : une console n'attend pas un
+programme graphique, ne recoit pas son code de sortie, et melange sa sortie a l'invite
+suivante. `.com` plutot que `.exe` : `sindry` tape dans une console trouve `sindry.com` avant
+`sindry.exe` (ordre de `PATHEXT`), comme `devenv.com` de Visual Studio.
+
+**Aucune fenetre.** La fenetre de l'interface n'est plus creee d'office (`create: false`
+dans `tauri.conf.json`) : l'interface la cree dans son `setup`, la ligne de commande
+construit la meme application sans elle — ses chemins, ses ressources, son etat — et ne la
+fait jamais tourner. Les deux preparent le processus de la meme facon (`assainir_processus`,
+`preparer_enfants`) : reprise de l'ancien dossier, variables d'environnement qui chargent du
+code retirees, environnement des scripts retabli (§12.4).
+
+**Les memes controles.** Chaque commande appelle les fonctions de l'interface, pas des
+copies : `preparer_action` et `preparer_analyse` (approbation, garde des reglages, selection
+`[items]` verifiee contre la derniere analyse, simulation), l'historique, le plafond des
+journaux. La ligne de commande n'ouvre aucune porte que l'interface tient fermee.
+
+### 19.2 Ce qu'elle sait faire
+
+Actions (lister, montrer, verifier, analyser, lancer, approuver), lots, historique,
+reglages, export et import de la configuration, catalogues (etat, verifier, installer,
+activer), ambiances (verifier un fichier sans Sindry installe, importer, exporter,
+retirer, choisir). Commandes en francais ou en anglais ; messages dans la langue des
+reglages, ou `SINDRY_LANG`.
+
+- **`lancer` fait l'entretien du mode Simple** : un point de restauration avant la serie si
+  une action le demande et ne sera pas simulee ; pour une action analysable, l'analyse puis
+  l'action avec **ce que l'interface cocherait d'office** — rien a faire, elle n'est pas
+  lancee ; une action partagee par deux lots une seule fois ; la politique d'echec (3.1).
+- **Ce qui est coche d'office est calcule deux fois** — `src/analyse.js` pour l'interface,
+  `analyse::selection_office` pour la ligne de commande — et tenu d'accord par un fichier de
+  cas commun, `tools/selection-cas.json`, que `tools/verifier-selection.mjs` passe au
+  JavaScript et un test au Rust.
+- **Ctrl+C suit le §6.3** : une fois, rien n'est plus enchaine ; deux, interruption si elle
+  est sure ; trois, arret force.
+- **Approuver** demande l'empreinte exacte du fichier (`--empreinte`), affichee par
+  `montrer` : ce qui est approuve est ce qui a ete lu. Administrateur seulement, comme dans
+  l'interface (le magasin est dans HKLM).
+- **`--json`** : un document JSON en ASCII pur — PowerShell 5.1 decode la sortie d'un
+  programme dans la page de codes de la console.
+- **Codes de sortie stables** : 0 reussi, 1 echec, 2 usage, 3 refuse, 4 droits
+  administrateur, 5 introuvable, 3010 termine avec redemarrage necessaire (la convention de
+  Windows Installer).
+
+Restent dans l'interface : ajouter, modifier ou retirer un catalogue tiers (une decision de
+confiance qu'on prend en voyant la cle), composer les lots, choisir un a un les elements
+d'une analyse.
+
+### 19.3 Installation silencieuse
+
+`/S` (NSIS) installe sans fenetre. Sindry y ajoute `/LANG=`, `/THEME=`, `/AMBIANCE=`,
+`/SANSBIENVENUE`, `/CONFIG=<configuration exportee>` et `/PATH`.
+
+L'installeur tourne souvent sous un autre compte que l'utilisateur — administrateur, SYSTEM
+d'un outil de deploiement — et les reglages vivent dans chaque profil. Le crochet
+`NSIS_HOOK_POSTINSTALL` passe donc sa ligne de commande a `sindry.com --installeur
+preconfigurer`, qui verifie les options et ecrit **`preconfiguration.json` a cote de
+l'executable**. `settings::load` l'applique **au premier lancement de chaque compte** —
+quand il n'a pas encore de `settings.json` ; un compte qui a deja ses reglages (repris de
+l'ancien nom compris) les garde. Une mise a jour ne touche ni aux options ni au fichier.
+
+Le fichier vit dans le dossier d'installation, que seul un administrateur ecrit, et ne
+porte que des reglages que l'utilisateur peut changer lui-meme ; ce qui part a un script
+passe toujours par la garde. `/PATH` ajoute le dossier d'installation au `Path` du systeme
+(HKLM), et la desinstallation l'en retire, comme elle retire `sindry.com` et la
+preconfiguration.
+
+**Pour essayer sans rien deplacer** (version de developpement seulement) :
+`SINDRY_DOSSIER_ESSAI` remplace `%LOCALAPPDATA%\Sindry` et coupe la migration depuis
+l'ancien nom. La version publiee l'ignore.
+
+---

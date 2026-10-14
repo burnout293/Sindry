@@ -4,6 +4,10 @@ version = "1.8.0"
 description = "Outil de maintenance Windows"
 authors = ["Buly"]
 edition = "2021"
+# Deux binaires : l'application (sindry.exe) et sa ligne de commande
+# (sindry-cli.exe, installee sous le nom sindry.com). Tauri prend celui-ci
+# pour l'application.
+default-run = "sindry"
 
 [lib]
 # Le suffixe _lib est necessaire sous Windows pour que le nom de la bibliotheque
@@ -17,6 +21,14 @@ path = "src/main.rs"
 # Aucun test ici : toute la logique vit dans la bibliotheque, qui se teste
 # sans lancer l'application. Le binaire, lui, ouvre une fenetre — le harnais
 # de test n'en ferait rien.
+test = false
+
+# La ligne de commande (2.0, specification §19) : un programme console, que
+# l'installeur pose a cote de sindry.exe sous le nom sindry.com (ordre de
+# PATHEXT : « sindry » dans une console le trouve en premier).
+[[bin]]
+name = "sindry-cli"
+path = "src/bin/sindry-cli.rs"
 test = false
 
 [build-dependencies]

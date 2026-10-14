@@ -1,0 +1,648 @@
+{
+  "_commentaire": "Ce que Sindry coche d'office apres une analyse : le contrat commun de src/analyse.js et de analyse::selection_office (Rust). Verifie par tools/verifier-selection.mjs et par le test la_selection_d_office_est_celle_de_l_interface. Voir docs/FORMAT_SCRIPT.md, « Ce que Sindry coche d'office ».",
+  "cas": [
+    {
+      "nom": "booleen a faire",
+      "options": [
+        {
+          "key": "Hiber",
+          "kind": "bool"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Hiber",
+            "choice": "",
+            "fields": {
+              "state": "todo"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Hiber": true
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "booleen deja en place",
+      "options": [
+        {
+          "key": "Hiber",
+          "kind": "bool"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Hiber",
+            "choice": "",
+            "fields": {
+              "state": "ok",
+              "size": "1000"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Hiber": false
+        },
+        "a_faire": false
+      }
+    },
+    {
+      "nom": "booleen gros mais montre sans cocher",
+      "options": [
+        {
+          "key": "Maj",
+          "kind": "bool"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Maj",
+            "choice": "",
+            "fields": {
+              "size": "900000",
+              "checked": "false"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Maj": false
+        },
+        "a_faire": false
+      }
+    },
+    {
+      "nom": "booleen le dernier constat l'emporte",
+      "options": [
+        {
+          "key": "Hiber",
+          "kind": "bool"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Hiber",
+            "choice": "",
+            "fields": {
+              "size": "0"
+            }
+          },
+          {
+            "option": "Hiber",
+            "choice": "",
+            "fields": {
+              "size": "12"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Hiber": true
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "choix multiples par taille, compte et avis",
+      "options": [
+        {
+          "key": "Cibles",
+          "kind": "multi"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Cibles",
+            "choice": "temp",
+            "fields": {
+              "size": "2048"
+            }
+          },
+          {
+            "option": "Cibles",
+            "choice": "cache",
+            "fields": {
+              "size": "0"
+            }
+          },
+          {
+            "option": "Cibles",
+            "choice": "logs",
+            "fields": {
+              "count": "3"
+            }
+          },
+          {
+            "option": "Cibles",
+            "choice": "dumps",
+            "fields": {
+              "size": "0",
+              "checked": "true"
+            }
+          },
+          {
+            "option": "Cibles",
+            "choice": "corbeille",
+            "fields": {
+              "size": "500",
+              "state": "ok"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Cibles": [
+            "temp",
+            "logs",
+            "dumps"
+          ]
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "choix multiples aux valeurs numeriques",
+      "options": [
+        {
+          "key": "Tailles",
+          "kind": "multi"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Tailles",
+            "choice": "grand",
+            "fields": {
+              "size": "1"
+            }
+          },
+          {
+            "option": "Tailles",
+            "choice": "16",
+            "fields": {
+              "size": "1"
+            }
+          },
+          {
+            "option": "Tailles",
+            "choice": "8",
+            "fields": {
+              "size": "1"
+            }
+          },
+          {
+            "option": "Tailles",
+            "choice": "08",
+            "fields": {
+              "size": "1"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Tailles": [
+            "8",
+            "16",
+            "grand",
+            "08"
+          ]
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "choix multiples rien de coche",
+      "options": [
+        {
+          "key": "Cibles",
+          "kind": "multi"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Cibles",
+            "choice": "temp",
+            "fields": {
+              "size": "0"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Cibles": []
+        },
+        "a_faire": false
+      }
+    },
+    {
+      "nom": "liste recommandee",
+      "options": [
+        {
+          "key": "Dns",
+          "kind": "select"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Dns",
+            "choice": "google",
+            "fields": {
+              "ms": "30",
+              "current": "true"
+            }
+          },
+          {
+            "option": "Dns",
+            "choice": "cloudflare",
+            "fields": {
+              "ms": "12",
+              "recommended": "true"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Dns": "cloudflare"
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "liste deja sur la recommandation",
+      "options": [
+        {
+          "key": "Dns",
+          "kind": "select"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Dns",
+            "choice": "cloudflare",
+            "fields": {
+              "ms": "12",
+              "recommended": "true",
+              "current": "true"
+            }
+          },
+          {
+            "option": "Dns",
+            "choice": "google",
+            "fields": {
+              "ms": "30"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Dns": "cloudflare"
+        },
+        "a_faire": false
+      }
+    },
+    {
+      "nom": "liste sans avis : l'actuel, sinon le premier",
+      "options": [
+        {
+          "key": "Plan",
+          "kind": "select"
+        },
+        {
+          "key": "Mode",
+          "kind": "select"
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Plan",
+            "choice": "eco",
+            "fields": {
+              "state": "info"
+            }
+          },
+          {
+            "option": "Plan",
+            "choice": "perf",
+            "fields": {
+              "current": "true"
+            }
+          },
+          {
+            "option": "Mode",
+            "choice": "b",
+            "fields": {}
+          },
+          {
+            "option": "Mode",
+            "choice": "a",
+            "fields": {}
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Plan": "perf",
+          "Mode": "b"
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "elements : feuilles, verrous, confiance, avis",
+      "options": [
+        {
+          "key": "Fichiers",
+          "kind": "items"
+        }
+      ],
+      "analyse": {
+        "finds": [],
+        "items": [
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "dossier",
+              "size": "300"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "a",
+              "parent": "dossier",
+              "size": "100"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "b",
+              "parent": "dossier",
+              "size": "200",
+              "locked": "open"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "c",
+              "size": "50",
+              "confidence": "low"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "d",
+              "size": "50",
+              "checked": "false"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "e",
+              "state": "ok"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "f",
+              "size": "0"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "g",
+              "checked": "true",
+              "locked": "system"
+            }
+          },
+          {
+            "option": "Fichiers",
+            "fields": {
+              "id": "h",
+              "confidence": "low",
+              "checked": "true"
+            }
+          }
+        ]
+      },
+      "attendu": {
+        "config": {
+          "Fichiers": [
+            "a",
+            "f",
+            "h"
+          ]
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "elements : un doublon garde le premier avis",
+      "options": [
+        {
+          "key": "Apps",
+          "kind": "items"
+        }
+      ],
+      "analyse": {
+        "finds": [],
+        "items": [
+          {
+            "option": "Apps",
+            "fields": {
+              "id": "x",
+              "checked": "false"
+            }
+          },
+          {
+            "option": "Apps",
+            "fields": {
+              "id": "x",
+              "checked": "true"
+            }
+          },
+          {
+            "option": "Apps",
+            "fields": {
+              "id": "y"
+            }
+          }
+        ]
+      },
+      "attendu": {
+        "config": {
+          "Apps": [
+            "y"
+          ]
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "elements a garder en un exemplaire",
+      "options": [
+        {
+          "key": "Doublons",
+          "kind": "items",
+          "keep_one": true
+        }
+      ],
+      "analyse": {
+        "finds": [],
+        "items": [
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "p1",
+              "group": "photo"
+            }
+          },
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "p2",
+              "group": "photo",
+              "keep": "true"
+            }
+          },
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "p3",
+              "group": "photo"
+            }
+          },
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "v1",
+              "group": "video"
+            }
+          },
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "v2",
+              "group": "video",
+              "locked": "inuse"
+            }
+          },
+          {
+            "option": "Doublons",
+            "fields": {
+              "id": "seul"
+            }
+          }
+        ]
+      },
+      "attendu": {
+        "config": {
+          "Doublons": [
+            "p1",
+            "p3"
+          ]
+        },
+        "a_faire": true
+      }
+    },
+    {
+      "nom": "liste vide et reglage de l'analyse ignore",
+      "options": [
+        {
+          "key": "Fichiers",
+          "kind": "items"
+        },
+        {
+          "key": "Profondeur",
+          "kind": "select",
+          "scan": true
+        }
+      ],
+      "analyse": {
+        "finds": [
+          {
+            "option": "Profondeur",
+            "choice": "rapide",
+            "fields": {
+              "recommended": "true"
+            }
+          }
+        ],
+        "items": []
+      },
+      "attendu": {
+        "config": {
+          "Fichiers": []
+        },
+        "a_faire": false
+      }
+    },
+    {
+      "nom": "une option sans constat ne part pas",
+      "options": [
+        {
+          "key": "Hiber",
+          "kind": "bool"
+        },
+        {
+          "key": "Cibles",
+          "kind": "multi"
+        },
+        {
+          "key": "Dns",
+          "kind": "select"
+        },
+        {
+          "key": "Texte",
+          "kind": "string"
+        }
+      ],
+      "analyse": {
+        "finds": [],
+        "items": []
+      },
+      "attendu": {
+        "config": {},
+        "a_faire": false
+      }
+    }
+  ]
+}

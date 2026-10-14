@@ -271,7 +271,7 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
         c.push(constat(
             "ID_INVALIDE",
             format!(
-                "« id » vaut {:?} : minuscules, chiffres et tirets, 40 caracteres au plus (« foret-de-nuit »).",
+                "« id » vaut {} : minuscules, chiffres et tirets, 40 caracteres au plus (« foret-de-nuit »).",
                 objet.get("id").cloned().unwrap_or(Value::Null)
             ),
         ));
