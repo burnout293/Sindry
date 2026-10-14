@@ -50,8 +50,9 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — emplacements protégés pour une seule action, dans sa configuration (§12.4) | Fait |
 | | — ambiances partageables : un fichier `.sindry-ambiance` documenté (`docs/FORMAT_AMBIANCE.md`, exemple « Forêt de nuit »), couleurs et décor libre, décor isolé, contrastes vérifiés, import, export, retrait (§15.7) | Fait |
 | | — texte atténué du journal de Braise sombre, Ardente et Crépuscule, porté à 4,6:1 (3,5:1) : trouvé en passant les ambiances livrées au validateur | Fait |
-| | — ligne de commande complète, installation silencieuse (§19) | À faire |
-| | — nouvelle version de l'icône | À faire |
+| | — ligne de commande complète, `sindry.com` : actions, lots, analyse, réglages, catalogues, ambiances ; `--json`, codes de sortie, Ctrl+C selon le §6.3 ; ce qui est coché d'office tenu d'accord avec l'interface par un fichier de cas commun (§19, `docs/LIGNE_DE_COMMANDE.md`) | Fait |
+| | — installation silencieuse avec options : langue, thème, ambiance, sans bienvenue, configuration, `PATH` — appliquées au premier lancement de chaque compte (§19.3) | Fait |
+| | — nouvelle version de l'icône : goutte de flammes et engrenage gris, alpha nettoyé (voile du fond retiré, corps opaque), dessin inchangé | Fait |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 
