@@ -1,6 +1,6 @@
 [package]
 name = "sindry"
-version = "2.0.0"
+version = "2.0.1"
 description = "Outil de maintenance Windows"
 authors = ["Buly"]
 edition = "2021"
