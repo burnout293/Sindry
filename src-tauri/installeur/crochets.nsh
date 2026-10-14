@@ -276,6 +276,10 @@ FunctionEnd
 ; sans fenetre, Sindry reprend les donnees et les reglages de WinTool, puis le
 ; desinstalle (voir src-tauri/src/migration.rs). Sans effet s'il n'y a rien a
 ; reprendre — une mise a jour de Sindry par exemple.
+; Le raccourci de bureau de l'ancien nom, note avant que sa desinstallation
+; (par la migration) ne le retire.
+Var SindryAncienBureau
+
 !macro NSIS_HOOK_POSTINSTALL
   ; La ligne de commande (2.0, §19) : Tauri installe d'office les autres
   ; binaires du paquet, dont sindry-cli.exe. Il prend ici le nom sindry.com —
@@ -284,8 +288,35 @@ FunctionEnd
   Delete "$INSTDIR\sindry.com"
   Rename "$INSTDIR\sindry-cli.exe" "$INSTDIR\sindry.com"
 
+  StrCpy $SindryAncienBureau 0
+  ${If} ${FileExists} "$DESKTOP\WinTool.lnk"
+    StrCpy $SindryAncienBureau 1
+  ${EndIf}
+
   nsExec::Exec '"$INSTDIR\${MAINBINARYNAME}.exe" --migrer-depuis-wintool'
   Pop $0
+
+  ; Les raccourcis (2.0.1). Arrivee par la mise a jour automatique de la 1.8,
+  ; l'installeur est lance en mode mise a jour (/UPDATE) : le modele de Tauri
+  ; ne cree alors aucun raccourci, il croit les avoir deja — et la migration
+  ; venait de retirer ceux de l'ancien nom. La 2.0.0 laissait ainsi Sindry hors
+  ; du menu Demarrer. Une seule fois par installation (marque dans la cle de
+  ; desinstallation) : un raccourci retire expres ensuite n'est pas recree.
+  ReadRegDWORD $0 SHCTX "${UNINSTKEY}" "SindryRaccourcis"
+  ${If} $0 <> 1
+  ${AndIf} $NoShortcutMode <> 1
+    ${IfNot} ${FileExists} "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+      CreateShortcut "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+      !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+    ${EndIf}
+    ${If} $SindryAncienBureau = 1
+      ${IfNot} ${FileExists} "$DESKTOP\${PRODUCTNAME}.lnk"
+        CreateShortcut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+        !insertmacro SetLnkAppUserModelId "$DESKTOP\${PRODUCTNAME}.lnk"
+      ${EndIf}
+    ${EndIf}
+    WriteRegDWORD SHCTX "${UNINSTKEY}" "SindryRaccourcis" 1
+  ${EndIf}
 
   ; Installation silencieuse avec options (§19.3) : /LANG= /THEME= /AMBIANCE=
   ; /SANSBIENVENUE /CONFIG= /PATH. sindry.com les lit dans la ligne de commande

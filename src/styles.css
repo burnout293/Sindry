@@ -3124,7 +3124,11 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .accent-pastille.perso { border-style: dashed; }
 .accent-pastille.perso[aria-checked="true"] { border-style: solid; }
 
-/* Reglage 1.8, partager une ambiance (§15.7). */
+/* Avance, 5.7 : l'historique sous un intertitre, pas une carte de plus — la
+   liste qui suit est son contenu (2.0.1). */
+.setrow.rg-histo-titre { background: none; border: none; padding: 14px 4px 2px; }
+
+/* Reglage 2.4, partager une ambiance (§15.7). */
 .setrow.amb-partage { flex-wrap: wrap; align-items: flex-start; }
 .amb-partage .setrow-txt { flex: 1 1 300px; }
 .amb-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 460px; }

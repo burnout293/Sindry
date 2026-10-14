@@ -30,6 +30,7 @@ if (!dest) {
 
 const RESSOURCES = {
   '../../src/fonts/inter-latin-wght-normal.woff2': join(racine, 'src', 'fonts', 'inter-latin-wght-normal.woff2'),
+  '../../src/fonts/sindry-mono-400.woff2': join(racine, 'src', 'fonts', 'sindry-mono-400.woff2'),
   '../../src/marque.png': join(racine, 'src', 'marque.png'),
   'sindry-256.png': join(source, 'sindry-256.png'),
 };

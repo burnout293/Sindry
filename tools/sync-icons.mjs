@@ -58,11 +58,10 @@ const SPRITE = {
   help: 'circle-help',
   // Reglages en page entiere : une icone par section (specification 8).
   'sec-general': 'sliders-horizontal',
+  'sec-apparence': 'palette',
   'sec-catalogue': 'package',
   'sec-execution': 'terminal',
-  'sec-outils': 'wrench',
-  'sec-config': 'save',
-  'sec-histo': 'history',
+  'sec-avance': 'settings-2',
   'chevron-right': 'chevron-right',
   // Plan du disque des emplacements proteges (specification 12.4).
   'shield-check': 'shield-check',

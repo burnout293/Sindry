@@ -93,6 +93,17 @@ pub fn systeme() -> Vec<String> {
         Ok(false) => {}
         Err(e) => faits.push(format!("{ANCIEN} non desinstalle : {e}")),
     }
+    // Ce que son desinstalleur laisse : les scripts que l'application livrait
+    // jusqu'a la 1.1.1, sous Program Files. Plus rien ne les lit (§4.3).
+    let dossier = crate::systeme::emplacements().program_files.join(ANCIEN);
+    match effacer_scripts_livres(&dossier) {
+        Ok(0) => {}
+        Ok(n) => faits.push(format!(
+            "{} : {n} ancien(s) script(s) livre(s) efface(s)",
+            dossier.display()
+        )),
+        Err(e) => faits.push(format!("{} non efface : {e}", dossier.display())),
+    }
     // Ce que la desinstallation laisse : la cle de produit de Tauri et le
     // reste du magasin — seulement s'il a bien ete copie.
     if copie.is_err() {
@@ -110,6 +121,40 @@ pub fn systeme() -> Vec<String> {
 #[cfg(not(windows))]
 pub fn systeme() -> Vec<String> {
     Vec::new()
+}
+
+/// Efface `<dossier>\scripts\Default\*.ps1`, puis les dossiers devenus vides,
+/// jusqu'a `dossier` lui-meme. Rien d'autre : un fichier qui n'est pas un
+/// `.ps1` livre reste, et ses dossiers avec. Jamais a travers un lien — le
+/// dossier est sous Program Files, mais un effacement en administrateur ne
+/// suit pas une jonction, ou qu'elle soit (§12.4). Rend le nombre de scripts
+/// effaces.
+pub fn effacer_scripts_livres(dossier: &Path) -> Result<usize, String> {
+    let scripts = dossier.join("scripts");
+    let livres = scripts.join("Default");
+    for d in [dossier, &scripts, &livres] {
+        match fs::symlink_metadata(d) {
+            Err(_) => return Ok(0),
+            Ok(m) if m.file_type().is_symlink() || !m.is_dir() => return Ok(0),
+            Ok(_) => {}
+        }
+    }
+    let mut n = 0;
+    for entree in fs::read_dir(&livres).map_err(|e| e.to_string())?.flatten() {
+        let chemin = entree.path();
+        let script = entree.file_type().is_ok_and(|t| t.is_file())
+            && chemin
+                .extension()
+                .is_some_and(|x| x.eq_ignore_ascii_case("ps1"));
+        if script && fs::remove_file(&chemin).is_ok() {
+            n += 1;
+        }
+    }
+    // `remove_dir` n'efface qu'un dossier vide : ce qui reste les garde.
+    for d in [&livres, &scripts, &dossier.to_path_buf()] {
+        let _ = fs::remove_dir(d);
+    }
+    Ok(n)
 }
 
 /// Copie une cle et tout ce qu'elle contient, sans ecraser une valeur deja la.
@@ -235,5 +280,28 @@ mod tests {
         let _ = fs::remove_dir_all(&a);
         assert_eq!(deplacer_dossier(&a, &n).unwrap(), 0);
         let _ = fs::remove_dir_all(&racine);
+    }
+
+    #[test]
+    fn seuls_les_scripts_livres_sont_effaces() {
+        let racine = std::env::temp_dir().join(format!("sindry-livres-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&racine);
+        let livres = racine.join("scripts").join("Default");
+        fs::create_dir_all(&livres).unwrap();
+        fs::write(livres.join("100_CLEAN.ps1"), b"x").unwrap();
+        fs::write(livres.join("300_TELEMETRY.PS1"), b"x").unwrap();
+        assert_eq!(effacer_scripts_livres(&racine).unwrap(), 2);
+        assert!(!racine.exists(), "plus rien dedans : le dossier part");
+
+        // Un fichier qui n'est pas un script livre reste, et ses dossiers avec.
+        fs::create_dir_all(&livres).unwrap();
+        fs::write(livres.join("a.ps1"), b"x").unwrap();
+        fs::write(livres.join("notes.txt"), b"x").unwrap();
+        assert_eq!(effacer_scripts_livres(&racine).unwrap(), 1);
+        assert!(livres.join("notes.txt").exists());
+        let _ = fs::remove_dir_all(&racine);
+
+        // Rien a cet endroit : rien a faire.
+        assert_eq!(effacer_scripts_livres(&racine).unwrap(), 0);
     }
 }

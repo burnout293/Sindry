@@ -55,7 +55,7 @@ suivent la langue des réglages, ou la variable `SINDRY_LANG=fr|en`.
    Rien à faire : l'action n'est pas lancée. `--sans-analyse` lance l'action avec ses seuls
    réglages ; une liste `[items]` n'y reçoit alors rien ;
 3. une action partagée par deux lots ne tourne qu'une fois ;
-4. en cas d'échec, le réglage 3.1 décide : continuer, ou arrêter la série ;
+4. en cas d'échec, le réglage 4.1 décide : continuer, ou arrêter la série ;
 5. chaque exécution entre dans l'historique, comme depuis l'interface.
 
 `--simuler` simule ce lancement, quels que soient les réglages : une action qui ne sait pas
@@ -176,7 +176,7 @@ une autre.
 | `/THEME=clair\|sombre\|systeme` | |
 | `/AMBIANCE=<id>` | Une ambiance livrée, ou installée ensuite (`sindry ambiance importer`) |
 | `/SANSBIENVENUE` | Pas de bienvenue au premier lancement (`/NOWELCOME`) |
-| `/CONFIG=<fichier>` | Une configuration exportée (`config exporter`, Réglages 5.1) : lots, réglages par action, préférences. Lue et vérifiée à l'installation, puis copiée — le fichier d'origine n'est plus nécessaire |
+| `/CONFIG=<fichier>` | Une configuration exportée (`config exporter`, Réglages 5.4) : lots, réglages par action, préférences. Lue et vérifiée à l'installation, puis copiée — le fichier d'origine n'est plus nécessaire |
 | `/PATH` | Ajoute le dossier d'installation au `PATH` du système : `sindry` dans toute console. Retiré à la désinstallation |
 | `/NS` | Pas de raccourcis (NSIS) |
 | `/D=<dossier>` | Le dossier d'installation (NSIS) — **en dernier**, sans guillemets |

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogues en tableau</title>
+<!--
+  Maquette M24 (2.0.1) : la section « Catalogues » des Reglages en tableau.
+  Quatre styles, memes donnees : trois catalogues (l'officiel a jour, un tiers
+  avec une mise a jour, un tiers desactive) et un catalogue ajoute mais pas
+  encore installe. Dans le langage de l'ambiance Plan, clair et sombre.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grille: #1C2533;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-2: #FF9447; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --ok-s: #0C2620; --warn: #FFC24D; --warn-s: #2A2210; --err: #FF6B7A; --err-s: #2E141C;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grille: #E6E2D9;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --ok-s: #E6F5EC; --warn: #8F5D0C; --warn-s: #FBF3E2; --err: #C0263F; --err-s: #FBEAEC;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button { font: inherit; color: inherit; cursor: pointer; }
+.mono { font-family: var(--mono); }
+
+/* --- Barre de la maquette ---------------------------------------------- */
+.barre { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.barre h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.barre p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 280px; }
+.choix { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.choix button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.choix button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+
+/* --- Cadre des Reglages ---------------------------------------------------- */
+.cadre { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 58px); }
+.menu { border-right: 1px solid var(--border); padding: 22px 14px; display: flex; flex-direction: column; gap: 4px; }
+.menu .titre { font-size: 20px; font-weight: 750; margin: 0 8px 14px; }
+.menu a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: var(--text-2); font-weight: 600; text-decoration: none; }
+.menu a .n { font-family: var(--mono); font-size: 11px; color: var(--text-3); width: 14px; }
+.menu a.on { background: var(--acc-soft); color: var(--text); box-shadow: inset 2px 0 0 var(--acc); }
+.page { padding: 26px 34px 60px; background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px); background-size: 32px 32px; }
+.page-in { max-width: 980px; }
+.tete { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+.tete .gi { width: 46px; height: 46px; border-radius: 10px; background: var(--acc); color: var(--ink); display: grid; place-items: center; }
+.tete h2 { margin: 0; font-size: 22px; font-weight: 750; letter-spacing: -.5px; }
+.tete h2 .n { font-family: var(--mono); font-size: 13px; color: var(--text-3); margin-right: 8px; }
+.tete p { margin: 2px 0 0; color: var(--text-2); }
+.ico { width: 16px; height: 16px; flex-shrink: 0; }
+.ico.i20 { width: 20px; height: 20px; }
+.style-nom { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--acc-on); }
+.style-desc { margin: -4px 0 14px; color: var(--text-2); max-width: 760px; }
+
+/* Lignes communes sous le tableau : 3.2 et 3.3 */
+.lignes { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.setrow { display: flex; align-items: center; gap: 18px; padding: 14px 18px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.setrow .txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.setrow b { font-size: 14px; }
+.setrow .desc { color: var(--text-3); font-size: 12.5px; }
+.setrow .n { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-right: 6px; }
+select, .btn { border-radius: 8px; border: 1px solid var(--border-2); background: var(--surface-2); padding: 7px 12px; font-weight: 600; }
+.btn.primary { background: var(--acc); color: var(--ink); border-color: var(--acc); }
+.btn.danger { color: var(--err); }
+.btn.lien { border: 0; background: none; color: var(--acc-on); padding: 4px 6px; }
+
+/* Etats */
+.etat { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; font-size: 12px; white-space: nowrap; }
+.etat::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.etat.ok { color: var(--ok); } .etat.maj { color: var(--warn); } .etat.off { color: var(--text-3); } .etat.neuf { color: var(--acc-on); }
+.badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--acc); color: var(--acc-on); vertical-align: 1px; margin-left: 6px; }
+.badge.tiers { border-color: var(--border-2); color: var(--text-2); }
+.switch { width: 34px; height: 20px; border-radius: 999px; border: 0; background: var(--surface-3); position: relative; padding: 0; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--text-3); transition: left .15s; }
+.switch[aria-checked="true"] { background: var(--acc); }
+.switch[aria-checked="true"]::after { left: 17px; background: var(--ink); }
+
+/* --- A. Grille -------------------------------------------------------------- */
+.tab-a { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.tab-a th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.tab-a td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.tab-a tr:last-child td { border-bottom: 0; }
+.tab-a tr:hover td { background: var(--surface-soft); }
+.tab-a .nom b { display: block; font-size: 14px; }
+.tab-a .nom small { color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+.tab-a .num { font-family: var(--mono); }
+.sous { color: var(--text-3); font-size: 11px; }
+.sous.maj { color: var(--warn); }
+.tab-a .acts { text-align: right; white-space: nowrap; }
+.tab-a tr.inactif td:not(.actif) { opacity: .55; }
+.menu-pts { border: 1px solid var(--border-2); background: var(--surface-2); border-radius: 6px; width: 30px; height: 30px; display: inline-grid; place-items: center; }
+
+/* --- B. Lignes depliables --------------------------------------------------- */
+.tab-b { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.tab-b .l { display: grid; grid-template-columns: 22px minmax(180px, 2fr) 1fr 1fr 1.2fr 44px; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.tab-b .l:last-of-type { border-bottom: 0; }
+.tab-b .l.ouvert { background: var(--acc-soft); box-shadow: inset 2px 0 0 var(--acc); }
+.tab-b .chev { transition: transform .15s; color: var(--text-3); }
+.tab-b .l.ouvert .chev { transform: rotate(90deg); color: var(--acc-on); }
+.tab-b .tete-l { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); cursor: default; background: var(--surface-2); border-radius: 8px 8px 0 0; }
+.tab-b .detail { display: none; padding: 4px 16px 16px 50px; border-bottom: 1px solid var(--border); background: var(--acc-soft); }
+.tab-b .l.ouvert + .detail { display: block; }
+.tab-b .detail dl { display: grid; grid-template-columns: 140px 1fr; gap: 6px 14px; margin: 6px 0 14px; }
+.tab-b .detail dt { color: var(--text-3); }
+.tab-b .detail dd { margin: 0; }
+.tab-b .detail .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab-b .petit { color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+
+/* --- C. Releve technique (Plan) --------------------------------------------- */
+.tab-c { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; background: var(--surface); outline: 1px solid var(--border-2); }
+.tab-c caption { caption-side: top; text-align: left; font-family: var(--mono); font-size: 11px; color: var(--acc-on); padding: 0 0 8px; letter-spacing: .04em; }
+.tab-c th, .tab-c td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; }
+.tab-c th { font-weight: 500; color: var(--text-3); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+.tab-c td.nom { font-family: var(--ui); font-size: 13px; font-weight: 650; }
+.tab-c td.nom small { display: block; font-family: var(--mono); font-weight: 400; font-size: 10.5px; color: var(--text-3); }
+.tab-c .rep { color: var(--acc-on); }
+.tab-c .acts { white-space: nowrap; }
+.tab-c .acts button { font-family: var(--mono); font-size: 11px; border: 1px dashed var(--border-2); background: none; padding: 4px 8px; margin-right: 4px; }
+.tab-c .acts button.fort { border-style: solid; border-color: var(--acc); color: var(--acc-on); }
+.tab-c tr.inactif td { color: var(--text-3); }
+.cote { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin-top: 8px; }
+
+/* --- D. Tableau de bord ------------------------------------------------------- */
+.tab-d { display: grid; gap: 10px; }
+.tab-d .l { display: grid; grid-template-columns: 44px minmax(190px, 1.6fr) 1.4fr 1fr auto; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.tab-d .l.maj { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
+.tab-d .l.inactif { opacity: .6; }
+.tab-d .ic { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-2); color: var(--text-2); }
+.tab-d .l.officiel .ic { background: var(--acc-soft); color: var(--acc-on); }
+.tab-d .nom b { font-size: 14px; }
+.tab-d .nom small { display: block; color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+.jauge { display: flex; flex-direction: column; gap: 5px; }
+.jauge .t { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-2); }
+.jauge .t b { font-family: var(--mono); color: var(--text); font-weight: 500; }
+.jauge .p { height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.jauge .p i { display: block; height: 100%; background: var(--acc); border-radius: 999px; }
+.tab-d .acts { display: flex; gap: 6px; align-items: center; }
+.resume-d { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.resume-d div { flex: 1 1 150px; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.resume-d b { display: block; font-size: 20px; font-family: var(--mono); font-weight: 500; }
+.resume-d span { color: var(--text-3); font-size: 12px; }
+
+.vue { display: none; }
+.vue.on { display: block; }
+@media (max-width: 860px) { .cadre { grid-template-columns: 1fr; } .menu { display: none; } .page { padding: 18px 16px; } .tab-b .l, .tab-d .l { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="barre">
+  <h1>Catalogues en tableau</h1>
+  <p>Quatre styles pour la section 3 des Réglages, mêmes données. Cliquez une ligne du style B pour la déplier.</p>
+  <div class="choix" id="styles" role="group" aria-label="Style">
+    <button data-v="a" aria-pressed="true">A · Grille</button>
+    <button data-v="b" aria-pressed="false">B · Lignes dépliables</button>
+    <button data-v="c" aria-pressed="false">C · Relevé technique</button>
+    <button data-v="d" aria-pressed="false">D · Tableau de bord</button>
+  </div>
+  <div class="choix" id="themes" role="group" aria-label="Thème">
+    <button data-t="dark" aria-pressed="true">Sombre</button>
+    <button data-t="light" aria-pressed="false">Clair</button>
+  </div>
+</div>
+
+<div class="cadre">
+  <nav class="menu">
+    <div class="titre">Réglages</div>
+    <a href="#"><span class="n">1</span>Général</a>
+    <a href="#"><span class="n">2</span>Apparence</a>
+    <a href="#" class="on"><span class="n">3</span>Catalogues</a>
+    <a href="#"><span class="n">4</span>Actions</a>
+    <a href="#"><span class="n">5</span>Avancé</a>
+  </nav>
+
+  <main class="page"><div class="page-in">
+    <div class="tete">
+      <span class="gi"><svg class="ico i20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span>
+      <div><h2><span class="n">3</span>Catalogues</h2><p>Les actions prêtes à l'emploi : le catalogue officiel, et ceux que vous ajoutez.</p></div>
+    </div>
+
+    <!-- A ------------------------------------------------------------------ -->
+    <section class="vue on" data-vue="a">
+      <p class="style-nom">A · Grille</p>
+      <p class="style-desc">Un vrai tableau, une ligne par catalogue, colonnes alignées. Les gestes courants restent visibles ; les autres (modifier, retirer) passent dans le menu « … ».</p>
+      <table class="tab-a">
+        <thead><tr><th>Catalogue</th><th>Version</th><th>Actions</th><th>État</th><th>Actif</th><th></th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="nom"><b>Catalogue officiel <span class="badge">Officiel</span></b><small>burnout293/Sindry-Catalogue</small></td>
+            <td class="num">1.0.0<br><small class="sous">6 oct. 2026</small></td>
+            <td class="num">16 / 16</td>
+            <td><span class="etat ok">À jour</span></td>
+            <td class="actif"><button class="switch" aria-checked="true" aria-label="Actif"></button></td>
+            <td class="acts"><button class="btn">Consulter</button> <button class="menu-pts" aria-label="Plus">⋯</button></td>
+          </tr>
+          <tr>
+            <td class="nom"><b>Outils de Camille <span class="badge tiers">Tiers</span></b><small>camille-dev/sindry-outils</small></td>
+            <td class="num">0.3.1<br><small class="sous maj">→ 0.4.0</small></td>
+            <td class="num">7 / 9</td>
+            <td><span class="etat maj">Mise à jour</span></td>
+            <td class="actif"><button class="switch" aria-checked="true" aria-label="Actif"></button></td>
+            <td class="acts"><button class="btn primary">Mettre à jour</button> <button class="menu-pts" aria-label="Plus">⋯</button></td>
+          </tr>
+          <tr class="inactif">
+            <td class="nom"><b>Labo réseau <span class="badge tiers">Tiers</span></b><small>reseau-lab/sindry</small></td>
+            <td class="num">1.2.0</td>
+            <td class="num">4 / 4</td>
+            <td><span class="etat off">Désactivé</span></td>
+            <td class="actif"><button class="switch" aria-checked="false" aria-label="Actif"></button></td>
+            <td class="acts"><button class="btn">Consulter</button> <button class="menu-pts" aria-label="Plus">⋯</button></td>
+          </tr>
+          <tr>
+            <td class="nom"><b>Scripts du club <span class="badge tiers">Tiers</span></b><small>club-info/sindry-scripts</small></td>
+            <td class="num">—</td>
+            <td class="num">0 / 12</td>
+            <td><span class="etat neuf">Pas installé</span></td>
+            <td class="actif"><button class="switch" aria-checked="true" aria-label="Actif"></button></td>
+            <td class="acts"><button class="btn primary">Installer</button> <button class="menu-pts" aria-label="Plus">⋯</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- B ------------------------------------------------------------------ -->
+    <section class="vue" data-vue="b">
+      <p class="style-nom">B · Lignes dépliables</p>
+      <p class="style-desc">Le tableau reste court : une ligne résume, un clic la déplie sur le détail et tous les gestes. Une seule ligne ouverte à la fois.</p>
+      <div class="tab-b" id="tabB">
+        <div class="l tete-l"><span></span><span>Catalogue</span><span>Version</span><span>Actions</span><span>État</span><span>Actif</span></div>
+        <div class="l ouvert"><svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          <span><b>Outils de Camille</b> <span class="badge tiers">Tiers</span></span><span class="mono">0.3.1 → 0.4.0</span><span class="mono">7 / 9</span><span class="etat maj">Mise à jour</span><button class="switch" aria-checked="true"></button></div>
+        <div class="detail">
+          <dl>
+            <dt>Dépôt</dt><dd class="mono">github.com/camille-dev/sindry-outils</dd>
+            <dt>Publiée</dt><dd>0.4.0 le 12 octobre 2026 — 2 nouvelles actions, 1 mise à jour</dd>
+            <dt>Vérifié</dt><dd>aujourd'hui, 08:11 — index signé, clé de l'éditeur</dd>
+            <dt>Décochées</dt><dd>2 actions ne sont ni téléchargées ni montrées</dd>
+          </dl>
+          <div class="acts"><button class="btn primary">Mettre à jour</button><button class="btn">Consulter et choisir</button><button class="btn">Modifier</button><button class="btn danger">Retirer</button></div>
+        </div>
+        <div class="l"><svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          <span><b>Catalogue officiel</b> <span class="badge">Officiel</span></span><span class="mono">1.0.0</span><span class="mono">16 / 16</span><span class="etat ok">À jour</span><button class="switch" aria-checked="true"></button></div>
+        <div class="detail">
+          <dl><dt>Dépôt</dt><dd class="mono">github.com/burnout293/Sindry-Catalogue</dd><dt>Publiée</dt><dd>1.0.0 le 6 octobre 2026</dd><dt>Vérifié</dt><dd>au démarrage, 08:10</dd></dl>
+          <div class="acts"><button class="btn">Consulter et choisir</button><button class="btn">Vérifier</button><button class="btn danger">Retirer</button></div>
+        </div>
+        <div class="l"><svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          <span><b>Labo réseau</b> <span class="badge tiers">Tiers</span></span><span class="mono">1.2.0</span><span class="mono">4 / 4</span><span class="etat off">Désactivé</span><button class="switch" aria-checked="false"></button></div>
+        <div class="detail">
+          <dl><dt>Dépôt</dt><dd class="mono">github.com/reseau-lab/sindry</dd><dt>Désactivé</dt><dd>ni interrogé, ni montré ; ses actions restent sur le disque</dd></dl>
+          <div class="acts"><button class="btn">Consulter et choisir</button><button class="btn">Modifier</button><button class="btn danger">Retirer</button></div>
+        </div>
+        <div class="l"><svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          <span><b>Scripts du club</b> <span class="badge tiers">Tiers</span></span><span class="mono">—</span><span class="mono">0 / 12</span><span class="etat neuf">Pas installé</span><button class="switch" aria-checked="true"></button></div>
+        <div class="detail">
+          <dl><dt>Dépôt</dt><dd class="mono">github.com/club-info/sindry-scripts</dd><dt>Disponible</dt><dd>12 actions, version 2.1.0</dd></dl>
+          <div class="acts"><button class="btn primary">Installer</button><button class="btn">Consulter et choisir</button><button class="btn danger">Retirer</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- C ------------------------------------------------------------------ -->
+    <section class="vue" data-vue="c">
+      <p class="style-nom">C · Relevé technique</p>
+      <p class="style-desc">La grammaire de Plan poussée au bout : un relevé en chasse fixe, des repères numérotés, les gestes en boutons au trait. Dense, précis — pour l'Expert d'abord.</p>
+      <table class="tab-c">
+        <caption>RELEVÉ DES CATALOGUES · 4 SOURCES · 27 ACTIONS INSTALLÉES</caption>
+        <thead><tr><th>Rep.</th><th>Catalogue</th><th>Ver.</th><th>Dispo.</th><th>Act.</th><th>État</th><th>Actif</th><th>Gestes</th></tr></thead>
+        <tbody>
+          <tr><td class="rep">3.1.1</td><td class="nom">Catalogue officiel<small>burnout293/Sindry-Catalogue</small></td><td>1.0.0</td><td>1.0.0</td><td>16/16</td><td><span class="etat ok">à jour</span></td><td>oui</td><td class="acts"><button>consulter</button><button>vérifier</button></td></tr>
+          <tr><td class="rep">3.1.2</td><td class="nom">Outils de Camille<small>camille-dev/sindry-outils</small></td><td>0.3.1</td><td>0.4.0</td><td>7/9</td><td><span class="etat maj">mise à jour</span></td><td>oui</td><td class="acts"><button class="fort">mettre à jour</button><button>…</button></td></tr>
+          <tr class="inactif"><td class="rep">3.1.3</td><td class="nom">Labo réseau<small>reseau-lab/sindry</small></td><td>1.2.0</td><td>1.2.0</td><td>4/4</td><td><span class="etat off">désactivé</span></td><td>non</td><td class="acts"><button>activer</button><button>…</button></td></tr>
+          <tr><td class="rep">3.1.4</td><td class="nom">Scripts du club<small>club-info/sindry-scripts</small></td><td>—</td><td>2.1.0</td><td>0/12</td><td><span class="etat neuf">pas installé</span></td><td>oui</td><td class="acts"><button class="fort">installer</button><button>…</button></td></tr>
+        </tbody>
+      </table>
+      <div class="cote"><span>⊢ vérifié au démarrage · 08:10</span><span>index signés · clés vérifiées ⊣</span></div>
+    </section>
+
+    <!-- D ------------------------------------------------------------------ -->
+    <section class="vue" data-vue="d">
+      <p class="style-nom">D · Tableau de bord</p>
+      <p class="style-desc">Un résumé chiffré en tête, puis une ligne par catalogue avec une jauge : ce qui est installé sur ce qui est disponible. Ce qui demande un geste se voit d'abord.</p>
+      <div class="resume-d">
+        <div><b>4</b><span>catalogues</span></div>
+        <div><b>27</b><span>actions installées</span></div>
+        <div><b style="color:var(--warn)">1</b><span>mise à jour disponible</span></div>
+        <div><b>08:10</b><span>dernière vérification</span></div>
+      </div>
+      <div class="tab-d">
+        <div class="l maj"><span class="ic"><svg class="ico i20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg></span>
+          <div class="nom"><b>Outils de Camille</b> <span class="badge tiers">Tiers</span><small>camille-dev/sindry-outils</small></div>
+          <div class="jauge"><div class="t"><span>Installées</span><b>7 / 9</b></div><div class="p"><i style="width:78%"></i></div></div>
+          <span class="etat maj">0.3.1 → 0.4.0</span>
+          <div class="acts"><button class="btn primary">Mettre à jour</button><button class="menu-pts">⋯</button></div></div>
+        <div class="l officiel"><span class="ic"><svg class="ico i20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <div class="nom"><b>Catalogue officiel</b> <span class="badge">Officiel</span><small>burnout293/Sindry-Catalogue</small></div>
+          <div class="jauge"><div class="t"><span>Installées</span><b>16 / 16</b></div><div class="p"><i style="width:100%"></i></div></div>
+          <span class="etat ok">1.0.0 · à jour</span>
+          <div class="acts"><button class="btn">Consulter</button><button class="menu-pts">⋯</button></div></div>
+        <div class="l"><span class="ic"><svg class="ico i20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg></span>
+          <div class="nom"><b>Scripts du club</b> <span class="badge tiers">Tiers</span><small>club-info/sindry-scripts</small></div>
+          <div class="jauge"><div class="t"><span>Installées</span><b>0 / 12</b></div><div class="p"><i style="width:0"></i></div></div>
+          <span class="etat neuf">pas installé</span>
+          <div class="acts"><button class="btn primary">Installer</button><button class="menu-pts">⋯</button></div></div>
+        <div class="l inactif"><span class="ic"><svg class="ico i20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg></span>
+          <div class="nom"><b>Labo réseau</b> <span class="badge tiers">Tiers</span><small>reseau-lab/sindry</small></div>
+          <div class="jauge"><div class="t"><span>Installées</span><b>4 / 4</b></div><div class="p"><i style="width:100%"></i></div></div>
+          <span class="etat off">désactivé</span>
+          <div class="acts"><button class="btn">Activer</button><button class="menu-pts">⋯</button></div></div>
+      </div>
+    </section>
+
+    <!-- Communes aux quatre styles -->
+    <div class="lignes">
+      <div class="setrow"><div class="txt"><b><span class="n">3.2</span>Rechercher des nouveautés</b><span class="desc">Tout seul au démarrage, ou seulement quand vous le demandez.</span></div>
+        <select><option>Au démarrage</option><option>Quand je le demande</option></select></div>
+      <div class="setrow"><div class="txt"><b><span class="n">3.3</span>Ajouter un catalogue</b><span class="desc">Un dépôt GitHub qui publie des actions signées par son éditeur.</span></div>
+        <button class="btn">Ajouter</button></div>
+    </div>
+  </div></main>
+</div>
+
+<script>
+const bascule = (groupe, attr, f) => document.getElementById(groupe).addEventListener('click', (ev) => {
+  const b = ev.target.closest('button'); if (!b) return;
+  document.querySelectorAll(`#${groupe} button`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  f(b.dataset[attr]);
+});
+bascule('styles', 'v', (v) => document.querySelectorAll('.vue').forEach((s) => s.classList.toggle('on', s.dataset.vue === v)));
+bascule('themes', 't', (t) => { document.documentElement.dataset.theme = t; });
+document.getElementById('tabB').addEventListener('click', (ev) => {
+  const l = ev.target.closest('.l'); if (!l || l.classList.contains('tete-l') || ev.target.closest('.switch')) return;
+  const ouvrir = !l.classList.contains('ouvert');
+  document.querySelectorAll('#tabB .l').forEach((x) => x.classList.remove('ouvert'));
+  if (ouvrir) l.classList.add('ouvert');
+});
+document.querySelectorAll('.switch').forEach((s) => s.addEventListener('click', () => s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true'))));
+</script>
+</body>
+</html>

@@ -1442,8 +1442,8 @@ fn lancer(h: &tauri::AppHandle, cibles: &[String], o: &Options) -> Res<i32> {
                     reste,
                     "non_lance",
                     Some(l!(
-                        "arret apres un echec (reglage 3.1)",
-                        "stopped after a failure (setting 3.1)"
+                        "arret apres un echec (reglage 4.1)",
+                        "stopped after a failure (setting 4.1)"
                     )),
                 ));
             }

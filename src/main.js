@@ -1878,9 +1878,9 @@ function carteSource(x, modifiable) {
     ? `${x.officielle ? '' : `<button class="btn compact" type="button" data-source-modifier="${id}">${esc(t('cat.modifier'))}</button>`}
        ${installe ? `<button class="btn compact danger" type="button" data-source-retirer="${id}">${esc(t('cat.retirer'))}</button>` : ''}`
     : '';
-  return `<div class="setrow source-carte${x.active ? '' : ' inactive'}" data-num="2.1" data-source="${id}">
+  return `<div class="setrow source-carte${x.active ? '' : ' inactive'}" data-num="3.1" data-source="${id}">
     <span class="rg-bouclier"><svg class="ico i20" aria-hidden="true"><use href="#${x.officielle ? 'shield-check' : 'sec-catalogue'}" /></svg></span>
-    <span class="setrow-txt"><span class="num">2.1</span><span class="rg-libelle">
+    <span class="setrow-txt"><span class="num">3.1</span><span class="rg-libelle">
       <b>${nom} ${badge}</b>
       <span class="desc mono">github.com/${esc(x.depot)}</span>
       ${etat}${exclus}${avert}${inactive}
@@ -4450,16 +4450,43 @@ function rendreResumeAnalyse(groupe) {
   document.getElementById('anTotal').textContent = morceaux.join(' · ');
   const bouton = document.getElementById('btnLancerEntretien');
   bouton.hidden = false;
-  // Un lot qui n'a fait que mesurer (un diagnostic) est termine : il n'y a
-  // rien a cocher, donc rien a lancer — le bouton y met fin au lieu de rester
-  // grise sur « Rien n'est coché ».
-  const rienACocher = !telsQuels.length && modeles.every((m) => !Object.values(m.options)
+  // Rien que l'on puisse cocher — un diagnostic qui n'a fait que mesurer, ou
+  // tout ce que l'analyse a trouve est deja en place : le lot est termine, et
+  // le bouton y met fin au lieu de rester grise sur « Rien n'est coché ». En
+  // 2.0.0, seul le premier cas etait prevu : un PC deja regle restait bloque.
+  const rienACocher = !telsQuels.length && !modeles.some(cochable);
+  const dejaEnPlace = rienACocher && modeles.some((m) => Object.values(m.options)
     .some((o) => !o.def.scan && (o.find || Object.keys(o.finds).length || o.items.length)));
+  if (!aLancer.length && dejaEnPlace) {
+    document.getElementById('anTotal').textContent = t('simple.deja_en_place');
+  }
   bouton.dataset.fin = !aLancer.length && rienACocher ? '1' : '';
   bouton.disabled = aLancer.length === 0 && !bouton.dataset.fin;
   bouton.textContent = aLancer.length ? t('simple.lancer')
     : bouton.dataset.fin ? t(entretienEnCours?.depuisExpert ? 'simple.retour_expert' : 'simple.termine_retour')
       : t('simple.rien_a_lancer');
+}
+
+/** Une analyse laisse-t-elle quelque chose a cocher ? Ce qui est deja en place
+ *  (`state=ok`) ou verrouille ne se coche pas ; une liste dont le choix actuel
+ *  est le seul rapporte non plus. */
+function cochable(m) {
+  return Object.values(m.options).some((o) => {
+    const d = o.def;
+    if (d.scan) return false;
+    if (d.kind === 'bool') return !!o.find && o.find.state !== 'ok';
+    if (d.kind === 'multi') return Object.values(o.finds).some((f) => f.state !== 'ok');
+    if (d.kind === 'select') {
+      const choix = Object.values(o.finds);
+      return choix.length > 1 || choix.some((f) => f.current !== 'true');
+    }
+    // Les feuilles seules : un element parent (« Services de télémétrie ») ne
+    // porte pas d'etat, ses enfants si.
+    if (d.kind === 'items') {
+      return o.items.some((it) => !it.locked && it.state !== 'ok' && !o.items.some((x) => x.parent === it.id));
+    }
+    return false;
+  });
 }
 
 /* --- Mode Expert : « Analyser » sur la fiche d'un script ---------------- */
@@ -5071,14 +5098,12 @@ function appliquerTraductionsReglages() {
 
   document.getElementById('setTitre').textContent = t('reglages.titre');
   document.getElementById('navGeneral').textContent = t('reglages.nav_general');
-  document.getElementById('navExpert').textContent = t('reglages.nav_execution');
-  document.getElementById('navOutils').textContent = t('reglages.nav_outils');
-  document.getElementById('navConfig').textContent = t('reglages.nav_config');
-  document.getElementById('navHisto').textContent = t('reglages.nav_histo');
+  document.getElementById('navApparence').textContent = t('reglages.nav_apparence');
+  document.getElementById('navActions').textContent = t('reglages.nav_actions');
+  document.getElementById('navAvance').textContent = t('reglages.nav_avance');
   document.getElementById('secGeneralTitre').textContent = t('reglages.nav_general');
-  document.getElementById('secOutilsTitre').textContent = t('reglages.nav_outils');
-  document.getElementById('secConfigTitre').textContent = t('reglages.nav_config');
-  document.getElementById('secHistoTitre').textContent = t('reglages.nav_histo');
+  document.getElementById('secApparenceTitre').textContent = t('reglages.nav_apparence');
+  document.getElementById('secAvanceTitre').textContent = t('reglages.nav_avance');
   document.getElementById('setThemeLabel').textContent = t('reglages.theme');
   document.querySelector('#setThemeSeg [data-set-theme="light"]').textContent = t('onb.theme_clair');
   document.querySelector('#setThemeSeg [data-set-theme="dark"]').textContent = t('onb.theme_sombre');
@@ -5120,8 +5145,8 @@ function appliquerTraductionsReglages() {
   document.getElementById('btnRappelFermer').textContent = t('rappel.fermer');
   document.getElementById('btnRappelInstaller').textContent = t('rappel.installer');
 
-  document.getElementById('setSectionExpert').textContent = t('reglages.nav_execution');
-  document.getElementById('filExecution').textContent = t('reglages.nav_execution');
+  document.getElementById('secActionsTitre').textContent = t('reglages.nav_actions');
+  document.getElementById('filAvance').textContent = t('reglages.nav_avance');
   document.getElementById('setEchecLabel').textContent = t('reglages.echec_comportement');
   document.querySelector('#setEchecSelect [value="continue"]').textContent = t('reglages.echec_continuer');
   document.querySelector('#setEchecSelect [value="stop"]').textContent = t('reglages.echec_arreter');
@@ -5444,14 +5469,14 @@ async function afficherSectionReglages(id, { ligne } = {}) {
     page.hidden = page.dataset.rgPage !== id;
   });
   document.getElementById('rgResultats').hidden = true;
-  // La page du plan du disque appartient a la section 3, celle d'un catalogue
-  // a la section 2.
-  const menu = { proteges: 'expert', source: 'catalogue' }[id] || id;
+  // La page du plan du disque appartient a la section 5 (Avance), celle d'un
+  // catalogue a la section 3.
+  const menu = { proteges: 'avance', source: 'catalogue' }[id] || id;
   document.querySelectorAll('#setNav [data-rg-section]').forEach((b) => {
     b.setAttribute('aria-current', b.dataset.rgSection === menu ? 'page' : 'false');
   });
   document.getElementById('setScroll').scrollTop = 0;
-  if (id === 'histo') {
+  if (id === 'avance') {
     await rafraichirHistorique();
     rendreHistorique();
   }
@@ -5478,6 +5503,8 @@ function rechercherReglages(texte) {
     if (!sectionVisible(page.dataset.rgPage)) return;
     const section = page.querySelector('.rg-h h1 span:not(.num)')?.textContent || '';
     page.querySelectorAll('.setrow[data-num]').forEach((ligne) => {
+      // Une ligne reservee a l'Expert, dans une section des deux modes (Avance).
+      if (modeCourant === 'simple' && ligne.classList.contains('only-expert')) return;
       const libelle = ligne.querySelector('.rg-libelle b')?.textContent.trim() || '';
       const desc = ligne.querySelector('.desc')?.textContent.trim() || '';
       if (sansAccents(`${libelle} ${desc}`).includes(q)) {
@@ -5989,7 +6016,7 @@ function cablerReglages() {
       recherche.value = '';
       afficherSectionReglages(sectionReglages);
     } else if (sectionReglages === 'proteges') {
-      afficherSectionReglages('expert');
+      afficherSectionReglages('avance');
     } else if (sectionReglages === 'source') {
       afficherSectionReglages('catalogue');
     } else {

@@ -16,7 +16,7 @@ compilation : [`docs/ambiances/foret-de-nuit.sindry-ambiance`](ambiances/foret-d
 ## En deux minutes
 
 1. **Partez d'un fichier qui marche.** Copiez l'exemple ci-dessus, ou, dans Sindry,
-   choisissez une ambiance livrée (Réglages → 1.7 « Ambiance ») et cliquez **Exporter** :
+   choisissez une ambiance livrée (Réglages → 2.3 « Ambiance ») et cliquez **Exporter** :
    une copie modifiable de ses couleurs apparaît dans le dossier des ambiances, et
    l'Explorateur s'ouvre dessus.
 2. Changez `id` (minuscules, chiffres, tirets) et `nom`.
@@ -191,11 +191,11 @@ suite ce qui ne s'afficherait pas :
 ## Installer, partager, retirer
 
 Les ambiances installées vivent dans **`%LOCALAPPDATA%\Sindry\ambiances\`**. Déposer un
-fichier `.sindry-ambiance` dans ce dossier suffit : il apparaît dans le réglage 1.7 à la
+fichier `.sindry-ambiance` dans ce dossier suffit : il apparaît dans le réglage 2.3 à la
 prochaine ouverture des réglages. Un fichier refusé n'empêche pas les autres : le réglage
 liste ceux qu'il ignore, et pourquoi.
 
-Dans **Réglages → 1.7 « Ambiance »** :
+Dans **Réglages → 2 « Apparence »** :
 
 - **Importer…** — choisit un fichier, le vérifie, l'installe. Une ambiance du même `id`
   existe déjà ? Sindry montre les deux versions et demande avant de remplacer.

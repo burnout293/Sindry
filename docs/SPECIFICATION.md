@@ -638,25 +638,21 @@ réellement.
 
 ## 8. Réglages
 
-| Réglage | Emplacement |
-|---|---|
-| Thème (clair / sombre / Windows) | **partout**, icône engrenage |
-| Langue | **partout** |
-| Mises à jour (1.4) : proposer uniquement les versions stables, proposer aussi les versions bêta (1.8 : la release publiée la plus récente, pré-version comprise, prise dans la liste des releases plutôt qu'à `releases/latest`), ne jamais proposer | **partout** |
-| Ambiance (1.7 ; numérotée 1.8 dans la version 1.8) : **Plan** par défaut (1.8), Braise ardente, Braise crépuscule, Synthwave, Spatial, Terminal vert ou ambre, Aurore boréale ou australe (§15.4), et les ambiances installées (2.0, §15.7) | **partout** |
-| Partager une ambiance (1.8, 2.0) : importer, exporter, retirer, ouvrir le dossier, guide du format (§15.7) | **partout** |
-| Catalogues : consulter et choisir les actions, installer, vérifier, activer, moment de la vérification (§16) | **partout** |
-| Catalogues : en ajouter, en modifier, en retirer — en administrateur (§16.2). Depuis la 1.8, dans les deux modes ; retirer efface la copie téléchargée du catalogue, l'officiel compris, qui se réinstalle alors de zéro | **partout** |
-| Comportement en cas d'échec | Expert |
-| Taille maximale des journaux | Expert |
-| Réinitialisation aux réglages d'usine | Expert |
-| Export / import de la configuration | Expert |
-| Ouvrir le dossier des scripts | Expert |
-| Rapport de conformité | Expert |
-| Ré-analyser tous les scripts (§5.5) | Expert |
-| Politique d'exécution : Bypass / RemoteSigned / Unrestricted (§6.7) | Expert |
-| Emplacements protégés : en retirer, en ajouter — en administrateur (§12.4) | Expert |
-| Emplacements protégés **pour une seule action** (2.0), dans sa configuration — en administrateur (§12.4) | Expert |
+Cinq sections depuis la 2.0.1 (avant : Général, Catalogues, Exécution, Outils,
+Configuration, Historique). Une section « Expert » n'apparaît pas en mode Simple ; dans
+Avancé, seul l'historique s'y montre.
+
+| Section | Réglages | Mode |
+|---|---|---|
+| **1 Général** | 1.1 Langue · 1.2 Mises à jour : versions stables, bêta aussi (la release publiée la plus récente, pré-version comprise), jamais · 1.3 Rechercher une mise à jour · 1.4 Présentation de Sindry (revoir la bienvenue) · 1.5 Numéros des réglages | partout |
+| **2 Apparence** | 2.1 Thème : clair, sombre, Windows (aussi l'icône soleil / lune) · 2.2 Taille de l'interface · 2.3 Ambiance (§15.4, §15.7) · 2.4 Partager une ambiance : importer, exporter, retirer, ouvrir le dossier, guide du format | partout |
+| **3 Catalogues** | 3.1 Une ligne par catalogue : consulter et choisir les actions, installer, vérifier, activer, modifier, retirer — ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des nouveautés (au démarrage, ou sur demande) · 3.3 Ajouter un catalogue | partout |
+| **4 Actions** | 4.1 En cas d'échec : continuer ou arrêter la série · 4.2 Politique d'exécution : Bypass, RemoteSigned, Unrestricted (§6.7) · 4.3 Dossier des scripts · 4.4 Ré-analyser tous les scripts (§5.5) | Expert |
+| **5 Avancé** | 5.1 Taille maximale des journaux · 5.2 Emplacements protégés, en administrateur (§12.4) · 5.3 Rapport de conformité · 5.4 Exporter la configuration · 5.5 Importer une configuration · 5.6 Réinitialiser aux réglages d'usine | Expert |
+| | 5.7 Historique | partout |
+
+Les emplacements protégés **pour une seule action** (2.0) se règlent dans la configuration
+de l'action, en Expert et en administrateur (§12.4).
 
 Une personne à qui l'on a installé l'outil peut éclaircir ou agrandir son interface sans
 jamais croiser un réglage qu'elle pourrait casser.
@@ -679,7 +675,7 @@ changer de mode, puis les rouvrir.
 - La section 3 s'appelle **« Exécution »** : « Mode Expert » nommait la section par son
   public, alors que le menu le dit déjà. Les numéros ne changent pas.
 
-**Emplacements protégés (3.5).** Une ligne de résumé — verte si tout est protégé, orange
+**Emplacements protégés (5.2)**. Une ligne de résumé — verte si tout est protégé, orange
 avec le nom de ce qui ne l'est plus — et un bouton « Gérer », qui ouvre **le plan du
 disque** : l'arborescence du lecteur système, un bouclier sur chaque emplacement protégé,
 « Autorisé » sur le profil de l'utilisateur et le profil public, « Partout ailleurs :
@@ -1837,7 +1833,7 @@ reglages, ou `SINDRY_LANG`.
 - **`lancer` fait l'entretien du mode Simple** : un point de restauration avant la serie si
   une action le demande et ne sera pas simulee ; pour une action analysable, l'analyse puis
   l'action avec **ce que l'interface cocherait d'office** — rien a faire, elle n'est pas
-  lancee ; une action partagee par deux lots une seule fois ; la politique d'echec (3.1).
+  lancee ; une action partagee par deux lots une seule fois ; la politique d'echec (4.1).
 - **Ce qui est coche d'office est calcule deux fois** — `src/analyse.js` pour l'interface,
   `analyse::selection_office` pour la ligne de commande — et tenu d'accord par un fichier de
   cas commun, `tools/selection-cas.json`, que `tools/verifier-selection.mjs` passe au
