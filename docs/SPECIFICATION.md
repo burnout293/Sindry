@@ -1119,15 +1119,18 @@ Maquette de référence : `docs/mockups/` et le canevas *Sindry — Marée contr
 | Écran | Rôle de l'eau |
 |---|---|
 | Simple · étape 1 | Les lots sont des **bouées posées sur la ligne d'eau**, chacune à la hauteur que lui donne la courbe |
-| Simple · étape 3 | Le niveau **monte de 0 à 100 %** ; la liste des tâches vit dans une **carte blanche flottant par-dessus** |
+| Simple · étape 3 | **Plus d'eau depuis la 2.0.2** : le graphique de progression de l'ambiance, dans la carte de l'entretien (§15.7) — sinon la barre de Sindry |
 | Expert | Le **journal est l'eau profonde** : panneau sombre pleine largeur en bas d'écran, à crête ondulée |
 
-**Limite assumée à l'étape 3.** L'eau monte du bas alors que la liste se lit du haut :
-les deux sens se contredisent. La liste est donc placée dans une carte blanche opaque
-au-dessus de l'eau, ce qui garantit la lisibilité et l'ordre de lecture. **Conséquence à
-accepter : à cet écran l'eau est décorative, elle n'est plus porteuse d'information.**
-Le pourcentage et la liste portent seuls le sens. L'alternative (inverser la liste, ou
-faire redescendre la marée) a été écartée.
+**L'étape 3 a quitté l'eau (2.0.2).** Jusqu'à la 2.0.1, l'eau montait du bas pendant que la
+liste se lisait du haut : les deux sens se contredisaient, et l'eau n'était plus que
+décorative. Elle est remplacée par le **graphique de progression de l'ambiance** — un
+engrenage autour d'une jauge pour Plan, une lune pour Forêt de nuit, un voile pour Aurore
+australe… —, dessiné par l'ambiance elle-même dans un cadre isolé (§15.7,
+`docs/FORMAT_AMBIANCE.md`, maquettes M26 et M28). Il ne montre que le pourcentage : le
+nombre d'actions et l'état sont écrits à côté. Une ambiance sans graphique reçoit la barre
+de Sindry. À la fin, le titre devient « Entretien terminé » (il restait « Entretien en
+cours » au-dessus de « Tout est terminé »).
 
 ### 15.2 Ligne d'eau et nombre de lots
 

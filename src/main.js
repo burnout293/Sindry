@@ -179,6 +179,7 @@ function appliquerAmbiance() {
     if (!doc) cadre.removeAttribute('srcdoc');
     else if (cadre.getAttribute('srcdoc') !== doc) cadre.setAttribute('srcdoc', doc);
   }
+  drawProgress();
 }
 
 /** La forme en attributs `data-f-*` : des valeurs deja verifiees par Rust
@@ -209,6 +210,101 @@ function documentDecor(a, mode, jetons) {
     + `<style>${a.decor.css}</style>`
     + '<style>@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}</style>'
     + `</head><body>${a.decor.balisage}</body></html>`;
+}
+
+/* --- Run progress (2.0.2) ----------------------------------------------------
+   The ambiance draws it (`progress`: a slot, markup, CSS — checked by Rust) in
+   an isolated frame, recomposed each time an action finishes, with the
+   percentage as `--p` / `--pct` / `{{pourcentage}}`. `--p` is a typed property
+   animated from the previous value, so every graphic glides by itself;
+   `--depuis` lets looping animations carry on across recompositions. Without a
+   graphic: Sindry's bar. */
+const progress = { p: 0, before: 0, start: 0, state: 'en-cours' };
+
+/** « 50 % » in French, "50%" in English. */
+function percentText(p) {
+  const n = Math.round(p * 100);
+  return currentLang() === 'en' ? `${n}%` : `${n}\u00a0%`;
+}
+
+function progressDocument(a, mode, tokens) {
+  const vars = Object.entries(tokens).map(([k, v]) => `--${k}:${v}`).join(';');
+  const pct = Math.round(progress.p * 100), before = Math.round(progress.before * 100);
+  const since = ((performance.now() - progress.start) / 1000).toFixed(2);
+  const markup = a.progress.markup.split('{{pourcentage}}').join(esc(percentText(progress.p)));
+  return '<!doctype html>'
+    + `<html data-mode="${mode}" data-etat="${progress.state}"><head><meta charset="utf-8">`
+    + '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'">'
+    + '<style>@property --p{syntax:"<number>";inherits:true;initial-value:0}@property --pct{syntax:"<number>";inherits:true;initial-value:0}'
+    + `:root{color-scheme:normal;${vars};--p:${progress.p};--pct:${pct};--p-avant:${progress.before};--pct-avant:${before};--depuis:${since};animation:sindry-avance .8s ease-out}`
+    + '@keyframes sindry-avance{from{--p:var(--p-avant);--pct:var(--pct-avant)}}'
+    + 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}body{position:relative}</style>'
+    + `<style>${a.progress.css}</style>`
+    + '<style>@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}</style>'
+    + `</head><body>${markup}</body></html>`;
+}
+
+/** The next picture of `box`: it loads in the hidden frame, then takes the
+ *  shown one's place — no blank between two actions. */
+function swapFrame(box, doc) {
+  if (box.querySelectorAll('iframe').length < 2) {
+    delete box.dataset.front;
+    box.replaceChildren(...[0, 1].map(() => {
+      const f = document.createElement('iframe');
+      for (const [k, v] of [['sandbox', ''], ['tabindex', '-1'], ['aria-hidden', 'true'], ['referrerpolicy', 'no-referrer']]) f.setAttribute(k, v);
+      return f;
+    }));
+  }
+  // `front` is the frame on show; the next picture always goes to the other.
+  const frames = box.querySelectorAll('iframe');
+  const front = Number(box.dataset.front || 1);
+  const next = frames[1 - front], old = frames[front];
+  // The old picture leaves a moment after the new one loads: `load` comes
+  // before the first paint, and showing an unpainted frame would blink.
+  next.onload = () => {
+    box.dataset.front = String(1 - front);
+    next.classList.add('shown');
+    setTimeout(() => { if (box.dataset.front === String(1 - front)) old.classList.remove('shown'); }, 150);
+  };
+  next.srcdoc = doc;
+}
+
+/** Draws the progress as it stands: the ambiance's graphic, or the bar. */
+function drawProgress() {
+  const band = document.getElementById('progBand');
+  if (!band || !progress.start) return;
+  const badge = document.getElementById('progBadge');
+  const a = ambianceDe(accentCourant);
+  const slot = a?.progress?.slot || '';
+  const pct = document.getElementById('ringPct');
+  pct.textContent = percentText(progress.p);
+  pct.setAttribute('aria-valuenow', String(Math.round(progress.p * 100)));
+  pct.classList.toggle('sr-only', !!slot);
+  document.getElementById('progBar').hidden = !!slot;
+  document.getElementById('progBarFill').style.width = `${progress.p * 100}%`;
+  band.hidden = slot !== 'bandeau';
+  badge.hidden = slot !== 'pastille';
+  for (const box of [band, badge]) if (box.hidden) box.replaceChildren();
+  if (!slot) return;
+  const mode = themeEffectif() === 'dark' ? 'sombre' : 'clair';
+  swapFrame(slot === 'bandeau' ? band : badge, progressDocument(a, mode, a[mode] || a.sombre || a.clair));
+}
+
+function startProgress() {
+  Object.assign(progress, { p: 0, before: 0, start: performance.now(), state: 'en-cours' });
+  drawProgress();
+}
+
+function setProgress(p) {
+  if (p === progress.p) return;
+  Object.assign(progress, { before: progress.p, p });
+  drawProgress();
+}
+
+/** `fini` or `arrete`: the graphic may stop what turns. */
+function finishProgress(state) {
+  Object.assign(progress, { before: progress.p, state });
+  drawProgress();
 }
 
 /** Relit le dossier des ambiances. Rend vrai si l'ambiance appliquee a change
@@ -4714,7 +4810,6 @@ function noterRestauration(resultat) {
 }
 
 async function lancerEntretien() {
-  document.getElementById('riseFill')?.classList.remove('termine');
   const groupe = groupeLancement;
   if (!groupe) return;
   entretienActif = true;
@@ -4727,7 +4822,7 @@ async function lancerEntretien() {
 
   afficherEtapeSimple(4);
   document.getElementById('s3Titre').textContent = t('s3.titre');
-  document.getElementById('riseBadgeLabel').textContent = t('simple.niveau_atteint');
+  startProgress();
   document.getElementById('btnArreterEntretien').hidden = false;
   document.getElementById('btnArreterEntretien').textContent = t('simple.arreter_apres');
   document.getElementById('btnRetourAccueil').hidden = true;
@@ -4823,9 +4918,10 @@ function terminerEntretien() {
   entretienActif = false;
   rendreBandeauMaj();
   rendreBandeauCatalogue();
-  // L'eau redescend : elle disait « en cours » alors que tout etait fini, et
-  // restait a mi-hauteur sur l'ecran de bilan.
-  document.getElementById('riseFill')?.classList.add('termine');
+  // The run is over, completed or stopped: the title says it (it used to keep
+  // « Entretien en cours » above « Tout est terminé »), the graphic may stop.
+  document.getElementById('s3Titre').textContent = t('s3.titre_fini');
+  finishProgress(entretienEnCours.resultats.length < entretienEnCours.total ? 'arrete' : 'fini');
   document.getElementById('btnArreterEntretien').hidden = true;
   document.getElementById('btnRetourAccueil').hidden = false;
   document.getElementById('btnRetourAccueil').textContent = t(entretienEnCours?.depuisExpert ? 'simple.retour_expert' : 'simple.termine_retour');
@@ -4908,9 +5004,7 @@ function majProgression() {
   const total = entretienEnCours?.total || 1;
   const fait = entretienEnCours?.resultats.length || 0;
   const pct = Math.round((fait / total) * 100);
-  document.getElementById('riseFill').style.height = `${pct}%`;
-  document.getElementById('ringPct').textContent = `${pct}%`;
-  document.getElementById('risePct').textContent = `${pct} %`;
+  setProgress(fait / total);
   if (fait < total) {
     document.getElementById('tasksBilan').textContent = t('simple.progression', { fait, total });
   }

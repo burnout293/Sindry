@@ -57,7 +57,13 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — un lot dont tout est déjà en place ne reste plus bloqué à l'analyse ; raccourcis recréés après la mise à jour depuis la 1.8 ; anciens scripts livrés effacés de Program Files | Fait |
 | | — Réglages en cinq sections : Général, Apparence, Catalogues, Actions, Avancé (l'historique y entre) (§8) | Fait |
 | | — toute ambiance est un fichier ; trois de base (Plan, Forêt de nuit, Aurore australe), exportables, retirables, réinstallables ; les sept autres publiées à part (`ambiances/depot/`) ; qui en utilisait une la garde ; la forme de l'interface en listes fermées (§15.4, §15.7) | Fait |
-| | — section Catalogues en tableau : quatre styles proposés (maquette M24) | Choix en attente |
+| | — section Catalogues en tableau : quatre styles proposés (maquette M24) | Choisi : M29 (2.0.2) |
+| **2.0.2** | Progression par ambiance, catalogues en tableau — pré-version | En cours |
+| | — la montée d'eau de l'étape 3 remplacée par le graphique de progression de chaque ambiance, dans un cadre isolé ; la barre de Sindry par défaut ; « Entretien terminé » à la fin (M26, M28) | Fait |
+| | — les ambiances livrées et restées intactes suivent la version de Sindry ; Plan 1.1, plus discrète (M25) | Fait |
+| | — « Entretien complet » suit l'ordre des lots, puis celui de chaque lot (il suivait l'ordre des identifiants) | Fait |
+| | — migration depuis WinTool : les sous-dossiers se fusionnent, la clé de l'ancien installeur s'efface | Fait |
+| | — Catalogues : barre de commandes, tableau, détail et liste des actions en bas, clic droit (M29) | En cours |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

@@ -1267,51 +1267,6 @@ body[data-mode="simple"] .titlebar { background: none; border-bottom: none; }
   border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
 }
 
-/* Etape 3 : la montee d'eau est decorative (specification 15.1) — seuls le
-   pourcentage et la liste des taches portent l'information. */
-.rise { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
-/* L'opacite est portee par un calque derriere, jamais par .rise-fill lui-meme :
-   elle s'appliquait sinon a ses enfants, et la pastille « niveau atteint »
-   s'affichait a 18 % — illisible. */
-.rise-fill {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
-  transition: height .7s ease;
-  /* La crete deborde volontairement au-dessus (top negatif) ET sur la droite
-     (200 % de large, pour la derive). Sans `visible`, elle etait rognee net a
-     la largeur du bloc et la boucle sautait : c'est ce qui donnait
-     l'impression d'un defaut d'alignement. */
-  overflow: visible;
-}
-/* L'eau redescend quand l'entretien est fini : elle disait « en cours » alors
-   que tout etait termine. */
-.rise-fill.termine { height: 0% !important; transition: height 1.1s ease; }
-.rise-fill::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(var(--acc), var(--acc-2)); opacity: .18;
-}
-/* Crete de la ligne d'eau qui monte pendant l'entretien.
-   Elle faisait 14 px a 30 % d'opacite, etiree sur toute la largeur : a l'ecran
-   c'etait une ligne droite, pas une vague. Quatre periodes, une amplitude
-   franche, et la meme derive lente que l'eau du fond. */
-.rise-crest {
-  position: absolute; top: -21px; left: 0;
-  width: 200%; height: 44px; opacity: .55;
-  animation: derive 34s linear infinite;
-}
-body.inactive .rise-crest { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .rise-crest { animation: none; width: 100%; } }
-
-/* Pastille qui flotte au niveau atteint — suit .rise-fill puisqu'elle en est
-   un enfant positionne par rapport a son bord haut, qui monte avec elle. */
-.rise-badge {
-  position: absolute; top: -15px; left: 44px; transform: translateY(-100%);
-  display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
-  background: var(--surface); border: 2px solid var(--acc);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--acc) 22%, transparent);
-  font-size: 11.5px; font-weight: 600; color: var(--text-2);
-}
-.rise-badge b { color: var(--acc-on); font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
-
 /* Carte de l'entretien : la maquette la pose comme une fiche posee sur l'eau,
    entete separe du corps par un filet, une tache par ligne pleine largeur. */
 .tasks-card {
@@ -1322,7 +1277,26 @@ body.inactive .rise-crest { animation-play-state: paused; }
   display: flex; align-items: center; gap: 14px;
   padding: 18px 24px 16px; border-bottom: 1px solid var(--surface-2);
 }
-.tasks-pct { font-size: 38px; font-weight: 900; letter-spacing: -1.6px; color: var(--acc-on); line-height: 1; }
+.tasks-head-txt { flex: 1; min-width: 0; }
+.tasks-pct { flex-shrink: 0; font-size: 26px; font-weight: 800; letter-spacing: -.8px; color: var(--acc-on); line-height: 1; }
+/* With an ambiance graphic, the percentage lives in the graphic: this one stays
+   for screen readers only. */
+.tasks-pct.sr-only, .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* Run progress (2.0.2). The ambiance's graphic sits in a frame like the decor:
+   two iframes take turns, the next picture loading hidden before it replaces
+   the shown one. Without a graphic, Sindry's bar. */
+.prog-frame { position: relative; flex-shrink: 0; }
+.prog-frame.badge { width: 88px; height: 88px; }
+.prog-frame.band { height: 150px; border-bottom: 1px solid var(--surface-2); }
+.prog-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent;
+  color-scheme: normal; opacity: 0; pointer-events: none; }
+.prog-frame iframe.shown { opacity: 1; }
+.prog-bar { margin: -4px 24px 14px; height: 8px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.prog-bar[hidden] { display: none; }
+.prog-bar > i { display: block; height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--acc), var(--acc-2)); transition: width .8s ease-out; }
+@media (prefers-reduced-motion: reduce) { .prog-bar > i { transition: none; } }
 .tasks-bilan { font-size: 14px; font-weight: 700; }
 #tasksBilanDetail { font-size: 12.5px; margin-top: 2px; }
 

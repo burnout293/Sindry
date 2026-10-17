@@ -231,32 +231,26 @@
         </div>
 
         <div class="s-step" data-s="4" hidden>
-          <div class="rise" id="riseZone">
-            <div class="rise-fill" id="riseFill">
-              <svg class="rise-crest" viewBox="0 0 2360 44" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,44 L0,24 C98,-4 197,-4 295,24 C393,52 492,52 590,24 C688,-4 787,-4 885,24
-                         C983,52 1082,52 1180,24 C1278,-4 1377,-4 1475,24 C1573,52 1672,52 1770,24
-                         C1868,-4 1967,-4 2065,24 C2163,52 2262,52 2360,24 L2360,44 Z" fill="var(--acc)" />
-              </svg>
-              <div class="rise-badge" id="riseBadge">
-                <b id="risePct">0 %</b><span id="riseBadgeLabel"></span>
-              </div>
-            </div>
-          </div>
           <div class="s-scroll">
             <div class="s-wrap">
               <div class="s-head-center">
                 <h1 id="s3Titre"></h1>
                 <p class="muted" id="s3Sous"></p>
               </div>
+              <!-- Run progress (2.0.2): the ambiance's own graphic, as a band or a
+                   badge, in an isolated frame; without one, Sindry's bar and its
+                   percentage. -->
               <div class="tasks-card">
+                <div class="prog-frame band" id="progBand" hidden></div>
                 <div class="tasks-head">
-                  <div class="tasks-pct" id="ringPct">0%</div>
-                  <div>
+                  <div class="prog-frame badge" id="progBadge" hidden></div>
+                  <div class="tasks-head-txt">
                     <div class="tasks-bilan" id="tasksBilan" hidden></div>
                     <div class="muted" id="tasksBilanDetail"></div>
                   </div>
+                  <div class="tasks-pct" id="ringPct" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
                 </div>
+                <div class="prog-bar" id="progBar" aria-hidden="true"><i id="progBarFill"></i></div>
                 <div class="tasks" id="tasksList"></div>
               </div>
               <!-- Temoin des changements sensibles (§12.5) : ce que les actions

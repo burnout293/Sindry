@@ -971,6 +971,7 @@
       equerres: false, lueur: false, balayage: false, ...(v.forme || {}) };
     return {
       id: v.id, nom, description: v.description ? (typeof v.description === 'string' ? { fr: v.description, en: v.description } : v.description) : null,
+      progress: v.progression ? { slot: v.progression.place, markup: v.progression.balisage, css: v.progression.css || '' } : null,
       auteur: v.auteur || '', version: v.version || '', police: v.police || 'normale',
       clair: mode(v.clair), sombre: mode(v.sombre),
       decor: { balisage: v.decor?.balisage || '', css: v.decor?.css || '' }, forme, fichier,
