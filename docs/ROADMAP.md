@@ -43,7 +43,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — choix multiples : une liste à cocher lisible, compteur, « Tout / Aucun » (maquette M22 B) | Fait |
 | | — **Plan** devient l'ambiance par défaut : grille, roues au trait, cotes (maquette M23 B) | Fait |
 | | Publiée comme dernière version stable (tag `v1.8.0`) | Prête |
-| **2.0** | Pré-version (tag `v2.0.0-beta`) | En cours |
+| **2.0** | Pré-version (tag `v2.0.0-beta`) | Pré-version, publiée le 14/10/2026 |
 | | — l'application s'appelle **Sindry** : nom, exécutable, dossiers, registre, dépôts, police, contrat des scripts (`SINDRY:`) ; une installation existante est reprise d'elle-même, et l'ancien contrat est lu jusqu'à la 2.1 (§18) | Fait |
 | | — plus aucune fenêtre de console : point de restauration, relance en administrateur | Fait |
 | | — réglage « Ambiance » renuméroté 1.7 ; le style Plan s'étend au mode Expert | Fait |
@@ -53,12 +53,12 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — ligne de commande complète, `sindry.com` : actions, lots, analyse, réglages, catalogues, ambiances ; `--json`, codes de sortie, Ctrl+C selon le §6.3 ; ce qui est coché d'office tenu d'accord avec l'interface par un fichier de cas commun (§19, `docs/LIGNE_DE_COMMANDE.md`) | Fait |
 | | — installation silencieuse avec options : langue, thème, ambiance, sans bienvenue, configuration, `PATH` — appliquées au premier lancement de chaque compte (§19.3) | Fait |
 | | — nouvelle version de l'icône : goutte de flammes et engrenage gris, alpha nettoyé (voile du fond retiré, corps opaque), dessin inchangé | Fait |
-| **2.0.1** | Corrections et ambiances en fichiers — pré-version | En cours |
+| **2.0.1** | Corrections et ambiances en fichiers — pré-version | Pré-version, publiée le 15/10/2026 |
 | | — un lot dont tout est déjà en place ne reste plus bloqué à l'analyse ; raccourcis recréés après la mise à jour depuis la 1.8 ; anciens scripts livrés effacés de Program Files | Fait |
 | | — Réglages en cinq sections : Général, Apparence, Catalogues, Actions, Avancé (l'historique y entre) (§8) | Fait |
 | | — toute ambiance est un fichier ; trois de base (Plan, Forêt de nuit, Aurore australe), exportables, retirables, réinstallables ; les sept autres publiées à part (`ambiances/depot/`) ; qui en utilisait une la garde ; la forme de l'interface en listes fermées (§15.4, §15.7) | Fait |
 | | — section Catalogues en tableau : quatre styles proposés (maquette M24) | Choisi : M29 (2.0.2) |
-| **2.0.2** | Progression par ambiance, catalogues en tableau — pré-version | En cours |
+| **2.0.2** | Progression par ambiance, catalogues en tableau — **version stable** (tag `v2.0.2`) : la première de Sindry que les installations 1.8 reçoivent d'elles-mêmes, avec la reprise du §18 | Prête |
 | | — la montée d'eau de l'étape 3 remplacée par le graphique de progression de chaque ambiance, dans un cadre isolé ; la barre de Sindry par défaut ; « Entretien terminé » à la fin (M26, M28) | Fait |
 | | — les ambiances livrées et restées intactes suivent la version de Sindry ; Plan 1.1, plus discrète (M25) | Fait |
 | | — « Entretien complet » suit l'ordre des lots, puis celui de chaque lot (il suivait l'ordre des identifiants) | Fait |
