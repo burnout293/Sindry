@@ -165,14 +165,16 @@ aucune catégorie : il ne se remplit qu'à la main.
 Le mode Expert permet de **créer, renommer, réordonner et supprimer** des lots.
 
 **Appartenance multiple** : un script peut figurer dans plusieurs lots, ou dans aucun
-(« Non classé »).
+(« Dans aucun lot »).
 → **Garde-fou obligatoire** : si deux lots enchaînés partagent un script, il ne s'exécute
 **qu'une fois**.
 
 **« Entretien complet »** est un lot d'usine épinglé, renommable et supprimable comme les
 autres. Sa seule particularité est d'être un **agrégat** (`aggregate`) : son contenu n'est
-jamais enregistré, il est recalculé comme l'union de tout ce qui est rangé ailleurs. Aucun
-script ne peut le viser par `category`.
+jamais enregistré, il est recalculé comme l'union de tout ce qui est rangé ailleurs, chaque
+script une fois, **dans l'ordre des lots puis dans celui de chaque lot** (2.0.2 ; il était
+trié jusque-là par `id` de script, un GUID : un ordre arbitraire). Aucun script ne peut le
+viser par `category`.
 
 #### Les catégories — données **du script**
 
@@ -317,7 +319,7 @@ tard ne touche à rien d'autre.
 
 **`category` fait deux choses.** Elle désigne la **catégorie** du script (§4.1) — celle-là
 le suit toujours. Et elle **suggère un lot** : à la découverte, le script entre dans le lot
-d'usine qui accueille sa catégorie ; s'il n'y en a aucun, il va dans « Non classé ». Cette
+d'usine qui accueille sa catégorie ; s'il n'y en a aucun, il est « Dans aucun lot ». Cette
 suggestion n'est suivie que tant que l'utilisateur n'a pas rangé le script lui-même. C'est une application du principe général du §4.2 : tant qu'aucun
 humain n'a déplacé ce script manuellement, une **Ré-analyse** (§5.5) le replace en suivant
 la valeur courante de `category` — utile si le script évolue. **Dès que l'utilisateur le

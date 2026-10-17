@@ -573,77 +573,82 @@ pub fn group_by_category(
     seaux
 }
 
-/// Regroupe des scripts découverts par lot résolu (fonction pure, testable sans
-/// `AppHandle` ni disque).
+/// Groups discovered scripts by resolved lot (a pure function, testable without
+/// an `AppHandle` or a disk).
 pub fn group_scripts(settings: &Settings, scripts: Vec<ScriptEntry>) -> GroupedScripts {
-    let mut par_lot: BTreeMap<String, Vec<ScriptEntry>> = BTreeMap::new();
-    let mut non_classes = Vec::new();
+    let mut by_lot: BTreeMap<String, Vec<ScriptEntry>> = BTreeMap::new();
+    let mut unclassified = Vec::new();
 
     for entry in scripts {
-        // Un script peut atterrir dans plusieurs seaux (§4.1). Le garde-fou
-        // « execute une seule fois quand deux lots le partagent » vit a
-        // l'execution, pas ici : le regroupement doit montrer la verite.
+        // A script can land in several lots (§4.1). The "run only once when
+        // two lots share it" guard lives at run time, not here: grouping must
+        // show the truth.
         let ids = resolve_lots(settings, &entry.id, &entry.meta.category);
         if ids.is_empty() {
-            non_classes.push(entry);
+            unclassified.push(entry);
         } else {
-            for id_lot in ids {
-                par_lot.entry(id_lot).or_default().push(entry.clone());
+            for lot_id in ids {
+                by_lot.entry(lot_id).or_default().push(entry.clone());
             }
         }
     }
 
-    // Union déterministe pour « Entretien complet » (lot agrégat, §4.1) :
-    // calculée une fois, à partir des scripts déjà rangés ailleurs. `.get()`
-    // plutôt que `.remove()` plus bas : cette union doit voir TOUS les lots,
-    // pas seulement ceux pas encore traités par le `.map()` suivant — l'ordre
-    // de `settings.lots` ne doit pas influencer le résultat.
-    let mut union_classes: Vec<ScriptEntry> = par_lot.values().flatten().cloned().collect();
-    union_classes.sort_by(|a, b| a.id.cmp(&b.id));
-    // Depuis que l'appartenance est multiple, un script range dans deux lots
-    // apparaissait deux fois dans « Entretien complet » — et l'entretien
-    // l'aurait lance deux fois (§4.1, garde-fou).
-    union_classes.dedup_by(|a, b| a.id == b.id);
+    // Every regular lot in its own order: the manual order (§6.1) first; a
+    // script newly placed here (not yet in `lot.scripts`) comes last, in
+    // discovery order — that is, file order — kept by the stable sort.
+    let mut ordered: BTreeMap<&str, Vec<ScriptEntry>> = BTreeMap::new();
+    for lot in settings.lots.iter().filter(|l| !l.aggregate) {
+        let mut found = by_lot.get(&lot.id).cloned().unwrap_or_default();
+        found.sort_by_key(|s| {
+            lot.scripts
+                .iter()
+                .position(|id| id == &s.id)
+                .unwrap_or(usize::MAX)
+        });
+        ordered.insert(&lot.id, found);
+    }
+
+    // "Full maintenance" (the aggregate lot, §4.1): every script placed
+    // elsewhere, once — two lots sharing a script must not run it twice —
+    // following the order of the lots, then each lot's own order. It used to
+    // be sorted by script id, a GUID: an arbitrary run order.
+    let mut seen = std::collections::HashSet::new();
+    let union: Vec<ScriptEntry> = settings
+        .lots
+        .iter()
+        .filter_map(|l| ordered.get(l.id.as_str()))
+        .flatten()
+        .filter(|s| seen.insert(s.id.clone()))
+        .cloned()
+        .collect();
 
     let lots = settings
         .lots
         .iter()
-        .map(|cat| {
-            if cat.aggregate {
+        .map(|lot| {
+            if lot.aggregate {
                 return LotGroup {
-                    lot: cat.clone(),
-                    scripts: union_classes.clone(),
+                    lot: lot.clone(),
+                    scripts: union.clone(),
                     missing: Vec::new(),
                 };
             }
-            let mut trouves = par_lot.get(&cat.id).cloned().unwrap_or_default();
-            // Ordre manuel (§6.1) d'abord ; un script nouvellement rangé ici
-            // (pas encore dans `cat.scripts`) arrive a la fin, dans l'ordre de
-            // decouverte — un tri stable preserve cet ordre entre egalites.
-            trouves.sort_by_key(|s| {
-                cat.scripts
-                    .iter()
-                    .position(|id| id == &s.id)
-                    .unwrap_or(usize::MAX)
-            });
-            let manquants = cat
+            let found = ordered.remove(lot.id.as_str()).unwrap_or_default();
+            let missing = lot
                 .scripts
                 .iter()
-                .filter(|id| !trouves.iter().any(|s| &s.id == *id))
+                .filter(|id| !found.iter().any(|s| &s.id == *id))
                 .cloned()
                 .collect();
             LotGroup {
-                lot: cat.clone(),
-                scripts: trouves,
-                missing: manquants,
+                lot: lot.clone(),
+                scripts: found,
+                missing,
             }
         })
         .collect();
 
-    GroupedScripts {
-        lots,
-        unclassified: non_classes,
-    }
+    GroupedScripts { lots, unclassified }
 }
 
 // -----------------------------------------------------------------------------
@@ -1214,6 +1219,36 @@ mod tests {
             vec!["s1", "s2"]
         );
         assert!(entretien.missing.is_empty());
+    }
+
+    #[test]
+    fn full_maintenance_follows_lot_order_then_each_lot_order() {
+        let mut settings = default_settings(lots_usine());
+        // Discovery (file) order: a2, z1, m3. Sorting by id would give a2, m3, z1.
+        let scripts = vec![
+            script_entry("a2", "tools"),
+            script_entry("z1", "cleaning"),
+            script_entry("m3", "cleaning"),
+        ];
+        let run_order = |s: &Settings| -> Vec<String> {
+            group_scripts(s, scripts.clone())
+                .lots
+                .into_iter()
+                .find(|g| g.lot.aggregate)
+                .expect("aggregate lot")
+                .scripts
+                .into_iter()
+                .map(|x| x.id)
+                .collect()
+        };
+        // Lots in their order (cleaning, then tools), each in discovery order.
+        assert_eq!(run_order(&settings), vec!["z1", "m3", "a2"]);
+        // A manual order inside a lot carries over to full maintenance.
+        settings.lots[0].scripts = vec!["m3".to_string()];
+        assert_eq!(run_order(&settings), vec!["m3", "z1", "a2"]);
+        // So does the order of the lots themselves.
+        settings.lots.swap(0, 1);
+        assert_eq!(run_order(&settings), vec!["a2", "m3", "z1"]);
     }
 
     #[test]

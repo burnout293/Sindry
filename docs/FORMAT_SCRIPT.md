@@ -18,10 +18,12 @@ Référence normative : `docs/SPECIFICATION.md` §5.
 5. Vérifiez : `.\tools\lint-scripts.ps1`
 
 Un script non conforme **s'exécute quand même** : Sindry signale, il ne bloque pas
-(§5.4). **Mais plusieurs situations font refuser le lancement** — approbation manquante,
-ancienne ligne d'override, script non simulable alors que la simulation est activée, interpréteur absent, fichier
-modifié depuis son analyse. Elles sont toutes listées dans **« Ce qui empêche un script de
-se lancer »**, plus bas : lisez cette section avant d'écrire votre premier script.
+(§5.4). **Mais sept situations font refuser le lancement** — approbation manquante,
+ancienne ligne d'override, réglage refusé par la garde, script non simulable alors que la
+simulation est activée, sélection ou fichier qui ne correspond plus à la dernière analyse,
+interpréteur absent, configuration trop volumineuse. Elles sont toutes listées dans
+**« Ce qui empêche un script de se lancer »**, plus bas : lisez cette section avant
+d'écrire votre premier script.
 
 ---
 
@@ -69,12 +71,16 @@ Format : `NNN_NOM_EN_ANGLAIS.ps1` — trois chiffres, tiret bas, nom en majuscul
 | `4xx` | Applications |
 | `5xx` | Santé |
 | `6xx` | Outillage |
-| `7xx` – `8xx` | Réservé |
+| `7xx` | Personnalisation |
+| `8xx` | Réservé |
 | `9xx` | Diagnostics internes |
 
-**Le numéro ne détermine rien d'autre que le tri du dossier.** Ni l'ordre d'exécution —
-c'est le classement manuel du mode Expert qui décide — ni l'identité du script, qui vient
-de son `id`. Ne renumérotez donc jamais un fichier pour réorganiser un affichage.
+**Le numéro fixe l'ordre par défaut, rien d'autre.** Dans un lot que personne n'a réordonné
+à la main, les scripts se présentent et se lancent dans l'ordre de leurs fichiers, donc de
+leurs numéros ; « Entretien complet » suit l'ordre des lots, puis celui de chaque lot.
+Dès que l'utilisateur réordonne un lot dans le mode Expert, son ordre l'emporte. L'identité
+du script, elle, vient de son `id` : renuméroter un fichier ne change que l'ordre par
+défaut — jamais la configuration, le classement ou l'historique.
 
 Tous les scripts officiels vivent à plat dans `scripts/` du dépôt du catalogue, sans
 sous-dossiers : son index signé est une liste plate.
@@ -155,20 +161,22 @@ exit 0
 
 ---
 
-## La langue : code en anglais, commentaires libres
+## La langue : tout en anglais, sauf les traductions
 
 **Tout ce que lit une machine ou un contributeur est en anglais** : noms de fichiers,
-entête de base, clés, libellés d'options, noms de variables et de fonctions, et la sortie
-d'exécution.
+entête de base, clés, libellés d'options, noms de variables et de fonctions, sortie
+d'exécution — **et les commentaires** (depuis le 17/10/2026 : la v3 passera tout le
+catalogue en anglais, les scripts nouveaux l'y précèdent). Les identifiants de catégorie
+s'écrivent aussi en anglais (`cleaning`, pas `nettoyage`).
 
-**Les commentaires peuvent rester en français.** Ils s'adressent à celui qui maintient le
-script, pas à l'application.
+Le français n'a qu'une place : le bloc `SINDRY:LANG fr`, qui traduit ce que l'interface
+affiche.
 
 ---
 
 ## L'entête
 
-Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `panels` et `show`.
+Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `chart`, `panels` et `show`.
 
 | Champ | Valeurs | Rôle |
 |---|---|---|
@@ -222,10 +230,16 @@ liste.
 
 Les lots d'usine vivent dans **`tools/lots.json`**, et chacun dit quelles catégories il
 accueille : « Faire le ménage » accueille `cleaning`, « Vie privée » accueille `privacy`…
-À la découverte d'un script, Sindry le place dans le lot qui accueille sa catégorie ; s'il
-n'y en a aucun, le script part en **« Non classé »**. Tant que personne ne l'a déplacé à la
-main, une ré-analyse le replacera en suivant `category`. **Dès que l'utilisateur le range
-lui-même, c'est terminé** : son rangement devient figé. Le script propose, l'humain dispose.
+Sindry place un script dans le lot qui accueille sa catégorie ; s'il n'y en a aucun, le
+script est **« Dans aucun lot »** (il reste dans l'onglet Scripts de l'Expert, mais aucun
+bouton du mode Simple ne le lance). Tant que personne ne l'a rangé à la main, il **suit**
+`category` : changer la catégorie d'un script le déplace, chez tous ceux qui ne l'ont pas
+rangé eux-mêmes. **Dès que l'utilisateur le range lui-même, c'est terminé** : son
+rangement devient figé. Le script propose, l'humain dispose.
+
+`tools/lots.json` (dans le dépôt de l'application) ne vaut qu'au **premier lancement**, ou
+après « Réinitialiser » : un lot d'usine ajouté ou renommé n'apparaît pas chez ceux qui ont
+déjà leurs lots.
 
 Un lot **créé par l'utilisateur** n'accueille aucune catégorie : seul un rangement manuel y
 place un script. Un script ne peut donc viser par `category` qu'un lot d'usine, jamais un
@@ -704,11 +718,14 @@ Les étiquettes ne se traduisent pas : le bloc `LANG` ne reprend que le libellé
 
 Dans cet ordre :
 
-1. **`checked=`** — l'avis du script l'emporte toujours.
+1. **`checked=`** — l'avis du script l'emporte, sauf sur un élément `locked=` (jamais
+   cochable) et sur une option `[bool]` en `state=ok` (toujours décochée et grisée).
 2. Sinon, **`state=todo`** coche, et **`state=ok`** décoche et grise la case (« Déjà en place »).
-3. Sinon, une **`size` ou un `count` supérieur à zéro** coche ; zéro décoche.
-4. Un élément **`locked=`** n'est jamais cochable, et un élément **`confidence=low`** jamais
-   coché d'office.
+3. Sinon, pour un constat **`[FIND]`** : une **`size` ou un `count` supérieur à zéro** coche ;
+   zéro, ou aucune mesure, décoche.
+4. Sinon, pour un élément **`[ITEM]`** : il est **coché**, sauf `locked=` (jamais cochable)
+   ou **`confidence=low`** (jamais coché d'office). Sa `size` n'entre pas en compte : un
+   élément de taille 0 est coché — écrivez `checked=false` si ce n'est pas votre avis.
 5. Un `[select]` présélectionne le choix `recommended=true`, sinon `current=true`, sinon le
    premier rapporté.
 
@@ -1152,6 +1169,11 @@ arrive grisée avec la mention « Déjà en place » ; sinon elle arrive cochée
 - **L'analyse doit être rapide.** Elle précède chaque action et l'utilisateur l'attend
   devant l'écran. Mesurez des tailles, ne calculez pas d'empreintes — sauf si c'est le
   métier du script, comme pour les doublons.
+- **Rien à faire, rien à annoncer.** Quand toutes les cases d'un lot arrivent en
+  `state=ok`, Sindry dit « Tout est déjà en place » et ne lance rien. Une `[NOTE]`
+  s'affiche telle quelle : n'émettez pas « un redémarrage est nécessaire » si l'analyse
+  n'a rien trouvé à faire. Le redémarrage s'annonce d'ailleurs par `reboot : true` et
+  `[REBOOT]`, pas par une note.
 
 ---
 
@@ -1424,7 +1446,7 @@ familles est signalée comme ne tenant pas sa promesse.
 
 Sindry applique partout le principe « **constater, jamais bloquer** » : un script
 non conforme s'exécute quand même, ses anomalies sont simplement affichées. Il
-existe exactement **cinq exceptions**, et aucune ne porte sur la forme du fichier :
+existe exactement **sept exceptions**, et aucune ne porte sur la forme du fichier :
 toutes protègent ce qui s'exécute avec les droits administrateur, ou ce que
 l'interface promet à l'utilisateur.
 
@@ -1533,7 +1555,7 @@ if ($SafeTest) {
   sans avoir rien vérifié fait mentir le journal. Dites ce que vous *auriez* fait,
   jamais ce que vous *auriez trouvé*.
 
-### 5. Une sélection qui ne vient pas de la dernière analyse
+### 5. Une sélection ou un fichier qui ne correspond plus à la dernière analyse
 
 Pour un script analysable, ce qui revient dans une liste `[items]` est une liste d'ids
 (voir « Le mode analyse »). Sindry retient les ids que la **dernière analyse** de chaque
@@ -1545,3 +1567,15 @@ Ce souvenir ne vit qu'en mémoire : une analyse ne vaut que pour la session qui 
 Conséquence pour vous : **un id doit être stable** entre l'analyse et l'action, et il ne doit
 désigner que ce que l'analyse a montré. C'est ce qui empêche une configuration modifiée à la
 main de faire traiter au script un élément que personne n'a vu.
+
+### 6. L'interpréteur demandé est absent
+
+Un script `engine : pwsh` n'est pas lancé si PowerShell 7 n'est pas installé : Sindry ne se
+replie jamais en silence sur PowerShell 5.1 (voir « Le cas de `engine` »). Il est marqué
+indisponible, et l'utilisateur voit pourquoi.
+
+### 7. Une configuration trop volumineuse
+
+Au-delà de 30 000 caractères de JSON, `SINDRY_CONFIG` ne tiendrait plus dans une variable
+d'environnement : Sindry refuse le lancement plutôt que de transmettre une configuration
+tronquée (voir « La configuration injectée est plafonnée »).
