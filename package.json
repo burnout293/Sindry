@@ -1,7 +1,7 @@
 {
   "name": "sindry",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Outil de maintenance Windows - interface Tauri, scripts PowerShell",
   "type": "module",
   "scripts": {
