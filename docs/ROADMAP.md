@@ -58,13 +58,13 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — Réglages en cinq sections : Général, Apparence, Catalogues, Actions, Avancé (l'historique y entre) (§8) | Fait |
 | | — toute ambiance est un fichier ; trois de base (Plan, Forêt de nuit, Aurore australe), exportables, retirables, réinstallables ; les sept autres publiées à part (`ambiances/depot/`) ; qui en utilisait une la garde ; la forme de l'interface en listes fermées (§15.4, §15.7) | Fait |
 | | — section Catalogues en tableau : quatre styles proposés (maquette M24) | Choisi : M29 (2.0.2) |
-| **2.0.2** | Progression par ambiance, catalogues en tableau — **version stable** (tag `v2.0.2`) : la première de Sindry que les installations 1.8 reçoivent d'elles-mêmes, avec la reprise du §18 | Prête |
+| **2.0.2** | Progression par ambiance, catalogues en tableau — **version stable** (tag `v2.0.2`) : la première de Sindry que les installations 1.8 reçoivent d'elles-mêmes, avec la reprise du §18 | Publiée le 17/10/2026 |
 | | — la montée d'eau de l'étape 3 remplacée par le graphique de progression de chaque ambiance, dans un cadre isolé ; la barre de Sindry par défaut ; « Entretien terminé » à la fin (M26, M28) | Fait |
 | | — les ambiances livrées et restées intactes suivent la version de Sindry ; Plan 1.1, plus discrète (M25) | Fait |
 | | — « Entretien complet » suit l'ordre des lots, puis celui de chaque lot (il suivait l'ordre des identifiants) | Fait |
 | | — migration depuis WinTool : les sous-dossiers se fusionnent, la clé de l'ancien installeur s'efface | Fait |
 | | — Catalogues : barre de commandes, tableau, détail et liste des actions en bas, clic droit ; Activer et Désactiver en une commande, faute de place (M29) | Fait |
-| **2.0.3** | Contrat des scripts : erreurs expliquées, auteur et dates, icônes des programmes | En cours |
+| **2.0.3** | Contrat des scripts : erreurs expliquées, auteur et dates, icônes des programmes — version stable (tag `v2.0.3`) | Prête |
 | | — codes d'erreur : `[error]` dans `REPORT`, traduits dans `LANG` ; `[ERR] E104 …` montre la description et la solution dans le journal, et devient la raison de l'échec (tâches, verdict) | Fait |
 | | — `author`, `created`, `updated` dans l'entête : dans la fiche de l'Expert, exigés en `-Strict` ; dates vérifiées | Fait |
 | | — `HKLM\SOFTWARE\Sindry\Scripts\<id>` réservée aux actions (restauration) ; « Données de restauration des actions » à la désinstallation | Fait |
