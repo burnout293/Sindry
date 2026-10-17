@@ -161,16 +161,17 @@ exit 0
 
 ---
 
-## La langue : tout en anglais, sauf les traductions
+## La langue : le code en anglais, les commentaires en français
 
-**Tout ce que lit une machine ou un contributeur est en anglais** : noms de fichiers,
-entête de base, clés, libellés d'options, noms de variables et de fonctions, sortie
-d'exécution — **et les commentaires** (depuis le 17/10/2026 : la v3 passera tout le
-catalogue en anglais, les scripts nouveaux l'y précèdent). Les identifiants de catégorie
-s'écrivent aussi en anglais (`cleaning`, pas `nettoyage`).
+**Tout ce que lit une machine est en anglais** : noms de fichiers, entête de base, clés,
+libellés d'options, noms de variables et de fonctions, sortie d'exécution. Les
+identifiants de catégorie s'écrivent aussi en anglais (`cleaning`, pas `nettoyage`).
 
-Le français n'a qu'une place : le bloc `SINDRY:LANG fr`, qui traduit ce que l'interface
-affiche.
+**Les commentaires sont en français**, et le restent : ils s'adressent à qui relit le
+script, pas à une machine. La conversion de la v3 n'y touchera pas.
+
+Dans ce que lit l'interface, le français n'a qu'une place : le bloc `SINDRY:LANG fr`, qui
+traduit ce qu'elle affiche.
 
 ---
 
