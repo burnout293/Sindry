@@ -1012,6 +1012,9 @@
   // `?mode=expert` : l'ecran Expert d'office ; `?reglages=apparence` : une
   // section des Reglages ouverte — pour les captures.
   const parametres = new URLSearchParams(location.search);
+  // `?css=` : une feuille d'essai par-dessus l'interface, pour comparer des
+  // variantes en maquette avant d'en faire une regle.
+  if (parametres.get('css')) document.head.append(Object.assign(document.createElement('style'), { textContent: parametres.get('css') }));
   if (parametres.get('mode') === 'expert' || parametres.get('reglages')) {
     const t = setInterval(() => {
       if (!document.documentElement.dataset.benchVisible) return;

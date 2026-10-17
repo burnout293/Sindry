@@ -25,6 +25,8 @@
     {"n": 21, "fichier": "braise-forge.html", "date": "2026-10-11 17:39", "titre": "Braise : la Forge", "resume": "La Forge de M20 retravaillée : deux roues qui s'engrènent, plaques rivetées, écrous, métal en fusion."},
     {"n": 22, "fichier": "choix-multiples.html", "date": "2026-10-11 17:39", "titre": "Choix multiples lisibles", "resume": "Cinq présentations d'une option [multi] : puces lisibles, liste à cocher, diodes, interrupteurs, tuiles."},
     {"n": 23, "fichier": "forge-moderne.html", "date": "2026-10-11 18:10", "titre": "Forge moderne", "resume": "La roue de la Forge dans quatre langages d'aujourd'hui : verre, plan technique, points, acier doux."},
-    {"n": 24, "fichier": "catalogues-tableau.html", "date": "2026-10-14 20:30", "titre": "Catalogues en tableau", "resume": "La section Catalogues des Réglages en tableau : grille, lignes dépliables, relevé technique, tableau de bord."}
+    {"n": 24, "fichier": "catalogues-tableau.html", "date": "2026-10-14 20:30", "titre": "Catalogues en tableau", "resume": "La section Catalogues des Réglages en tableau : grille, lignes dépliables, relevé technique, tableau de bord."},
+    {"n": 25, "fichier": "plan-variantes.html", "date": "2026-10-17 08:40", "titre": "Plan : variantes", "resume": "Six variantes légères de Plan, moins d'orange : encre, bleu de plan, roues, ligne ou cotes seules en orange. Vraies captures."},
+    {"n": 26, "fichier": "progression-ambiances.html", "date": "2026-10-17 08:45", "titre": "Progression par ambiance", "resume": "La montée d'eau remplacée par un graphique par ambiance : barre par défaut, engrenage de Plan (en tête ou au-dessus), lune, lucioles, voile, jauge à dents, soleil, orbite, texte."}
   ]
 }

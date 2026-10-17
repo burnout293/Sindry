@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progression par ambiance</title>
+<!--
+  Maquette M26 (2.0.2) : la progression de l'entretien (etape 4 du mode Simple).
+  La montee d'eau s'en va ; chaque ambiance choisit son graphique dans une liste
+  fermee (forme.progression), la barre horizontale par defaut. Plan : un
+  engrenage qui tourne autour d'une jauge circulaire. Les autres : propositions.
+  Memes donnees partout : 14 actions, le curseur regle combien sont finies.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536;
+  --border: #2A3445; --border-2: #42506A; --grille: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-2: #FF9447; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --err: #FF6B7A;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grille: #E9E5DC;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --err: #C0263F;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button { font: inherit; color: inherit; cursor: pointer; }
+.mono { font-family: var(--mono); }
+code { font-family: var(--mono); font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); }
+
+/* --- Barre de la maquette ----------------------------------------------- */
+.barre { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.barre h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.barre .reglages { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.choix { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.choix button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.choix button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.curseur-prog { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 600; }
+.curseur-prog input { accent-color: var(--acc); width: 160px; }
+.curseur-prog output { font-family: var(--mono); color: var(--text); min-width: 46px; }
+
+main { max-width: 1260px; margin: 0 auto; padding: 22px 20px 70px; }
+h2 { font-size: 19px; font-weight: 750; letter-spacing: -.4px; margin: 26px 0 4px; }
+h2 .n { font-family: var(--mono); font-size: 12px; color: var(--text-3); margin-right: 8px; }
+.sous { color: var(--text-2); margin: 0 0 16px; max-width: 860px; }
+
+/* --- A. L'ecran d'entretien, en Plan ------------------------------------- */
+.ecrans { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+.ecran-bloc .leg { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 8px; }
+.ecran-bloc .leg b { font-size: 13.5px; }
+.ecran-bloc .leg span { color: var(--text-3); font-size: 12px; }
+.ecran { position: relative; height: 590px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--grille) 1px, transparent 1px), linear-gradient(90deg, var(--grille) 1px, transparent 1px);
+  background-size: 28px 28px; padding: 26px 20px 0; }
+.ecran .tete { text-align: center; margin-bottom: 16px; }
+.ecran .tete h3 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.8px; }
+.ecran .tete p { margin: 4px 0 0; color: var(--text-2); font-size: 12.5px; }
+.ecran .au-dessus { display: grid; place-items: center; margin: -4px 0 14px; }
+.carte { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  box-shadow: 0 14px 36px rgba(15, 26, 36, .14); }
+.carte-tete { display: flex; align-items: center; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--surface-2); }
+.carte-tete .bilan { font-size: 13px; font-weight: 700; }
+.carte-tete .detail { font-size: 11.5px; color: var(--text-2); margin-top: 1px; }
+.carte-tete .pct { font-family: var(--mono); font-size: 28px; font-weight: 400; letter-spacing: -1px; color: var(--acc-on); line-height: 1; }
+.carte-tete .flex { flex: 1; min-width: 0; }
+.carte-barre { padding: 0 16px 14px; border-bottom: 1px solid var(--surface-2); }
+.tache { display: flex; align-items: center; gap: 11px; padding: 10px 16px; font-size: 13px; }
+.tache + .tache { border-top: 1px solid var(--surface-2); }
+.tache.encours { background: color-mix(in srgb, var(--acc) 7%, var(--surface)); }
+.tache .dt { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; color: #fff; font-size: 10.5px; font-weight: 800; }
+.tache .dt svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.tache .dt.ok { background: var(--ok); }
+.tache .dt.run { background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: var(--ink); }
+.tache .dt.att { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+.tache .tt { flex: 1; font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tache .tr { font-size: 11.5px; font-weight: 700; color: var(--text-3); }
+.tache .tr.ok { color: var(--ok); }
+
+/* --- B. Une par ambiance --------------------------------------------------- */
+.tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(282px, 1fr)); gap: 14px; }
+.tuile { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; }
+.tuile .scene { position: relative; height: 240px; display: grid; place-items: center; background: var(--bg); color: var(--text); overflow: hidden; }
+.tuile .scene.carte-fond { padding: 0 22px; }
+.tuile .info { padding: 10px 14px 12px; border-top: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.tuile .info .l1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tuile .info b { font-size: 13.5px; }
+.tuile .info .amb { color: var(--text-2); font-size: 12px; }
+.tuile .info p { margin: 4px 0 0; color: var(--text-2); font-size: 12px; }
+.pastille { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border-2); color: var(--text-2); }
+.pastille.choisi { border-color: var(--acc); color: var(--acc-on); }
+
+/* --- Les graphiques ---------------------------------------------------------- */
+@keyframes tourne { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes miroite { from { opacity: .25; } to { opacity: .85; } }
+@keyframes clignote { 50% { opacity: 0; } }
+@keyframes reflet { from { background-position: -120px 0; } to { background-position: 220px 0; } }
+
+.libelle-pct { font-family: var(--mono); font-size: 13px; color: var(--text-2); text-align: center; margin-top: 6px; letter-spacing: .02em; }
+.libelle-pct b { color: var(--acc-on); font-weight: 400; font-size: 17px; margin-right: 6px; }
+
+/* barre (defaut) */
+.g-barre { width: 100%; }
+.g-barre .gb-t { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: var(--text-2); }
+.g-barre .gb-t b { font-family: var(--mono); font-weight: 400; font-size: 15px; color: var(--acc-on); }
+.g-barre .gb-piste { position: relative; height: 8px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.g-barre .gb-piste > i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, var(--acc), var(--acc-2)); }
+.g-barre.court .gb-piste > i::after { content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent) no-repeat; background-size: 120px 100%; animation: reflet 1.8s linear infinite; }
+.g-barre .gb-piste > b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--surface); opacity: .7; }
+
+/* engrenage (Plan) */
+.g-eng { position: relative; flex-shrink: 0; }
+.g-eng svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.g-eng .roue { transform-origin: 110px 110px; animation: tourne 36s linear infinite; }
+.g-eng.fin .roue { animation-play-state: paused; }
+.g-eng .roue path { fill: none; stroke: var(--text-3); stroke-width: 2.2; stroke-linejoin: round; }
+.g-eng .roue circle { fill: none; stroke: var(--border-2); stroke-width: 1.2; stroke-dasharray: 3 5; }
+.g-eng.orange .roue path { stroke: var(--acc); }
+.g-eng.orange .roue circle { stroke: var(--acc); opacity: .5; }
+.g-eng .piste { fill: none; stroke: var(--surface-3); stroke-width: 15; }
+.g-eng .arc { fill: none; stroke: var(--acc); stroke-width: 15; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 110px 110px; }
+.g-eng .moyeu { fill: none; stroke: var(--border); stroke-width: 1; }
+.g-eng .centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
+.g-eng .centre b { font-family: var(--mono); font-weight: 400; color: var(--text); letter-spacing: -.04em; }
+.g-eng .centre small { font-family: var(--mono); color: var(--text-3); }
+.g-eng .centre svg { width: 40%; height: auto; margin: 0 auto; fill: none; stroke: var(--ok); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.g-eng.fin .arc { stroke: var(--ok); }
+
+/* jauge a dents (Braise) */
+.g-jd { position: relative; width: 170px; height: 170px; }
+.g-jd svg { width: 100%; height: 100%; }
+.g-jd .centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
+.g-jd .centre b { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+.g-jd .centre small { color: var(--text-2); }
+
+/* ascii (Terminal) */
+.g-ascii { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text); text-shadow: 0 0 6px color-mix(in srgb, var(--acc) 60%, transparent); white-space: pre; }
+.g-ascii .dim { color: var(--text-3); text-shadow: none; }
+.g-ascii .curseur { animation: clignote 1s steps(1) infinite; }
+.scanlines::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.22) 0 1px, transparent 1px 3px); }
+
+/* soleil, orbite, lune, lucioles, voile : tout en SVG */
+.g-svg { width: 100%; max-width: 300px; }
+.g-svg svg { width: 100%; height: auto; display: block; overflow: visible; }
+.luc-on { animation: pulse 2.6s ease-in-out infinite; }
+.voile-s { animation: miroite 3.4s ease-in-out infinite alternate; }
+
+/* --- Ce qui change -------------------------------------------------------- */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 8px; }
+.note { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.note b { display: block; margin-bottom: 3px; }
+.note p { margin: 0; color: var(--text-2); }
+pre.json { margin: 6px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--text-2); white-space: pre-wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-eng .roue, .luc-on, .voile-s, .g-ascii .curseur, .g-barre .gb-piste > i::after { animation: none !important; }
+}
+@media (max-width: 520px) { .barre .reglages { margin-left: 0; } .curseur-prog input { width: 120px; } }
+</style>
+</head>
+<body>
+
+<div class="barre">
+  <h1>La progression, par ambiance</h1>
+  <div class="reglages">
+    <div class="curseur-prog"><label for="prog">Actions finies</label><input id="prog" type="range" min="0" max="14" value="7"><output id="progVal">7 / 14</output></div>
+    <div class="choix" aria-label="Animation"><button type="button" id="anim" aria-pressed="false">Animer</button></div>
+    <div class="choix" aria-label="Thème"><button type="button" data-theme-btn="dark" aria-pressed="true">Sombre</button><button type="button" data-theme-btn="light" aria-pressed="false">Clair</button></div>
+  </div>
+</div>
+
+<main>
+  <h2><span class="n">A</span>L'écran d'entretien, en Plan</h2>
+  <p class="sous">L'eau qui montait derrière la liste disparaît. À sa place, le graphique de l'ambiance. Le pourcentage et « 7 sur 14 » restent écrits en clair : le graphique ne porte aucune information à lui seul.</p>
+  <div class="choix" style="display:inline-flex;margin-bottom:12px" aria-label="Couleur de la roue">
+    <button type="button" data-roue="encre" aria-pressed="true">Roue à l'encre</button>
+    <button type="button" data-roue="orange" aria-pressed="false">Roue orange</button>
+  </div>
+  <div class="ecrans">
+    <div class="ecran-bloc"><div class="leg"><b>1 · Barre</b><span>par défaut, toute ambiance qui ne choisit rien</span></div><div class="ecran" id="ecranBarre"></div></div>
+    <div class="ecran-bloc"><div class="leg"><b>2 · Engrenage en tête</b><span>dans la carte, à la place du « 50 % »</span></div><div class="ecran" id="ecranTete"></div></div>
+    <div class="ecran-bloc"><div class="leg"><b>3 · Engrenage au-dessus</b><span>au centre, là où l'œil se pose</span></div><div class="ecran" id="ecranDessus"></div></div>
+  </div>
+
+  <h2><span class="n">B</span>Une par ambiance</h2>
+  <p class="sous">Chaque ambiance choisit son graphique dans une liste fermée, comme le reste de sa forme : Sindry les dessine lui-même, aux couleurs de l'ambiance. Plan et la barre sont votre idée ; les autres sont des propositions. Forêt de nuit en a deux.</p>
+  <div class="tuiles" id="tuiles"></div>
+
+  <h2><span class="n">C</span>Ce qui change</h2>
+  <div class="notes">
+    <div class="note"><b>Dans le format</b><p>Un réglage de plus dans la forme, liste fermée, <code>barre</code> par défaut.</p>
+      <pre class="json">"forme": { "progression": "engrenage" }</pre></div>
+    <div class="note"><b>La montée d'eau</b><p>Retirée de l'étape 4. La houle de l'accueil et le décor restent.</p></div>
+    <div class="note"><b>Mouvement réduit</b><p>L'engrenage ne tourne plus, les lucioles et le voile ne scintillent plus ; le graphique avance quand même.</p></div>
+    <div class="note"><b>À la fin</b><p>La roue s'arrête et la jauge passe au vert, avec une coche. Si l'entretien est arrêté, la jauge reste où elle en était.</p></div>
+  </div>
+</main>
+
+<script>
+// Les jetons des ambiances, tires des fichiers (ambiances/*).
+const JETONS = {"aurore-australe":{"sombre":{"bg":"#0E0820","surface":"#170F2E","surface-2":"#20163D","surface-3":"#2B1E50","border":"#2E2150","border-2":"#44306E","text":"#F9EEFF","text-2":"#C7B3DB","text-3":"#A890C2","ink":"#1A0620","acc":"#FF6FB5","acc-2":"#B48CFF","acc-on":"#FF9CCB","rouage-a":"#B48CFF","rouage-b":"#FF6FB5","serie-1":"#FF6FB5","serie-2":"#B48CFF","serie-3":"#6FD3FF"}},"foret-de-nuit":{"sombre":{"bg":"#07110C","surface":"#0C1912","surface-2":"#11221A","surface-3":"#182D22","border":"#1E3529","border-2":"#2E4D3C","text":"#E6F2EA","text-2":"#9DB5A5","text-3":"#86A08F","ink":"#04110A","acc":"#7CE38B","acc-2":"#F5E07A","acc-on":"#9CF0A8","rouage-a":"#7CE38B","rouage-b":"#F5E07A","serie-1":"#7CE38B","serie-2":"#F5E07A","serie-3":"#5FC8FF"},"clair":{"bg":"#F3F6F1","surface":"#FFFFFF","surface-2":"#EAF0E6","surface-3":"#DCE6D6","border":"#D3DECB","border-2":"#A9BCA0","text":"#13201A","text-2":"#4C5F52","text-3":"#55695B","ink":"#0B1A10","acc":"#2F9E5B","acc-2":"#7FC46A","acc-on":"#1D6B3C","rouage-a":"#2F9E5B","rouage-b":"#7FC46A","serie-1":"#2F9E5B","serie-2":"#1C7FD0","serie-3":"#D9A400"}},"plan":{"sombre":{"bg":"#0B0F16","surface":"#0F1520","surface-2":"#141C2A","surface-3":"#1B2536","border":"#2A3445","border-2":"#42506A","text":"#E9EEF5","text-2":"#8C9AAE","text-3":"#8190A5","ink":"#1A0B06","acc":"#FD7D26","acc-2":"#FF9447","acc-on":"#FF9A55","rouage-a":"#FD7D26","rouage-b":"#FF9447","serie-1":"#FD7D26","serie-2":"#4AB2E7","serie-3":"#3FD69B"},"clair":{"bg":"#F6F4EF","surface":"#FFFFFF","surface-2":"#EFECE5","surface-3":"#E4E0D6","border":"#DCD7CC","border-2":"#B6AE9F","text":"#141A24","text-2":"#5C6778","text-3":"#5F6A7B","ink":"#1A0B06","acc":"#E2640F","acc-2":"#F0782A","acc-on":"#A84A08","rouage-a":"#E2640F","rouage-b":"#F0782A","serie-1":"#E2640F","serie-2":"#1C7FD0","serie-3":"#0E9F6E"}},"ardente":{"sombre":{"bg":"#0F0A14","surface":"#18111F","surface-2":"#211829","surface-3":"#2B2034","border":"#2C2236","border-2":"#3D3049","text":"#F7F1FA","text-2":"#B9A9C6","text-3":"#94849F","ink":"#1A0B12","acc":"#FEC923","acc-2":"#FD5632","acc-on":"#FFB35C","rouage-a":"#4AB2E7","rouage-b":"#CA28B1","serie-1":"#FEC923","serie-2":"#FD5632","serie-3":"#DC1178"},"clair":{"bg":"#FBF6F2","surface":"#FFFFFF","surface-2":"#F6EEE8","surface-3":"#EFE4DB","border":"#EADFD6","border-2":"#DCCBBE","text":"#1F1426","text-2":"#6A5873","text-3":"#76637F","ink":"#1A0B12","acc":"#FD9E21","acc-2":"#FD5632","acc-on":"#B23A0C","rouage-a":"#332BD9","rouage-b":"#CA28B1","serie-1":"#FD9E21","serie-2":"#FD5632","serie-3":"#DC1178"}},"aurore-boreale":{"sombre":{"bg":"#06101E","surface":"#0D1B2E","surface-2":"#13263D","surface-3":"#1B3350","border":"#1F3550","border-2":"#2C4A6B","text":"#EAF6FF","text-2":"#A9C4D8","text-3":"#8AA6BD","ink":"#02121A","acc":"#3CFFB4","acc-2":"#38C6FF","acc-on":"#7DFFD0","rouage-a":"#38C6FF","rouage-b":"#8E6BFF","serie-1":"#3CFFB4","serie-2":"#38C6FF","serie-3":"#8E6BFF"}},"spatial":{"sombre":{"bg":"#070B12","surface":"#0E1622","surface-2":"#142033","surface-3":"#1B2A40","border":"#1E2D42","border-2":"#2C4060","text":"#E8EEF5","text-2":"#97A8BC","text-3":"#8193A8","ink":"#1A0A00","acc":"#FF7A1F","acc-2":"#FF9A4D","acc-on":"#FF9A4D","rouage-a":"#5FE3FF","rouage-b":"#2E8BFF","serie-1":"#5FE3FF","serie-2":"#FF7A1F","serie-3":"#4BE3A0"},"clair":{"bg":"#EEF1F4","surface":"#FFFFFF","surface-2":"#E6EAEF","surface-3":"#D8DEE6","border":"#D3DAE3","border-2":"#B8C3D0","text":"#111A26","text-2":"#4B5A6B","text-3":"#56657A","ink":"#1A0A00","acc":"#F06A12","acc-2":"#FF8A3D","acc-on":"#A84A08","rouage-a":"#1C7FD0","rouage-b":"#5FA8E8","serie-1":"#1C7FD0","serie-2":"#F06A12","serie-3":"#0E9F6E"}},"synthwave":{"sombre":{"bg":"#120326","surface":"#1C0838","surface-2":"#260D4A","surface-3":"#33145E","border":"#3A1A66","border-2":"#52267F","text":"#FBF0FF","text-2":"#CDB6EE","text-3":"#A98DD2","ink":"#12001F","acc":"#FF2BD6","acc-2":"#00E5FF","acc-on":"#FF8BEA","rouage-a":"#00E5FF","rouage-b":"#FF2BD6","serie-1":"#FF2BD6","serie-2":"#00E5FF","serie-3":"#FFD24D"},"clair":{"bg":"#FFF2F9","surface":"#FFFFFF","surface-2":"#FFE6F3","surface-3":"#FFD3EA","border":"#F6CFE4","border-2":"#EBA9CD","text":"#2A0B3D","text-2":"#6E4A82","text-3":"#7A5690","ink":"#2A0B3D","acc":"#FF3EA5","acc-2":"#00B8D4","acc-on":"#B0106A","rouage-a":"#00B8D4","rouage-b":"#FF3EA5","serie-1":"#FF3EA5","serie-2":"#00A9C4","serie-3":"#FFB020"}},"terminal-vert":{"sombre":{"bg":"#020A04","surface":"#06140A","surface-2":"#0B1F10","surface-3":"#123018","border":"#164A24","border-2":"#1F6A33","text":"#6CFF94","text-2":"#4CCF72","text-3":"#3BB15E","ink":"#021006","acc":"#6CFF94","acc-2":"#2EE86A","acc-on":"#8DFFAD","rouage-a":"#2EE86A","rouage-b":"#6CFF94","serie-1":"#6CFF94","serie-2":"#2EC4B6","serie-3":"#FFD84D"}}};
+
+const TOTAL = 14;
+const TACHES = ['Nettoyer les fichiers temporaires', 'Vider les caches des navigateurs', 'Faire de la place', 'Retirer les restes de programmes',
+  'Désactiver la veille', 'Configurer DNS', 'Désactiver le démarrage rapide', 'Réduire la télémétrie', 'Désactiver le suivi publicitaire',
+  'Protéger ma vie privée', 'Retirer les applications inutiles', 'Vérifier les disques', 'Réparer Windows', "Planifier l'entretien"];
+let fait = 7, theme = 'dark', roue = 'encre', minuteur = 0, uid = 0;
+const pct = (f) => `${Math.round((f / TOTAL) * 100)} %`;
+// Les animations repartent du meme instant a chaque rendu : la roue ne saute pas.
+const phase = (duree) => `animation-delay:-${((performance.now() / 1000) % duree).toFixed(2)}s`;
+const alea = (i, k = 1) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
+
+/* Geometrie des graphiques a engrenages, reprise de src/analyse.js. */
+function engrenage(cx, cy, r1, r2, dents) {
+  const pas = (Math.PI * 2) / dents, pts = [];
+  for (let i = 0; i < dents; i++) {
+    const a = i * pas;
+    for (const [ang, r] of [[a - pas * 0.22, r2], [a - pas * 0.14, r1], [a + pas * 0.14, r1], [a + pas * 0.22, r2]]) {
+      pts.push(`${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`);
+    }
+  }
+  return `M${pts.join('L')}Z`;
+}
+function dent(cx, cy, r1, r2, i, n) {
+  const pas = (Math.PI * 2) / n, a = -Math.PI / 2 + i * pas;
+  return `M${[[a - pas * 0.3, r2], [a - pas * 0.19, r1], [a + pas * 0.19, r1], [a + pas * 0.3, r2]]
+    .map(([ang, r]) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`).join('L')}Z`;
+}
+const COCHE = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+/* --- Les graphiques ---------------------------------------------------------- */
+function gBarre(f, { court = true, libelle = true } = {}) {
+  const p = f / TOTAL;
+  const crans = Array.from({ length: TOTAL - 1 }, (_, i) => `<b style="left:calc(${((i + 1) / TOTAL) * 100}% - 1px)"></b>`).join('');
+  return `<div class="g-barre${court && f < TOTAL ? ' court' : ''}" role="progressbar" aria-valuenow="${Math.round(p * 100)}" aria-valuemin="0" aria-valuemax="100">
+    ${libelle ? `<div class="gb-t"><span>${f} sur ${TOTAL} terminées</span><b>${pct(f)}</b></div>` : ''}
+    <div class="gb-piste"><i style="width:${p * 100}%"></i>${crans}</div></div>`;
+}
+
+function gEngrenage(f, taille) {
+  const p = f / TOTAL, r = 70, C = 2 * Math.PI * r, fin = f >= TOTAL;
+  const grand = taille >= 140;
+  const centre = fin
+    ? `${COCHE}<small style="font-size:${grand ? 12 : 10}px">terminé</small>`
+    : `<b style="font-size:${grand ? 30 : 14}px">${pct(f)}</b>${grand ? `<small style="font-size:11.5px;margin-top:3px">${f} / ${TOTAL}</small>` : ''}`;
+  return `<div class="g-eng${fin ? ' fin' : ''}${roue === 'orange' ? ' orange' : ''}" style="width:${taille}px;height:${taille}px" role="progressbar" aria-valuenow="${Math.round(p * 100)}" aria-valuemin="0" aria-valuemax="100">
+    <svg viewBox="0 0 220 220"><g class="roue" style="${phase(36)}"><path d="${engrenage(110, 110, 108, 95, 14)}"/><circle cx="110" cy="110" r="87"/></g>
+      <circle class="piste" cx="110" cy="110" r="${r}"/><circle class="arc" cx="110" cy="110" r="${r}" stroke-dasharray="${f ? Math.max(0.1, p * C) : 0} ${C}"/>
+      <circle class="moyeu" cx="110" cy="110" r="54"/></svg>
+    <div class="centre">${centre}</div></div>`;
+}
+
+function melange(h1, h2, u) {
+  const v = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [v(h1), v(h2)];
+  return `#${x.map((k, i) => Math.round(k + (y[i] - k) * u).toString(16).padStart(2, '0')).join('')}`;
+}
+function gJaugeDents(f, t) {
+  const n = 28, allumees = Math.round((f / TOTAL) * n);
+  const flamme = (u) => (u < 0.5 ? melange(t['serie-1'], t['serie-2'], u * 2) : melange(t['serie-2'], t['serie-3'], (u - 0.5) * 2));
+  const dents = Array.from({ length: n }, (_, i) => `<path d="${dent(110, 110, 106, 86, i, n)}" fill="${i < allumees ? flamme(i / (n - 1)) : t['surface-3']}"/>`).join('');
+  return `<div class="g-jd"><svg viewBox="0 0 220 220">${dents}<circle cx="110" cy="110" r="79" fill="none" stroke="${t.border}"/><circle cx="110" cy="110" r="67" fill="${t.surface}"/></svg>
+    <div class="centre"><b>${pct(f)}</b><small>${f} sur ${TOTAL}</small></div></div>`;
+}
+
+function gAscii(f) {
+  const n = 22, k = Math.round((f / TOTAL) * n), fin = f >= TOTAL;
+  const tache = fin ? 'terminé' : `${TACHES[f]}…`;
+  return `<pre class="g-ascii">&gt; entretien complet
+[${'█'.repeat(k)}<span class="dim">${'·'.repeat(n - k)}</span>] ${pct(f).padStart(5)}
+<span class="dim">${String(f).padStart(2)}/${TOTAL}</span> ${tache}<span class="curseur">_</span></pre>`;
+}
+
+function sapins(W, base, t, n = 11, h0 = 26) {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const x = (i + 0.5) * (W / n) + (alea(i, 3) - 0.5) * 10, h = h0 + alea(i, 4) * 22, l = h * 0.42;
+    s += `<path d="M${x.toFixed(1)},${(base - h).toFixed(1)} L${(x + l).toFixed(1)},${base} L${(x - l).toFixed(1)},${base} Z" fill="${t['surface-2']}"/>`;
+  }
+  return s + `<rect x="0" y="${base}" width="${W}" height="20" fill="${t['surface-2']}"/>`;
+}
+function etoiles(W, H, n, t, k = 1) {
+  return Array.from({ length: n }, (_, i) => `<circle cx="${(alea(i, k) * W).toFixed(1)}" cy="${(alea(i, k + 1) * H).toFixed(1)}" r="${(0.6 + alea(i, k + 2) * 0.9).toFixed(1)}" fill="${t.text}" opacity="${(0.25 + alea(i, k + 3) * 0.45).toFixed(2)}"/>`).join('');
+}
+
+function gLune(f, t, sombre) {
+  const W = 280, H = 168, cx = 140, cy = 66, r = 42, p = f / TOTAL, id = `l${uid++}`;
+  const lune = sombre ? t['acc-2'] : t['serie-3'];
+  const rx = r * Math.abs(1 - 2 * p), balayage = p < 0.5 ? 0 : 1;
+  const eclairee = p <= 0 ? '' : p >= 1 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${lune}" filter="url(#${id})"/>`
+    : `<path d="M${cx},${cy - r} A${r},${r} 0 0 1 ${cx},${cy + r} A${rx.toFixed(1)},${r} 0 0 ${balayage} ${cx},${cy - r} Z" fill="${lune}" filter="url(#${id})"/>`;
+  return `<div class="g-svg"><svg viewBox="0 0 ${W} ${H}"><defs><filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${sombre ? etoiles(W, 110, 16, t) : ''}
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${t['surface-3']}" stroke="${t.border}"/>${eclairee}
+    ${sapins(W, 150, t)}</svg>
+    <div class="libelle-pct"><b>${pct(f)}</b>${f >= TOTAL ? 'pleine lune' : `${f} sur ${TOTAL}`}</div></div>`;
+}
+
+function gLucioles(f, t, sombre) {
+  const W = 280, H = 150, id = `f${uid++}`, couleur = sombre ? t['acc-2'] : t.acc;
+  const pts = Array.from({ length: TOTAL }, (_, i) => [(i + 0.5) * (W / TOTAL) + (alea(i, 7) - 0.5) * 14, 22 + alea(i, 8) * 70]);
+  // Elles s'allument dans le desordre : un ordre fixe, tire au hasard.
+  const ordre = pts.map((_, i) => i).sort((a, b) => alea(a, 9) - alea(b, 9));
+  const allumees = new Set(ordre.slice(0, f));
+  const points = pts.map(([x, y], i) => allumees.has(i)
+    ? `<circle class="luc-on" style="animation-delay:-${(alea(i, 10) * 2.6 + (performance.now() / 1000) % 2.6).toFixed(2)}s" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="${couleur}" filter="url(#${id})"/>`
+    : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.8" fill="${t['text-3']}" opacity=".3"/>`).join('');
+  return `<div class="g-svg"><svg viewBox="0 0 ${W} ${H + 18}"><defs><filter id="${id}" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${sapins(W, H, t, 12, 30)}${points}</svg>
+    <div class="libelle-pct"><b>${pct(f)}</b>${f} luciole${f > 1 ? 's' : ''} sur ${TOTAL}</div></div>`;
+}
+
+function gVoile(f, t) {
+  const W = 280, H = 158, p = f / TOTAL, id = `v${uid++}`, n = 64, bord = p * W;
+  const raies = Array.from({ length: n }, (_, i) => {
+    const x = (i / n) * W, h = 46 + alea(i, 11) * 52, y = 12 + alea(i, 12) * 26;
+    return `<rect class="voile-s" style="animation-delay:-${(alea(i, 13) * 3.4 + (performance.now() / 1000) % 3.4).toFixed(2)}s" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(W / n + 0.6).toFixed(1)}" height="${h.toFixed(1)}" fill="url(#${id}g)"/>`;
+  }).join('');
+  const collines = `<path d="M0,${H} L0,128 C40,112 70,118 110,126 C150,134 190,108 230,114 C255,118 270,124 280,122 L280,${H} Z" fill="${t['surface-2']}"/>`;
+  return `<div class="g-svg"><svg viewBox="0 0 ${W} ${H}"><defs>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t['acc-2']}" stop-opacity=".0"/><stop offset=".25" stop-color="${t['acc-2']}"/><stop offset=".6" stop-color="${t.acc}"/><stop offset="1" stop-color="${t.acc}" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${id}m" gradientUnits="userSpaceOnUse" x1="${(bord - 34).toFixed(1)}" y1="0" x2="${bord.toFixed(1)}" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <mask id="${id}k"><rect width="${W}" height="${H}" fill="url(#${id}m)"/></mask>
+      <filter id="${id}f"><feGaussianBlur stdDeviation="1.6"/></filter></defs>
+    ${etoiles(W, 100, 18, t, 5)}
+    <g mask="url(#${id}k)" filter="url(#${id}f)">${raies}</g>${collines}
+    <rect x="0" y="${H - 3}" width="${W}" height="3" fill="${t['surface-3']}"/><rect x="0" y="${H - 3}" width="${bord.toFixed(1)}" height="3" fill="${t.acc}"/></svg>
+    <div class="libelle-pct"><b>${pct(f)}</b>${f} sur ${TOTAL}</div></div>`;
+}
+
+function gSoleil(f, t) {
+  const W = 280, H = 160, hz = 104, r = 50, cx = 140, p = f / TOTAL, id = `s${uid++}`;
+  const cy = hz + r + 2 - p * (2 * r + 10);
+  const bandes = Array.from({ length: 6 }, (_, k) => `<rect x="${cx - r}" y="${(cy + r * (0.12 + k * 0.15)).toFixed(1)}" width="${2 * r}" height="${(1.5 + k * 1.1).toFixed(1)}" fill="#000"/>`).join('');
+  let grille = '';
+  for (let k = 1; k <= 5; k++) { const y = hz + (k * k) * 2.2; grille += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`; }
+  for (let k = -7; k <= 7; k++) grille += `<line x1="${cx + k * 6}" y1="${hz}" x2="${cx + k * 46}" y2="${H}"/>`;
+  return `<div class="g-svg"><svg viewBox="0 0 ${W} ${H}"><defs>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t['serie-3']}"/><stop offset="1" stop-color="${t.acc}"/></linearGradient>
+      <mask id="${id}m"><rect width="${W}" height="${H}" fill="#fff"/>${bandes}</mask>
+      <clipPath id="${id}c"><rect width="${W}" height="${hz}"/></clipPath></defs>
+    ${etoiles(W, 70, 12, t, 9)}
+    <g clip-path="url(#${id}c)"><circle cx="${cx}" cy="${cy.toFixed(1)}" r="${r}" fill="url(#${id}g)" mask="url(#${id}m)" style="filter:drop-shadow(0 0 12px ${t.acc})"/></g>
+    <g stroke="${t['acc-2']}" stroke-width="1" opacity=".55">${grille}</g>
+    <line x1="0" y1="${hz}" x2="${W}" y2="${hz}" stroke="${t['acc-2']}" stroke-width="1.6" style="filter:drop-shadow(0 0 4px ${t['acc-2']})"/></svg>
+    <div class="libelle-pct" style="font-style:italic"><b style="text-shadow:0 0 10px ${t.acc}">${pct(f)}</b>${f} sur ${TOTAL}</div></div>`;
+}
+
+function gOrbite(f, t) {
+  const W = 280, H = 156, cx = 140, cy = 74, a = 118, b = 38, rot = -10, p = f / TOTAL, id = `o${uid++}`;
+  // Points de l'ellipse et longueur cumulee : le satellite avance a vitesse
+  // constante le long de la trajectoire, pas selon l'angle.
+  const N = 720, pts = [], cum = [0];
+  const c = Math.cos((rot * Math.PI) / 180), s = Math.sin((rot * Math.PI) / 180);
+  for (let i = 0; i <= N; i++) {
+    const th = Math.PI + (i / N) * Math.PI * 2;
+    const x0 = a * Math.cos(th), y0 = b * Math.sin(th);
+    pts.push([cx + x0 * c - y0 * s, cy + x0 * s + y0 * c]);
+    if (i) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  const L = cum[N], d = `M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L')}`;
+  const en = (u) => { const cible = u * L; let i = cum.findIndex((v) => v >= cible); if (i < 0) i = N; return pts[i]; };
+  const losange = ([x, y], tl, couleur, op = 1) => `<path d="M${x},${y - tl}L${x + tl},${y}L${x},${y + tl}L${x - tl},${y}Z" fill="${couleur}" opacity="${op}"/>`;
+  const balises = [0.25, 0.5, 0.75].map((u) => losange(en(u), 3.2, p >= u ? t.acc : t['rouage-a'], p >= u ? 1 : 0.45)).join('');
+  const trajet = `<path d="${d}" fill="none" stroke="${t['rouage-a']}" stroke-width="1" stroke-dasharray="2 5" opacity=".6"/>
+    <path d="${d}" fill="none" stroke="${t.acc}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="${(p * L).toFixed(1)} ${L.toFixed(1)}" style="filter:drop-shadow(0 0 4px ${t.acc})"/>${balises}`;
+  const planete = `<circle cx="${cx}" cy="${cy}" r="30" fill="${t.bg}" stroke="${t['rouage-a']}" stroke-width="1.4"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="30" ry="9" fill="none" stroke="${t['rouage-a']}" opacity=".45"/><ellipse cx="${cx}" cy="${cy}" rx="12" ry="30" fill="none" stroke="${t['rouage-a']}" opacity=".45"/>`;
+  const tete = f > 0 && f < TOTAL ? losange(en(p), 5.5, t.acc) : '';
+  return `<div class="g-svg"><svg viewBox="0 0 ${W} ${H}"><defs><clipPath id="${id}"><rect x="0" y="${cy}" width="${W}" height="${H}"/></clipPath></defs>
+    ${etoiles(W, H, 22, t, 13)}${trajet}${planete}<g clip-path="url(#${id})">${trajet}</g>${tete}</svg>
+    <div class="libelle-pct" style="text-transform:uppercase;letter-spacing:.14em;font-size:11px"><b style="letter-spacing:.04em">${pct(f)}</b>${f} / ${TOTAL}</div></div>`;
+}
+
+/* --- A. Les ecrans --------------------------------------------------------- */
+function lignesTaches(f) {
+  const debut = Math.max(0, Math.min(f - 2, TOTAL - 5));
+  return TACHES.slice(debut, debut + 5).map((nom, j) => {
+    const i = debut + j, etat = i < f ? 'ok' : i === f ? 'run' : 'att';
+    const dt = etat === 'ok' ? COCHE : etat === 'run' ? i + 1 : i + 1;
+    const res = etat === 'ok' ? '<span class="tr ok">Réussi</span>' : etat === 'run' ? '<span class="tr">en cours…</span>' : '<span class="tr">En attente</span>';
+    return `<div class="tache${etat === 'run' ? ' encours' : ''}"><span class="dt ${etat}">${dt}</span><span class="tt">${nom}</span>${res}</div>`;
+  }).join('');
+}
+function tete(f) {
+  const fin = f >= TOTAL;
+  return `<div class="tete"><h3>${fin ? "C'est terminé !" : 'Entretien en cours'}</h3><p>${fin ? '14 actions sur 14 réussies · 933 Mo libérés' : `Vous pouvez laisser l'ordinateur travailler. Il reste environ ${Math.max(1, (TOTAL - f) * 2)} min.`}</p></div>`;
+}
+const bilan = (f) => `<div class="bilan">${f >= TOTAL ? 'Tout est fait' : `${f} sur ${TOTAL} terminées`}</div><div class="detail">Point de restauration créé.</div>`;
+
+function rendreEcrans() {
+  const f = fait;
+  document.getElementById('ecranBarre').innerHTML = `${tete(f)}<div class="carte">
+    <div class="carte-tete" style="border-bottom:0;padding-bottom:10px"><div class="flex">${bilan(f)}</div><b class="pct">${pct(f)}</b></div>
+    <div class="carte-barre">${gBarre(f, { libelle: false })}</div>${lignesTaches(f)}</div>`;
+  document.getElementById('ecranTete').innerHTML = `${tete(f)}<div class="carte">
+    <div class="carte-tete">${gEngrenage(f, 84)}<div class="flex">${bilan(f)}</div></div>${lignesTaches(f)}</div>`;
+  document.getElementById('ecranDessus').innerHTML = `${tete(f)}<div class="au-dessus">${gEngrenage(f, 168)}</div><div class="carte">
+    <div class="carte-tete"><div class="flex">${bilan(f)}</div></div>${lignesTaches(f)}</div>`;
+}
+
+/* --- B. Les tuiles ----------------------------------------------------------- */
+const TUILES = [
+  { cle: 'barre', amb: 'plan', nom: 'Barre', pour: 'par défaut', choisi: true, texte: 'Une barre fine, un cran par action. Pour toute ambiance qui ne choisit rien.', g: (f) => gBarre(f), carte: true },
+  { cle: 'engrenage', amb: 'plan', nom: 'Engrenage', pour: 'Plan', choisi: true, texte: 'La roue tourne tant que ça travaille ; la jauge au milieu se remplit.', g: (f) => gEngrenage(f, 172) },
+  { cle: 'lune', amb: 'foret-de-nuit', nom: 'Lune', pour: 'Forêt de nuit · 1', texte: 'Du dernier croissant à la pleine lune, au-dessus des sapins.', g: (f, t, s) => gLune(f, t, s) },
+  { cle: 'lucioles', amb: 'foret-de-nuit', nom: 'Lucioles', pour: 'Forêt de nuit · 2', texte: 'Une luciole par action : elles s’allument une à une dans la nuit.', g: (f, t, s) => gLucioles(f, t, s) },
+  { cle: 'voile', amb: 'aurore-australe', nom: 'Voile', pour: 'Aurore australe', texte: 'Le voile de lumière gagne le ciel de gauche à droite.', g: (f, t) => gVoile(f, t) },
+  { cle: 'voile', amb: 'aurore-boreale', nom: 'Voile', pour: 'Aurore boréale (dépôt)', texte: 'Le même, à ses couleurs.', g: (f, t) => gVoile(f, t) },
+  { cle: 'jauge-dents', amb: 'ardente', nom: 'Jauge à dents', pour: 'Braise (dépôt)', texte: 'Les dents s’allument de l’or au magenta — la jauge de l’analyse.', g: (f, t) => gJaugeDents(f, t) },
+  { cle: 'soleil', amb: 'synthwave', nom: 'Soleil', pour: 'Synthwave (dépôt)', texte: 'Le soleil rayé se lève sur la grille ; à 100 %, il a quitté l’horizon.', g: (f, t) => gSoleil(f, t) },
+  { cle: 'orbite', amb: 'spatial', nom: 'Orbite', pour: 'Spatial (dépôt)', texte: 'Le satellite fait le tour de la planète ; les balises s’allument au passage.', g: (f, t) => gOrbite(f, t) },
+  { cle: 'ascii', amb: 'terminal-vert', nom: 'Texte', pour: 'Terminal (dépôt)', texte: 'Une barre en caractères, l’action en cours et le curseur.', g: (f) => gAscii(f), scan: true },
+];
+function jetons(amb) {
+  const j = JETONS[amb];
+  const sombre = theme === 'dark' || !j.clair;
+  return { t: sombre ? j.sombre : j.clair, sombre };
+}
+function rendreTuiles() {
+  document.getElementById('tuiles').innerHTML = TUILES.map((x, i) => {
+    const { t, sombre } = jetons(x.amb);
+    const vars = Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';');
+    return `<div class="tuile" style="${vars};color-scheme:${sombre ? 'dark' : 'light'}">
+      <div class="scene${x.carte ? ' carte-fond' : ''}${x.scan ? ' scanlines' : ''}" data-i="${i}">${x.g(fait, t, sombre)}</div>
+      <div class="info"><div class="l1"><b>${x.nom}</b><span class="pastille${x.choisi ? ' choisi' : ''}">${x.choisi ? 'votre idée' : 'proposition'}</span><span class="amb">${x.pour}</span></div>
+      <p><code>"progression": "${x.cle}"</code></p><p>${x.texte}</p></div></div>`;
+  }).join('');
+}
+
+function rendre() {
+  document.getElementById('prog').value = fait;
+  document.getElementById('progVal').textContent = `${fait} / ${TOTAL}`;
+  rendreEcrans();
+  rendreTuiles();
+}
+
+document.getElementById('prog').addEventListener('input', (e) => { fait = Number(e.target.value); rendre(); });
+document.querySelectorAll('[data-theme-btn]').forEach((b) => b.addEventListener('click', () => {
+  theme = b.dataset.themeBtn;
+  document.documentElement.dataset.theme = theme;
+  document.querySelectorAll('[data-theme-btn]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  rendre();
+}));
+document.querySelectorAll('[data-roue]').forEach((b) => b.addEventListener('click', () => {
+  roue = b.dataset.roue;
+  document.querySelectorAll('[data-roue]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  rendre();
+}));
+document.getElementById('anim').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  clearInterval(minuteur);
+  if (!on) return;
+  let pause = 0;
+  minuteur = setInterval(() => {
+    if (fait >= TOTAL) { if (++pause < 3) return; pause = 0; fait = 0; } else fait += 1;
+    rendre();
+  }, 1100);
+});
+// `#clair` : la maquette s'ouvre en clair.
+if (/clair|light/.test(location.hash)) document.querySelector('[data-theme-btn="light"]').click();
+else rendre();
+</script>
+</body>
+</html>

@@ -62,8 +62,12 @@ const server = createServer(async (req, res) => {
   if (chemin === '/__ambiances.json') {
     const toutes = url.searchParams.get('toutes') === '1';
     const contenus = [];
-    for (const sous of toutes ? ['base', 'depot'] : ['base']) {
-      const dossier = join(ICI, '..', '..', 'ambiances', sous);
+    // BANC_AMBIANCES=<dossier> (ou 2e argument) : des ambiances d'essai en
+    // plus — variantes a comparer en maquette —, sans les poser dans le depot.
+    const dossiers = (toutes ? ['base', 'depot'] : ['base']).map((sous) => join(ICI, '..', '..', 'ambiances', sous));
+    const essai = process.env.BANC_AMBIANCES || process.argv[3];
+    if (essai) dossiers.push(essai);
+    for (const dossier of dossiers) {
       for (const f of (await readdir(dossier)).filter((x) => x.endsWith('.sindry-ambiance')).sort()) {
         contenus.push({ fichier: f, texte: await readFile(join(dossier, f), 'utf8') });
       }
