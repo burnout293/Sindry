@@ -181,8 +181,8 @@ traduit ce qu'elle affiche.
 ## L'entête
 
 Tous ces champs sont **obligatoires**, sauf `tags`, `author`, `created`, `updated`, `scan`,
-`view`, `chart`, `panels` et `show`. `author`, `created` et `updated` sont exigés au catalogue
-officiel : le validateur les demande en `-Strict`.
+`view`, `chart`, `panels` et `show`. `author`, `created` et `updated` sont conseillés : le
+validateur les rappelle par une note, qui ne fait jamais échouer `-Strict`.
 
 | Champ | Valeurs | Rôle |
 |---|---|---|
@@ -1299,7 +1299,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `VALEUR_INVALIDE` | erreur | `risk`, `duration`, `engine`, `show` ou un booléen hors valeurs admises ; `[show:]` hors `simple`/`expert` |
 | `ID_INVALIDE` | erreur | `id` n'est pas un GUID |
 | `ID_COLLISION` | erreur | Deux scripts portent le même `id` |
-| `CHAMP_CONSEILLE` | avertissement | `author`, `created` ou `updated` absent : exigés au catalogue officiel, donc en `-Strict` (2.0.3) |
+| `CHAMP_CONSEILLE` | note | `author`, `created` ou `updated` absent : conseillés, jamais exigés (2.0.3) |
 | `DATE_INVALIDE` | erreur | `created` ou `updated` hors de la forme `AAAA-MM-JJ`, ou date qui n'existe pas |
 | `DATES_INVERSEES` | erreur | `updated` précède `created` |
 | `DATE_FUTURE` | avertissement | `created` ou `updated` à plus d'un jour dans le futur |

@@ -302,13 +302,11 @@ function Test-Entete {
         }
     }
 
-    # Author and dates (2.0.3). Optional for Sindry, which shows them in the
-    # Expert sheet; a warning here, so -Strict (the official catalogue) asks
-    # for them.
-    foreach ($cle in @('author', 'created', 'updated')) {
-        if (-not $champs.ContainsKey($cle)) {
-            Add-Constat $Fichier ($bloc.Debut + 1) 'avertissement' 'CHAMP_CONSEILLE' "Champ '$cle' absent : l'auteur et les dates de création et de mise à jour sont exigés au catalogue officiel (-Strict)."
-        }
+    # Author and dates (2.0.3): optional, even with -Strict. One note per
+    # script names what is missing; a note never fails a run.
+    $absents = @(@('author', 'created', 'updated') | Where-Object { -not $champs.ContainsKey($_) })
+    if ($absents.Count -gt 0) {
+        Add-Constat $Fichier ($bloc.Debut + 1) 'note' 'CHAMP_CONSEILLE' "Conseillé : $($absents -join ', ') (auteur, création, dernière modification) — affichés dans la fiche de l'Expert."
     }
     Test-Dates $Fichier $champs
 

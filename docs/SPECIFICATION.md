@@ -312,8 +312,8 @@ Détail au §6.7.
 ```
 
 **L'auteur et les dates (2.0.3).** `author`, `created` et `updated` (`AAAA-MM-JJ`) sont
-facultatifs pour Sindry, qui les montre dans la fiche de l'Expert ; le validateur les exige
-en `-Strict`, donc au catalogue officiel. `updated` ne précède jamais `created`, et aucune
+facultatifs, même en `-Strict` ; Sindry les montre dans la fiche de l'Expert, et le
+validateur rappelle leur absence par une note. `updated` ne précède jamais `created`, et aucune
 des deux n'est dans le futur.
 
 **`id` s'obtient avec `New-Guid`** (natif PowerShell, aucune dépendance) : lancer la

@@ -66,7 +66,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — Catalogues : barre de commandes, tableau, détail et liste des actions en bas, clic droit ; Activer et Désactiver en une commande, faute de place (M29) | Fait |
 | **2.0.3** | Contrat des scripts : erreurs expliquées, auteur et dates, icônes des programmes — version stable (tag `v2.0.3`) | Prête |
 | | — codes d'erreur : `[error]` dans `REPORT`, traduits dans `LANG` ; `[ERR] E104 …` montre la description et la solution dans le journal, et devient la raison de l'échec (tâches, verdict) | Fait |
-| | — `author`, `created`, `updated` dans l'entête : dans la fiche de l'Expert, exigés en `-Strict` ; dates vérifiées | Fait |
+| | — `author`, `created`, `updated` dans l'entête : dans la fiche de l'Expert, facultatifs même en `-Strict` (une note) ; dates vérifiées | Fait |
 | | — `HKLM\SOFTWARE\Sindry\Scripts\<id>` réservée aux actions (restauration) ; « Données de restauration des actions » à la désinstallation | Fait |
 | | — `[ITEM] … exe=` : la vraie icône d'un programme, lue sur place dans le fichier, sans chargeur de Windows ; chemins locaux seulement | Fait |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
