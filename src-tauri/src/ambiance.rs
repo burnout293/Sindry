@@ -27,6 +27,11 @@ pub const FORMAT: u64 = 1;
 const TAILLE_MAX: usize = 1024 * 1024;
 /// Le decor seul, balisage et feuille de style ensemble.
 const DECOR_MAX: usize = 512 * 1024;
+/// The progress graphic alone, markup and style sheet together.
+const PROGRESS_MAX: usize = 256 * 1024;
+/// Where a progress graphic goes (2.0.2): `pastille`, 88 × 88 in the header of
+/// the run card; `bandeau`, the card's full width, 150 high.
+pub const PROGRESS_SLOTS: [&str; 2] = ["pastille", "bandeau"];
 /// Au-dela, les fichiers suivants du dossier sont ignores.
 const NOMBRE_MAX: usize = 200;
 
@@ -189,6 +194,18 @@ pub struct Decor {
     pub css: String,
 }
 
+/// The run-progress graphic (2.0.2): drawn by the ambiance itself, in an
+/// isolated frame like the décor, which Sindry recomposes each time an action
+/// finishes, handing it the percentage (`--p`, `--pct`, `{{pourcentage}}`).
+/// No section: Sindry's own horizontal bar.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct Progress {
+    /// One of [`PROGRESS_SLOTS`].
+    pub slot: String,
+    pub markup: String,
+    pub css: String,
+}
+
 /// L'allure de l'interface, au-dela des couleurs (2.0.1) : des **listes
 /// fermees**, que l'interface traduit en regles CSS qu'elle ecrit elle-meme.
 /// Une ambiance ne fournit jamais de CSS pour l'interface — elle pourrait
@@ -263,6 +280,7 @@ pub struct Ambiance {
     pub sombre: Option<BTreeMap<String, String>>,
     pub decor: Decor,
     pub forme: Forme,
+    pub progress: Option<Progress>,
     /// Le fichier d'ou elle vient, une fois installee.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub fichier: String,
@@ -310,6 +328,7 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
             "sombre",
             "decor",
             "forme",
+            "progression",
         ],
         "",
         &mut c,
@@ -365,6 +384,7 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
 
     let decor = decor(objet.get("decor"), &mut c);
     let forme = forme(objet.get("forme"), &mut c);
+    let progress = progress(objet.get("progression"), &mut c);
 
     if !c.is_empty() {
         return Err(c);
@@ -380,8 +400,67 @@ pub fn valider(contenu: &str) -> Result<Ambiance, Vec<Constat>> {
         sombre,
         decor,
         forme,
+        progress,
         fichier: String::new(),
     })
+}
+
+/// The `progression` section: a slot taken from its list, then markup and a
+/// style sheet held to the décor's rules — same checks, same codes.
+fn progress(value: Option<&Value>, c: &mut Vec<Constat>) -> Option<Progress> {
+    let value = value?;
+    let Some(o) = value.as_object() else {
+        c.push(constat(
+            "PROGRESSION_INVALIDE",
+            "« progression » doit etre un objet : { \"place\": \"pastille\", \"balisage\": \"<svg …>\", \"css\": \"…\" }.",
+        ));
+        return None;
+    };
+    cles_connues(o, &["place", "balisage", "css"], "progression : ", c);
+    let text = |k: &str, c: &mut Vec<Constat>| match o.get(k) {
+        None => String::new(),
+        Some(Value::String(s)) => s.clone(),
+        Some(_) => {
+            c.push(constat(
+                "PROGRESSION_INVALIDE",
+                format!("progression : « {k} » doit etre un texte."),
+            ));
+            String::new()
+        }
+    };
+    let p = Progress {
+        slot: text("place", c),
+        markup: text("balisage", c),
+        css: text("css", c),
+    };
+    if !PROGRESS_SLOTS.contains(&p.slot.as_str()) {
+        c.push(constat(
+            "PROGRESSION_INVALIDE",
+            format!(
+                "progression : « place » vaut « {} » : \"pastille\" (88 × 88, dans l'en-tete de la carte) ou \"bandeau\" (toute la largeur de la carte, 150 de haut).",
+                p.slot
+            ),
+        ));
+    }
+    if p.markup.trim().is_empty() {
+        c.push(constat(
+            "PROGRESSION_INVALIDE",
+            "progression : « balisage » est vide — il n'y aurait rien a dessiner.",
+        ));
+    }
+    if p.markup.len() + p.css.len() > PROGRESS_MAX {
+        c.push(constat(
+            "PROGRESSION_TROP_GRANDE",
+            format!(
+                "la progression depasse {} Ko.",
+                PROGRESS_MAX / 1024
+            ),
+        ));
+        return Some(p);
+    }
+    verifier_balisage(&p.markup, "progression : balisage", c);
+    verifier_css(&p.css, "progression : css", c);
+    Some(p)
 }
 
 /// La forme : chaque reglage pris dans sa liste, chaque interrupteur un booleen.
@@ -732,7 +811,7 @@ fn decor(valeur: Option<&Value>, c: &mut Vec<Constat>) -> Decor {
         ));
         return d;
     }
-    verifier_balisage(&d.balisage, c);
+    verifier_balisage(&d.balisage, "balisage", c);
     verifier_css(&d.css, "css", c);
     d
 }
@@ -746,7 +825,8 @@ fn nom_balise(bas: &str, debut: usize) -> &str {
     &reste[..fin]
 }
 
-fn verifier_balisage(balisage: &str, c: &mut Vec<Constat>) {
+/// `ou` names the markup in messages: the décor's, or the progress graphic's.
+fn verifier_balisage(balisage: &str, ou: &str, c: &mut Vec<Constat>) {
     let bas = balisage.to_ascii_lowercase();
     let mut vues = Vec::new();
     for (i, _) in bas.match_indices('<') {
@@ -761,7 +841,7 @@ fn verifier_balisage(balisage: &str, c: &mut Vec<Constat>) {
             vues.push(local);
             c.push(constat(
                 "DECOR_BALISE",
-                format!("balisage : <{local}> n'est pas admis dans un decor (ni script, ni chargement, ni lien, ni formulaire ; le style va dans « css »)."),
+                format!("{ou} : <{local}> n'est pas admis (ni script, ni chargement, ni lien, ni formulaire ; le style va dans « css »)."),
             ));
         }
     }
@@ -784,7 +864,7 @@ fn verifier_balisage(balisage: &str, c: &mut Vec<Constat>) {
             c.push(constat(
                 "DECOR_EVENEMENT",
                 format!(
-                    "balisage : « on{}= » — un decor n'a pas de gestionnaire d'evenement.",
+                    "{ou} : « on{}= » — pas de gestionnaire d'evenement.",
                     &reste[..lettres]
                 ),
             ));
@@ -804,7 +884,7 @@ fn verifier_balisage(balisage: &str, c: &mut Vec<Constat>) {
             if !(valeur.starts_with('#') || IMAGES_ADMISES.iter().any(|p| valeur.starts_with(p))) {
                 c.push(constat(
                     "DECOR_LIEN",
-                    format!("balisage : « {attribut}= » ne peut viser qu'une ancre (#nom) ou une image embarquee (data:image/png;base64,…) — rien ne se charge depuis le disque ni le reseau."),
+                    format!("{ou} : « {attribut}= » ne peut viser qu'une ancre (#nom) ou une image embarquee (data:image/png;base64,…) — rien ne se charge depuis le disque ni le reseau."),
                 ));
                 break;
             }
@@ -826,14 +906,14 @@ fn verifier_balisage(balisage: &str, c: &mut Vec<Constat>) {
         {
             c.push(constat(
                 "DECOR_LIEN",
-                "balisage : une animation ne peut pas viser un attribut de lien (href, src).",
+                format!("{ou} : une animation ne peut pas viser un attribut de lien (href, src)."),
             ));
             break;
         }
     }
 
     // `style=""` et le texte : memes regles que la feuille de style.
-    verifier_css(balisage, "balisage", c);
+    verifier_css(balisage, ou, c);
 }
 
 fn verifier_css(css: &str, ou: &str, c: &mut Vec<Constat>) {
@@ -857,14 +937,14 @@ fn verifier_css(css: &str, ou: &str, c: &mut Vec<Constat>) {
         if bas.contains(interdit) {
             refus(
                 "DECOR_CSS",
-                format!("{ou} : « {interdit} » n'est pas admis dans un decor."),
+                format!("{ou} : « {interdit} » n'est pas admis."),
             );
         }
     }
-    if ou == "css" && bas.contains("</") {
+    if ou.ends_with("css") && bas.contains("</") {
         refus(
             "DECOR_CSS",
-            "css : « </ » n'a pas sa place dans une feuille de style.".to_string(),
+            format!("{ou} : « </ » n'a pas sa place dans une feuille de style."),
         );
     }
     // Un echappement (`\75 rl(`) peut deguiser une fonction : refuse, l'UTF-8
@@ -982,6 +1062,61 @@ pub fn passer_aux_fichiers(dossier: &Path, accent: &str) -> Result<String, Strin
         }
     }
     Ok(id.to_string())
+}
+
+/// The shipped ambiances as earlier versions of Sindry wrote them: SHA-256 of
+/// the file, BOM dropped and line ends as `\n` (a release build may embed
+/// them with `\r\n`). One line per id and per earlier version.
+const SHIPPED_BEFORE: [(&str, &str); 10] = [
+    // 2.0.1
+    ("plan", "f9444d5f2588f92c07e93ceec4bd6deb81f603db37ee175643d2bbb5d086d0d8"),
+    ("foret-de-nuit", "867f192452e08aaf1bca1d072d752421586dd8b3c751a8e6282a4eba2d14632d"),
+    ("aurore-australe", "04c5548fbaa37043eed8809b444acc8f803773d04d38a47972ab3f50da19123a"),
+    ("ardente", "88527f0da668426c17dd1966db346829fa8c297f019906c9694eb761831390fb"),
+    ("crepuscule", "938af1e7ae5ad282f76bb8a4206fc46d1f1da5fdbea85256fa755efb171036cc"),
+    ("synthwave", "f0c600f7e6ad3aa05ffebbfe2f288eb418fd07bd907eed0409d1b9dcdd1d6cd6"),
+    ("spatial", "1d36f4152b65fdb97f69eec094102a669389bdc7c5779adb173252fe0dae879a"),
+    ("terminal-vert", "c1e47c4d76ba59fbac900c4b8123ef1f7bd948dcd57c5d754a0d7dcf5d430778"),
+    ("terminal-ambre", "b798552643813aee453446d10f482dee82803fd79ba1545f9be63195cb4fe077"),
+    ("aurore-boreale", "0c4bb62931d35543ed2afa3db72a1ba5dd0d5f1e78b7e1f0a648e60baac475fd"),
+];
+
+fn normalised_digest(text: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text).replace("\r\n", "\n");
+    Sha256::digest(text.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+/// Brings the ambiances Sindry shipped up to date (2.0.2): the base ones, and
+/// those installed at the move to files. Only a file still exactly as an
+/// earlier Sindry wrote it is replaced — one someone edited, or imported under
+/// the same id, is never touched. Returns the ids brought up to date.
+pub fn update_shipped(dir: &Path) -> Result<Vec<String>, String> {
+    update_shipped_from(dir, &SHIPPED_BEFORE)
+}
+
+fn update_shipped_from(dir: &Path, before: &[(&str, &str)]) -> Result<Vec<String>, String> {
+    let installed = lister_dans(dir).ambiances;
+    let mut updated = Vec::new();
+    for (id, content) in DE_BASE.iter().chain(D_AVANT.iter()) {
+        let Some(a) = installed.iter().find(|a| a.id == *id) else {
+            continue;
+        };
+        let path = dir.join(&a.fichier);
+        let Ok(current) = fs::read_to_string(&path) else {
+            continue;
+        };
+        let digest = normalised_digest(&current);
+        let untouched = before.iter().any(|(i, h)| i == id && *h == digest);
+        if untouched && digest != normalised_digest(content) {
+            fs::write(&path, content).map_err(|e| format!("{} : {e}", a.fichier))?;
+            updated.push(id.to_string());
+        }
+    }
+    Ok(updated)
 }
 
 /* ------------------------------------------------------------------------
@@ -1332,6 +1467,33 @@ mod tests {
     }
 
     #[test]
+    fn only_untouched_shipped_ambiances_are_brought_up_to_date() {
+        let dir = std::env::temp_dir().join(format!("sindry-update-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        installer_de_base(&dir).unwrap();
+        let file = |id: &str| dir.join(format!("{id}.{EXTENSION}"));
+        // An "earlier version" of Plan, as Sindry wrote it (here with CRLF).
+        let mut old: Value = serde_json::from_str(DE_BASE[0].1).unwrap();
+        old["version"] = json!("0.9");
+        let old_text = serde_json::to_string_pretty(&old).unwrap().replace('\n', "\r\n");
+        fs::write(file("plan"), &old_text).unwrap();
+        // Forêt de nuit, edited by its owner: never replaced.
+        let mut edited: Value = serde_json::from_str(DE_BASE[1].1).unwrap();
+        edited["auteur"] = json!("moi");
+        let edited_text = edited.to_string();
+        fs::write(file("foret-de-nuit"), &edited_text).unwrap();
+
+        let before = [("plan", normalised_digest(&old_text))];
+        let before: Vec<(&str, &str)> = before.iter().map(|(i, h)| (*i, h.as_str())).collect();
+        assert_eq!(update_shipped_from(&dir, &before).unwrap(), vec!["plan"]);
+        assert_eq!(fs::read_to_string(file("plan")).unwrap(), DE_BASE[0].1);
+        assert_eq!(fs::read_to_string(file("foret-de-nuit")).unwrap(), edited_text);
+        // Already current: nothing more to do.
+        assert!(update_shipped_from(&dir, &before).unwrap().is_empty());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn le_passage_aux_fichiers_garde_l_ambiance_choisie() {
         let dossier = std::env::temp_dir().join(format!("sindry-passage-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dossier);
@@ -1423,6 +1585,39 @@ mod tests {
         assert_eq!((a.nom.fr.as_str(), a.nom.en.as_str()), ("Foret", "Forest"));
         v["nom"] = json!({ "en": "Forest" });
         assert_eq!(valider(&v.to_string()).unwrap().nom.fr, "Forest");
+    }
+
+    #[test]
+    fn a_progress_graphic_follows_the_decor_rules() {
+        let check = |progress: Value| -> Vec<&'static str> {
+            let mut v = minimale();
+            v["progression"] = progress;
+            codes(&v)
+        };
+        let ok = check(json!({
+            "place": "pastille",
+            "balisage": "<svg viewBox=\"0 0 10 10\"><circle class=\"arc\" r=\"4\"/></svg><p>{{pourcentage}}</p>",
+            "css": ".arc { stroke-dasharray: calc(var(--pct) * 1px) 100px; }"
+        }));
+        assert!(ok.is_empty(), "{ok:?}");
+        let parsed = valider(&{
+            let mut v = minimale();
+            v["progression"] = json!({ "place": "bandeau", "balisage": "<svg/>" });
+            v.to_string()
+        })
+        .expect("valid");
+        assert_eq!(parsed.progress.expect("progress").slot, "bandeau");
+        assert!(valider(&minimale().to_string()).expect("valid").progress.is_none());
+
+        assert!(check(json!("<svg/>")).contains(&"PROGRESSION_INVALIDE"));
+        assert!(check(json!({ "place": "coin", "balisage": "<svg/>" })).contains(&"PROGRESSION_INVALIDE"));
+        assert!(check(json!({ "place": "pastille", "balisage": " " })).contains(&"PROGRESSION_INVALIDE"));
+        assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "taille": 2 })).contains(&"CLE_INCONNUE"));
+        assert!(check(json!({ "place": "pastille", "balisage": "<script>x()</script>" })).contains(&"DECOR_BALISE"));
+        assert!(check(json!({ "place": "pastille", "balisage": "<svg onload=\"x()\"/>" })).contains(&"DECOR_EVENEMENT"));
+        assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "css": "@import 'x.css';" })).contains(&"DECOR_CSS"));
+        assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "css": "p { background: url(https://x/y.png) }" })).contains(&"DECOR_LIEN"));
+        assert!(check(json!({ "place": "pastille", "balisage": "x".repeat(300 * 1024) })).contains(&"PROGRESSION_TROP_GRANDE"));
     }
 
     #[test]

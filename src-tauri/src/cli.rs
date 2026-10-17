@@ -2089,13 +2089,18 @@ fn ambiances(h: &tauri::AppHandle, o: &Options) -> Res<i32> {
             _ => l!("sombre", "dark"),
         };
         println!(
-            "  {}  {}  {modes}{}",
+            "  {}  {}  {modes}{}{}",
             colonne(&a.id, 24),
             colonne(nom, 28),
             if a.decor.balisage.is_empty() {
                 String::new()
             } else {
                 l!(" · decor", " · scenery")
+            },
+            if a.progress.is_some() {
+                l!(" · progression", " · progress")
+            } else {
+                String::new()
             }
         );
     }

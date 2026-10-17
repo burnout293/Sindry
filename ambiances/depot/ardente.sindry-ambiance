@@ -10,7 +10,7 @@
     "en": "Gold, amber and vermilion: the icon’s flame, as a swell."
   },
   "auteur": "Sindry",
-  "version": "1.0",
+  "version": "1.1",
   "police": "normale",
   "clair": {
     "bg": "#FBF6F2",
@@ -89,5 +89,10 @@
     "term-dim": "#837396",
     "eau-fond": 0.4,
     "eau-surface": 0.55
+  },
+  "progression": {
+    "place": "pastille",
+    "balisage": "<svg viewBox=\"0 0 220 220\" aria-hidden=\"true\"><g class=\"dents\"><path style=\"--i:0\" d=\"M104.3,26.2L105.5,4.1L114.5,4.1L115.7,26.2Z\"/><path style=\"--i:1\" d=\"M123.1,27L129.2,5.7L138,7.8L134.2,29.5Z\"/><path style=\"--i:2\" d=\"M141.3,32L151.9,12.6L160,16.5L151.5,36.9Z\"/><path style=\"--i:3\" d=\"M157.8,41L172.5,24.4L179.6,30L166.7,48Z\"/><path style=\"--i:4\" d=\"M172,53.3L190,40.4L195.6,47.5L179,62.2Z\"/><path style=\"--i:5\" d=\"M183.1,68.5L203.5,60L207.4,68.1L188,78.7Z\"/><path style=\"--i:6\" d=\"M190.5,85.8L212.2,82L214.3,90.8L193,96.9Z\"/><path style=\"--i:7\" d=\"M193.8,104.3L215.9,105.5L215.9,114.5L193.8,115.7Z\"/><path style=\"--i:8\" d=\"M193,123.1L214.3,129.2L212.2,138L190.5,134.2Z\"/><path style=\"--i:9\" d=\"M188,141.3L207.4,151.9L203.5,160L183.1,151.5Z\"/><path style=\"--i:10\" d=\"M179,157.8L195.6,172.5L190,179.6L172,166.7Z\"/><path style=\"--i:11\" d=\"M166.7,172L179.6,190L172.5,195.6L157.8,179Z\"/><path style=\"--i:12\" d=\"M151.5,183.1L160,203.5L151.9,207.4L141.3,188Z\"/><path style=\"--i:13\" d=\"M134.2,190.5L138,212.2L129.2,214.3L123.1,193Z\"/><path style=\"--i:14\" d=\"M115.7,193.8L114.5,215.9L105.5,215.9L104.3,193.8Z\"/><path style=\"--i:15\" d=\"M96.9,193L90.8,214.3L82,212.2L85.8,190.5Z\"/><path style=\"--i:16\" d=\"M78.7,188L68.1,207.4L60,203.5L68.5,183.1Z\"/><path style=\"--i:17\" d=\"M62.2,179L47.5,195.6L40.4,190L53.3,172Z\"/><path style=\"--i:18\" d=\"M48,166.7L30,179.6L24.4,172.5L41,157.8Z\"/><path style=\"--i:19\" d=\"M36.9,151.5L16.5,160L12.6,151.9L32,141.3Z\"/><path style=\"--i:20\" d=\"M29.5,134.2L7.8,138L5.7,129.2L27,123.1Z\"/><path style=\"--i:21\" d=\"M26.2,115.7L4.1,114.5L4.1,105.5L26.2,104.3Z\"/><path style=\"--i:22\" d=\"M27,96.9L5.7,90.8L7.8,82L29.5,85.8Z\"/><path style=\"--i:23\" d=\"M32,78.7L12.6,68.1L16.5,60L36.9,68.5Z\"/><path style=\"--i:24\" d=\"M41,62.2L24.4,47.5L30,40.4L48,53.3Z\"/><path style=\"--i:25\" d=\"M53.3,48L40.4,30L47.5,24.4L62.2,41Z\"/><path style=\"--i:26\" d=\"M68.5,36.9L60,16.5L68.1,12.6L78.7,32Z\"/><path style=\"--i:27\" d=\"M85.8,29.5L82,7.8L90.8,5.7L96.9,27Z\"/></g><circle class=\"cercle\" cx=\"110\" cy=\"110\" r=\"78\"/></svg><p class=\"pct\">{{pourcentage}}</p>",
+    "css": "svg { position: absolute; inset: 0; width: 100%; height: 100%; }\n/* Each tooth has its flame colour, from gold (serie-1) to magenta (serie-3)... */\n.dents path { --flamme: color-mix(in oklab, var(--serie-2) calc(var(--i) / 13.5 * 100%), var(--serie-1)); }\n.dents path:nth-child(n+15) { --flamme: color-mix(in oklab, var(--serie-3) calc((var(--i) - 14) / 13 * 100%), var(--serie-2)); }\n/* ...and stays dark until the progress reaches it. */\n.dents path { fill: color-mix(in srgb, var(--surface-3) clamp(0%, (var(--i) + .5 - var(--p) * 28) * 1000%, 100%), var(--flamme)); }\n.cercle { fill: var(--surface); stroke: var(--border); }\n.pct { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 700 19vw 'Segoe UI', system-ui, sans-serif; letter-spacing: -.04em; color: var(--text); }"
   }
 }

@@ -64,6 +64,7 @@ refusée — une faute de frappe se voit, avec la bonne clé suggérée.
 | `forme` | facultatif | L'allure de l'interface (plus bas). |
 | `clair`, `sombre` | **l'un au moins** | Les couleurs de chaque mode (ci-dessous). Avec un seul des deux, l'ambiance n'existe que dans ce mode : le bouton clair / sombre le dit et ne fait rien. |
 | `decor` | facultatif | Le décor (plus bas). |
+| `progression` | facultatif | Le graphique qui montre où en est un entretien (plus bas). Sans lui, la barre de Sindry. |
 
 ---
 
@@ -218,6 +219,51 @@ suite ce qui ne s'afficherait pas :
 
 ---
 
+## La progression
+
+Pendant un entretien, l'écran du mode Simple montre où en est le travail. Une ambiance qui
+ne dit rien reçoit la barre de Sindry. Une ambiance peut aussi **dessiner son propre
+graphique** — l'engrenage de Plan, la lune de Forêt de nuit, le voile d'Aurore australe —
+dans une section `progression`, construite comme le décor :
+
+```json
+"progression": {
+  "place": "pastille",
+  "balisage": "<svg viewBox=\"0 0 220 220\"><circle class=\"piste\" cx=\"110\" cy=\"110\" r=\"70\"/><circle class=\"arc\" cx=\"110\" cy=\"110\" r=\"70\" pathLength=\"100\"/></svg><p class=\"pct\">{{pourcentage}}</p>",
+  "css": ".arc { fill: none; stroke: var(--acc); stroke-width: 15; stroke-dasharray: calc(var(--pct) * 1px) 100px; } …"
+}
+```
+
+| Clé | | |
+|---|---|---|
+| `place` | obligatoire | `pastille` : 88 × 88, dans l'en-tête de la carte de l'entretien, à gauche du bilan. `bandeau` : toute la largeur de la carte, 150 de haut, au-dessus du bilan. |
+| `balisage` | obligatoire | SVG ou HTML, comme le décor. |
+| `css` | facultatif | Sa feuille de style. |
+
+**Ce que Sindry donne au graphique**
+
+| | |
+|---|---|
+| `{{pourcentage}}` | Remplacé dans le balisage par le pourcentage, écrit comme il faut dans la langue de l'interface (« 50 % », « 50% »). **C'est la seule information à montrer** : le nombre d'actions et l'état sont déjà écrits à côté. |
+| `--p`, `--pct` | La progression, de 0 à 1 et de 0 à 100 — des nombres, à utiliser dans des `calc()`. Elles **glissent d'elles-mêmes** de l'ancienne valeur à la nouvelle, en 0,8 s : rien à animer. |
+| `--depuis` | Les secondes écoulées depuis le début de l'entretien. Sindry recompose le cadre à chaque action terminée ; une animation en boucle continue sans à-coup avec `animation-delay: calc(var(--depuis) * -1s)`. |
+| `data-etat` | Sur la racine : `en-cours`, `fini` ou `arrete`. Pour arrêter une roue à la fin, par exemple : `:root[data-etat="fini"] .roue { animation-play-state: paused; }`. |
+| `data-mode`, les couleurs | Comme pour le décor : `data-mode="clair"` ou `"sombre"`, et toutes les couleurs du mode affiché. |
+
+**Exemples complets** : chaque ambiance livrée a la sienne — Plan (un engrenage autour
+d'une jauge, en `pastille`), Forêt de nuit (une lune qui se remplit), Aurore australe (un
+voile qui gagne le ciel), et dans le dépôt des ambiances : Braise (la jauge à dents),
+Synthwave (un soleil qui se lève), Spatial (une orbite), Terminal (une barre en
+caractères).
+
+**Les règles du décor, à l'identique** : le même cadre isolé, sans script ni réseau ; les
+mêmes contrôles, sous les mêmes codes, dont le message commence par « progression » ;
+**256 Ko au plus**. Les polices de l'interface n'y sont pas chargées : écrivez
+`Consolas, monospace` ou `'Segoe UI', system-ui, sans-serif`. Quand Windows demande moins
+d'animations, Sindry les arrête lui-même : la progression avance, sans glisser.
+
+---
+
 ## Installer, partager, retirer
 
 Les ambiances installées vivent dans **`%LOCALAPPDATA%\Sindry\ambiances\`**. Déposer un
@@ -265,8 +311,10 @@ déposerait un fichier n'obtiendrait qu'un décor, isolé comme les autres.
 | `CONTRASTE` | Une paire de la table « Ce qui doit se lire » sous 4,5:1 |
 | `DECOR_INVALIDE` | `decor` n'est pas un objet, ou `balisage` / `css` pas un texte |
 | `DECOR_TROP_GRAND` | Le décor dépasse 512 Ko |
-| `DECOR_BALISE` | Une balise refusée |
-| `DECOR_EVENEMENT` | Un gestionnaire d'événement |
+| `PROGRESSION_INVALIDE` | `progression` n'est pas un objet ; `place` hors `pastille` et `bandeau` ; `balisage` vide ; une valeur qui n'est pas un texte |
+| `PROGRESSION_TROP_GRANDE` | La progression dépasse 256 Ko |
+| `DECOR_BALISE` | Une balise refusée — dans le décor ou dans la progression |
+| `DECOR_EVENEMENT` | Un gestionnaire d'événement — dans le décor ou dans la progression |
 | `DECOR_LIEN` | Un lien, une source ou un `url()` qui ne vise ni une ancre ni une image embarquée ; une animation d'un attribut de lien |
 | `DECOR_CSS` | Dans la feuille ou le balisage : `@import`, `image-set()`, `cross-fade()`, `element()`, `expression()`, `-moz-binding`, `behavior:`, `javascript:`, `vbscript:`, un échappement `\XX` ; `</` dans la feuille |
 

@@ -1396,16 +1396,19 @@ fn reinstall_base_ambiances(app: tauri::AppHandle) -> Result<Vec<String>, String
 /// Sindry. L'interface et la ligne de commande le font au demarrage.
 fn preparer_ambiances<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
     let s = settings::load(app)?;
-    if s.ambiances_fichiers {
-        return Ok(());
+    let dir = ambiance::dossier(app)?;
+    if !s.ambiances_fichiers {
+        let id = ambiance::passer_aux_fichiers(&dir, &s.accent)?;
+        with_settings(app, |s| {
+            s.accent = id;
+            s.ambiances_fichiers = true;
+            Ok(())
+        })?;
     }
-    let id = ambiance::passer_aux_fichiers(&ambiance::dossier(app)?, &s.accent)?;
-    with_settings(app, |s| {
-        s.accent = id;
-        s.ambiances_fichiers = true;
-        Ok(())
-    })
-    .map(|_| ())
+    // Every start (2.0.2): the shipped ambiances nobody edited follow Sindry's
+    // own versions — a base ambiance installed by 2.0.1 gets its progress
+    // graphic without anyone re-installing it.
+    ambiance::update_shipped(&dir).map(|_| ())
 }
 
 /// Retire une ambiance installee : son fichier est efface.

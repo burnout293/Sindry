@@ -10,7 +10,7 @@
     "en": "Amber phosphor, scanlines, all in monospace."
   },
   "auteur": "Sindry",
-  "version": "1.0",
+  "version": "1.1",
   "police": "chasse-fixe",
   "sombre": {
     "bg": "#0C0700",
@@ -57,5 +57,10 @@
     "coins": "aucun",
     "ligne_eau": "pointilles",
     "balayage": true
+  },
+  "progression": {
+    "place": "bandeau",
+    "balisage": "<pre class=\"ecran\"><span class=\"invite\">&gt;</span> [<span class=\"barre\"><span class=\"vide\">··························</span><span class=\"plein\">██████████████████████████</span></span>] <span>{{pourcentage}}</span><span class=\"curseur\">_</span></pre>",
+    "css": "body { display: grid; align-content: center; padding: 0 24px; }\n.ecran { margin: 0; font: 18px/1.6 Consolas, 'Cascadia Mono', monospace; white-space: pre; color: var(--text); text-shadow: 0 0 6px color-mix(in srgb, var(--acc) 60%, transparent); }\n/* The full bar over the empty one, cut to the character. */\n.barre { position: relative; display: inline-block; }\n.vide { color: var(--text-3); text-shadow: none; }\n.plein { position: absolute; left: 0; top: 0; overflow: hidden; width: round(down, calc(var(--p) * 26ch), 1ch); }\n.curseur { animation: clignote 1s steps(1) infinite; }\n@keyframes clignote { 50% { opacity: 0; } }\n/* The screen's scan lines. */\nbody::after { content: ''; position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .25) 0 1px, transparent 1px 3px); }"
   }
 }
