@@ -1746,10 +1746,11 @@ rien y perdre, et l'utilisateur ne doit rien avoir à faire.
 
 | Ancien | Nouveau | Comment |
 |---|---|---|
-| `%LOCALAPPDATA%\WinTool` — réglages, historique, journaux, catalogues installés, scripts personnels | `%LOCALAPPDATA%\Sindry` | Déplacé d'un bloc ; si le nouveau dossier existe déjà, entrée par entrée, **sans jamais écraser** ce qui s'y trouve |
+| `%LOCALAPPDATA%\WinTool` — réglages, historique, journaux, catalogues installés, scripts personnels | `%LOCALAPPDATA%\Sindry` | Déplacé d'un bloc ; si le nouveau dossier existe déjà, entrée par entrée en descendant dans les dossiers que les deux ont (2.0.2 : jusque-là le premier niveau seulement, ce qui laissait des scripts personnels derrière), **sans jamais écraser** ce qui s'y trouve ni suivre un lien |
 | `HKLM\SOFTWARE\WinTool` — approbations, emplacements protégés, catalogues tiers | `HKLM\SOFTWARE\Sindry` | **Copié** clé par clé, sans écraser une valeur déjà là ; l'ancienne clé n'est retirée qu'une fois la copie réussie |
 | L'application installée | — | Désinstallée en silence, après la reprise. Une désinstallation silencieuse n'efface aucune donnée (§12.4) |
 | `%LOCALAPPDATA%\com.wintool.app` — profil WebView2 | — | Effacé : un cache, et deux préférences d'affichage |
+| `HKCU\Software\WinTool\WinTool` — la langue retenue par l'ancien installeur | — | Effacée (2.0.2), si elle ne contient que cette valeur |
 
 **Une copie, pas un renommage, pour le registre.** L'installeur de Tauri crée
 `HKLM\SOFTWARE\<éditeur>` pour sa propre clé de produit, et l'éditeur se déduit de

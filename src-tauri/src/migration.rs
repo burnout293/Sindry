@@ -32,36 +32,107 @@ fn local_appdata() -> Option<PathBuf> {
     std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
 }
 
-/// Deplace le contenu de `ancien` dans `nouveau` : d'un bloc si `nouveau`
-/// n'existe pas, sinon entree par entree, sans jamais ecraser ce qui y est
-/// deja. `ancien` disparait s'il ne reste rien dedans.
-pub fn deplacer_dossier(ancien: &Path, nouveau: &Path) -> Result<usize, String> {
-    if !ancien.is_dir() {
+/// True for anything that must not be followed: a symbolic link, a junction or
+/// any other reparse point — or a path that cannot be read at all.
+fn is_link(path: &Path) -> bool {
+    match fs::symlink_metadata(path) {
+        Err(_) => true,
+        #[cfg(windows)]
+        Ok(m) => {
+            use std::os::windows::fs::MetadataExt;
+            const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+            m.file_type().is_symlink() || m.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        }
+        #[cfg(not(windows))]
+        Ok(m) => m.file_type().is_symlink(),
+    }
+}
+
+/// Moves the content of `old` into `new`: in one go when `new` does not exist,
+/// otherwise entry by entry, going down into the folders both sides have, and
+/// never overwriting what is already there. `old` goes once it is empty.
+/// Returns the number of entries moved.
+///
+/// Up to 2.0.1 the merge stopped at the first level: a `scripts` folder that
+/// already existed on the Sindry side kept the user's personal scripts back in
+/// the old one. Links are never followed: both folders are writable without
+/// elevation, and the installer runs this as administrator.
+pub fn move_dir_merging(old: &Path, new: &Path) -> Result<usize, String> {
+    if is_link(old) || !old.is_dir() {
         return Ok(0);
     }
-    if !nouveau.exists() {
-        fs::rename(ancien, nouveau).map_err(|e| format!("{} : {e}", ancien.display()))?;
+    if fs::symlink_metadata(new).is_err() {
+        fs::rename(old, new).map_err(|e| format!("{} : {e}", old.display()))?;
         return Ok(1);
     }
-    let mut n = 0;
-    for entree in fs::read_dir(ancien).map_err(|e| e.to_string())?.flatten() {
-        let cible = nouveau.join(entree.file_name());
-        if !cible.exists() && fs::rename(entree.path(), &cible).is_ok() {
-            n += 1;
+    if is_link(new) || !new.is_dir() {
+        return Ok(0);
+    }
+    let mut moved = 0;
+    for entry in fs::read_dir(old).map_err(|e| e.to_string())?.flatten() {
+        let source = entry.path();
+        let target = new.join(entry.file_name());
+        if fs::symlink_metadata(&target).is_err() {
+            if fs::rename(&source, &target).is_ok() {
+                moved += 1;
+            }
+        } else if !is_link(&source) && source.is_dir() {
+            moved += move_dir_merging(&source, &target)?;
         }
     }
-    let _ = fs::remove_dir(ancien);
-    Ok(n)
+    let _ = fs::remove_dir(old);
+    Ok(moved)
+}
+
+/// What the old installer leaves in the user's hive: NSIS remembers the
+/// installer language under `HKCU\Software\WinTool\WinTool`. The key goes only
+/// if that is all it holds, and the vendor key with it if nothing else lives
+/// there.
+#[cfg(windows)]
+fn remove_old_installer_key() -> bool {
+    let Ok(software) = windows_registry::CURRENT_USER
+        .options()
+        .read()
+        .write()
+        .open("Software")
+    else {
+        return false;
+    };
+    let product = format!(r"{ANCIEN}\{ANCIEN}");
+    let only_language = software.open(&product).is_ok_and(|k| {
+        k.keys().is_ok_and(|mut sub| sub.next().is_none())
+            && k.values()
+                .is_ok_and(|mut v| v.all(|(name, _)| name == "Installer Language"))
+    });
+    if !only_language || software.remove_tree(&product).is_err() {
+        return false;
+    }
+    let vendor_empty = software.open(ANCIEN).is_ok_and(|k| {
+        k.keys().is_ok_and(|mut sub| sub.next().is_none())
+            && k.values().is_ok_and(|mut v| v.next().is_none())
+    });
+    if vendor_empty {
+        let _ = software.remove_tree(ANCIEN);
+    }
+    true
+}
+
+#[cfg(not(windows))]
+fn remove_old_installer_key() -> bool {
+    false
 }
 
 /// Ce qui ne demande pas de droits : le dossier local de l'utilisateur, et le
 /// profil WebView2 de l'ancienne interface (son cache, rien d'autre).
 pub fn donnees_utilisateur() -> Vec<String> {
     let mut faits = Vec::new();
+    if remove_old_installer_key() {
+        faits.push(format!(r"cle HKCU\Software\{ANCIEN} de l'ancien installeur effacee"));
+    }
     let Some(base) = local_appdata() else {
         return faits;
     };
-    match deplacer_dossier(&base.join(ANCIEN), &base.join(NOUVEAU)) {
+    match move_dir_merging(&base.join(ANCIEN), &base.join(NOUVEAU)) {
         Ok(0) => {}
         Ok(_) => faits.push(format!(
             r"%LOCALAPPDATA%\{ANCIEN} repris dans %LOCALAPPDATA%\{NOUVEAU}"
@@ -265,21 +336,41 @@ mod tests {
         // Le cas courant : rien de neuf encore, le dossier part d'un bloc.
         fs::create_dir_all(a.join("logs")).unwrap();
         fs::write(a.join("settings.json"), b"ancien").unwrap();
-        assert_eq!(deplacer_dossier(&a, &n).unwrap(), 1);
+        assert_eq!(move_dir_merging(&a, &n).unwrap(), 1);
         assert!(!a.exists() && n.join("logs").is_dir());
 
         // Les deux existent : ce qui manque arrive, ce qui est la reste.
         fs::create_dir_all(a.join("sources")).unwrap();
         fs::write(a.join("settings.json"), b"plus ancien").unwrap();
-        assert_eq!(deplacer_dossier(&a, &n).unwrap(), 1);
+        assert_eq!(move_dir_merging(&a, &n).unwrap(), 1);
         assert_eq!(fs::read(n.join("settings.json")).unwrap(), b"ancien");
         assert!(n.join("sources").is_dir());
         assert!(a.exists(), "un fichier en conflit reste a sa place");
 
         // Deja fait : rien ne bouge.
         let _ = fs::remove_dir_all(&a);
-        assert_eq!(deplacer_dossier(&a, &n).unwrap(), 0);
+        assert_eq!(move_dir_merging(&a, &n).unwrap(), 0);
         let _ = fs::remove_dir_all(&racine);
+    }
+
+    #[test]
+    fn the_merge_goes_down_into_folders_both_sides_have() {
+        let root = std::env::temp_dir().join(format!("sindry-merge-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let (old, new) = (root.join("Old"), root.join("New"));
+        // Up to 2.0.1, an existing `scripts` on the new side kept the user's
+        // own scripts back in the old folder.
+        fs::create_dir_all(old.join("scripts").join("Mine")).unwrap();
+        fs::write(old.join("scripts").join("Mine").join("a.ps1"), b"mine").unwrap();
+        fs::write(old.join("scripts").join("b.ps1"), b"old b").unwrap();
+        fs::create_dir_all(new.join("scripts")).unwrap();
+        fs::write(new.join("scripts").join("b.ps1"), b"new b").unwrap();
+
+        assert_eq!(move_dir_merging(&old, &new).unwrap(), 1);
+        assert_eq!(fs::read(new.join("scripts").join("Mine").join("a.ps1")).unwrap(), b"mine");
+        assert_eq!(fs::read(new.join("scripts").join("b.ps1")).unwrap(), b"new b", "nothing is overwritten");
+        assert!(old.join("scripts").join("b.ps1").exists(), "a conflicting file stays where it was");
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
