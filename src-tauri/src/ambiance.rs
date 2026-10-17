@@ -451,10 +451,7 @@ fn progress(value: Option<&Value>, c: &mut Vec<Constat>) -> Option<Progress> {
     if p.markup.len() + p.css.len() > PROGRESS_MAX {
         c.push(constat(
             "PROGRESSION_TROP_GRANDE",
-            format!(
-                "la progression depasse {} Ko.",
-                PROGRESS_MAX / 1024
-            ),
+            format!("la progression depasse {} Ko.", PROGRESS_MAX / 1024),
         ));
         return Some(p);
     }
@@ -1069,21 +1066,54 @@ pub fn passer_aux_fichiers(dossier: &Path, accent: &str) -> Result<String, Strin
 /// them with `\r\n`). One line per id and per earlier version.
 const SHIPPED_BEFORE: [(&str, &str); 10] = [
     // 2.0.1
-    ("plan", "f9444d5f2588f92c07e93ceec4bd6deb81f603db37ee175643d2bbb5d086d0d8"),
-    ("foret-de-nuit", "867f192452e08aaf1bca1d072d752421586dd8b3c751a8e6282a4eba2d14632d"),
-    ("aurore-australe", "04c5548fbaa37043eed8809b444acc8f803773d04d38a47972ab3f50da19123a"),
-    ("ardente", "88527f0da668426c17dd1966db346829fa8c297f019906c9694eb761831390fb"),
-    ("crepuscule", "938af1e7ae5ad282f76bb8a4206fc46d1f1da5fdbea85256fa755efb171036cc"),
-    ("synthwave", "f0c600f7e6ad3aa05ffebbfe2f288eb418fd07bd907eed0409d1b9dcdd1d6cd6"),
-    ("spatial", "1d36f4152b65fdb97f69eec094102a669389bdc7c5779adb173252fe0dae879a"),
-    ("terminal-vert", "c1e47c4d76ba59fbac900c4b8123ef1f7bd948dcd57c5d754a0d7dcf5d430778"),
-    ("terminal-ambre", "b798552643813aee453446d10f482dee82803fd79ba1545f9be63195cb4fe077"),
-    ("aurore-boreale", "0c4bb62931d35543ed2afa3db72a1ba5dd0d5f1e78b7e1f0a648e60baac475fd"),
+    (
+        "plan",
+        "f9444d5f2588f92c07e93ceec4bd6deb81f603db37ee175643d2bbb5d086d0d8",
+    ),
+    (
+        "foret-de-nuit",
+        "867f192452e08aaf1bca1d072d752421586dd8b3c751a8e6282a4eba2d14632d",
+    ),
+    (
+        "aurore-australe",
+        "04c5548fbaa37043eed8809b444acc8f803773d04d38a47972ab3f50da19123a",
+    ),
+    (
+        "ardente",
+        "88527f0da668426c17dd1966db346829fa8c297f019906c9694eb761831390fb",
+    ),
+    (
+        "crepuscule",
+        "938af1e7ae5ad282f76bb8a4206fc46d1f1da5fdbea85256fa755efb171036cc",
+    ),
+    (
+        "synthwave",
+        "f0c600f7e6ad3aa05ffebbfe2f288eb418fd07bd907eed0409d1b9dcdd1d6cd6",
+    ),
+    (
+        "spatial",
+        "1d36f4152b65fdb97f69eec094102a669389bdc7c5779adb173252fe0dae879a",
+    ),
+    (
+        "terminal-vert",
+        "c1e47c4d76ba59fbac900c4b8123ef1f7bd948dcd57c5d754a0d7dcf5d430778",
+    ),
+    (
+        "terminal-ambre",
+        "b798552643813aee453446d10f482dee82803fd79ba1545f9be63195cb4fe077",
+    ),
+    (
+        "aurore-boreale",
+        "0c4bb62931d35543ed2afa3db72a1ba5dd0d5f1e78b7e1f0a648e60baac475fd",
+    ),
 ];
 
 fn normalised_digest(text: &str) -> String {
     use sha2::{Digest, Sha256};
-    let text = text.strip_prefix('\u{feff}').unwrap_or(text).replace("\r\n", "\n");
+    let text = text
+        .strip_prefix('\u{feff}')
+        .unwrap_or(text)
+        .replace("\r\n", "\n");
     Sha256::digest(text.as_bytes())
         .iter()
         .map(|b| format!("{b:02x}"))
@@ -1475,7 +1505,9 @@ mod tests {
         // An "earlier version" of Plan, as Sindry wrote it (here with CRLF).
         let mut old: Value = serde_json::from_str(DE_BASE[0].1).unwrap();
         old["version"] = json!("0.9");
-        let old_text = serde_json::to_string_pretty(&old).unwrap().replace('\n', "\r\n");
+        let old_text = serde_json::to_string_pretty(&old)
+            .unwrap()
+            .replace('\n', "\r\n");
         fs::write(file("plan"), &old_text).unwrap();
         // Forêt de nuit, edited by its owner: never replaced.
         let mut edited: Value = serde_json::from_str(DE_BASE[1].1).unwrap();
@@ -1487,7 +1519,10 @@ mod tests {
         let before: Vec<(&str, &str)> = before.iter().map(|(i, h)| (*i, h.as_str())).collect();
         assert_eq!(update_shipped_from(&dir, &before).unwrap(), vec!["plan"]);
         assert_eq!(fs::read_to_string(file("plan")).unwrap(), DE_BASE[0].1);
-        assert_eq!(fs::read_to_string(file("foret-de-nuit")).unwrap(), edited_text);
+        assert_eq!(
+            fs::read_to_string(file("foret-de-nuit")).unwrap(),
+            edited_text
+        );
         // Already current: nothing more to do.
         assert!(update_shipped_from(&dir, &before).unwrap().is_empty());
         let _ = fs::remove_dir_all(&dir);
@@ -1607,17 +1642,37 @@ mod tests {
         })
         .expect("valid");
         assert_eq!(parsed.progress.expect("progress").slot, "bandeau");
-        assert!(valider(&minimale().to_string()).expect("valid").progress.is_none());
+        assert!(valider(&minimale().to_string())
+            .expect("valid")
+            .progress
+            .is_none());
 
         assert!(check(json!("<svg/>")).contains(&"PROGRESSION_INVALIDE"));
-        assert!(check(json!({ "place": "coin", "balisage": "<svg/>" })).contains(&"PROGRESSION_INVALIDE"));
-        assert!(check(json!({ "place": "pastille", "balisage": " " })).contains(&"PROGRESSION_INVALIDE"));
-        assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "taille": 2 })).contains(&"CLE_INCONNUE"));
-        assert!(check(json!({ "place": "pastille", "balisage": "<script>x()</script>" })).contains(&"DECOR_BALISE"));
-        assert!(check(json!({ "place": "pastille", "balisage": "<svg onload=\"x()\"/>" })).contains(&"DECOR_EVENEMENT"));
-        assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "css": "@import 'x.css';" })).contains(&"DECOR_CSS"));
+        assert!(check(json!({ "place": "coin", "balisage": "<svg/>" }))
+            .contains(&"PROGRESSION_INVALIDE"));
+        assert!(check(json!({ "place": "pastille", "balisage": " " }))
+            .contains(&"PROGRESSION_INVALIDE"));
+        assert!(
+            check(json!({ "place": "pastille", "balisage": "<svg/>", "taille": 2 }))
+                .contains(&"CLE_INCONNUE")
+        );
+        assert!(
+            check(json!({ "place": "pastille", "balisage": "<script>x()</script>" }))
+                .contains(&"DECOR_BALISE")
+        );
+        assert!(
+            check(json!({ "place": "pastille", "balisage": "<svg onload=\"x()\"/>" }))
+                .contains(&"DECOR_EVENEMENT")
+        );
+        assert!(check(
+            json!({ "place": "pastille", "balisage": "<svg/>", "css": "@import 'x.css';" })
+        )
+        .contains(&"DECOR_CSS"));
         assert!(check(json!({ "place": "pastille", "balisage": "<svg/>", "css": "p { background: url(https://x/y.png) }" })).contains(&"DECOR_LIEN"));
-        assert!(check(json!({ "place": "pastille", "balisage": "x".repeat(300 * 1024) })).contains(&"PROGRESSION_TROP_GRANDE"));
+        assert!(
+            check(json!({ "place": "pastille", "balisage": "x".repeat(300 * 1024) }))
+                .contains(&"PROGRESSION_TROP_GRANDE")
+        );
     }
 
     #[test]

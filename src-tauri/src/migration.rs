@@ -127,7 +127,9 @@ fn remove_old_installer_key() -> bool {
 pub fn donnees_utilisateur() -> Vec<String> {
     let mut faits = Vec::new();
     if remove_old_installer_key() {
-        faits.push(format!(r"cle HKCU\Software\{ANCIEN} de l'ancien installeur effacee"));
+        faits.push(format!(
+            r"cle HKCU\Software\{ANCIEN} de l'ancien installeur effacee"
+        ));
     }
     let Some(base) = local_appdata() else {
         return faits;
@@ -367,9 +369,19 @@ mod tests {
         fs::write(new.join("scripts").join("b.ps1"), b"new b").unwrap();
 
         assert_eq!(move_dir_merging(&old, &new).unwrap(), 1);
-        assert_eq!(fs::read(new.join("scripts").join("Mine").join("a.ps1")).unwrap(), b"mine");
-        assert_eq!(fs::read(new.join("scripts").join("b.ps1")).unwrap(), b"new b", "nothing is overwritten");
-        assert!(old.join("scripts").join("b.ps1").exists(), "a conflicting file stays where it was");
+        assert_eq!(
+            fs::read(new.join("scripts").join("Mine").join("a.ps1")).unwrap(),
+            b"mine"
+        );
+        assert_eq!(
+            fs::read(new.join("scripts").join("b.ps1")).unwrap(),
+            b"new b",
+            "nothing is overwritten"
+        );
+        assert!(
+            old.join("scripts").join("b.ps1").exists(),
+            "a conflicting file stays where it was"
+        );
         let _ = fs::remove_dir_all(&root);
     }
 
