@@ -1134,7 +1134,10 @@ impl Sortie for VersAnalyse {
 
     fn fin(&self, fin: RunEnd) {
         let lignes = self.lignes.lock().map(|l| l.clone()).unwrap_or_default();
-        let analyse = crate::analyse::lire(&self.meta, &lignes);
+        let mut analyse = crate::analyse::lire(&self.meta, &lignes);
+        // The items' icons, read here and not in `lire`: file reads, kept
+        // out of the pure reading of the output.
+        crate::analyse::attach_icons(&mut analyse);
         // Une analyse interrompue ou en echec ne fonde aucune selection.
         if fin.success {
             self.memoire.retenir(&fin.script_id, &self.hash, &analyse);

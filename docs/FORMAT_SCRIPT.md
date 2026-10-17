@@ -656,12 +656,33 @@ recommander un choix qu'une fois tous mesurés :
 | `publisher=`, `version=`, `to=` | texte | Éditeur, version en place, version proposée |
 | `date=` | `AAAA-MM-JJ` | Une date : dernière utilisation, installation |
 | `kind=` | `folder` `file` `registry` `app` `startup` `service` `task` `driver` `browser` | L'icône de la ligne |
+| `exe=` | chemin absolu local vers un `.exe`, un `.dll` ou un `.ico` | **La vraie icône** du programme (2.0.3), avec `kind=app`, `startup`, `service` ou `task`. Sindry la lit lui-même dans le fichier. Comme `path=`, **jamais renvoyé** — voir ci-dessous |
 | `confidence=` | `high` / `medium` / `low` | Sûr, Probable, À vérifier — **`low` n'est jamais coché d'office** |
 | `impact=` | `high` / `medium` / `low` | Impact élevé, moyen, faible |
 | `risk=` | `high` / `medium` / `low` | Suspect, Inhabituel — `low` n'affiche rien |
 | `locked=` | `open` `system` `protected` `inuse` | Visible mais **pas cochable**, avec la raison : programme ouvert, nécessaire à Windows… |
 | `group=`, `keep=` | identifiant ; `true` / `false` | Pour `[items:keep-one]` : les exemplaires d'un même fichier, et celui à garder |
 | `size=` `count=` `state=` `checked=` `show=` | comme pour `[FIND]` | |
+
+**`exe=` : montrer la vraie icône d'un programme (2.0.3).** Le script désigne un fichier du
+système, il n'envoie jamais d'image ; Sindry lit l'icône **sur place**, rien n'est
+téléchargé — demander une icône à un service en ligne lui livrerait la liste des
+programmes de l'utilisateur. Sindry tourne en administrateur et le fichier peut avoir été
+piégé, d'où ces règles :
+
+- **un chemin absolu sur un lecteur local** : `C:\Program Files\App\app.exe`. Un chemin
+  réseau (`\\serveur\partage\…`) est refusé — Sindry ouvrirait une connexion vers ce
+  serveur, et y laisserait l'empreinte du mot de passe du compte —, comme `\\?\`, `\\.\`,
+  `..`, un flux (`app.exe:x`) ou un nom de périphérique (`CON.exe`) ;
+- **un `.exe`, un `.dll` ou un `.ico`**, jamais un raccourci `.lnk` : sa cible est écrite par
+  l'utilisateur. Sindry ne charge pas le fichier, il en lit les ressources octet par
+  octet ; aucun code du fichier ne s'exécute ;
+- **rien que pour ce qui s'exécute** : `kind=app`, `startup`, `service` ou `task` ;
+- un fichier absent, illisible ou sans icône garde l'icône du `kind`, sans erreur. Les
+  fichiers de Windows dont l'icône vit à part (`SystemResources\*.mun`) sont trouvés ;
+- n'écrivez pas `exe=` pour un service hébergé par `svchost.exe`, ni pour une tâche qui
+  lance `rundll32.exe` ou `cmd.exe` : leur icône n'apprend rien. Désignez le vrai programme
+  s'il est connu, sinon rien.
 
 #### Les champs de `[METRIC]`
 
@@ -1319,7 +1340,8 @@ validateur sans l'ajouter ici est un défaut.**
 | `FIND_MESURE` | erreur | `[FIND]` sans mesure (`size`, `count`, `state` ou `ms`), avec un champ inconnu ou une valeur hors liste |
 | `ITEM_CLE_INCONNUE` | erreur | `[ITEM]` vise une option absente, ou qui n'est pas un `[items]` |
 | `ITEM_SANS_ID` | erreur | `[ITEM]` sans `id=` |
-| `ITEM_CHAMP` | erreur | `[ITEM]` avec un champ inconnu, ou une valeur hors liste |
+| `ITEM_CHAMP` | erreur | `[ITEM]` avec un champ inconnu, une valeur hors liste, ou `exe=` sur un `kind` qui ne s'exécute pas |
+| `ITEM_EXE` | avertissement | `exe=` qui n'est pas un chemin local absolu vers un `.exe`, un `.dll` ou un `.ico` (2.0.3) |
 | `LIBELLE_INCONNU` | erreur | `[ITEM] … label=` vise une clé absente du bloc `REPORT` |
 | `METRIC_CLE_INCONNUE` | erreur | `[METRIC]` vise une clé qui n'est pas un libellé du bloc `REPORT` |
 | `METRIC_CHAMP` | erreur | `[METRIC]` sans `value=`, avec un champ inconnu ou une valeur hors liste |

@@ -196,7 +196,7 @@ const CHAMPS_FIND: [&str; 8] = [
     "recommended",
     "show",
 ];
-const CHAMPS_ITEM: [&str; 21] = [
+const CHAMPS_ITEM: [&str; 22] = [
     "id",
     "parent",
     "group",
@@ -218,7 +218,37 @@ const CHAMPS_ITEM: [&str; 21] = [
     "state",
     "checked",
     "show",
+    // 2.0.3: the file whose icon the item shows; read by Sindry, never sent
+    // back to the script (see `icon.rs`).
+    "exe",
 ];
+/// The kinds an `exe=` makes sense for: things that run.
+const KINDS_WITH_EXE: [&str; 4] = ["app", "startup", "service", "task"];
+/// Distinct files read for icons per analysis; the rest keep their kind icon.
+const MAX_ICON_FILES: usize = 300;
+
+/// Replaces each item's `exe=` with `icon`, the `data:` URL of that file's
+/// icon, read locally (`icon.rs`). A file read once serves every item that
+/// names it. An unreadable file just leaves the item with its kind icon.
+pub fn attach_icons(a: &mut Analyse) {
+    let mut read: HashMap<String, Option<String>> = HashMap::new();
+    for e in &mut a.items {
+        let Some(exe) = e.fields.remove("exe") else {
+            continue;
+        };
+        let key = exe.to_ascii_lowercase();
+        if !read.contains_key(&key) {
+            if read.len() >= MAX_ICON_FILES {
+                continue;
+            }
+            read.insert(key.clone(), crate::icon::data_url(&exe));
+        }
+        if let Some(Some(url)) = read.get(&key) {
+            e.fields.insert("icon".into(), url.clone());
+        }
+    }
+}
+
 const CHAMPS_METRIC: [&str; 6] = ["value", "unit", "health", "max", "group", "show"];
 const NOMBRES: [&str; 4] = ["size", "count", "ms", "max"];
 
@@ -245,6 +275,10 @@ fn filtrer(
             Some(format!("{nom}={valeur} n’est pas un identifiant"))
         } else if nom == "value" && !est_nombre(&valeur) && !est_jeton(&valeur, 32) {
             Some(format!("value={valeur} n’est ni un nombre ni un jeton"))
+        } else if nom == "exe" && crate::icon::local_path(&valeur).is_none() {
+            Some(format!(
+                "exe={valeur} n’est pas un chemin local absolu vers un .exe, un .dll ou un .ico"
+            ))
         } else if valeur.chars().count() > MAX_TEXTE || valeur.chars().any(char::is_control) {
             Some(format!("{nom} trop long ou illisible"))
         } else {
@@ -375,6 +409,17 @@ pub fn lire(meta: &Script, lignes: &[String]) -> Analyse {
                     a.anomalies
                         .push(format!("[ITEM] {cle} : id={id} déjà annoncé — ignoré"));
                     continue;
+                }
+                let mut fields = fields;
+                if fields.contains_key("exe")
+                    && !fields
+                        .get("kind")
+                        .is_some_and(|k| KINDS_WITH_EXE.contains(&k.as_str()))
+                {
+                    a.anomalies.push(format!(
+                        "[ITEM] {cle} : exe= ne vaut que pour kind=app, startup, service ou task — ignoré"
+                    ));
+                    fields.remove("exe");
                 }
                 if let Some(l) = fields.get("label") {
                     if !rapport(l, "label") {
@@ -806,6 +851,46 @@ mod tests {
         assert_eq!(a.items.len(), 1);
         assert_eq!(a.items[0].fields.len(), 1, "seul id=a est lisible");
         assert!(a.anomalies.len() >= 8, "{:?}", a.anomalies);
+    }
+
+    #[test]
+    fn exe_names_a_local_program_and_becomes_its_icon() {
+        let windir = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".into());
+        let mut a = lire(
+            &script(),
+            &lignes(&format!(
+                "[ITEM] Browsers id=a kind=app exe=\"{windir}\\explorer.exe\"\n\
+                 [ITEM] Browsers id=b kind=folder exe=\"{windir}\\explorer.exe\"\n\
+                 [ITEM] Browsers id=c kind=app exe=\\\\server\\share\\x.exe\n\
+                 [ITEM] Browsers id=d kind=app exe=C:\\nowhere\\absent.exe\n\
+                 [ITEM] Browsers id=e kind=app icon=data:image/png;base64,AAAA"
+            )),
+        );
+        assert_eq!(a.items.len(), 5);
+        assert_eq!(a.anomalies.len(), 3, "{:?}", a.anomalies);
+        assert!(a.anomalies[0].contains("kind=app"), "only things that run");
+        assert!(a.anomalies[1].contains("chemin local"), "no UNC path");
+        assert!(
+            a.anomalies[2].contains("icon"),
+            "a script never sends an image"
+        );
+
+        attach_icons(&mut a);
+        for e in &a.items {
+            assert!(!e.fields.contains_key("exe"), "exe= stays in Sindry");
+        }
+        let icon = |id: &str| {
+            a.items
+                .iter()
+                .find(|e| e.fields["id"] == id)
+                .unwrap()
+                .fields
+                .get("icon")
+        };
+        #[cfg(windows)]
+        assert!(icon("a").is_some_and(|u| u.starts_with("data:image/x-icon;base64,")));
+        assert!(icon("b").is_none() && icon("c").is_none() && icon("e").is_none());
+        assert!(icon("d").is_none(), "an absent file keeps the kind icon");
     }
 
     #[test]

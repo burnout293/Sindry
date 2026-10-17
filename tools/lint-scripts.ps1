@@ -86,7 +86,7 @@ $GRAPHIQUES = @('donut', 'crown', 'gauge', 'bar', 'rows', 'treemap', 'waffle')
 $CHAMPS_FIND   = @('size', 'count', 'state', 'checked', 'ms', 'current', 'recommended', 'show')
 $CHAMPS_ITEM   = @('id', 'parent', 'group', 'name', 'path', 'publisher', 'label', 'kind', 'confidence',
                    'impact', 'risk', 'locked', 'version', 'to', 'date', 'keep', 'size', 'count',
-                   'state', 'checked', 'show')
+                   'state', 'checked', 'show', 'exe')
 $CHAMPS_METRIC = @('value', 'unit', 'health', 'max', 'group', 'show')
 $VALEURS_CHAMP = @{
     state       = @('todo', 'ok')
@@ -150,6 +150,22 @@ function Get-Distance {
         }
     }
     return $d[$A.Length, $B.Length]
+}
+
+function Test-CheminIcone {
+    <# exe= (2.0.3): an absolute path on a local drive to an .exe, a .dll or
+       an .ico — no UNC or device path, no stream, no "..", no device name.
+       Same rule as local_path in src-tauri/src/icon.rs. #>
+    param([string] $Chemin)
+    $p = $Chemin.Trim().Replace('/', '\')
+    if ($p -notmatch '^[A-Za-z]:\\.') { return $false }
+    if ($p.Substring(2).Contains(':') -or $p.Contains('\\')) { return $false }
+    if (@($p.Split('\') | Where-Object { $_ -eq '..' }).Count -gt 0) { return $false }
+    if ($p -match '[\x00-\x1f]') { return $false }
+    $nom = $p.Split('\')[-1]
+    $racine = $nom.Split('.')[0].TrimEnd().ToUpper()
+    if ($racine -match '^(CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM\d|LPT\d)$') { return $false }
+    return $nom -match '\.(exe|dll|ico)$'
 }
 
 function Test-CodeErreur {
@@ -762,7 +778,8 @@ function Get-ChampsLitteraux {
     $champs = [ordered]@{}
     foreach ($m in [regex]::Matches($Texte, '(?<![\w$.-])([A-Za-z]+)=("[^"]*"|[^\s"'']*)')) {
         $v = $m.Groups[2].Value.Trim('"')
-        if ($v -match '[\$\{]') { $v = '' }
+        # A backtick is PowerShell's escape (exe=`"$path`"): computed as well.
+        if ($v -match '[\$\{`]') { $v = '' }
         $champs[$m.Groups[1].Value] = $v
     }
     return $champs
@@ -879,6 +896,18 @@ function Test-Analyse {
                     Add-Constat $Fichier $e.Ligne 'erreur' 'ITEM_SANS_ID' "[ITEM] '$cle' sans id= : c'est l'id que Sindry renverra au script si l'élément est coché."
                 }
                 Test-ChampsLigne $Fichier $e.Ligne 'ITEM' $cle $champsLigne $CHAMPS_ITEM 'ITEM_CHAMP'
+                # exe= (2.0.3): a program whose icon Sindry reads and shows,
+                # only for things that run. A computed value escapes the check.
+                if ($champsLigne.Contains('exe')) {
+                    $genre = if ($champsLigne.Contains('kind')) { $champsLigne['kind'] } else { '(absent)' }
+                    if ($genre -and @('app', 'startup', 'service', 'task') -cnotcontains $genre) {
+                        Add-Constat $Fichier $e.Ligne 'erreur' 'ITEM_CHAMP' "[ITEM] '$cle' : exe= ne vaut que pour kind=app, startup, service ou task (kind : $genre)."
+                    }
+                    $exe = $champsLigne['exe']
+                    if ($exe -and -not (Test-CheminIcone $exe)) {
+                        Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_EXE' "[ITEM] '$cle' : exe=$exe n'est pas un chemin local absolu vers un .exe, un .dll ou un .ico ; Sindry gardera l'icône du kind."
+                    }
+                }
                 if ($champsLigne.Contains('label') -and $champsLigne['label']) {
                     $l = $champsLigne['label']
                     if (-not $Rapport.Contains($l) -or $Rapport[$l].Genre -ne 'label') {

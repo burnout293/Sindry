@@ -7,6 +7,7 @@ mod contract;
 mod discovery;
 mod garde;
 mod history;
+mod icon;
 mod migration;
 mod preconfiguration;
 mod restore;

@@ -1771,6 +1771,18 @@ En conséquence :
   élément que personne n'a vu. Ce souvenir ne survit pas à la session.
 - **Bornes** : 20 000 lignes lues par analyse, 5 000 éléments par liste, 400 caractères par
   texte. Au-delà, la suite est ignorée, et l'Expert le voit.
+- **La vraie icône d'un programme (2.0.3)** : `[ITEM] … exe=<chemin>` désigne un fichier du
+  système, et Sindry en lit l'icône lui-même ; un script n'envoie jamais d'image, et rien
+  n'est téléchargé — demander une icône à un service lui livrerait la liste des programmes
+  du PC. Le processus est élevé et le fichier peut être piégé : pas de chargeur de Windows
+  ni du shell (`ExtractIconEx`, `LoadLibraryEx`, `SHGetFileInfo`, qui peut charger des
+  gestionnaires d'icônes tiers), mais une lecture des ressources bornée à chaque pas, en
+  Rust (`icon.rs`) ; aucun code du fichier ne s'exécute. Chemin absolu local seulement :
+  un chemin réseau ferait ouvrir à Sindry une connexion SMB vers un serveur choisi par la
+  sortie du script, et y laisserait l'empreinte NTLM du compte. Ni `\\?\`, ni `\\.\`, ni
+  flux, ni nom de périphérique, ni raccourci. Une image, la plus proche de 32 px, 64 Ko au
+  plus, jointe à l'analyse par le moteur : l'interface ne demande jamais une icône par
+  chemin. `exe=` ne revient jamais au script.
 - L'interface ne présente jamais l'analyse comme « sans risque ». Elle dit ce qu'elle fait :
   Sindry examine le PC.
 

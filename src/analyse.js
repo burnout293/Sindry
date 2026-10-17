@@ -334,6 +334,15 @@ const JETONS = {
   risk: { high: ['an.risk.high', 'high'], medium: ['an.risk.medium', 'med'] },
   health: { ok: ['an.health.ok', 'ok'], warn: ['an.health.warn', 'warn'], crit: ['an.health.crit', 'crit'] },
 };
+/** The real icon of a program (2.0.3): Sindry read it from the file the
+ *  script named with `exe=` (`icon.rs`) — never an image from the script.
+ *  Otherwise, the icon of the kind. */
+function iconeElement(it) {
+  if (typeof it.icon === 'string' && it.icon.startsWith('data:image/x-icon;base64,')) {
+    return `<img class="an-ico-app" src="${esc(it.icon)}" alt="" width="20" height="20">`;
+  }
+  return ico(ICONE_GENRE[it.kind] || 'file', 'i14');
+}
 const ICONE_GENRE = { folder: 'folder', file: 'file', registry: 'database', app: 'package', startup: 'power', service: 'settings', task: 'calendar-clock', driver: 'cpu', browser: 'globe' };
 const badge = (type, v) => {
   const j = JETONS[type]?.[v];
@@ -446,7 +455,7 @@ function ligneItem(m, k, it, mode) {
   const plie = !!s.plie[`${k}/${it.id}`];
   return `<label class="an-ligne${verrou || fait ? ' inactive' : ''}${cochee || partiel ? '' : ' decoche'}">
       <input type="checkbox" ${attrs(m, k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${cochee ? ' checked' : ''}${partiel ? ' data-partiel="1"' : ''}${verrou || fait ? ' disabled' : ''}>
-      <span class="an-ico">${ico(ICONE_GENRE[it.kind] || 'file', 'i14')}</span>
+      <span class="an-ico">${iconeElement(it)}</span>
       <span class="an-t"><b>${esc(nomElement(m, it))}</b>${it.path ? `<span class="an-chemin">${esc(it.path)}</span>` : ''}<span class="an-badges">${badges}</span></span>
       <span class="an-v">${sousTotal ? taille(sousTotal) : ''}${visibles.length ? `<small>${esc(pl('an.n_elements', visibles.length))}</small>` : ''}</span>
       ${enfants.length ? `<button class="an-plier${plie ? ' plie' : ''}" type="button" ${attrs(m, k, `data-a-plier="${esc(it.id)}"`)} aria-label="${esc(t(plie ? 'an.deplier' : 'an.replier'))}">${ico('chevron', 'i14')}</button>` : ''}

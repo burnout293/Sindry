@@ -2338,6 +2338,7 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .an-ligne.inactive { cursor: default; opacity: .62; }
 .an-ligne.decoche .an-t b { color: var(--text-2); }
 .an-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; background: var(--surface-2); color: var(--text-2); }
+.an-ico-app { width: 20px; height: 20px; display: block; }
 .an-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .an-t b { font-size: 13.5px; font-weight: 650; overflow-wrap: anywhere; }
 .an-chemin { font-family: var(--mono, 'Cascadia Mono', Consolas, monospace); font-size: 11px; color: var(--text-3); overflow-wrap: anywhere; }
