@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progression : le code</title>
+<!--
+  Maquette M28 (2.0.2) : les graphiques de progression retenus en M26,
+  ecrits comme une ambiance les ecrirait — une section « progression » de son
+  fichier, balisage et feuille de style, comme le decor. Chaque graphique
+  tourne ici exactement comme dans Sindry : un cadre isole (sandbox, sans
+  script, sans reseau), que Sindry recompose a chaque action terminee en lui
+  donnant le pourcentage. Le code affiche est celui qui tourne.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536;
+  --border: #2A3445; --border-2: #42506A; --grille: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-2: #FF9447; --acc-on: #FF9A55;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grille: #E9E5DC;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button { font: inherit; color: inherit; cursor: pointer; }
+code { font-family: var(--mono); font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); }
+
+.barre { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.barre h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.barre .reglages { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.choix { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); flex-wrap: wrap; }
+.choix button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.choix button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.curseur-prog { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 600; }
+.curseur-prog input { accent-color: var(--acc); width: 160px; }
+.curseur-prog output { font-family: var(--mono); color: var(--text); min-width: 46px; }
+
+main { max-width: 1280px; margin: 0 auto; padding: 22px 20px 70px; }
+h2 { font-size: 19px; font-weight: 750; letter-spacing: -.4px; margin: 26px 0 4px; }
+h2 .n { font-family: var(--mono); font-size: 12px; color: var(--text-3); margin-right: 8px; }
+.sous { color: var(--text-2); margin: 0 0 16px; max-width: 900px; }
+
+/* --- A. Les ecrans, chacun a ses couleurs ------------------------------------ */
+.ecrans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 16px; }
+.ecran-bloc .leg { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 8px; flex-wrap: wrap; }
+.ecran-bloc .leg b { font-size: 13.5px; }
+.ecran-bloc .leg span { color: var(--text-3); font-size: 12px; }
+.ecran-bloc .leg button { margin-left: auto; border: 1px solid var(--border-2); background: var(--surface-2); border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.ecran { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--e-bg); color: var(--e-text); padding: 22px 20px 20px; font-family: var(--e-ui, var(--ui)); }
+.ecran .tete { text-align: center; margin-bottom: 14px; }
+.ecran .tete h3 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: -.6px; }
+.ecran .tete p { margin: 3px 0 0; color: var(--e-text-2); font-size: 12px; }
+.carte { background: var(--e-surface); border: 1px solid var(--e-border); border-radius: var(--e-coins, 10px); overflow: hidden; box-shadow: 0 14px 36px rgba(0, 0, 0, .18); }
+.carte-tete { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--e-surface-2); }
+.carte-tete .flex { flex: 1; min-width: 0; }
+.carte-tete .bilan { font-size: 13.5px; font-weight: 700; }
+.carte-tete .detail { font-size: 11.5px; color: var(--e-text-2); margin-top: 1px; }
+.carte-tete .pct { font-family: var(--mono); font-size: 22px; color: var(--e-acc-on); }
+.barre-defaut { margin: -4px 18px 14px; height: 8px; border-radius: 99px; background: var(--e-surface-3); overflow: hidden; }
+.barre-defaut i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--e-acc), var(--e-acc-2)); transition: width .8s ease-out; }
+.tache { display: flex; align-items: center; gap: 11px; padding: 10px 18px; font-size: 13px; border-top: 1px solid var(--e-surface-2); }
+.tache.encours { background: color-mix(in srgb, var(--e-acc) 8%, var(--e-surface)); }
+.tache .dt { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; font-size: 10px; font-weight: 800; color: #fff; }
+.tache .dt svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.tache .dt.ok { background: var(--e-ok); }
+.tache .dt.run { background: var(--e-acc); color: var(--e-ink); }
+.tache .dt.att { background: var(--e-surface-2); color: var(--e-text-3); border: 1px solid var(--e-border); }
+.tache .tt { flex: 1; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tache .tr { font-size: 11.5px; font-weight: 700; color: var(--e-text-3); }
+.tache .tr.ok { color: var(--e-ok); }
+
+/* Le cadre de la progression : deux iframes isolees, l'une affichee, l'autre
+   qui charge la prochaine image ; on bascule quand elle est prete. */
+.cadre-prog { position: relative; flex-shrink: 0; }
+.cadre-prog.pastille { width: 88px; height: 88px; }
+.cadre-prog.bandeau { height: 150px; border-bottom: 1px solid var(--e-surface-2); }
+.cadre-prog iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; color-scheme: normal; opacity: 0; pointer-events: none; }
+.cadre-prog iframe.vu { opacity: 1; }
+
+/* --- B. Le code ----------------------------------------------------------------- */
+.code-zone { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+.donne { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 14px 16px; position: sticky; top: 72px; }
+.donne h3 { margin: 0 0 8px; font-size: 14px; }
+.donne dl { margin: 0; display: grid; gap: 9px; }
+.donne dt { font-family: var(--mono); font-size: 12px; color: var(--acc-on); }
+.donne dd { margin: 1px 0 0; color: var(--text-2); }
+.donne .regles { margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid var(--border); color: var(--text-2); }
+.onglets { margin-bottom: 10px; }
+.bloc-code { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; margin-bottom: 12px; }
+.bloc-code .t { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.bloc-code .t b { font-family: var(--mono); font-weight: 400; color: var(--acc-on); }
+.bloc-code .t span { color: var(--text-3); font-size: 12px; }
+.bloc-code pre { margin: 0; padding: 12px 14px; font: 12px/1.55 var(--mono); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; overflow: auto; }
+.bloc-code pre .long { color: var(--text-3); }
+@media (max-width: 900px) { .code-zone { grid-template-columns: 1fr; } .donne { position: static; } }
+</style>
+</head>
+<body>
+<div class="barre">
+  <h1>Progression : le code des ambiances</h1>
+  <div class="reglages">
+    <div class="curseur-prog"><label for="prog">Actions finies</label><input id="prog" type="range" min="0" max="14" value="7"><output id="progVal">7 / 14</output></div>
+    <div class="choix"><button type="button" id="anim" aria-pressed="false">Animer</button></div>
+    <div class="choix" aria-label="Thème"><button type="button" data-theme-btn="dark" aria-pressed="true">Sombre</button><button type="button" data-theme-btn="light" aria-pressed="false">Clair</button></div>
+  </div>
+</div>
+<main>
+  <h2><span class="n">A</span>Dans l'écran d'entretien</h2>
+  <p class="sous">Vos choix de M26, le pourcentage seul. Chaque graphique est dessiné par son ambiance, dans un cadre isolé — exactement comme il tournera dans Sindry. « Animer » fait défiler un entretien : regardez la jauge glisser d'une valeur à l'autre, et la roue, la planète, la grille continuer sans à-coup.</p>
+  <div class="ecrans" id="ecrans"></div>
+
+  <h2 id="code"><span class="n">B</span>Comment ça se code</h2>
+  <p class="sous">Une section <code>progression</code> dans le fichier de l'ambiance, à côté du décor, avec les mêmes règles. Le code ci-dessous est celui qui tourne au-dessus.</p>
+  <div class="code-zone">
+    <aside class="donne">
+      <h3>Ce que Sindry donne au graphique</h3>
+      <dl>
+        <dt>{{pourcentage}}</dt><dd>Remplacé par « 50 % », écrit comme il faut dans la langue de l'interface.</dd>
+        <dt>--p, --pct</dt><dd>La progression, de 0 à 1 et de 0 à 100. Elles glissent d'elles-mêmes de l'ancienne valeur à la nouvelle : rien à animer.</dd>
+        <dt>--depuis</dt><dd>Les secondes écoulées depuis le début. Une animation qui tourne en boucle s'en sert pour continuer d'une action à l'autre : <code>animation-delay: calc(var(--depuis) * -1s)</code>.</dd>
+        <dt>data-etat, data-mode</dt><dd>Sur la racine : <code>en-cours</code>, <code>fini</code> ou <code>arrete</code> ; <code>clair</code> ou <code>sombre</code>.</dd>
+        <dt>var(--acc), var(--text)…</dt><dd>Tous les jetons de couleur de l'ambiance, comme dans le décor.</dd>
+        <dt>place</dt><dd><code>pastille</code> : 88 × 88, dans l'en-tête de la carte. <code>bandeau</code> : toute la largeur de la carte, 150 de haut.</dd>
+      </dl>
+      <p class="regles"><b>Les règles du décor.</b> Un cadre isolé, sans script ni réseau ; le vérificateur refuse le reste. Sindry le recompose à chaque action terminée. Une ambiance sans <code>progression</code> a la barre de Sindry.</p>
+    </aside>
+    <div>
+      <div class="choix onglets" id="onglets" role="tablist"></div>
+      <div id="codeAff"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Les jetons des ambiances, tires des fichiers (ambiances/*).
+const JETONS = {"aurore-australe":{"sombre":{"bg":"#0E0820","surface":"#170F2E","surface-2":"#20163D","surface-3":"#2B1E50","border":"#2E2150","border-2":"#44306E","text":"#F9EEFF","text-2":"#C7B3DB","text-3":"#A890C2","ink":"#1A0620","acc":"#FF6FB5","acc-2":"#B48CFF","acc-on":"#FF9CCB","rouage-a":"#B48CFF","rouage-b":"#FF6FB5","serie-1":"#FF6FB5","serie-2":"#B48CFF","serie-3":"#6FD3FF"}},"foret-de-nuit":{"sombre":{"bg":"#07110C","surface":"#0C1912","surface-2":"#11221A","surface-3":"#182D22","border":"#1E3529","border-2":"#2E4D3C","text":"#E6F2EA","text-2":"#9DB5A5","text-3":"#86A08F","ink":"#04110A","acc":"#7CE38B","acc-2":"#F5E07A","acc-on":"#9CF0A8","rouage-a":"#7CE38B","rouage-b":"#F5E07A","serie-1":"#7CE38B","serie-2":"#F5E07A","serie-3":"#5FC8FF"},"clair":{"bg":"#F3F6F1","surface":"#FFFFFF","surface-2":"#EAF0E6","surface-3":"#DCE6D6","border":"#D3DECB","border-2":"#A9BCA0","text":"#13201A","text-2":"#4C5F52","text-3":"#55695B","ink":"#0B1A10","acc":"#2F9E5B","acc-2":"#7FC46A","acc-on":"#1D6B3C","rouage-a":"#2F9E5B","rouage-b":"#7FC46A","serie-1":"#2F9E5B","serie-2":"#1C7FD0","serie-3":"#D9A400"}},"plan":{"sombre":{"bg":"#0B0F16","surface":"#0F1520","surface-2":"#141C2A","surface-3":"#1B2536","border":"#2A3445","border-2":"#42506A","text":"#E9EEF5","text-2":"#8C9AAE","text-3":"#8190A5","ink":"#1A0B06","acc":"#FD7D26","acc-2":"#FF9447","acc-on":"#FF9A55","rouage-a":"#FD7D26","rouage-b":"#FF9447","serie-1":"#FD7D26","serie-2":"#4AB2E7","serie-3":"#3FD69B"},"clair":{"bg":"#F6F4EF","surface":"#FFFFFF","surface-2":"#EFECE5","surface-3":"#E4E0D6","border":"#DCD7CC","border-2":"#B6AE9F","text":"#141A24","text-2":"#5C6778","text-3":"#5F6A7B","ink":"#1A0B06","acc":"#E2640F","acc-2":"#F0782A","acc-on":"#A84A08","rouage-a":"#E2640F","rouage-b":"#F0782A","serie-1":"#E2640F","serie-2":"#1C7FD0","serie-3":"#0E9F6E"}},"ardente":{"sombre":{"bg":"#0F0A14","surface":"#18111F","surface-2":"#211829","surface-3":"#2B2034","border":"#2C2236","border-2":"#3D3049","text":"#F7F1FA","text-2":"#B9A9C6","text-3":"#94849F","ink":"#1A0B12","acc":"#FEC923","acc-2":"#FD5632","acc-on":"#FFB35C","rouage-a":"#4AB2E7","rouage-b":"#CA28B1","serie-1":"#FEC923","serie-2":"#FD5632","serie-3":"#DC1178"},"clair":{"bg":"#FBF6F2","surface":"#FFFFFF","surface-2":"#F6EEE8","surface-3":"#EFE4DB","border":"#EADFD6","border-2":"#DCCBBE","text":"#1F1426","text-2":"#6A5873","text-3":"#76637F","ink":"#1A0B12","acc":"#FD9E21","acc-2":"#FD5632","acc-on":"#B23A0C","rouage-a":"#332BD9","rouage-b":"#CA28B1","serie-1":"#FD9E21","serie-2":"#FD5632","serie-3":"#DC1178"}},"aurore-boreale":{"sombre":{"bg":"#06101E","surface":"#0D1B2E","surface-2":"#13263D","surface-3":"#1B3350","border":"#1F3550","border-2":"#2C4A6B","text":"#EAF6FF","text-2":"#A9C4D8","text-3":"#8AA6BD","ink":"#02121A","acc":"#3CFFB4","acc-2":"#38C6FF","acc-on":"#7DFFD0","rouage-a":"#38C6FF","rouage-b":"#8E6BFF","serie-1":"#3CFFB4","serie-2":"#38C6FF","serie-3":"#8E6BFF"}},"spatial":{"sombre":{"bg":"#070B12","surface":"#0E1622","surface-2":"#142033","surface-3":"#1B2A40","border":"#1E2D42","border-2":"#2C4060","text":"#E8EEF5","text-2":"#97A8BC","text-3":"#8193A8","ink":"#1A0A00","acc":"#FF7A1F","acc-2":"#FF9A4D","acc-on":"#FF9A4D","rouage-a":"#5FE3FF","rouage-b":"#2E8BFF","serie-1":"#5FE3FF","serie-2":"#FF7A1F","serie-3":"#4BE3A0"},"clair":{"bg":"#EEF1F4","surface":"#FFFFFF","surface-2":"#E6EAEF","surface-3":"#D8DEE6","border":"#D3DAE3","border-2":"#B8C3D0","text":"#111A26","text-2":"#4B5A6B","text-3":"#56657A","ink":"#1A0A00","acc":"#F06A12","acc-2":"#FF8A3D","acc-on":"#A84A08","rouage-a":"#1C7FD0","rouage-b":"#5FA8E8","serie-1":"#1C7FD0","serie-2":"#F06A12","serie-3":"#0E9F6E"}},"synthwave":{"sombre":{"bg":"#120326","surface":"#1C0838","surface-2":"#260D4A","surface-3":"#33145E","border":"#3A1A66","border-2":"#52267F","text":"#FBF0FF","text-2":"#CDB6EE","text-3":"#A98DD2","ink":"#12001F","acc":"#FF2BD6","acc-2":"#00E5FF","acc-on":"#FF8BEA","rouage-a":"#00E5FF","rouage-b":"#FF2BD6","serie-1":"#FF2BD6","serie-2":"#00E5FF","serie-3":"#FFD24D"},"clair":{"bg":"#FFF2F9","surface":"#FFFFFF","surface-2":"#FFE6F3","surface-3":"#FFD3EA","border":"#F6CFE4","border-2":"#EBA9CD","text":"#2A0B3D","text-2":"#6E4A82","text-3":"#7A5690","ink":"#2A0B3D","acc":"#FF3EA5","acc-2":"#00B8D4","acc-on":"#B0106A","rouage-a":"#00B8D4","rouage-b":"#FF3EA5","serie-1":"#FF3EA5","serie-2":"#00A9C4","serie-3":"#FFB020"}},"terminal-vert":{"sombre":{"bg":"#020A04","surface":"#06140A","surface-2":"#0B1F10","surface-3":"#123018","border":"#164A24","border-2":"#1F6A33","text":"#6CFF94","text-2":"#4CCF72","text-3":"#3BB15E","ink":"#021006","acc":"#6CFF94","acc-2":"#2EE86A","acc-on":"#8DFFAD","rouage-a":"#2EE86A","rouage-b":"#6CFF94","serie-1":"#6CFF94","serie-2":"#2EC4B6","serie-3":"#FFD84D"}}};
+
+const TOTAL = 14;
+const TACHES = ['Nettoyer les fichiers temporaires', 'Vider les caches des navigateurs', 'Faire de la place', 'Retirer les restes de programmes',
+  'Désactiver la veille', 'Configurer DNS', 'Désactiver le démarrage rapide', 'Réduire la télémétrie', 'Désactiver le suivi publicitaire',
+  'Protéger ma vie privée', 'Retirer les applications inutiles', 'Vérifier les disques', 'Réparer Windows', "Planifier l'entretien"];
+const COCHE = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const alea = (i, k = 1) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
+const f1 = (n) => n.toFixed(1).replace(/\.0$/, '');
+
+/* --- Ce qu'une ambiance ecrirait : des morceaux de dessin calcules une fois,
+   puis colles tels quels dans son fichier (un engrenage, des sapins...). */
+function engrenage(cx, cy, r1, r2, dents) {
+  const pas = (Math.PI * 2) / dents, pts = [];
+  for (let i = 0; i < dents; i++) {
+    const a = i * pas;
+    for (const [ang, r] of [[a - pas * 0.22, r2], [a - pas * 0.14, r1], [a + pas * 0.14, r1], [a + pas * 0.22, r2]]) pts.push(`${f1(cx + r * Math.cos(ang))},${f1(cy + r * Math.sin(ang))}`);
+  }
+  return `M${pts.join('L')}Z`;
+}
+function dent(cx, cy, r1, r2, i, n) {
+  const pas = (Math.PI * 2) / n, a = -Math.PI / 2 + i * pas;
+  return `M${[[a - pas * 0.3, r2], [a - pas * 0.19, r1], [a + pas * 0.19, r1], [a + pas * 0.3, r2]].map(([ang, r]) => `${f1(cx + r * Math.cos(ang))},${f1(cy + r * Math.sin(ang))}`).join('L')}Z`;
+}
+const etoiles = (n, W, H, k) => Array.from({ length: n }, (_, i) => `<circle cx="${f1(alea(i, k) * W)}" cy="${f1(alea(i, k + 1) * H)}" r="${(0.6 + alea(i, k + 2) * 0.9).toFixed(1)}"/>`).join('');
+function sapins(W, base) {
+  let d = '';
+  for (let i = 0; i < 22; i++) {
+    const x = (i + 0.5) * (W / 22) + (alea(i, 3) - 0.5) * 12, h = 24 + alea(i, 4) * 26, l = h * 0.38;
+    d += `M${f1(x)},${f1(base - h)}L${f1(x + l)},${base}L${f1(x - l)},${base}Z`;
+  }
+  return `${d}M0,${base}H${W}V150H0Z`;
+}
+const raies = Array.from({ length: 70 }, (_, i) => `<rect x="${f1(i * 8)}" y="${f1(6 + alea(i, 12) * 22)}" width="8.6" height="${f1(48 + alea(i, 11) * 52)}"/>`).join('');
+const PISTE = 'M80,75 A200,40 0 1 1 480,75 A200,40 0 1 1 80,75';
+
+/* --- Les sections « progression » des sept ambiances ---------------------- */
+const AMBIANCES = [
+  { id: 'plan', nom: 'Plan', jeu: 'plan', choix: 'Roue à l’encre, en tête', place: 'pastille',
+    balisage: `<svg viewBox="0 0 220 220" aria-hidden="true">
+  <g class="roue">
+    <path d="${engrenage(110, 110, 108, 95, 14)}"/>
+    <circle cx="110" cy="110" r="87"/>
+  </g>
+  <circle class="piste" cx="110" cy="110" r="70"/>
+  <circle class="arc" cx="110" cy="110" r="70" pathLength="100"/>
+</svg>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* La roue tourne tant que ça travaille, sans repartir de zéro à chaque action. */
+.roue { transform-origin: 110px 110px; animation: tourne 36s linear infinite;
+  animation-delay: calc(var(--depuis) * -1s); }
+:root[data-etat="fini"] .roue, :root[data-etat="arrete"] .roue { animation-play-state: paused; }
+@keyframes tourne { to { transform: rotate(1turn); } }
+.roue path { fill: none; stroke: var(--text-3); stroke-width: 2.4; stroke-linejoin: round; }
+.roue circle { fill: none; stroke: var(--border-2); stroke-width: 1.2; stroke-dasharray: 3 5; }
+
+/* La jauge : un trait de longueur --pct sur un tour de 100. */
+.piste { fill: none; stroke: var(--surface-3); stroke-width: 15; }
+.arc { fill: none; stroke: var(--acc); stroke-width: 15; stroke-linecap: round;
+  stroke-dasharray: calc(var(--pct) * 1px) 100px; opacity: clamp(0, var(--pct), 1);
+  transform: rotate(-90deg); transform-origin: 110px 110px; }
+
+.pct { position: absolute; inset: 0; display: grid; place-items: center; margin: 0;
+  font: 19vw Consolas, 'Cascadia Mono', monospace; letter-spacing: -.06em; color: var(--text); }` },
+
+  { id: 'foret', nom: 'Forêt de nuit', jeu: 'foret-de-nuit', choix: 'Lune', place: 'bandeau',
+    balisage: `<svg viewBox="0 0 560 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g class="etoiles">${etoiles(26, 560, 110, 1)}</g>
+  <g class="lune">
+    <circle class="nuit" cx="280" cy="62" r="36"/>
+    <path class="jour" d="M280,26 A36,36 0 0 1 280,98 Z"/>
+    <ellipse class="ombre" cx="280" cy="62" rx="36" ry="36"/>
+    <ellipse class="plein" cx="280" cy="62" rx="36" ry="36"/>
+  </g>
+  <path class="sapins" d="${sapins(560, 138)}"/>
+</svg>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `:root { --lune: var(--acc-2); }
+:root[data-mode="clair"] { --lune: var(--serie-3); }
+svg { width: 100%; height: 100%; display: block; }
+
+.etoiles circle { fill: var(--text); animation: scintille 3s ease-in-out infinite alternate;
+  animation-delay: calc(var(--depuis) * -1s); }
+.etoiles circle:nth-child(3n) { animation-duration: 4.3s; }
+.etoiles circle:nth-child(3n+1) { animation-duration: 2.2s; }
+:root[data-mode="clair"] .etoiles { display: none; }
+@keyframes scintille { from { opacity: .12; } to { opacity: .7; } }
+
+/* Les phases : la moitié droite éclairée, puis une ellipse sombre qui
+   s'amincit (croissant), et une claire qui s'élargit (gibbeuse). */
+.lune { filter: drop-shadow(0 0 calc(var(--p) * 16px) var(--lune)); }
+.nuit, .ombre { fill: var(--surface-3); }
+.jour, .plein { fill: var(--lune); }
+.ombre, .plein { transform-box: fill-box; transform-origin: center; }
+.ombre { transform: scaleX(calc(1 - 2 * var(--p))); opacity: clamp(0, (.5 - var(--p)) * 1000, 1); }
+.plein { transform: scaleX(calc(2 * var(--p) - 1)); opacity: clamp(0, (var(--p) - .5) * 1000, 1); }
+.sapins { fill: var(--surface-2); }
+
+.pct { position: absolute; left: calc(50% + 50px); top: 46px; margin: 0;
+  font: 600 22px 'Segoe UI', system-ui, sans-serif; color: var(--text); }` },
+
+  { id: 'aurore', nom: 'Aurore australe', jeu: 'aurore-australe', choix: 'Voile', place: 'bandeau',
+    balisage: `<div class="ciel">
+  <svg viewBox="0 0 560 120" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="v" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color: var(--acc-2); stop-opacity: 0"/>
+      <stop offset=".3" style="stop-color: var(--acc-2)"/>
+      <stop offset=".65" style="stop-color: var(--acc)"/>
+      <stop offset="1" style="stop-color: var(--acc); stop-opacity: 0"/>
+    </linearGradient></defs>
+    <g class="raies">${raies}</g>
+  </svg>
+</div>
+<svg class="collines" viewBox="0 0 560 40" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0,40 V22 C60,8 110,14 170,20 C240,28 300,4 380,10 C440,14 500,24 560,18 V40 Z"/>
+</svg>
+<div class="fil"></div>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `/* Le voile gagne le ciel de gauche à droite : un masque qui suit --p,
+   au bord fondu. */
+.ciel { position: absolute; inset: 0 0 14px 0;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--p) * 110% - 10%), transparent calc(var(--p) * 110%));
+  mask-image: linear-gradient(90deg, #000 calc(var(--p) * 110% - 10%), transparent calc(var(--p) * 110%)); }
+.ciel svg { width: 100%; height: 100%; filter: blur(1.2px); }
+.raies rect { fill: url(#v); animation: miroite 3.4s ease-in-out infinite alternate;
+  animation-delay: calc(var(--depuis) * -1s); }
+.raies rect:nth-child(odd) { animation-duration: 4.7s; }
+.raies rect:nth-child(3n) { animation-duration: 2.6s; }
+@keyframes miroite { from { opacity: .4; } to { opacity: 1; } }
+
+.collines { position: absolute; left: 0; bottom: 0; width: 100%; height: 40px; fill: var(--surface-2); }
+.fil { position: absolute; left: 0; bottom: 0; height: 3px; width: calc(var(--p) * 100%); background: var(--acc); }
+.pct { position: absolute; right: 18px; bottom: 12px; margin: 0;
+  font: 600 20px 'Segoe UI', system-ui, sans-serif; color: var(--text); }` },
+
+  { id: 'braise', nom: 'Braise ardente', jeu: 'ardente', choix: 'Jauge à dents', place: 'pastille',
+    balisage: `<svg viewBox="0 0 220 220" aria-hidden="true">
+  <g class="dents">
+${Array.from({ length: 28 }, (_, i) => `    <path style="--i:${i}" d="${dent(110, 110, 106, 84, i, 28)}"/>`).join('\n')}
+  </g>
+  <circle class="cercle" cx="110" cy="110" r="78"/>
+</svg>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Chaque dent a sa couleur de flamme, de l'or (serie-1) au magenta (serie-3)… */
+.dents path { --flamme: color-mix(in oklab, var(--serie-2) calc(var(--i) / 13.5 * 100%), var(--serie-1)); }
+.dents path:nth-child(n+15) { --flamme: color-mix(in oklab, var(--serie-3) calc((var(--i) - 14) / 13 * 100%), var(--serie-2)); }
+/* … et reste éteinte tant que la progression ne l'a pas atteinte. */
+.dents path { fill: color-mix(in srgb, var(--surface-3) clamp(0%, (var(--i) + .5 - var(--p) * 28) * 1000%, 100%), var(--flamme)); }
+.cercle { fill: var(--surface); stroke: var(--border); }
+
+.pct { position: absolute; inset: 0; display: grid; place-items: center; margin: 0;
+  font: 700 19vw 'Segoe UI', system-ui, sans-serif; letter-spacing: -.04em; color: var(--text); }` },
+
+  { id: 'synthwave', nom: 'Synthwave', jeu: 'synthwave', choix: 'Soleil', place: 'bandeau',
+    balisage: `<svg viewBox="0 0 560 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="soleil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color: var(--serie-3)"/>
+      <stop offset="1" style="stop-color: var(--acc)"/>
+    </linearGradient>
+    <mask id="bandes" maskUnits="userSpaceOnUse" x="220" y="30" width="120" height="120">
+      <rect x="220" y="30" width="120" height="120" fill="#fff"/>
+${[0, 1, 2, 3, 4, 5].map((k) => `      <rect x="220" y="${f1(86 + 44 * (0.1 + k * 0.15))}" width="120" height="${f1(1.5 + k * 1.1)}" fill="#000"/>`).join('\n')}
+    </mask>
+    <clipPath id="ciel"><rect width="560" height="106"/></clipPath>
+  </defs>
+  <g class="etoiles">${etoiles(16, 560, 70, 9)}</g>
+  <g clip-path="url(#ciel)">
+    <g class="astre">
+      <circle class="halo" cx="280" cy="86" r="48"/>
+      <circle class="disque" cx="280" cy="86" r="44" mask="url(#bandes)"/>
+    </g>
+  </g>
+  <g class="sol">
+${Array.from({ length: 17 }, (_, i) => { const k = i - 8; return `    <line x1="${280 + k * 7}" y1="106" x2="${280 + k * 62}" y2="150"/>`; }).join('\n')}
+${[0, 1, 2, 3, 4, 5].map((k) => `    <line class="h" style="--k:${k}" x1="0" y1="106" x2="560" y2="106"/>`).join('\n')}
+  </g>
+  <line class="horizon" x1="0" y1="106" x2="560" y2="106"/>
+</svg>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `svg { width: 100%; height: 100%; display: block; }
+.etoiles circle { fill: var(--text); opacity: .5; }
+:root[data-mode="clair"] .etoiles { display: none; }
+
+/* Le soleil se lève : de sous l'horizon (0 %) à sa place, posé dessus (100 %). */
+.astre { transform: translateY(calc((1 - var(--p)) * 68px)); }
+.disque { fill: url(#soleil); }
+.halo { fill: var(--acc); opacity: .5; filter: blur(14px); }
+
+/* La grille file vers nous, sans fin. */
+.sol line { stroke: var(--acc-2); stroke-width: 1; opacity: .5; }
+.sol .h { animation: defile 3.6s cubic-bezier(.5, 0, 1, .6) infinite;
+  animation-delay: calc((var(--depuis) + var(--k) * .6) * -1s); }
+@keyframes defile { from { transform: translateY(0); opacity: 0; } 15% { opacity: .6; } to { transform: translateY(44px); opacity: .6; } }
+.horizon { stroke: var(--acc-2); stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--acc-2)); }
+
+.pct { position: absolute; right: 22px; top: 22px; margin: 0; font: italic 700 24px 'Segoe UI', system-ui, sans-serif;
+  color: var(--acc-on); text-shadow: 0 0 10px var(--acc); }` },
+
+  { id: 'spatial', nom: 'Spatial', jeu: 'spatial', choix: 'Orbite, planète qui tourne', place: 'bandeau',
+    balisage: `<svg viewBox="0 0 560 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <g class="etoiles">${etoiles(30, 560, 150, 13)}</g>
+  <g transform="rotate(-8 280 75)">
+    <path class="trajet" d="${PISTE}" pathLength="100"/>
+    <path class="trace" d="${PISTE}" pathLength="100"/>
+    <path class="balise" style="--u:.25" d="M0,-3.5L3.5,0L0,3.5L-3.5,0Z"/>
+    <path class="balise" style="--u:.5" d="M0,-3.5L3.5,0L0,3.5L-3.5,0Z"/>
+    <path class="balise" style="--u:.75" d="M0,-3.5L3.5,0L0,3.5L-3.5,0Z"/>
+    <path class="satellite" d="M0,-6L6,0L0,6L-6,0Z"/>
+  </g>
+  <g transform="rotate(-14 280 75)">
+    <circle class="globe" cx="280" cy="75" r="30"/>
+    <ellipse class="parallele" cx="280" cy="75" rx="30" ry="7"/>
+    <ellipse class="parallele" cx="280" cy="61" rx="25" ry="5.5"/>
+    <ellipse class="parallele" cx="280" cy="89" rx="25" ry="5.5"/>
+${Array.from({ length: 12 }, (_, k) => `    <path class="meridien" style="--k:${k}" d="M280,45 A30,30 0 0 1 280,105"/>`).join('\n')}
+  </g>
+</svg>
+<p class="pct">{{pourcentage}}</p>`,
+    css: `svg { width: 100%; height: 100%; display: block; }
+.etoiles circle { fill: var(--text); opacity: .4; }
+
+/* La trajectoire, la trace parcourue, et le satellite qui la suit. */
+.trajet { fill: none; stroke: var(--rouage-a); stroke-width: 1; stroke-dasharray: .5 1.2; opacity: .6; }
+.trace { fill: none; stroke: var(--acc); stroke-width: 2.4; stroke-linecap: round;
+  stroke-dasharray: calc(var(--pct) * 1px) 100px; opacity: clamp(0, var(--pct), 1);
+  filter: drop-shadow(0 0 4px var(--acc)); }
+.balise, .satellite { offset-path: path('M80,75 A200,40 0 1 1 480,75 A200,40 0 1 1 80,75'); offset-rotate: 0deg; }
+.satellite { offset-distance: calc(var(--p) * 100%); fill: var(--acc); filter: drop-shadow(0 0 5px var(--acc)); }
+/* Une balise s'allume quand le satellite la passe. */
+.balise { offset-distance: calc(var(--u) * 100%);
+  fill: color-mix(in srgb, var(--acc) clamp(0%, (var(--p) - var(--u)) * 100000%, 100%), var(--rouage-a));
+  opacity: clamp(.45, (var(--p) - var(--u)) * 1000 + .45, 1); }
+
+/* La planète tourne sur elle-même, lentement : douze méridiens, chacun
+   passe devant (vif) puis derrière (pâle). */
+.globe { fill: var(--bg); stroke: var(--rouage-a); stroke-width: 1.4; }
+.parallele { fill: none; stroke: var(--rouage-a); stroke-width: .8; opacity: .35; }
+.meridien { fill: none; stroke: var(--rouage-a); stroke-width: 1; transform-origin: 280px 75px;
+  animation: globe 36s cubic-bezier(.37, 0, .63, 1) infinite;
+  animation-delay: calc((var(--depuis) + var(--k) * 3) * -1s); }
+@keyframes globe {
+  0% { transform: scaleX(-1); opacity: .8; }
+  49.9% { opacity: .8; }
+  50% { transform: scaleX(1); opacity: .12; }
+  100% { transform: scaleX(-1); opacity: .12; } }
+
+.pct { position: absolute; right: 22px; bottom: 14px; margin: 0; font: 600 13px 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: .18em; color: var(--text); }` },
+
+  { id: 'terminal', nom: 'Terminal vert', jeu: 'terminal-vert', choix: 'Texte', place: 'bandeau', mono: true,
+    balisage: `<pre class="ecran"><span class="invite">&gt;</span> [<span class="barre"><span class="vide">${'·'.repeat(26)}</span><span class="plein">${'█'.repeat(26)}</span></span>] <span>{{pourcentage}}</span><span class="curseur">_</span></pre>`,
+    css: `body { display: grid; align-content: center; padding: 0 24px; }
+.ecran { margin: 0; font: 18px/1.6 Consolas, 'Cascadia Mono', monospace; white-space: pre;
+  color: var(--text); text-shadow: 0 0 6px color-mix(in srgb, var(--acc) 60%, transparent); }
+/* La barre pleine, posée sur la vide, coupée au caractère près. */
+.barre { position: relative; display: inline-block; }
+.vide { color: var(--text-3); text-shadow: none; }
+.plein { position: absolute; left: 0; top: 0; overflow: hidden; width: round(down, calc(var(--p) * 26ch), 1ch); }
+.curseur { animation: clignote 1s steps(1) infinite; }
+@keyframes clignote { 50% { opacity: 0; } }
+/* Les lignes de balayage de l'écran. */
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .25) 0 1px, transparent 1px 3px); }` },
+
+  { id: 'defaut', nom: 'Sans « progression »', jeu: 'plan', choix: 'la barre de Sindry', place: null },
+];
+
+/* --- Ce que fait Sindry : composer le document du cadre ------------------ */
+const debut = performance.now();
+function documentProgression(a, jetons, mode, etat, p, pAvant) {
+  const vars = Object.entries(jetons).map(([k, v]) => `--${k}:${v}`).join(';');
+  const pct = Math.round(p * 100), avant = Math.round(pAvant * 100);
+  const balisage = a.balisage.split('{{pourcentage}}').join(`${pct} %`);
+  return '<!doctype html>'
+    + `<html data-mode="${mode}" data-etat="${etat}"><head><meta charset="utf-8">`
+    + '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'">'
+    + '<style>@property --p{syntax:"<number>";inherits:true;initial-value:0}@property --pct{syntax:"<number>";inherits:true;initial-value:0}'
+    + `:root{color-scheme:normal;${vars};--p:${p};--pct:${pct};--p-avant:${pAvant};--pct-avant:${avant};--depuis:${((performance.now() - debut) / 1000).toFixed(2)};animation:sindry-avance .8s ease-out}`
+    + '@keyframes sindry-avance{from{--p:var(--p-avant);--pct:var(--pct-avant)}}'
+    + 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}body{position:relative}</style>'
+    + `<style>${a.css}</style>`
+    + '<style>@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}</style>'
+    + `</head><body>${balisage}</body></html>`;
+}
+
+/* --- La maquette ------------------------------------------------------------ */
+let fait = 7, theme = 'dark', minuteur = 0;
+const avant = {};
+function jetonsDe(a) {
+  const j = JETONS[a.jeu];
+  const sombre = theme === 'dark' || !j.clair;
+  return { t: sombre ? j.sombre : j.clair, mode: sombre ? 'sombre' : 'clair' };
+}
+const bilan = () => `<div class="bilan">${fait >= TOTAL ? 'Tout est fait' : `${fait} sur ${TOTAL} terminées`}</div><div class="detail">Point de restauration créé.</div>`;
+function taches() {
+  const d = Math.max(0, Math.min(fait - 1, TOTAL - 3));
+  return TACHES.slice(d, d + 3).map((nom, j) => {
+    const i = d + j, e = i < fait ? 'ok' : i === fait ? 'run' : 'att';
+    return `<div class="tache${e === 'run' ? ' encours' : ''}"><span class="dt ${e}">${e === 'ok' ? COCHE : i + 1}</span><span class="tt">${nom}</span><span class="tr${e === 'ok' ? ' ok' : ''}">${e === 'ok' ? 'Réussi' : e === 'run' ? 'en cours…' : 'En attente'}</span></div>`;
+  }).join('');
+}
+const cadre = (a) => `<div class="cadre-prog ${a.place}" data-cadre="${a.id}"><iframe sandbox="" tabindex="-1" aria-hidden="true"></iframe><iframe sandbox="" tabindex="-1" aria-hidden="true"></iframe></div>`;
+
+function construire() {
+  document.getElementById('ecrans').innerHTML = AMBIANCES.map((a) => `
+    <div class="ecran-bloc"><div class="leg"><b>${a.nom}</b><span>${a.choix}${a.place ? ` · <code>${a.place}</code>` : ''}</span>${a.place ? `<button type="button" data-voir="${a.id}">Voir le code</button>` : ''}</div>
+      <div class="ecran" data-ecran="${a.id}">
+        <div class="tete"><h3 data-titre></h3><p data-sous></p></div>
+        <div class="carte">
+          ${a.place === 'bandeau' ? cadre(a) : ''}
+          <div class="carte-tete">${a.place === 'pastille' ? cadre(a) : ''}<div class="flex" data-bilan></div>${a.place ? '' : '<b class="pct" data-pct></b>'}</div>
+          ${a.place ? '' : '<div class="barre-defaut"><i data-barre></i></div>'}
+          <div data-taches></div>
+        </div>
+      </div></div>`).join('');
+}
+
+function rendre() {
+  const p = fait / TOTAL, etat = fait >= TOTAL ? 'fini' : 'en-cours';
+  document.getElementById('prog').value = fait;
+  document.getElementById('progVal').textContent = `${fait} / ${TOTAL}`;
+  for (const a of AMBIANCES) {
+    const { t, mode } = jetonsDe(a);
+    const ecran = document.querySelector(`[data-ecran="${a.id}"]`);
+    for (const [k, v] of Object.entries(t)) ecran.style.setProperty(`--e-${k}`, v);
+    ecran.style.setProperty('--e-ok', mode === 'sombre' ? '#3FD69B' : '#0E7550');
+    ecran.style.setProperty('--e-ui', a.mono ? 'var(--mono)' : 'var(--ui)');
+    ecran.querySelector('[data-titre]').textContent = fait >= TOTAL ? "C'est terminé !" : 'Entretien en cours';
+    ecran.querySelector('[data-sous]').textContent = fait >= TOTAL ? '14 actions sur 14 réussies.' : `Il reste environ ${Math.max(1, (TOTAL - fait) * 2)} min.`;
+    ecran.querySelector('[data-bilan]').innerHTML = bilan();
+    ecran.querySelector('[data-taches]').innerHTML = taches();
+    if (!a.place) {
+      ecran.querySelector('[data-pct]').textContent = `${Math.round(p * 100)} %`;
+      ecran.querySelector('[data-barre]').style.width = `${p * 100}%`;
+      continue;
+    }
+    // Double tampon : la prochaine image se charge cachee, puis prend la place.
+    const [x, y] = ecran.querySelectorAll('iframe');
+    const cache = x.classList.contains('vu') ? y : x, montre = cache === x ? y : x;
+    cache.onload = () => { cache.classList.add('vu'); montre.classList.remove('vu'); };
+    cache.srcdoc = documentProgression(a, t, mode, etat, p, avant[a.id] ?? p);
+    avant[a.id] = p;
+  }
+}
+
+/* --- Le code, tel qu'il est ecrit ------------------------------------------- */
+let ongletCode = 'plan';
+function afficherCode() {
+  const a = AMBIANCES.find((x) => x.id === ongletCode);
+  document.getElementById('onglets').innerHTML = AMBIANCES.filter((x) => x.place).map((x) => `<button type="button" role="tab" data-onglet="${x.id}" aria-pressed="${x.id === ongletCode}">${x.nom}</button>`).join('');
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // Les longues suites de coordonnees, calculees une fois : on les replie.
+  const replie = (s) => esc(s).replace(/(d="M[\d.,LMZHVAz \-]{60})[\d.,LMZHVAz \-]{40,}(")/g, '$1<span class="long">… (coordonnées)</span>$2');
+  const json = JSON.stringify({ progression: { place: a.place, balisage: a.balisage, css: a.css } }, null, 2);
+  document.getElementById('codeAff').innerHTML = `
+    <div class="bloc-code"><div class="t"><b>"place"</b><span>${a.place === 'pastille' ? '88 × 88, dans l’en-tête de la carte' : 'toute la largeur de la carte, 150 de haut'}</span></div><pre>"${a.place}"</pre></div>
+    <div class="bloc-code"><div class="t"><b>"balisage"</b><span>${(a.balisage.length / 1024).toFixed(1)} Ko — SVG ou HTML, comme le décor</span></div><pre>${replie(a.balisage)}</pre></div>
+    <div class="bloc-code"><div class="t"><b>"css"</b><span>${(a.css.length / 1024).toFixed(1)} Ko</span></div><pre>${esc(a.css)}</pre></div>
+    <details class="bloc-code"><summary class="t" style="cursor:pointer"><b>Dans le fichier</b><span>les deux blocs deviennent des chaînes JSON, à côté de « decor »</span></summary><pre>${esc(json).slice(0, 2400)}${json.length > 2400 ? '\n<span class="long">…</span>' : ''}</pre></details>`;
+}
+document.getElementById('onglets').addEventListener('click', (e) => { const b = e.target.closest('[data-onglet]'); if (b) { ongletCode = b.dataset.onglet; afficherCode(); } });
+document.getElementById('ecrans').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-voir]');
+  if (!b) return;
+  ongletCode = b.dataset.voir; afficherCode();
+  document.getElementById('code').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('prog').addEventListener('input', (e) => { fait = Number(e.target.value); rendre(); });
+document.querySelectorAll('[data-theme-btn]').forEach((b) => b.addEventListener('click', () => {
+  theme = b.dataset.themeBtn;
+  document.documentElement.dataset.theme = theme;
+  document.querySelectorAll('[data-theme-btn]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  rendre();
+}));
+document.getElementById('anim').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  clearInterval(minuteur);
+  if (!on) return;
+  let pause = 0;
+  minuteur = setInterval(() => {
+    if (fait >= TOTAL) { if (++pause < 3) return; pause = 0; fait = 0; } else fait += 1;
+    rendre();
+  }, 1600);
+});
+construire();
+afficherCode();
+// `#clair`, `#14` : theme et progression d'office (captures).
+const h = location.hash, n = h.match(/\d+/);
+if (n) fait = Math.min(TOTAL, Number(n[0]));
+if (/clair|light/.test(h)) document.querySelector('[data-theme-btn="light"]').click();
+else rendre();
+</script>
+</body>
+</html>
