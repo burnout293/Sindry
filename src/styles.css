@@ -1934,14 +1934,72 @@ body.inactive .balise::before, body.inactive .balise::after { animation-play-sta
 /* --- Catalogues (Reglages 2, specification §16.2) ---------------------------
    Une carte par catalogue : l'officiel en tete, les ajouts marques comme tels.
    Les commandes passent sous le texte : une carte en porte jusqu'a quatre. */
-.sources-liste { display: flex; flex-direction: column; gap: 10px; }
-.setrow.source-carte { flex-wrap: wrap; align-items: flex-start; }
-.source-carte .setrow-txt { flex: 1 1 300px; }
-.source-carte .rg-libelle b { flex-wrap: wrap; }
-.source-carte > .switch { margin-top: 10px; }
-.source-actions { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.source-carte.inactive .rg-bouclier, .source-carte.inactive .rg-libelle { opacity: .55; }
-.source-avert { color: var(--warn); }
+/* --- Catalogues (M29, 2.0.2) --------------------------------------------------
+   Commands in the bar, data in the table, the rest in the pane below. */
+.cat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-carte, 12px); overflow: hidden; }
+.cat-bar { display: flex; align-items: center; gap: 1px; flex-wrap: wrap; padding: 5px 6px; border-bottom: 1px solid var(--border); }
+.cat-bar .num { margin: 0 8px 0 4px; }
+.cat-cmd { display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; padding: 7px 7px; border-radius: 6px; font-weight: 600; font-size: 12.5px; color: var(--text); white-space: nowrap; }
+.cat-cmd:hover:not(:disabled) { background: var(--surface-2); }
+.cat-cmd:disabled { color: var(--text-3); opacity: .5; cursor: default; }
+.cat-cmd.strong { color: var(--acc-on); }
+.cat-cmd.danger:not(:disabled) { color: var(--err); }
+.cat-sep { width: 1px; height: 20px; background: var(--border); margin: 0 3px; }
+.cat-message { margin: 0; padding: 0 14px; font-size: 12.5px; color: var(--text-2); }
+.cat-message:not(:empty) { padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+.cat-table { width: 100%; border-collapse: separate; border-spacing: 0; outline: none; }
+.cat-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+  padding: 9px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.cat-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+.cat-table tbody tr { user-select: none; cursor: default; }
+.cat-table tbody tr:hover td { background: var(--surface-soft); }
+.cat-table tbody tr.sel td { background: color-mix(in srgb, var(--acc) 9%, var(--surface)); }
+.cat-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--acc); }
+.cat-table tbody tr.off td.dim { opacity: .55; }
+.cat-table .cat-check { width: 38px; padding-right: 0; }
+.cat-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--acc); vertical-align: middle; cursor: pointer; }
+.cat-name b { display: block; font-size: 13.5px; }
+.cat-name small, .cat-table .sub { color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+.cat-table .sub.upd { color: var(--warn); }
+.cat-state { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; font-size: 12px; white-space: nowrap; color: var(--text-3); }
+.cat-state:not(.none)::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.cat-state.ok { color: var(--ok); } .cat-state.upd { color: var(--warn); } .cat-state.err { color: var(--err); }
+.cat-details { border-top: 1px solid var(--border); background: var(--surface-soft); padding: 14px 16px 16px; }
+.cat-details h4 { margin: 0 0 8px; font-size: 14px; }
+.cat-tabs { display: flex; gap: 2px; margin: 0 0 12px; border-bottom: 1px solid var(--border); }
+.cat-tabs button { border: 0; background: none; padding: 6px 10px; font-weight: 600; color: var(--text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.cat-tabs button[aria-selected="true"] { color: var(--text); border-color: var(--acc); }
+.cat-details dl { display: grid; grid-template-columns: 150px 1fr; gap: 7px 14px; margin: 0; font-size: 13px; }
+.cat-details dt { color: var(--text-3); }
+.cat-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.cat-trust { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; }
+.cat-trust.official { background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.cat-trust.third { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.cat-trust .ico { margin-top: 2px; flex-shrink: 0; }
+.cat-trust.official .ico { color: var(--ok); }
+.cat-trust.third .ico { color: var(--warn); }
+@media (max-width: 900px) { .cat-box { overflow-x: auto; } }
+/* The right-click menu: the bar's commands, where the pointer is. */
+.cat-menu { position: fixed; z-index: 60; min-width: 240px; padding: 5px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-2); box-shadow: var(--sh-2, 0 12px 34px rgba(0, 0, 0, .3)); }
+.cat-menu[hidden] { display: none; }
+.cat-menu button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 7px 9px; border-radius: 5px; font-weight: 550; font-size: 13px; color: var(--text); }
+.cat-menu button:hover:not(:disabled), .cat-menu button:focus-visible { background: var(--surface-2); outline: none; }
+.cat-menu button:disabled { color: var(--text-3); opacity: .55; cursor: default; }
+.cat-menu button.danger:not(:disabled) { color: var(--err); }
+.cat-menu kbd { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.cat-menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 2px; }
+/* Add or edit: a pane on the right. */
+.cat-drawer-bg { position: fixed; inset: 0; z-index: 58; background: rgba(0, 0, 0, .35); }
+.cat-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 59; width: min(440px, 100vw); background: var(--surface); border-left: 1px solid var(--border-2); box-shadow: var(--sh-2, 0 12px 34px rgba(0, 0, 0, .3)); display: flex; flex-direction: column; }
+.cat-drawer-bg[hidden], .cat-drawer[hidden] { display: none; }
+.cat-drawer .source-form { flex: 1; display: flex; flex-direction: column; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; gap: 0; }
+.cat-drawer-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.cat-drawer-head b { flex: 1; font-size: 16px; }
+.cat-close { border: 0; background: none; width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; color: var(--text-2); }
+.cat-close:hover { background: var(--surface-2); }
+.cat-drawer-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; overflow: auto; flex: 1; }
+.cat-drawer .source-form-pied { padding: 14px 18px; border-top: 1px solid var(--border); }
+
 .source-form {
   display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 16px;
   background: var(--surface); border: 1px solid color-mix(in srgb, var(--acc) 40%, transparent);

@@ -1762,6 +1762,7 @@ function rendreBandeauCatalogue(message, { erreur = false } = {}) {
     texte.textContent = t('cat.banniere_source', { nom: nomSource(tierce[0]), detail: resumeBilan(tierce[1]) });
     agir.textContent = t('cat.voir');
     agir.dataset.action = 'voir';
+    agir.dataset.source = tierce[0];
   }
   plusTard.hidden = false;
   plusTard.textContent = t('maj.plus_tard');
@@ -1770,44 +1771,11 @@ function rendreBandeauCatalogue(message, { erreur = false } = {}) {
   agir.dataset.tip = executionEnCours() ? t('cat.pendant_execution') : '';
 }
 
-/** Ligne d'etat et bouton de la section Catalogue des Reglages. */
+/** The official catalogue in the settings: a message under the bar, then the
+ *  table redrawn — its row, its pane and the commands follow the state. */
 function rendreReglagesCatalogue(message) {
-  const etat = document.getElementById('catalogueEtat');
-  const bouton = document.getElementById('btnCatalogue');
-  if (!etat || !bouton) return;
-  const e = etatCatalogue;
-  bouton.hidden = !e?.cle;
-  bouton.disabled = catalogueInstallation;
-  if (!e) {
-    etat.textContent = message || '';
-    return;
-  }
-  if (!e.cle) {
-    etat.textContent = t('cat.sans_cle');
-    return;
-  }
-  if (!e.installe) bouton.textContent = t(e.probleme ? 'cat.btn_reinstaller' : 'cat.btn_installer');
-  else bouton.textContent = t(bilanCatalogue ? 'cat.btn_maj' : 'cat.btn_verifier');
-
-  if (message) {
-    etat.textContent = message;
-    return;
-  }
-  if (e.probleme) etat.textContent = t('cat.etat_probleme');
-  else if (e.installe) {
-    const n = e.installe.scripts;
-    const installe = t('cat.etat_installe', {
-      v: e.installe.version,
-      d: dateCourte(e.installe.published),
-      n,
-      s: n > 1 ? 's' : '',
-    });
-    // Une nouveaute deja detectee se dit ici aussi : rouvrir les Reglages ne
-    // doit pas la faire oublier.
-    etat.textContent = bilanCatalogue
-      ? `${installe} ${t('cat.disponible', { v: bilanCatalogue.version, detail: resumeBilan(bilanCatalogue) })}`
-      : installe;
-  } else etat.textContent = t('cat.etat_absent');
+  if (message) catSay(`${t('cat.titre_reglage')} : ${message}`);
+  rendreSources();
 }
 
 /** Ne telecharge que l'index signe : aucun script, rien d'ecrit. Silencieux
@@ -1841,14 +1809,14 @@ function afficherProgressionCatalogue(texte) {
   if (offre) offre.textContent = texte;
   const visiteEtat = document.getElementById('onbCatalogueEtat');
   if (visiteEtat) visiteEtat.textContent = texte;
-  const etat = document.getElementById('catalogueEtat');
-  if (etat) etat.textContent = texte;
+  catSay(`${t('cat.titre_reglage')} : ${texte}`);
 }
 
 async function installerCatalogue() {
   if (catalogueInstallation || executionEnCours() || !etatCatalogue?.cle) return;
   catalogueInstallation = true;
-  document.querySelectorAll('[data-offre="installer"], [data-onb="installer"], #btnCatalogue').forEach((b) => { b.disabled = true; });
+  document.querySelectorAll('[data-offre="installer"], [data-onb="installer"]').forEach((b) => { b.disabled = true; });
+  rendreSources();
   afficherProgressionCatalogue(t('cat.telechargement_debut'));
 
   const arreterEcoute = await ecouter('catalogue:progress', (ev) => {
@@ -1914,7 +1882,7 @@ let etatSources = null;
 /** Nouveautes des catalogues ajoutes : id -> `catalogue::Bilan`. Celles de
  *  l'officiel restent dans `bilanCatalogue`. */
 const bilansSources = new Map();
-/** La page « Consulter et choisir » : { id, contenu, exclus: Set }. */
+/** The action list loaded in the pane's Actions tab: { id, contenu, exclus: Set, message }. */
 let sourceOuverte = null;
 /** Le formulaire modifie cette source ; null : il en ajoute une. */
 let sourceModifiee = null;
@@ -1946,87 +1914,247 @@ function texteLangue(textes) {
   return t2[currentLang()] || t2.fr || t2.en || Object.values(t2)[0] || '';
 }
 
-function libelleAgirSource(x) {
-  if (!x.installe) return x.probleme ? 'cat.btn_reinstaller' : 'cat.btn_installer';
-  return bilansSources.has(x.id) ? 'cat.btn_maj' : 'cat.btn_verifier';
+/* --- Catalogues (M29, 2.0.2) ------------------------------------------------------
+   One table and nothing twice: the commands live in the bar above — and in the
+   right-click menu, the same ones where the pointer is —, the table only shows
+   data, and the pane below shows what the table cannot (trust, key, versions)
+   plus the catalogue's own action list, where its actions are ticked. */
+
+/** Selected catalogue ids, the anchor of a Shift-click, the pane's tab. */
+let catSelection = new Set();
+let catAnchor = null;
+let catPicked = false;
+let catTab = 'detail';
+/** A short line under the bar: checks, installs, errors. */
+let catMessage = '';
+
+function catSay(text) {
+  catMessage = text || '';
+  const p = document.getElementById('catMessage');
+  if (p) p.textContent = catMessage;
 }
 
-function etatTexteSource(x) {
-  if (x.probleme) return t('cat.etat_probleme');
-  if (!x.installe) return t('cat.etat_absent');
-  const n = x.installe.scripts;
-  const texte = t('cat.etat_installe', { v: x.installe.version, d: dateCourte(x.installe.published), n, s: n > 1 ? 's' : '' });
-  const b = bilansSources.get(x.id);
-  return b ? `${texte} ${t('cat.disponible', { v: b.version, detail: resumeBilan(b) })}` : texte;
+/** The update known for a catalogue, if any. */
+function catUpdate(x) {
+  return (x.officielle ? bilanCatalogue : bilansSources.get(x.id)) || null;
 }
 
-function carteSource(x, modifiable) {
-  const id = esc(x.id);
-  const nom = esc(nomSource(x.id));
-  const badge = x.officielle
-    ? `<span class="badge acc">${esc(t('offre.badge_officiel'))}</span>`
-    : `<span class="badge med">${esc(t('cat.badge_tierce'))}</span>`;
-  // La carte officielle garde ses identifiants : rendreReglagesCatalogue et la
-  // progression d'installation y ecrivent, comme avant.
-  const etat = x.officielle
-    ? '<span class="desc" id="catalogueEtat" aria-live="polite"></span>'
-    : `<span class="desc" data-source-etat="${id}" aria-live="polite">${esc(etatTexteSource(x))}</span>`;
-  const exclus = x.exclus ? `<span class="desc">${esc(PLURIEL('cat.exclus', x.exclus))}</span>` : '';
-  const avert = x.officielle ? '' : `<span class="desc source-avert">${esc(t('cat.tierce_avert'))}</span>`;
-  const inactive = x.active ? '' : `<span class="desc">${esc(t('cat.inactive'))}</span>`;
-  const indisponible = !x.active || !x.cle || catalogueInstallation;
-  const agir = x.officielle
-    ? `<button class="btn compact" type="button" id="btnCatalogue"${x.active ? '' : ' disabled'}></button>`
-    : `<button class="btn compact" type="button" data-source-agir="${id}"${indisponible ? ' disabled' : ''}>${esc(t(libelleAgirSource(x)))}</button>`;
-  // Ajouter, modifier, retirer : dans les deux modes depuis la 1.8, toujours en
-  // administrateur. Le catalogue officiel se retire aussi — pour le
-  // reinstaller de zero —, mais ne se modifie pas.
-  const installe = x.officielle ? !!etatCatalogue?.installe : true;
-  const gerer = modifiable
-    ? `${x.officielle ? '' : `<button class="btn compact" type="button" data-source-modifier="${id}">${esc(t('cat.modifier'))}</button>`}
-       ${installe ? `<button class="btn compact danger" type="button" data-source-retirer="${id}">${esc(t('cat.retirer'))}</button>` : ''}`
-    : '';
-  return `<div class="setrow source-carte${x.active ? '' : ' inactive'}" data-num="3.1" data-source="${id}">
-    <span class="rg-bouclier"><svg class="ico i20" aria-hidden="true"><use href="#${x.officielle ? 'shield-check' : 'sec-catalogue'}" /></svg></span>
-    <span class="setrow-txt"><span class="num">3.1</span><span class="rg-libelle">
-      <b>${nom} ${badge}</b>
-      <span class="desc mono">github.com/${esc(x.depot)}</span>
-      ${etat}${exclus}${avert}${inactive}
-    </span></span>
-    <button class="switch" type="button" role="switch" data-source-active="${id}" aria-checked="${x.active}"
-      aria-label="${esc(t('cat.activer', { nom: nomSource(x.id) }))}"></button>
-    <div class="source-actions">
-      <button class="btn compact" type="button" data-source-consulter="${id}"${indisponible ? ' disabled' : ''}>${esc(t('cat.consulter'))}</button>
-      ${agir}${gerer}
-    </div>
-  </div>`;
+/** What a row's status says. Nothing installed yet: no status — its action
+ *  list waits to be ticked, and the Actions column already says 0. */
+function catState(x) {
+  if (!x.active) return ['off', t('cat.etat_off')];
+  if (x.probleme) return ['err', t('cat.etat_reinstaller')];
+  if (!x.installe) return ['none', '—'];
+  if (catUpdate(x)) return ['upd', t('cat.etat_maj')];
+  return ['ok', t('cat.etat_ok')];
+}
+
+function catSelected() {
+  return (etatSources?.sources || []).filter((x) => catSelection.has(x.id));
+}
+
+const catCanUpdate = (x) => x.active && x.cle && (catUpdate(x) || !x.installe || x.probleme);
+
+/** What the selection allows. With nothing selected, checking covers all. */
+function catCommands() {
+  const s = catSelected();
+  const admin = !!etatSources?.modifiable;
+  const busy = catalogueInstallation || executionEnCours();
+  return {
+    add: admin && !busy,
+    update: !busy && s.some(catCanUpdate),
+    check: !busy && (s.length ? s.some((x) => x.active && x.cle && x.installe) : true),
+    edit: admin && s.length === 1 && !s[0].officielle,
+    toggle: s.length > 0,
+    remove: admin && !busy && s.length > 0,
+  };
+}
+const CAT_COMMANDS = [
+  ['update', 'cat.cmd_maj', 'download'],
+  ['check', '', 'relancer'],
+  ['edit', 'cat.cmd_modifier', 'pencil'],
+  ['toggle', '', ''],
+  ['remove', 'cat.cmd_retirer', 'trash'],
+];
+/** One command enables or disables, after the selection: « Activer » when all
+ *  of it is disabled, « Désactiver » otherwise — two buttons did not fit. */
+const catEnabling = () => catSelected().length > 0 && catSelected().every((x) => !x.active);
+const catIcon = (n) => `<svg class="ico i14" aria-hidden="true"><use href="#${n}" /></svg>`;
+function catLabel(k, label) {
+  if (k === 'toggle') return t(catEnabling() ? 'cat.cmd_activer' : 'cat.cmd_desactiver');
+  return t(label || (catSelection.size ? 'cat.cmd_chercher' : 'cat.cmd_chercher_tout'));
+}
+const catIconOf = (k, icon) => (k === 'toggle' ? (catEnabling() ? 'power' : 'circle-off') : icon);
+
+function catRow(x) {
+  const [cls, label] = catState(x);
+  const u = catUpdate(x);
+  const sel = catSelection.has(x.id);
+  const version = x.installe ? x.installe.version : u?.version || '—';
+  const sub = x.installe && u ? `<small class="sub upd">→ ${esc(u.version)}</small>`
+    : x.installe ? `<small class="sub">${esc(dateCourte(x.installe.published))}</small>` : '';
+  const n = x.installe?.scripts || 0;
+  const actions = x.installe ? `${n} / ${n + (x.exclus || 0)}` : '0';
+  return `<tr data-cat="${esc(x.id)}" class="${sel ? 'sel' : ''}${x.active ? '' : ' off'}" aria-selected="${sel}">
+    <td class="cat-check"><input type="checkbox" data-cat-tick="${esc(x.id)}"${sel ? ' checked' : ''} aria-label="${esc(t('cat.choisir', { nom: nomSource(x.id) }))}"></td>
+    <td class="cat-name dim"><b>${esc(nomSource(x.id))}</b><small>github.com/${esc(x.depot)}</small></td>
+    <td class="mono dim">${esc(version)}${sub ? `<br>${sub}` : ''}</td>
+    <td class="mono dim">${actions}</td>
+    <td><span class="cat-state ${cls}">${esc(label)}</span></td>
+  </tr>`;
+}
+
+function catDetails() {
+  const s = catSelected();
+  if (!s.length) return `<div class="cat-details"><span class="muted">${esc(t('cat.aucun_choisi'))}</span></div>`;
+  if (s.length > 1) {
+    const inst = s.reduce((a, x) => a + (x.installe?.scripts || 0), 0);
+    return `<div class="cat-details"><h4>${esc(t('cat.n_choisis', { n: s.length }))}</h4><dl>
+      <dt>${esc(t('cat.d_actions'))}</dt><dd class="mono">${inst}</dd><dt>${esc(t('cat.d_majs'))}</dt><dd>${s.filter(catUpdate).length}</dd>
+      <dt>${esc(t('cat.d_desactives'))}</dt><dd>${s.filter((x) => !x.active).length}</dd><dt>${esc(t('cat.d_ajoutes'))}</dt><dd>${s.filter((x) => !x.officielle).length}</dd></dl></div>`;
+  }
+  const x = s[0];
+  const tabs = `<div class="cat-tabs" role="tablist">
+    <button type="button" role="tab" data-cat-tab="detail" aria-selected="${catTab === 'detail'}">${esc(t('cat.onglet_detail'))}</button>
+    <button type="button" role="tab" data-cat-tab="actions" aria-selected="${catTab === 'actions'}">${esc(t('cat.onglet_actions'))}</button></div>`;
+  if (catTab === 'actions') {
+    return `<div class="cat-details"><h4>${esc(nomSource(x.id))}</h4>${tabs}
+      <div class="source-outils">
+        <button class="btn compact" type="button" id="btnSourceTout">${esc(t('cat.tout_cocher'))}</button>
+        <button class="btn compact" type="button" id="btnSourceRien">${esc(t('cat.tout_decocher'))}</button>
+        <span class="muted" id="sourceCompte"></span>
+      </div>
+      <p class="maj-etat" id="sourceEtat" aria-live="polite"></p>
+      <ul class="source-liste" id="sourceListe"></ul>
+      <div class="source-pied"><button class="btn primary" type="button" id="btnSourceAppliquer">${esc(t('cat.appliquer'))}</button></div></div>`;
+  }
+  const u = catUpdate(x);
+  const trust = x.officielle
+    ? `<div class="cat-trust official"><svg class="ico i14" aria-hidden="true"><use href="#shield-check" /></svg><span>${esc(t('cat.confiance_officiel'))}</span></div>`
+    : `<div class="cat-trust third"><svg class="ico i14" aria-hidden="true"><use href="#warn" /></svg><span>${esc(`${t('cat.badge_tierce')}. ${t('cat.tierce_avert')}`)}</span></div>`;
+  const key = !x.cle ? t('cat.sans_cle')
+    : x.officielle ? t('cat.cle_projet')
+      : `${(x.cle_publique || '').slice(0, 14)}…${(x.cle_publique || '').slice(-6)}`;
+  const installed = x.installe ? `${x.installe.version} · ${dateCourte(x.installe.published)}` : '—';
+  const available = u ? `${u.version} — ${resumeBilan(u)}` : t('cat.dispo_aucune');
+  return `<div class="cat-details"><h4>${esc(nomSource(x.id))}</h4>${tabs}<dl>${trust}
+    <dt>${esc(t('cat.d_depot'))}</dt><dd class="mono">github.com/${esc(x.depot)}</dd>
+    <dt>${esc(t('cat.d_etat'))}</dt><dd>${esc(x.probleme ? t('cat.etat_probleme') : x.active ? t('cat.actif_oui') : t('cat.inactive'))}</dd>
+    <dt>${esc(t('cat.d_installee'))}</dt><dd class="mono">${esc(installed)}</dd>
+    <dt>${esc(t('cat.d_dispo'))}</dt><dd>${esc(available)}</dd>
+    <dt>${esc(t('cat.d_cle'))}</dt><dd class="mono">${esc(key)}</dd>
+    <dt>${esc(t('cat.d_actions'))}</dt><dd>${x.installe ? x.installe.scripts : 0}${x.exclus ? ` · ${esc(PLURIEL('cat.exclus', x.exclus))}` : ''}</dd>
+  </dl></div>`;
 }
 
 function rendreSources() {
-  const zone = document.getElementById('sourcesListe');
-  if (!zone || !etatSources) return;
-  zone.innerHTML =
-    etatSources.sources.map((x) => carteSource(x, etatSources.modifiable)).join('') +
-    etatSources.problemes.map((p) => `<p class="ajout-err">${esc(p)}</p>`).join('');
-  rendreReglagesCatalogue();
+  const box = document.getElementById('catBox');
+  if (!box || !etatSources) return;
+  const ids = etatSources.sources.map((x) => x.id);
+  catSelection = new Set([...catSelection].filter((id) => ids.includes(id)));
+  // First visit: the first catalogue, so the pane below is never empty for nothing.
+  if (!catPicked && !catSelection.size && ids.length) catSelection.add(ids[0]);
+  const c = catCommands();
+  const cmd = (k, label, icon, cls = '') => `<button class="cat-cmd${cls}" type="button" data-cat-cmd="${k}"${c[k] ? '' : ' disabled'}>${catIcon(catIconOf(k, icon))}${esc(catLabel(k, label))}</button>`;
+  const all = ids.length > 0 && ids.every((id) => catSelection.has(id));
+  box.innerHTML = `<div class="cat-bar" role="toolbar" aria-label="${esc(t('cat.barre'))}"><span class="num">3.1</span>
+      ${cmd('add', 'cat.ajouter_btn', 'plus', ' strong')}<span class="cat-sep"></span>
+      ${CAT_COMMANDS.map(([k, label, icon]) => cmd(k, label, icon, k === 'remove' ? ' danger' : '')).join('')}</div>
+    <p class="cat-message" id="catMessage" aria-live="polite">${esc(catMessage)}</p>
+    <table class="cat-table" tabindex="0" aria-multiselectable="true"><thead><tr>
+      <th class="cat-check"><input type="checkbox" data-cat-all${all ? ' checked' : ''} aria-label="${esc(t('cat.tout_choisir'))}"></th>
+      <th>${esc(t('cat.col_catalogue'))}</th><th>${esc(t('cat.col_version'))}</th><th>${esc(t('cat.col_actions'))}</th><th>${esc(t('cat.col_etat'))}</th>
+    </tr></thead><tbody>${etatSources.sources.map(catRow).join('')}</tbody></table>
+    ${catDetails()}
+    ${etatSources.problemes.map((p) => `<p class="ajout-err">${esc(p)}</p>`).join('')}`;
+  const tick = box.querySelector('[data-cat-all]');
+  if (tick) tick.indeterminate = !all && catSelection.size > 0;
+  if (catTab === 'actions') rendreContenuSource();
   document.getElementById('sourcesDroits').hidden = etatSources.modifiable;
-  document.getElementById('btnSourceAjouter').disabled = !etatSources.modifiable;
+}
+
+/** After the selection or the tab changed: redraw, and load the action list
+ *  of the one catalogue shown in the Actions tab. */
+function catAfterChange() {
+  rendreSources();
+  const s = catSelected();
+  if (catTab === 'actions' && s.length === 1 && sourceOuverte?.id !== s[0].id) consulterSource(s[0].id);
+}
+
+/** Explorer-like selection: a click picks one row, Ctrl adds, Shift takes the range. */
+function catPickRow(id, ev) {
+  const ids = etatSources.sources.map((x) => x.id);
+  if (ev.shiftKey && catAnchor && ids.includes(catAnchor)) {
+    const [a, b] = [ids.indexOf(catAnchor), ids.indexOf(id)].sort((m, n) => m - n);
+    if (!ev.ctrlKey) catSelection.clear();
+    ids.slice(a, b + 1).forEach((x) => catSelection.add(x));
+  } else if (ev.ctrlKey || ev.metaKey) {
+    if (catSelection.has(id)) catSelection.delete(id);
+    else catSelection.add(id);
+    catAnchor = id;
+  } else {
+    catSelection = new Set([id]);
+    catAnchor = id;
+  }
+  catPicked = true;
+  catAfterChange();
+}
+
+/** The commands, on the selection. */
+async function catRun(command) {
+  const s = catSelected();
+  if (!catCommands()[command]) return;
+  if (command === 'add') return ouvrirFormulaireSource(null);
+  if (command === 'edit') return ouvrirFormulaireSource(s[0].id);
+  if (command === 'check') {
+    for (const x of (s.length ? s : etatSources.sources).filter((y) => y.active && y.cle && y.installe)) {
+      if (x.officielle) await verifierCatalogue();
+      else await verifierSource(x.id);
+    }
+    return;
+  }
+  if (command === 'update') {
+    for (const x of s.filter(catCanUpdate)) await installerSource(x.id);
+    return;
+  }
+  if (command === 'toggle') {
+    const enabling = catEnabling();
+    for (const x of s.filter((y) => y.active !== enabling)) await basculerSource(x.id);
+    return;
+  }
+  if (command === 'remove') await retirerSources(s.map((x) => x.id));
+}
+
+const catMenu = () => document.getElementById('catMenu');
+function catOpenMenu(x, y) {
+  const c = catCommands();
+  const menu = catMenu();
+  menu.innerHTML = CAT_COMMANDS.map(([k, label, icon], i) => `${i === 3 ? '<hr>' : ''}<button type="button" role="menuitem" data-cat-cmd="${k}"${k === 'remove' ? ' class="danger"' : ''}${c[k] ? '' : ' disabled'}>${catIcon(catIconOf(k, icon))}<span>${esc(catLabel(k, label))}</span>${k === 'remove' ? '<kbd>Suppr</kbd>' : ''}</button>`).join('');
+  menu.hidden = false;
+  const r = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(x, innerWidth - r.width - 8))}px`;
+  menu.style.top = `${Math.max(8, y + r.height > innerHeight - 8 ? y - r.height : y)}px`;
+  menu.querySelector('button:not(:disabled)')?.focus();
+}
+function catCloseMenu() {
+  const menu = catMenu();
+  if (menu) menu.hidden = true;
 }
 
 /** Ne telecharge que l'index signe d'un catalogue ajoute. */
 async function verifierSource(id, { silencieux = false } = {}) {
-  const ligne = () => document.querySelector(`[data-source-etat="${CSS.escape(id)}"]`);
-  if (!silencieux && ligne()) ligne().textContent = t('cat.verification');
+  const nom = nomSource(id);
+  if (!silencieux) catSay(`${nom} : ${t('cat.verification')}`);
   try {
     const b = await invoke('check_source', { id });
     if (b.a_jour) bilansSources.delete(id);
     else bilansSources.set(id, b);
     if (!b.a_jour) catalogueRepousse = false;
     rendreSources();
-    if (!silencieux && b.a_jour && ligne()) ligne().textContent = t('cat.a_jour', { v: b.version });
+    if (!silencieux) catSay(`${nom} : ${b.a_jour ? t('cat.a_jour', { v: b.version }) : t('cat.disponible', { v: b.version, detail: resumeBilan(b) })}`);
   } catch (e) {
     console.error('Verification du catalogue :', e);
-    if (!silencieux && ligne()) ligne().textContent = messageErreurCatalogue(e);
+    if (!silencieux) catSay(`${nom} : ${messageErreurCatalogue(e)}`);
   }
   rendreBandeauCatalogue();
 }
@@ -2041,10 +2169,13 @@ async function installerSource(id) {
   if (catalogueInstallation || executionEnCours()) return false;
   catalogueInstallation = true;
   rendreSources();
+  const nom = nomSource(id);
   const ecrire = (texte) => {
-    const ligne = document.querySelector(`[data-source-etat="${CSS.escape(id)}"]`);
-    if (ligne) ligne.textContent = texte;
-    if (sourceOuverte?.id === id) document.getElementById('sourceEtat').textContent = texte;
+    catSay(`${nom} : ${texte}`);
+    if (sourceOuverte?.id === id) {
+      sourceOuverte.message = texte;
+      rendreContenuSource();
+    }
   };
   ecrire(t('cat.telechargement_debut'));
   const arreterEcoute = await ecouter('catalogue:progress', (ev) => {
@@ -2075,33 +2206,29 @@ async function installerSource(id) {
   return ok;
 }
 
-/** La page « Consulter et choisir » d'un catalogue. */
+/** Loads a catalogue's action list into the pane's Actions tab — from its
+ *  signed index, before it is even installed. */
 async function consulterSource(id, { message = '' } = {}) {
   const x = sourceParId(id);
   if (!x || catalogueInstallation) return;
-  sourceOuverte = { id, contenu: null, exclus: new Set() };
-  document.getElementById('sourceFilNom').textContent = nomSource(id);
-  document.getElementById('sourceTitre').textContent = nomSource(id);
-  document.getElementById('sourceSous').textContent = x.officielle
-    ? t('offre.officiel_desc')
-    : `github.com/${x.depot} — ${t('cat.tierce_avert')}`;
+  sourceOuverte = { id, contenu: null, exclus: new Set(), message: t('cat.consultation_debut') };
   rendreContenuSource();
-  afficherSectionReglages('source');
-  const etat = document.getElementById('sourceEtat');
-  etat.textContent = t('cat.consultation_debut');
   const arreterEcoute = await ecouter('catalogue:progress', (ev) => {
     const { fait, total } = ev.payload;
-    if (sourceOuverte?.id === id && total) etat.textContent = t('cat.consultation', { f: fait, n: total });
+    if (sourceOuverte?.id === id && total) {
+      sourceOuverte.message = t('cat.consultation', { f: fait, n: total });
+      rendreContenuSource();
+    }
   });
   try {
     const contenu = await invoke('source_contents', { id });
     if (sourceOuverte?.id !== id) return;
     sourceOuverte.contenu = contenu;
     sourceOuverte.exclus = new Set(contenu.filter((c) => c.exclu).map((c) => c.id));
-    etat.textContent = message;
+    sourceOuverte.message = message;
   } catch (e) {
     console.error('Consultation du catalogue :', e);
-    if (sourceOuverte?.id === id) etat.textContent = messageErreurCatalogue(e);
+    if (sourceOuverte?.id === id) sourceOuverte.message = messageErreurCatalogue(e);
   } finally {
     arreterEcoute();
   }
@@ -2116,9 +2243,10 @@ const ETATS_ACTION = {
 };
 
 function rendreContenuSource() {
-  const o = sourceOuverte;
-  const contenu = o?.contenu || [];
   const liste = document.getElementById('sourceListe');
+  if (!liste) return;
+  const o = sourceOuverte?.id === catSelected()[0]?.id ? sourceOuverte : null;
+  const contenu = o?.contenu || [];
   liste.innerHTML = contenu
     .map((c) => {
       const coche = !o.exclus.has(c.id);
@@ -2144,6 +2272,7 @@ function rendreContenuSource() {
   if (o?.contenu && !contenu.length) liste.innerHTML = `<li class="rg-vide">${esc(t('cat.vide'))}</li>`;
   const coches = contenu.filter((c) => !o.exclus.has(c.id)).length;
   document.getElementById('sourceCompte').textContent = contenu.length ? t('cat.compte', { c: coches, n: contenu.length }) : '';
+  document.getElementById('sourceEtat').textContent = o?.message || '';
   const pret = !!o?.contenu && !catalogueInstallation;
   for (const b of ['btnSourceTout', 'btnSourceRien', 'btnSourceAppliquer']) document.getElementById(b).disabled = !pret;
 }
@@ -2156,7 +2285,8 @@ async function appliquerSelectionSource() {
   try {
     reglagesActuels = await invoke('set_source_selection', { id: o.id, exclus: [...o.exclus] });
   } catch (e) {
-    document.getElementById('sourceEtat').textContent = messageErreurCatalogue(e);
+    o.message = messageErreurCatalogue(e);
+    rendreContenuSource();
     return;
   }
   document.getElementById('btnSourceAppliquer').disabled = true;
@@ -2178,14 +2308,14 @@ function ouvrirFormulaireSource(id = null) {
   document.getElementById('sourceNom').value = x?.nom || '';
   document.getElementById('btnSourceValider').textContent = t(x ? 'cat.form_enregistrer' : 'cat.form_ajouter');
   document.getElementById('sourceErreur').hidden = true;
-  const form = document.getElementById('sourceForm');
-  form.hidden = false;
-  form.scrollIntoView({ block: 'nearest' });
+  document.getElementById('sourceDrawer').hidden = false;
+  document.getElementById('sourceDrawerBg').hidden = false;
   document.getElementById('sourceDepot').focus();
 }
 
 function fermerFormulaireSource() {
-  document.getElementById('sourceForm').hidden = true;
+  document.getElementById('sourceDrawer').hidden = true;
+  document.getElementById('sourceDrawerBg').hidden = true;
   sourceModifiee = null;
 }
 
@@ -2219,29 +2349,43 @@ async function validerFormulaireSource(ev) {
   const ajout = !sourceModifiee;
   valider.disabled = false;
   fermerFormulaireSource();
+  // After adding, the pane opens on its action list: choosing comes right away.
+  if (ajout) {
+    catSelection = new Set([id]);
+    catAnchor = id;
+    catPicked = true;
+    catTab = 'actions';
+  }
   await chargerSources();
   await chargerLots();
-  const ligne = document.querySelector(`[data-source-etat="${CSS.escape(id)}"]`);
-  if (ligne && ajout) ligne.textContent = t('cat.ajoute', { nom: nomSource(id) });
+  if (ajout) await consulterSource(id, { message: t('cat.ajoute', { nom: nomSource(id) }) });
 }
 
-async function retirerSource(id) {
-  const officielle = etatSources?.sources.find((s) => s.id === id)?.officielle;
-  if (!confirm(t(officielle ? 'cat.confirmer_retrait_officiel' : 'cat.confirmer_retrait', { nom: nomSource(id) }))) return;
+async function retirerSource(id, { confirme = false } = {}) {
+  const officielle = etatSources?.sources.find((x) => x.id === id)?.officielle;
+  if (!confirme && !confirm(t(officielle ? 'cat.confirmer_retrait_officiel' : 'cat.confirmer_retrait', { nom: nomSource(id) }))) return;
   try {
     await invoke('remove_source', { id });
     bilansSources.delete(id);
   } catch (e) {
     console.error('Retrait du catalogue :', e);
-    const ligne = document.querySelector(`[data-source-etat="${CSS.escape(id)}"]`);
-    if (ligne) ligne.textContent = messageErreurCatalogue(e);
+    catSay(`${nomSource(id)} : ${messageErreurCatalogue(e)}`);
     return;
   }
+  if (sourceOuverte?.id === id) sourceOuverte = null;
   reglagesActuels = await invoke('get_settings');
   etatCatalogue = await invoke('catalogue_state').catch(() => etatCatalogue);
   await chargerSources();
   await chargerLots();
   rendreBandeauCatalogue();
+}
+
+/** Several at once: one confirmation, naming them all. */
+async function retirerSources(ids) {
+  if (ids.length === 1) return retirerSource(ids[0]);
+  const noms = ids.map((id) => `« ${nomSource(id)} »`).join(', ');
+  if (!confirm(t('cat.confirmer_retrait_n', { n: ids.length, noms }))) return;
+  for (const id of ids) await retirerSource(id, { confirme: true });
 }
 
 /** Desactiver : la source n'est plus interrogee, ses actions n'apparaissent
@@ -2264,50 +2408,99 @@ async function basculerSource(id) {
 }
 
 function cablerSources() {
-  document.getElementById('sourcesListe').addEventListener('click', (ev) => {
-    const b = ev.target.closest('button');
-    if (!b || b.disabled) return;
-    if (b.id === 'btnCatalogue') {
-      if (!etatCatalogue?.installe || bilanCatalogue) installerCatalogue();
-      else verifierCatalogue();
-      return;
+  const box = document.getElementById('catBox');
+  box.addEventListener('click', (ev) => {
+    const tgt = ev.target;
+    const command = tgt.closest('[data-cat-cmd]');
+    if (command) return void catRun(command.dataset.catCmd);
+    const tab = tgt.closest('[data-cat-tab]');
+    if (tab) {
+      catTab = tab.dataset.catTab;
+      return void catAfterChange();
     }
-    const d = b.dataset;
-    if (d.sourceConsulter) return void consulterSource(d.sourceConsulter);
-    if (d.sourceActive) return void basculerSource(d.sourceActive);
-    if (d.sourceModifier) return void ouvrirFormulaireSource(d.sourceModifier);
-    if (d.sourceRetirer) return void retirerSource(d.sourceRetirer);
-    if (d.sourceAgir) {
-      const x = sourceParId(d.sourceAgir);
-      if (!x?.installe || bilansSources.has(x.id)) installerSource(x.id);
-      else verifierSource(x.id);
+    if (tgt.matches('[data-cat-all]')) {
+      const ids = etatSources.sources.map((x) => x.id);
+      const all = ids.every((id) => catSelection.has(id));
+      catSelection = all ? new Set() : new Set(ids);
+      catPicked = true;
+      return void catAfterChange();
     }
+    if (tgt.matches('[data-cat-tick]')) {
+      const id = tgt.dataset.catTick;
+      if (catSelection.has(id)) catSelection.delete(id);
+      else catSelection.add(id);
+      catAnchor = id;
+      catPicked = true;
+      return void catAfterChange();
+    }
+    if (tgt.closest('#btnSourceTout')) {
+      if (sourceOuverte) sourceOuverte.exclus.clear();
+      return void rendreContenuSource();
+    }
+    if (tgt.closest('#btnSourceRien')) {
+      if (sourceOuverte?.contenu) sourceOuverte.exclus = new Set(sourceOuverte.contenu.map((c) => c.id));
+      return void rendreContenuSource();
+    }
+    if (tgt.closest('#btnSourceAppliquer')) return void appliquerSelectionSource();
+    const row = tgt.closest('tbody tr[data-cat]');
+    if (row && !tgt.closest('input, button')) catPickRow(row.dataset.cat, ev);
   });
-  document.getElementById('btnSourceAjouter').onclick = () => ouvrirFormulaireSource(null);
-  document.getElementById('btnSourceAnnuler').onclick = fermerFormulaireSource;
-  document.getElementById('sourceForm').addEventListener('submit', validerFormulaireSource);
-  document.getElementById('btnSourcesDroits').onclick = () => {
-    fermerReglages();
-    ouvrirFenetreDroits();
-  };
-  document.getElementById('sourceListe').addEventListener('change', (ev) => {
+  box.addEventListener('change', (ev) => {
     const c = ev.target.closest('[data-action-id]');
     if (!c || !sourceOuverte) return;
     if (c.checked) sourceOuverte.exclus.delete(c.dataset.actionId);
     else sourceOuverte.exclus.add(c.dataset.actionId);
     rendreContenuSource();
   });
-  document.getElementById('btnSourceTout').onclick = () => {
-    if (!sourceOuverte) return;
-    sourceOuverte.exclus.clear();
-    rendreContenuSource();
+  box.addEventListener('contextmenu', (ev) => {
+    const row = ev.target.closest('tbody tr[data-cat]');
+    if (!row) return;
+    ev.preventDefault();
+    if (!catSelection.has(row.dataset.cat)) {
+      catSelection = new Set([row.dataset.cat]);
+      catAnchor = row.dataset.cat;
+      catPicked = true;
+      catAfterChange();
+    }
+    catOpenMenu(ev.clientX, ev.clientY);
+  });
+  box.addEventListener('keydown', (ev) => {
+    if (ev.target.matches('input, textarea, select')) return;
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a') {
+      ev.preventDefault();
+      catSelection = new Set(etatSources.sources.map((x) => x.id));
+      catPicked = true;
+      catAfterChange();
+    }
+    if (ev.key === 'Delete' && catSelection.size) void catRun('remove');
+  });
+  catMenu().addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-cat-cmd]');
+    if (!b || b.disabled) return;
+    catCloseMenu();
+    void catRun(b.dataset.catCmd);
+  });
+  document.addEventListener('click', (ev) => { if (!ev.target.closest('#catMenu')) catCloseMenu(); });
+  // Escape closes the menu or the pane first — not the whole settings page,
+  // whose own handler would otherwise get it too (capture phase, stopped here).
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const menuOpen = !catMenu().hidden;
+    const drawerOpen = !document.getElementById('sourceDrawer').hidden;
+    if (!menuOpen && !drawerOpen) return;
+    ev.stopImmediatePropagation();
+    ev.preventDefault();
+    if (menuOpen) catCloseMenu();
+    else fermerFormulaireSource();
+  }, true);
+  document.getElementById('btnSourceAnnuler').onclick = fermerFormulaireSource;
+  document.getElementById('btnSourceFermer').onclick = fermerFormulaireSource;
+  document.getElementById('sourceDrawerBg').onclick = fermerFormulaireSource;
+  document.getElementById('sourceForm').addEventListener('submit', validerFormulaireSource);
+  document.getElementById('btnSourcesDroits').onclick = () => {
+    fermerReglages();
+    ouvrirFenetreDroits();
   };
-  document.getElementById('btnSourceRien').onclick = () => {
-    if (!sourceOuverte?.contenu) return;
-    sourceOuverte.exclus = new Set(sourceOuverte.contenu.map((c) => c.id));
-    rendreContenuSource();
-  };
-  document.getElementById('btnSourceAppliquer').onclick = appliquerSelectionSource;
 }
 
 /** Accueil sans aucun script (§16.6) : la liste des catalogues proposes, la
@@ -2378,6 +2571,9 @@ async function fermerRappelCatalogue() {
 function cablerCatalogue() {
   document.getElementById('catInstaller').addEventListener('click', (ev) => {
     if (ev.currentTarget.dataset.action === 'voir') {
+      catSelection = new Set([ev.currentTarget.dataset.source]);
+      catPicked = true;
+      catTab = 'detail';
       sectionReglages = 'catalogue';
       if (!reglagesOuverts()) ouvrirReglages();
       else afficherSectionReglages('catalogue');
@@ -5228,15 +5424,10 @@ function appliquerTraductionsReglages() {
 
   document.getElementById('navCatalogue').textContent = t('reglages.nav_catalogue');
   document.getElementById('secCatalogueTitre').textContent = t('reglages.nav_catalogue');
-  document.getElementById('filCatalogue').textContent = t('reglages.nav_catalogue');
   document.getElementById('sourceDepot').placeholder = t('cat.form_depot_ph');
   document.getElementById('sourceCle').placeholder = t('cat.form_cle_ph');
+  document.getElementById('btnSourceFermer').setAttribute('aria-label', t('cat.form_annuler'));
   rendreSources();
-  if (sourceOuverte) {
-    document.getElementById('sourceFilNom').textContent = nomSource(sourceOuverte.id);
-    document.getElementById('sourceTitre').textContent = nomSource(sourceOuverte.id);
-    rendreContenuSource();
-  }
   document.getElementById('setCatalogueVerifLabel').textContent = t('cat.verif_label');
   document.querySelector('#setCatalogueSelect [value="startup"]').textContent = t('cat.verif_startup');
   document.querySelector('#setCatalogueSelect [value="manual"]').textContent = t('cat.verif_manual');
@@ -5538,7 +5729,7 @@ async function afficherSectionReglages(id, { ligne } = {}) {
   document.getElementById('rgResultats').hidden = true;
   // La page du plan du disque appartient a la section 5 (Avance), celle d'un
   // catalogue a la section 3.
-  const menu = { proteges: 'avance', source: 'catalogue' }[id] || id;
+  const menu = { proteges: 'avance' }[id] || id;
   document.querySelectorAll('#setNav [data-rg-section]').forEach((b) => {
     b.setAttribute('aria-current', b.dataset.rgSection === menu ? 'page' : 'false');
   });

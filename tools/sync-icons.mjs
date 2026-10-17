@@ -51,6 +51,8 @@ const SPRITE = {
   pencil: 'pencil',
   pin: 'pin',
   trash: 'trash-2',
+  // Catalogues (M29): disable.
+  'circle-off': 'circle-off',
   folder: 'folder',
   x: 'x',
   // Bulle d'aide : sert partout ou un reglage a besoin d'etre explique sans

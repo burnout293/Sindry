@@ -648,7 +648,7 @@ Avancé, seul l'historique s'y montre.
 |---|---|---|
 | **1 Général** | 1.1 Langue · 1.2 Mises à jour : versions stables, bêta aussi (la release publiée la plus récente, pré-version comprise), jamais · 1.3 Rechercher une mise à jour · 1.4 Présentation de Sindry (revoir la bienvenue) · 1.5 Numéros des réglages | partout |
 | **2 Apparence** | 2.1 Thème : clair, sombre, Windows (aussi l'icône soleil / lune) · 2.2 Taille de l'interface · 2.3 Ambiance (§15.4, §15.7) · 2.4 Partager une ambiance : importer, exporter, retirer, ouvrir le dossier, guide du format | partout |
-| **3 Catalogues** | 3.1 Une ligne par catalogue : consulter et choisir les actions, installer, vérifier, activer, modifier, retirer — ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des nouveautés (au démarrage, ou sur demande) · 3.3 Ajouter un catalogue | partout |
+| **3 Catalogues** | 3.1 Les catalogues en tableau (2.0.2, maquette M29) : les commandes dans une barre — ajouter, mettre à jour, rechercher des mises à jour, modifier, activer ou désactiver, retirer —, reprises au clic droit ; le détail et la liste des actions à cocher sous le tableau ; ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des mises à jour (au démarrage, ou sur demande) | partout |
 | **4 Actions** | 4.1 En cas d'échec : continuer ou arrêter la série · 4.2 Politique d'exécution : Bypass, RemoteSigned, Unrestricted (§6.7) · 4.3 Dossier des scripts · 4.4 Ré-analyser tous les scripts (§5.5) | Expert |
 | **5 Avancé** | 5.1 Taille maximale des journaux · 5.2 Emplacements protégés, en administrateur (§12.4) · 5.3 Rapport de conformité · 5.4 Exporter la configuration · 5.5 Importer une configuration · 5.6 Réinitialiser aux réglages d'usine | Expert |
 | | 5.7 Historique | partout |
@@ -1551,12 +1551,28 @@ respectée définitivement.
 officielle, nom de la source tierce, ou script local. Un script de source tierce porte la
 mention qu'il **n'est ni contrôlé ni approuvé par le projet Sindry**.
 
-**Dans les réglages**, une section Catalogues, visible dans les deux modes : une carte par
-catalogue — l'officiel en tête —, avec l'état de la version installée, « Consulter et
-choisir », installer ou vérifier, et un interrupteur pour l'activer ; puis le moment de la
-vérification. Ajouter, modifier ou retirer un catalogue reste au mode Expert, en
-administrateur. Les nouveautés d'un catalogue ajouté s'annoncent dans le même bandeau que
-celles de l'officiel, qui mène à sa carte plutôt que d'installer d'emblée.
+**Dans les réglages**, une section Catalogues, visible dans les deux modes (2.0.2, maquette
+M29), où rien n'apparaît deux fois :
+
+- **une barre de commandes** — Ajouter…, Mettre à jour, Rechercher des mises à jour
+  (« Tout rechercher » sans rien de choisi), Modifier…, Activer ou Désactiver (selon la
+  sélection), Retirer… — qui agit sur les lignes choisies ; le clic droit sur une ligne
+  ouvre les mêmes commandes ;
+- **un tableau** de données seules, l'officiel en tête : catalogue et dépôt, version
+  (et la nouvelle, s'il y en a une), actions installées, état (À jour, Mise à jour,
+  Désactivé, À réinstaller ; rien tant qu'aucune action n'est installée). On choisit comme
+  dans l'Explorateur : clic, Ctrl, Maj, Ctrl + A, Suppr ;
+- **un volet de détail** sous le tableau : la provenance (« Publié par le projet Sindry,
+  signé par sa clé » ou « Ajouté par vous — ni contrôlé ni approuvé par le projet
+  Sindry »), le dépôt, les versions, la clé de l'éditeur ; et l'onglet **Actions**, la
+  liste des actions du catalogue à cocher, lue dans son index signé avant même
+  l'installation. Plusieurs lignes choisies : leur résumé.
+
+Ajouter et Modifier ouvrent un volet sur la droite : le dépôt GitHub et la clé publique
+de l'éditeur. Un catalogue ajouté s'ouvre aussitôt sur son onglet Actions. Ajouter,
+modifier ou retirer demandent les droits administrateur. Les nouveautés d'un catalogue
+ajouté s'annoncent dans le même bandeau que celles de l'officiel, qui mène à son détail
+plutôt que d'installer d'emblée.
 
 La formulation n'atteste que la **provenance** : « publiés et signés par le projet
 Sindry », jamais « vérifiés ». La licence (conditions additionnelles, §5) précise que le
@@ -1565,7 +1581,7 @@ l'interface ne doit pas promettre davantage.
 
 Le mode Simple suit les règles de langage du §3. « Source » n'y apparaît pas : on y parle
 de **catalogues** et d'**actions**, et une source tierce devient **« Ajouté par vous — ni
-contrôlé ni approuvé par le projet Sindry »**, sur sa carte comme dans l'écran
+contrôlé ni approuvé par le projet Sindry »**, dans son détail comme dans l'écran
 d'approbation de chacune de ses actions.
 
 ### 16.7 Vie privée

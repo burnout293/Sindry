@@ -63,7 +63,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — les ambiances livrées et restées intactes suivent la version de Sindry ; Plan 1.1, plus discrète (M25) | Fait |
 | | — « Entretien complet » suit l'ordre des lots, puis celui de chaque lot (il suivait l'ordre des identifiants) | Fait |
 | | — migration depuis WinTool : les sous-dossiers se fusionnent, la clé de l'ancien installeur s'efface | Fait |
-| | — Catalogues : barre de commandes, tableau, détail et liste des actions en bas, clic droit (M29) | En cours |
+| | — Catalogues : barre de commandes, tableau, détail et liste des actions en bas, clic droit ; Activer et Désactiver en une commande, faute de place (M29) | Fait |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 
