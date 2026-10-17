@@ -292,6 +292,9 @@ Détail au §6.7.
 ## icon          : moon
 ## tags          : veille, hibernation, énergie
 ## version       : 2.0
+## author        : Buly       # facultatifs (2.0.3) : qui, créé le, modifié le
+## created       : 2026-10-01
+## updated       : 2026-10-17
 ## admin         : true
 ## risk          : low        # low | medium | high
 ## duration      : fast       # fast | medium | slow
@@ -307,6 +310,11 @@ Détail au §6.7.
 ## VeilleBranche_Min : Sleep on AC power — 0 = never
 ## SINDRY:END
 ```
+
+**L'auteur et les dates (2.0.3).** `author`, `created` et `updated` (`AAAA-MM-JJ`) sont
+facultatifs pour Sindry, qui les montre dans la fiche de l'Expert ; le validateur les exige
+en `-Strict`, donc au catalogue officiel. `updated` ne précède jamais `created`, et aucune
+des deux n'est dans le futur.
 
 **`id` s'obtient avec `New-Guid`** (natif PowerShell, aucune dépendance) : lancer la
 commande dans un terminal et coller le résultat dans l'entête à la création du script.
@@ -416,6 +424,16 @@ configuration tronquée.
 **Le verdict de réussite vient du code de sortie du processus** (`0` = succès), jamais du
 simple fait que le script ait démarré. C'était l'un des défauts majeurs de la v0.3, dont
 l'historique enregistrait des succès fictifs.
+
+**Les codes d'erreur (2.0.3).** La sortie reste en anglais, mais une erreur peut s'expliquer
+dans la langue de l'utilisateur. Le script déclare ses codes dans le bloc `REPORT`
+(`## E104 : [error] Description — solution`), les traduit dans `LANG`, et les écrit en
+premier mot d'une ligne : `[ERR] E104 HKLM\SOFTWARE\WRData (0x80070005)`. Le journal montre
+alors le code, la description traduite et le détail technique, la solution en dessous ; le
+dernier `[ERR]` codé d'une action qui échoue devient la raison de l'échec, dans la liste
+des tâches et dans le verdict. Un code n'échoue rien : le verdict reste le code de sortie.
+Un premier mot qui n'est pas un code déclaré laisse la ligne telle quelle. Détail :
+`docs/FORMAT_SCRIPT.md`, « Les codes d'erreur ».
 
 ### 5.4 Conformité : constater, jamais bloquer
 
@@ -952,12 +970,21 @@ n'est autorisé que pour elle, la liste commune ne change pas. Mêmes règles : 
 en administrateur seulement, et un emplacement très sensible se confirme. L'`id` est
 vérifié avant d'être écrit (lettres, chiffres, `-`, `_`, `.` ; 80 caractères au plus).
 
+**Une clé pour les scripts (2.0.3).** `HKLM\SOFTWARE\Sindry\Scripts\<id>` est réservée
+aux actions : ce qu'elles gardent pour défaire ce qu'elles ont fait (un journal de
+restauration, l'export des clés qu'elles suppriment). Sindry n'y lit ni n'y écrit jamais.
+Rangée sous `HKLM` pour la même raison que la garde : ce qu'une action élevée réimportera
+ne doit pas pouvoir être écrit par un programme sans droits. Un dossier sous `%ProgramData%`
+ne convient pas : un compte standard peut y créer des sous-dossiers, et y poser à l'avance
+le fichier qu'une action importerait en administrateur.
+
 **Désinstallation.** La page de désinstallation de Sindry remplace celle de Tauri :
 
 - **Garder mes données** (par défaut) — rien n'est effacé ;
 - **Tout effacer, sauf mes scripts personnels** ;
 - **Choisir** — réglages, historique, journaux, catalogue installé, scripts approuvés,
-  emplacements protégés, données de l'interface, scripts personnels. Effacer ses scripts
+  emplacements protégés, données de l'interface, scripts personnels, données de
+  restauration des actions (2.0.3). Effacer ses scripts
   personnels se confirme : ce sont ses créations.
 
 Une mise à jour, une désinstallation silencieuse ou passive n'efface rien. Seul le profil du

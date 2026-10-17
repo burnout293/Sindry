@@ -92,13 +92,27 @@ pub struct Choice {
 /// Une entree du bloc `REPORT` : ce que l'analyse nomme par un jeton.
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct ReportEntry {
-    /// `label` (un nom : `label=`, `[METRIC]`), `note` ou `group`.
+    /// `label` (un nom : `label=`, `[METRIC]`), `note`, `group` or `error`.
     pub kind: String,
     /// Pour une note : `info` ou `warn`.
     pub level: String,
+    /// For an error code: what went wrong.
     pub label: String,
-    /// Pour un groupe : son sous-titre.
+    /// Pour un groupe : son sous-titre. For an error code: the way out, if any.
     pub desc: String,
+}
+
+/// An error code declared with `[error]` in REPORT (2.0.3): one to three
+/// capital letters, then two to four digits — `E104`, `SVC12`. A script
+/// writes `[ERR] E104 <technical detail>`; Sindry shows the translated
+/// description and solution instead of the bare code. Must match
+/// `Test-CodeErreur` in `tools/lint-scripts.ps1`.
+pub fn is_error_code(word: &str) -> bool {
+    let letters = word.chars().take_while(|c| c.is_ascii_uppercase()).count();
+    let digits = &word[letters..];
+    (1..=3).contains(&letters)
+        && (2..=4).contains(&digits.len())
+        && digits.chars().all(|c| c.is_ascii_digit())
 }
 
 /// Valeur par defaut telle que declaree dans `$CONFIG`.
@@ -157,6 +171,11 @@ pub struct Script {
     pub icon: String,
     pub tags: Vec<String>,
     pub version: String,
+    /// `author`, `created`, `updated` (2.0.3): who wrote the script and when,
+    /// dates as `YYYY-MM-DD`. Optional; shown in the Expert sheet.
+    pub author: String,
+    pub created: String,
+    pub updated: String,
     pub admin: bool,
     pub risk: String,
     pub duration: String,
@@ -300,6 +319,51 @@ fn lire_etiquettes(texte: &str) -> (Vec<(String, String)>, String) {
     (etiquettes, reste.to_string())
 }
 
+/// `created` and `updated` (2.0.3): `YYYY-MM-DD`, updated not before created,
+/// neither in the future. One day of slack for the future: an author ahead
+/// of UTC writes a date the CI runner has not reached yet. Same rules as
+/// `Test-Dates` in `tools/lint-scripts.ps1`; only the validator asks for the
+/// fields themselves (in `-Strict`).
+fn check_dates(
+    head: &BTreeMap<String, String>,
+    today: chrono::NaiveDate,
+    findings: &mut Vec<Finding>,
+) {
+    let mut dates = BTreeMap::new();
+    for key in ["created", "updated"] {
+        let Some(value) = head.get(key) else { continue };
+        match chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d") {
+            Ok(d) if value.len() == 10 => {
+                if d > today + chrono::Duration::days(1) {
+                    findings.push(constat(
+                        1,
+                        false,
+                        "DATE_FUTURE",
+                        format!("'{key}' vaut {value}, une date a venir."),
+                    ));
+                }
+                dates.insert(key, d);
+            }
+            _ => findings.push(constat(
+                1,
+                true,
+                "DATE_INVALIDE",
+                format!("'{key}' vaut '{value}' ; forme attendue : AAAA-MM-JJ (2026-10-17)."),
+            )),
+        }
+    }
+    if let (Some(c), Some(u)) = (dates.get("created"), dates.get("updated")) {
+        if u < c {
+            findings.push(constat(
+                1,
+                true,
+                "DATES_INVERSEES",
+                format!("'updated' ({u}) precede 'created' ({c})."),
+            ));
+        }
+    }
+}
+
 fn constat(ligne: usize, grave: bool, code: &str, message: String) -> Finding {
     Finding {
         line: ligne,
@@ -410,6 +474,7 @@ pub fn parse(source: &str) -> Script {
             });
         }
     }
+    check_dates(&head, chrono::Local::now().date_naive(), &mut findings);
 
     // --- Options ----------------------------------------------------------
     let mut options: Vec<Opt> = Vec::new();
@@ -547,6 +612,20 @@ pub fn parse(source: &str) -> Script {
             let texte = if let Some(r) = reste.strip_prefix("[group]") {
                 entree.kind = "group".into();
                 r.trim().to_string()
+            } else if let Some(r) = reste.strip_prefix("[error]") {
+                entree.kind = "error".into();
+                if !is_error_code(&nom) {
+                    findings.push(constat(
+                        no_ligne,
+                        true,
+                        "CODE_ERREUR_FORME",
+                        format!(
+                            "'{nom}' : un code d'erreur s'ecrit d'une a trois majuscules, \
+                             puis deux a quatre chiffres (E104, SVC12)."
+                        ),
+                    ));
+                }
+                r.trim().to_string()
             } else if let Some(r) = reste.strip_prefix("[note:") {
                 entree.kind = "note".into();
                 let (niveau, suite) = r.split_once(']').unwrap_or((r, ""));
@@ -563,7 +642,7 @@ pub fn parse(source: &str) -> Script {
             } else {
                 reste
             };
-            if entree.kind == "group" {
+            if entree.kind == "group" || entree.kind == "error" {
                 let (l, d) = split_label(&texte);
                 entree.label = l;
                 entree.desc = d;
@@ -641,8 +720,9 @@ pub fn parse(source: &str) -> Script {
                 "desc" => tr.desc = reste,
                 _ if report.contains_key(&nom) => {
                     // Un texte du bloc REPORT : seul un groupe porte un
-                    // sous-titre ; une note ou un libelle se lit en entier.
-                    let (lab, de) = if report[&nom].kind == "group" {
+                    // sous-titre (an error code, its solution) ; une note ou
+                    // un libelle se lit en entier.
+                    let (lab, de) = if matches!(report[&nom].kind.as_str(), "group" | "error") {
                         split_label(&reste)
                     } else {
                         (reste, String::new())
@@ -818,6 +898,9 @@ pub fn parse(source: &str) -> Script {
             .filter(|s| !s.is_empty())
             .collect(),
         version: get("version"),
+        author: get("author"),
+        created: get("created"),
+        updated: get("updated"),
         admin: as_bool(&get("admin")),
         risk: get("risk"),
         duration: get("duration"),
@@ -1209,5 +1292,93 @@ if ($env:SINDRY_CONFIG) { }
         assert!(s.findings.iter().any(|f| f.code == "OPTION_NON_DECLAREE"));
         // Le script reste lisible malgre l'anomalie.
         assert_eq!(s.title, "Set fast DNS");
+    }
+
+    #[test]
+    fn error_codes_carry_a_translated_description_and_solution() {
+        let source = EXEMPLE
+            .replace(
+                "## SINDRY:LANG fr\n",
+                "## SINDRY:REPORT\n\
+                 ## E104 : [error] Access denied on a protected key — Restart the PC, then run the action again\n\
+                 ## SVC12 : [error] The service did not stop\n\
+                 ## e5 : [error] Badly named\n\
+                 ## SINDRY:END\n\n\
+                 ## SINDRY:LANG fr\n\
+                 ## E104 : Accès refusé sur une clé protégée — Redémarrez le PC, puis relancez l'action\n",
+            );
+        let s = parse(&source);
+        let e = &s.report["E104"];
+        assert_eq!(e.kind, "error");
+        assert_eq!(e.label, "Access denied on a protected key");
+        assert_eq!(e.desc, "Restart the PC, then run the action again");
+        assert_eq!(s.report["SVC12"].desc, "", "the solution is optional");
+        assert_eq!(
+            s.translations["fr"].report["E104"],
+            (
+                "Accès refusé sur une clé protégée".to_string(),
+                "Redémarrez le PC, puis relancez l'action".to_string()
+            )
+        );
+        let bad: Vec<_> = s
+            .findings
+            .iter()
+            .filter(|f| f.code == "CODE_ERREUR_FORME")
+            .collect();
+        assert_eq!(bad.len(), 1, "{:?}", s.findings);
+        assert!(bad[0].message.contains("'e5'"));
+
+        for ok in ["E104", "SVC12", "W01", "ABC1234"] {
+            assert!(is_error_code(ok), "{ok}");
+        }
+        for ko in ["E1", "E12345", "ABCD12", "e104", "104", "E10A", ""] {
+            assert!(!is_error_code(ko), "{ko}");
+        }
+    }
+
+    #[test]
+    fn author_and_dates_are_read_and_checked() {
+        let with = |lines: &str| {
+            EXEMPLE.replace(
+                "## engine        : auto\n",
+                &format!("## engine        : auto\n{lines}"),
+            )
+        };
+        let s = parse(&with(
+            "## author        : Buly\n## created       : 2026-10-01\n## updated       : 2026-10-17\n",
+        ));
+        assert_eq!(
+            (s.author.as_str(), s.created.as_str(), s.updated.as_str()),
+            ("Buly", "2026-10-01", "2026-10-17")
+        );
+        assert!(
+            !s.findings.iter().any(|f| f.code.starts_with("DATE")),
+            "{:?}",
+            s.findings
+        );
+
+        let codes = |lines: &str, today: &str| {
+            let mut head = BTreeMap::new();
+            for l in lines.lines() {
+                let (k, v) = l.split_once('=').unwrap();
+                head.insert(k.to_string(), v.to_string());
+            }
+            let mut f = Vec::new();
+            let today = chrono::NaiveDate::parse_from_str(today, "%Y-%m-%d").unwrap();
+            check_dates(&head, today, &mut f);
+            f.into_iter().map(|f| f.code).collect::<Vec<_>>()
+        };
+        assert_eq!(codes("created=17/10/2026", "2026-10-17"), ["DATE_INVALIDE"]);
+        assert_eq!(codes("created=2026-10-32", "2026-10-17"), ["DATE_INVALIDE"]);
+        assert_eq!(codes("created=2026-1-7", "2026-10-17"), ["DATE_INVALIDE"]);
+        assert_eq!(
+            codes("created=2026-10-17\nupdated=2026-10-01", "2026-10-17"),
+            ["DATES_INVERSEES"]
+        );
+        // One day ahead is an author east of UTC, not a mistake.
+        assert!(codes("updated=2026-10-18", "2026-10-17").is_empty());
+        assert_eq!(codes("updated=2026-10-19", "2026-10-17"), ["DATE_FUTURE"]);
+        // Missing fields are the validator's business (-Strict), not the app's.
+        assert!(codes("", "2026-10-17").is_empty());
     }
 }

@@ -71,6 +71,10 @@ const DICO = {
     'fait.irreversible': 'Irréversible',
     'fait.ne_pas_interrompre': 'Ne pas interrompre',
     'fait.admin': 'Administrateur',
+    // Expert sheet: author and dates from the script header (2.0.3)
+    'fiche.par': 'par {nom}',
+    'fiche.modifie_le': 'modifié le {date}',
+    'fiche.cree_le': 'Créé le {date}',
     'fait.modifie': 'Officiel, modifié sur ce PC',
     'badge.perso': 'Perso',
 
@@ -825,6 +829,9 @@ const DICO = {
     'fait.irreversible': 'Irreversible',
     'fait.ne_pas_interrompre': 'Do not interrupt',
     'fait.admin': 'Administrator',
+    'fiche.par': 'by {nom}',
+    'fiche.modifie_le': 'updated {date}',
+    'fiche.cree_le': 'Created {date}',
     'fait.modifie': 'Official, changed on this PC',
     'badge.perso': 'Personal',
 

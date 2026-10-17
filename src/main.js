@@ -855,7 +855,7 @@ async function rendreCarte(entree, { sousBadges = '' } = {}) {
         <div class="card-ident">
           <div class="card-title">${esc(titre)}${rendreProvenance(entree)}</div>
           ${desc ? `<div class="card-desc">${esc(desc)}</div>` : ''}
-          <div class="card-path">${esc(entree.path)} · v${esc(m.version || '?')} · ${esc(entree.hash.slice(0, 8))}</div>
+          <div class="card-path"${m.created ? ` title="${esc(t('fiche.cree_le', { date: dateCourte(m.created) }))}"` : ''}>${esc(entree.path)} · v${esc(m.version || '?')}${m.author ? ` · ${esc(t('fiche.par', { nom: m.author }))}` : ''}${m.updated ? ` · ${esc(t('fiche.modifie_le', { date: dateCourte(m.updated) }))}` : ''} · ${esc(entree.hash.slice(0, 8))}</div>
         </div>
         <div class="card-actions">
           ${m.scan
@@ -3045,7 +3045,9 @@ function viderJournalCompact() {
 }
 
 function ajouterLigne({ at_ms, stream, marker, text }) {
-  ajouterLigneCompacte({ stream, marker, text });
+  const coded = errorCodeOf(course && catalogue.get(course.id), marker, text);
+  const shown = coded ? codedLineText(marker, coded) : text;
+  ajouterLigneCompacte({ stream, marker, text: shown });
 
   const suivre = colleEnBas();
   const classes = ['tl', `s-${stream}`, `f-${familleLigne(marker, stream)}`];
@@ -3053,11 +3055,51 @@ function ajouterLigne({ at_ms, stream, marker, text }) {
 
   const ligne = document.createElement('div');
   ligne.className = classes.join(' ');
-  ligne.innerHTML = `<span class="t">${heureLigne(at_ms)}</span><span>${esc(text)}</span>`;
+  ligne.innerHTML = `<span class="t">${heureLigne(at_ms)}</span><span>${esc(shown)}</span>`;
+  // The raw line stays one hover away: it is what a bug report needs.
+  if (coded) ligne.title = text;
   term.corps.appendChild(ligne);
+  if (coded?.solution) {
+    const sol = document.createElement('div');
+    sol.className = `${classes.join(' ')} sol`;
+    sol.innerHTML = `<span class="t"></span><span>→ ${esc(coded.solution)}</span>`;
+    term.corps.appendChild(sol);
+  }
 
   while (term.corps.childElementCount > LIGNES_MAX) term.corps.firstElementChild.remove();
   if (suivre) term.corps.scrollTop = term.corps.scrollHeight;
+}
+
+/**
+ * An error code declared `[error]` in the script's REPORT block (2.0.3):
+ * `[ERR] E104 HKLM\...` names a known failure. Returns its translated
+ * description and solution, and the technical detail that followed the
+ * code; null when the first word is not a declared code, and the line then
+ * stays as written. Same code shape as `contract::is_error_code`.
+ */
+function errorCodeOf(entry, marker, text) {
+  if (!entry || (marker !== 'ERR' && marker !== 'WARN')) return null;
+  const m = /^\s*\[(?:ERR|WARN)\]\s+([A-Z]{1,3}[0-9]{2,4})\b\s*(.*)$/.exec(text || '');
+  const declared = m && entry.meta.report?.[m[1]];
+  if (declared?.kind !== 'error') return null;
+  const tr = entry.meta.translations?.[currentLang()]?.report?.[m[1]];
+  return {
+    code: m[1],
+    label: tr?.[0] || declared.label,
+    solution: (tr && tr[1]) || declared.desc || '',
+    detail: m[2].trim(),
+  };
+}
+
+/** `[ERR] E104 — Accès refusé sur une clé protégée · HKLM\SOFTWARE\WRData`. */
+function codedLineText(marker, coded) {
+  return `[${marker}] ${coded.code} — ${coded.label}${coded.detail ? ` · ${coded.detail}` : ''}`;
+}
+
+/** Why an action failed, for the task list and the verdict: the last coded
+ *  `[ERR]` it wrote, translated. */
+function codedReason(coded) {
+  return coded.solution ? `${coded.label} — ${coded.solution}` : coded.label;
 }
 
 function ouvrirTerminal(entree, demarre) {
@@ -3148,7 +3190,7 @@ function titreDe(id) {
 /** Les analyses qui ont modifie Windows, alors qu'elles ne le devaient pas. */
 const temoinAnalyses = new Map();
 
-function afficherVerdict(fin) {
+function afficherVerdict(fin, lastError = null) {
   const secondes = (fin.duration_ms / 1000).toFixed(1);
   const bloc = document.createElement('div');
 
@@ -3188,6 +3230,10 @@ function afficherVerdict(fin) {
   bloc.innerHTML =
     `<b>${esc(titre)}</b>` +
     (sujet ? `<span class="vsujet">${esc(sujet)}</span>` : '') +
+    // A failure the script explained with a declared code (2.0.3).
+    (!fin.success && !fin.killed && lastError
+      ? `<span class="vraison">${esc(lastError.code)} — ${esc(codedReason(lastError))}</span>`
+      : '') +
     `<span class="vmeta">${esc(details.join(' · '))}</span>` +
     (marqueurs.length
       ? `<span class="vmeta">${esc(marqueurs.join(' · '))} <i>${esc(t('verdict.compte_marqueurs'))}</i></span>`
@@ -3389,6 +3435,10 @@ async function cablerMoteur() {
   await ecouter('script:line', ({ payload }) => {
     if (!course || payload.run_id !== course.runId) return;
     ajouterLigne(payload);
+    if (payload.marker === 'ERR') {
+      const coded = errorCodeOf(catalogue.get(course.id), payload.marker, payload.text);
+      if (coded) course.lastError = coded;
+    }
     if (course.analyse) {
       course.lignes.push(payload);
       majProgressionAnalyse(payload);
@@ -3427,11 +3477,13 @@ async function cablerMoteur() {
     enregistrerExecution(payload, titre, course.simule).then(() => rendreLots());
 
     if (payload.changes?.length) journaliserTemoin(payload.changes);
+    const lastError = course.lastError || null;
     if (course.entretien) {
       const succes = payload.success && !payload.killed;
       entretienEnCours.resultats.push({
         id: payload.script_id, success: succes, simule: course.simule, freed: payload.freed ?? null,
         changes: payload.changes || [], watched: payload.watched || [],
+        ...(!succes && lastError ? { raison: codedReason(lastError) } : {}),
       });
       course = null;
       majEtatJournalCompact();
@@ -3449,7 +3501,7 @@ async function cablerMoteur() {
     majEtatJournalCompact();
     document.querySelectorAll('[data-run]').forEach((b) => (b.disabled = false));
     term.stop.dataset.force = '';
-    afficherVerdict(payload);
+    afficherVerdict(payload, lastError);
     rendreLots();
   });
 }
@@ -4875,7 +4927,12 @@ function panneauAnalyse(entree, m, cle) {
       || (filtre === 'constats' && ['FIND', 'ITEM', 'METRIC', 'NOTE'].includes(l.marker))
       || canal(l) === filtre;
     const puces = ['tout', 'etapes', 'constats', ...canaux].map((f) => `<button type="button" class="chip${filtre === f ? ' on' : ''}" data-journal-an="${esc(entree.id)}|${esc(f)}" aria-pressed="${filtre === f}">${esc(['tout', 'etapes', 'constats'].includes(f) ? t(`an.j.${f}`) : f)}</button>`).join('');
-    const texte = lignes.filter(garde).map((l) => `<span class="an-j-h">${esc(heureLigne(l.at_ms))}</span> <span class="m-${esc((l.marker || '').toLowerCase())}">${esc(l.text)}</span>`).join('\n');
+    const texte = lignes.filter(garde).map((l) => {
+      // A declared error code reads the same here as in the main journal.
+      const coded = errorCodeOf(entree, l.marker, l.text);
+      const shown = coded ? codedLineText(l.marker, coded) + (coded.solution ? `\n    → ${coded.solution}` : '') : l.text;
+      return `<span class="an-j-h">${esc(heureLigne(l.at_ms))}</span> <span class="m-${esc((l.marker || '').toLowerCase())}">${esc(shown)}</span>`;
+    }).join('\n');
     corps = `<div class="an-puces">${puces}</div><div class="an-journal">${texte || esc(t('an.journal_vide'))}</div>`;
   } else if (cle === 'plan') {
     corps = A.plan(m);

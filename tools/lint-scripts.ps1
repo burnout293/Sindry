@@ -152,6 +152,13 @@ function Get-Distance {
     return $d[$A.Length, $B.Length]
 }
 
+function Test-CodeErreur {
+    <# An error code (2.0.3): one to three capital letters, then two to four
+       digits — E104, SVC12. Same rule as is_error_code in contract.rs. #>
+    param([string] $Mot)
+    return $Mot -cmatch '^[A-Z]{1,3}[0-9]{2,4}$'
+}
+
 $script:Constats = @()
 
 function Add-Constat {
@@ -279,7 +286,46 @@ function Test-Entete {
         }
     }
 
+    # Author and dates (2.0.3). Optional for Sindry, which shows them in the
+    # Expert sheet; a warning here, so -Strict (the official catalogue) asks
+    # for them.
+    foreach ($cle in @('author', 'created', 'updated')) {
+        if (-not $champs.ContainsKey($cle)) {
+            Add-Constat $Fichier ($bloc.Debut + 1) 'avertissement' 'CHAMP_CONSEILLE' "Champ '$cle' absent : l'auteur et les dates de création et de mise à jour sont exigés au catalogue officiel (-Strict)."
+        }
+    }
+    Test-Dates $Fichier $champs
+
     return $champs
+}
+
+function Test-Dates {
+    <#
+      created and updated: YYYY-MM-DD, updated not before created, neither in
+      the future. One day of slack: an author ahead of UTC writes a date the
+      CI runner has not reached yet. Same rules as check_dates in contract.rs.
+    #>
+    param([string] $Fichier, [hashtable] $Champs)
+
+    $dates = @{}
+    $demain = (Get-Date).Date.AddDays(1)
+    foreach ($cle in @('created', 'updated')) {
+        if (-not $Champs.ContainsKey($cle)) { continue }
+        $v = $Champs[$cle].Valeur
+        $d = [datetime]::MinValue
+        $ok = $v -match '^\d{4}-\d{2}-\d{2}$' -and [datetime]::TryParseExact($v, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref] $d)
+        if (-not $ok) {
+            Add-Constat $Fichier $Champs[$cle].Ligne 'erreur' 'DATE_INVALIDE' "'$cle' vaut '$v' ; forme attendue : AAAA-MM-JJ (2026-10-17)."
+            continue
+        }
+        if ($d -gt $demain) {
+            Add-Constat $Fichier $Champs[$cle].Ligne 'avertissement' 'DATE_FUTURE' "'$cle' vaut $v, une date à venir."
+        }
+        $dates[$cle] = $d
+    }
+    if ($dates.ContainsKey('created') -and $dates.ContainsKey('updated') -and $dates['updated'] -lt $dates['created']) {
+        Add-Constat $Fichier $Champs['updated'].Ligne 'erreur' 'DATES_INVERSEES' "'updated' ($($Champs['updated'].Valeur)) précède 'created' ($($Champs['created'].Valeur))."
+    }
 }
 
 function Read-BlocOptions {
@@ -348,6 +394,7 @@ function Test-Rapport {
       Le bloc REPORT : les libellés de ce que l'analyse nomme par un jeton (label=,
       [METRIC]), les notes ([note:info|warn]) et les groupes du résumé ([group]).
       Tout y est du texte à traduire, comme les options.
+      Since 2.0.3, also the error codes: [error] Description — Solution.
     #>
     param([string] $Fichier, [string[]] $Lignes)
 
@@ -369,8 +416,13 @@ function Test-Rapport {
             }
         } elseif ($reste -match '^\[group\]\s*(.*)$') {
             $genre = 'group'; $reste = $Matches[1]
+        } elseif ($reste -match '^\[error\]\s*(.*)$') {
+            $genre = 'error'; $reste = $Matches[1]
+            if (-not (Test-CodeErreur $cle)) {
+                Add-Constat $Fichier ($i + 1) 'erreur' 'CODE_ERREUR_FORME' "'$cle' : un code d'erreur s'écrit d'une à trois majuscules, puis deux à quatre chiffres (E104, SVC12)."
+            }
         } elseif ($reste -match '^\[([a-z]+)[:\]]') {
-            Add-Constat $Fichier ($i + 1) 'erreur' 'ETIQUETTE_INCONNUE' "Étiquette '[$($Matches[1])]' inconnue dans REPORT ; admises : [note:info], [note:warn], [group]."
+            Add-Constat $Fichier ($i + 1) 'erreur' 'ETIQUETTE_INCONNUE' "Étiquette '[$($Matches[1])]' inconnue dans REPORT ; admises : [note:info], [note:warn], [group], [error]."
         }
         if (-not $reste) {
             Add-Constat $Fichier ($i + 1) 'erreur' 'LIBELLE_VIDE' "'$cle' est déclarée dans REPORT sans texte."
@@ -941,6 +993,38 @@ function Test-SortieAnglaise {
     }
 }
 
+function Test-CodesErreur {
+    <#
+      Error codes (2.0.3), both ways. A literal "[ERR] E104 ..." or
+      "[WARN] W201 ..." must name a code declared [error] in REPORT, or Sindry
+      shows the bare code. And a declared code must appear somewhere in the
+      body: a script may emit its codes through a helper (Write-Err 'E104'),
+      so any mention outside the ## lines counts as a use.
+    #>
+    param([string] $Fichier, [string[]] $Lignes, $Rapport)
+
+    $declares = @($Rapport.Keys | Where-Object { $Rapport[$_].Genre -eq 'error' })
+    $vus = @{}
+    for ($i = 0; $i -lt $Lignes.Count; $i++) {
+        $ligne = $Lignes[$i]
+        if ($ligne -match '^\s*#') { continue }
+        foreach ($m in [regex]::Matches($ligne, '\[(?:ERR|WARN)\]\s+([A-Z]{1,3}[0-9]{2,4})\b')) {
+            $code = $m.Groups[1].Value
+            if ($declares -cnotcontains $code) {
+                Add-Constat $Fichier ($i + 1) 'avertissement' 'CODE_ERREUR_INCONNU' "'$code' n'est pas déclaré dans REPORT ('## $code : [error] Description — Solution') : Sindry n'affichera que le code."
+            }
+        }
+        foreach ($code in $declares) {
+            if (-not $vus.ContainsKey($code) -and $ligne -cmatch "\b$code\b") { $vus[$code] = $true }
+        }
+    }
+    foreach ($code in $declares) {
+        if (-not $vus.ContainsKey($code)) {
+            Add-Constat $Fichier $Rapport[$code].Ligne 'avertissement' 'CODE_ERREUR_INUTILISE' "Le code '$code' est déclaré dans REPORT mais n'apparaît nulle part dans le script."
+        }
+    }
+}
+
 # ==============================================================================
 # Exécution
 # ==============================================================================
@@ -990,7 +1074,8 @@ foreach ($f in $fichiers) {
     Test-Override       $relatif $lignes
     Test-Marqueurs      $relatif $lignes
     Test-SortieAnglaise $relatif $lignes
-    Test-Analyse        $relatif $lignes $champs $options $rapport
+    Test-CodesErreur    $relatif $lignes $rapport
+    Test-Analyse       $relatif $lignes $champs $options $rapport
     Test-Presentation   $relatif $champs $options $rapport
 
     if ($champs.ContainsKey('id')) {

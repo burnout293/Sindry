@@ -91,6 +91,8 @@
         icon,
         tags: [],
         version: '2.0',
+        // Struct `contract::Script`, 2.0.3: author and dates, optional.
+        author: '', created: '', updated: '',
         admin: true,
         risk: extra.risk || 'low',
         duration: extra.duration || 'fast',
@@ -123,6 +125,16 @@
       // simulation ne s'observe pas sur le banc.
       opt('SafeTest', 'bool', 'Safe test', 'simulates every change', false),
     ],
+    // 2.0.3: author and dates in the Expert sheet; a declared error code,
+    // written by the bench run when the URL carries `?erreur`.
+    meta: {
+      author: 'Buly', created: '2026-10-01', updated: '2026-10-17',
+      report: { E104: { kind: 'error', level: '', label: 'Access denied on a protected key', desc: 'Restart the PC, then run the action again' } },
+      translations: { fr: {
+        title: 'Configurer DNS', desc: 'Accélère la navigation avec un résolveur rapide', options: {}, choices: {},
+        report: { E104: ['Accès refusé sur une clé protégée', "Redémarrez le PC, puis relancez l'action"] },
+      } },
+    },
   });
 
   const SCRIPTS = {
@@ -571,7 +583,12 @@
     enCours = { run_id, script_id, arrete: false };
 
     let seq = 0;
-    LIGNES.forEach(([at, stream, marker, step, text]) => {
+    // `?erreur`: the DNS action fails on a declared error code (2.0.3).
+    const enErreur = script_id === 'set-dns' && new URLSearchParams(location.search).has('erreur');
+    const lignes = enErreur
+      ? LIGNES.map((l) => (l[2] === 'ERR' ? [l[0], 'stdout', 'ERR', null, '[ERR] E104 HKLM\\SOFTWARE\\WRData (0x80070005)'] : l))
+      : LIGNES;
+    lignes.forEach(([at, stream, marker, step, text]) => {
       setTimeout(() => {
         if (!enCours || enCours.run_id !== run_id || enCours.arrete) return;
         emettre('script:line', { run_id, stream, seq: seq++, at_ms: at, marker, step, text });
@@ -584,8 +601,8 @@
       enCours = null;
       emettre('script:end', {
         run_id, script_id,
-        exit_code: tue ? null : 0,
-        success: !tue,
+        exit_code: tue ? null : enErreur ? 1 : 0,
+        success: !tue && !enErreur,
         killed: tue,
         duration_ms: 1420,
         checkpoint_reached: true,

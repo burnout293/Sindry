@@ -7,6 +7,9 @@
 ## icon          : trash-2
 ## tags          : temp, cache, disk space, browsers
 ## version       : 1.0
+## author        : Sindry
+## created       : 2026-10-10
+## updated       : 2026-10-17
 ## admin         : true
 ## risk          : low
 ## duration      : medium

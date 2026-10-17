@@ -146,6 +146,7 @@ FunctionEnd
   Var WtCaseGarde
   Var WtCaseInterface
   Var WtCaseScripts
+  Var WtCaseRestauration
   Var WtReglages
   Var WtHistorique
   Var WtJournaux
@@ -154,6 +155,7 @@ FunctionEnd
   Var WtGarde
   Var WtInterface
   Var WtScripts
+  Var WtRestauration
 
   UninstPage custom un.WtPageCreer un.WtPageQuitter
 
@@ -198,6 +200,11 @@ FunctionEnd
     !insertmacro WT_CASE $WtCaseGarde 56% 86u "Emplacements protégés" "Protected locations"
     !insertmacro WT_CASE $WtCaseInterface 12u 98u "Données de l'interface" "Interface data"
     !insertmacro WT_CASE $WtCaseScripts 56% 98u "Mes scripts personnels" "My personal scripts"
+    ; What actions keep to undo their changes (2.0.3), in HKLM\SOFTWARE\Sindry\Scripts.
+    ; Alone on its row: the full width, so the label is never cut.
+    !insertmacro WT_TEXTE $R0 "Données de restauration des actions" "Action restore data"
+    ${NSD_CreateCheckbox} 12u 110u 88% 10u "$R0"
+    Pop $WtCaseRestauration
 
     ${NSD_OnClick} $WtRadioGarder un.WtSurChoix
     ${NSD_OnClick} $WtRadioSimple un.WtSurChoix
@@ -237,6 +244,7 @@ FunctionEnd
       SendMessage $WtCaseApprobations ${BM_SETCHECK} $R3 0
       SendMessage $WtCaseGarde ${BM_SETCHECK} $R3 0
       SendMessage $WtCaseInterface ${BM_SETCHECK} $R3 0
+      SendMessage $WtCaseRestauration ${BM_SETCHECK} $R3 0
       SendMessage $WtCaseScripts ${BM_SETCHECK} ${BST_UNCHECKED} 0
     ${EndIf}
     EnableWindow $WtCaseReglages $R2
@@ -247,6 +255,7 @@ FunctionEnd
     EnableWindow $WtCaseGarde $R2
     EnableWindow $WtCaseInterface $R2
     EnableWindow $WtCaseScripts $R2
+    EnableWindow $WtCaseRestauration $R2
   FunctionEnd
 
   Function un.WtPageQuitter
@@ -258,6 +267,7 @@ FunctionEnd
     ${NSD_GetState} $WtCaseGarde $WtGarde
     ${NSD_GetState} $WtCaseInterface $WtInterface
     ${NSD_GetState} $WtCaseScripts $WtScripts
+    ${NSD_GetState} $WtCaseRestauration $WtRestauration
     ${If} $WtScripts == 1
       !insertmacro WT_TEXTE $R0 "Vos scripts personnels seront effacés définitivement, y compris ceux que vous avez écrits vous-même.$\n$\nContinuer ?" "Your personal scripts will be permanently deleted, including the ones you wrote yourself.$\n$\nContinue?"
       MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "$R0" IDYES wt_scripts_confirmes
@@ -348,6 +358,9 @@ Var SindryAncienBureau
     ${EndIf}
     ${If} $WtGarde == 1
       DeleteRegKey HKLM "SOFTWARE\Sindry\Garde"
+    ${EndIf}
+    ${If} $WtRestauration == 1
+      DeleteRegKey HKLM "SOFTWARE\Sindry\Scripts"
     ${EndIf}
     DeleteRegKey /ifempty HKLM "SOFTWARE\Sindry"
 

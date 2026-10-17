@@ -99,6 +99,9 @@ sous-dossiers : son index signé est une liste plate.
 ## icon          : zap
 ## tags          : dns, network, latency
 ## version       : 2.0
+## author        : Your name
+## created       : 2026-10-17
+## updated       : 2026-10-17
 ## admin         : true
 ## risk          : medium
 ## duration      : fast
@@ -177,7 +180,9 @@ traduit ce qu'elle affiche.
 
 ## L'entête
 
-Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `chart`, `panels` et `show`.
+Tous ces champs sont **obligatoires**, sauf `tags`, `author`, `created`, `updated`, `scan`,
+`view`, `chart`, `panels` et `show`. `author`, `created` et `updated` sont exigés au catalogue
+officiel : le validateur les demande en `-Strict`.
 
 | Champ | Valeurs | Rôle |
 |---|---|---|
@@ -189,6 +194,9 @@ Tous ces champs sont **obligatoires**, sauf `tags`, `scan`, `view`, `chart`, `pa
 | `icon` | nom Lucide | Voir la section Icônes |
 | `tags` | liste, virgules | Facultatif, alimente la recherche |
 | `version` | `2.0` | Version du script lui-même |
+| `author` | un nom | Qui a écrit le script (2.0.3). Affiché dans la fiche de l'Expert |
+| `created` | `2026-10-17` | Date de création, `AAAA-MM-JJ`, écrite une fois pour toutes (2.0.3) |
+| `updated` | `2026-10-17` | Date de la dernière modification, `AAAA-MM-JJ` : à changer avec `version`, jamais avant `created`, jamais dans le futur (2.0.3) |
 | `admin` | `true` / `false` | Nécessite les droits administrateur |
 | `risk` | `low` / `medium` / `high` | `high` déclenche une confirmation |
 | `duration` | `fast` / `medium` / `slow` | `slow` est annoncé à l'avance |
@@ -491,6 +499,42 @@ détail technique » ; c'est l'interface qui traduit la progression à partir de
 le script ait démarré. Terminez donc explicitement par `exit 0` ou `exit 1`. La v0.3 se
 contentait de constater le démarrage, et enregistrait ainsi des succès fictifs.
 
+### Les codes d'erreur : `[ERR] E104` (2.0.3)
+
+La sortie reste en anglais, mais une erreur peut être **expliquée** dans la langue de
+l'utilisateur. Déclarez-la dans le bloc `REPORT` avec l'étiquette `[error]` : ce qui s'est
+passé, puis, après « — », ce qu'il faut faire (facultatif). Traduisez-la dans `LANG` comme
+le reste :
+
+```
+## SINDRY:REPORT
+## E104 : [error] Access denied on a protected key — Restart the PC, then run the action again
+## SINDRY:END
+
+## SINDRY:LANG fr
+## E104 : Accès refusé sur une clé protégée — Redémarrez le PC, puis relancez l'action
+## SINDRY:END
+```
+
+Puis écrivez le code en **premier mot** du message, le détail technique ensuite :
+
+```powershell
+Write-Output "[ERR] E104 HKLM\SOFTWARE\WRData (0x80070005)"
+```
+
+- **Le code** : une à trois majuscules, puis deux à quatre chiffres (`E104`, `SVC12`). Il vaut
+  aussi pour `[WARN] W201 …`, déclaré lui aussi `[error]` : c'est la ligne qui dit le niveau.
+- **Ce que Sindry en fait** : dans le journal, la description traduite suit le code, puis le
+  détail technique ; la solution s'affiche en dessous. Le dernier `[ERR]` codé d'une action
+  qui échoue devient la raison de l'échec, dans la liste des tâches et dans le verdict.
+- **Le verdict ne change pas** : un code explique une erreur, il ne fait pas échouer le
+  script. Terminez toujours par `exit 1`.
+- Un premier mot qui n'est pas un code déclaré laisse la ligne telle quelle. Le validateur
+  relève un code écrit dans un `[ERR]` ou un `[WARN]` littéral sans être déclaré
+  (`CODE_ERREUR_INCONNU`), et un code déclaré qui n'apparaît nulle part dans le script
+  (`CODE_ERREUR_INUTILISE`). Une fonction d'aide qui écrit `[ERR] $Code` est permise : le
+  code compte dès qu'il figure dans son appel (`Write-Err 'E104' $detail`).
+
 ### `[CKPT]`, le marqueur qui rend l'annulation sûre
 
 Au premier clic sur « Arrêter », Sindry laisse le script en cours aller au bout. Au
@@ -650,6 +694,10 @@ déclare dans un bloc `REPORT`, placé entre `OPTIONS` et `LANG` :
 | `Clé : Libellé` | Nommer une mesure, ou la nature d'un élément | `[METRIC] Clé`, `[ITEM] … label=Clé` |
 | `Clé : [note:info] Phrase` ou `[note:warn]` | Une phrase neutre, ou un avertissement | `[NOTE] Clé` |
 | `Clé : [group] Libellé — sous-titre` | Un **poste** du résumé Simple | `[group:Clé]` sur une option ou un choix |
+| `E104 : [error] Description — solution` | Expliquer une erreur, analyse ou non (2.0.3) — voir « Les codes d'erreur » | `[ERR] E104 …`, `[WARN] E104 …` |
+
+Le bloc `REPORT` n'est donc pas réservé au mode analyse : un script qui n'analyse rien peut
+n'y déclarer que ses codes d'erreur.
 
 Chaque clé se traduit dans le bloc `LANG`, comme une option, sans répéter son étiquette :
 `## Junk : Fichiers inutiles — Fichiers temporaires et corbeille`. Une clé sans traduction
@@ -864,6 +912,9 @@ renvoie.
 ## icon          : trash-2
 ## tags          : temp, cache, disk space, browsers
 ## version       : 1.0
+## author        : Sindry
+## created       : 2026-10-10
+## updated       : 2026-10-17
 ## admin         : true
 ## risk          : low
 ## duration      : medium
@@ -1227,6 +1278,10 @@ validateur sans l'ajouter ici est un défaut.**
 | `VALEUR_INVALIDE` | erreur | `risk`, `duration`, `engine`, `show` ou un booléen hors valeurs admises ; `[show:]` hors `simple`/`expert` |
 | `ID_INVALIDE` | erreur | `id` n'est pas un GUID |
 | `ID_COLLISION` | erreur | Deux scripts portent le même `id` |
+| `CHAMP_CONSEILLE` | avertissement | `author`, `created` ou `updated` absent : exigés au catalogue officiel, donc en `-Strict` (2.0.3) |
+| `DATE_INVALIDE` | erreur | `created` ou `updated` hors de la forme `AAAA-MM-JJ`, ou date qui n'existe pas |
+| `DATES_INVERSEES` | erreur | `updated` précède `created` |
+| `DATE_FUTURE` | avertissement | `created` ou `updated` à plus d'un jour dans le futur |
 | `CATEGORIE_INCONNUE` | avertissement | Catégorie hors `tools/categories.json` → « Autres », et aucun lot |
 | `ICONE_EMOJI` | erreur | `icon` contient un emoji |
 | `ICONE_INCONNUE` | erreur | Nom d'icône absent de Lucide — suggestion si proche |
@@ -1276,6 +1331,9 @@ validateur sans l'ajouter ici est un défaut.**
 | `ETIQUETTE_INCONNUE` | erreur | Étiquette inconnue sur une option, un choix ou une entrée de `REPORT` |
 | `GROUPE_INCONNU` | erreur | `[group:Clé]` vise un groupe que `REPORT` ne déclare pas |
 | `GROUPE_ORPHELIN` | avertissement | Groupe déclaré dans `REPORT` où aucune option ni aucun choix ne se range |
+| `CODE_ERREUR_FORME` | erreur | Clé `[error]` qui n'est pas un code : une à trois majuscules, puis deux à quatre chiffres (2.0.3) |
+| `CODE_ERREUR_INCONNU` | avertissement | `[ERR] X123 …` ou `[WARN] X123 …` littéral dont le code n'est pas déclaré `[error]` dans `REPORT` |
+| `CODE_ERREUR_INUTILISE` | avertissement | Code déclaré `[error]` qui n'apparaît nulle part ailleurs dans le script |
 | `VUE_INCONNUE` | erreur | `view` ou `[view:]` hors des vues admises, ou `view` d'une autre forme que `<vue> expert=<vue>` |
 | `GRAPHIQUE_INCONNU` | erreur | `chart` hors des graphiques admis |
 | `PANNEAU_INCONNU` | erreur | `panels` cite un panneau inconnu |

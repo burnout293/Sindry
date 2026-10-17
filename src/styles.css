@@ -842,6 +842,9 @@ body[data-console="complet"] .term-crest { display: none; }
 .tl.m-reboot { color: var(--term-warn); font-weight: 600; }
 .tl.m-done   { color: var(--term-ok); font-weight: 600; }
 .tl.m-info   { color: var(--term-info); }
+/* The solution of a declared error code, under its line (2.0.3). */
+.tl.sol { color: var(--term-text); }
+.tl.sol .t { min-width: 8ch; }
 
 .term-verdict {
   margin-top: 12px; padding: 10px 13px; border-radius: 10px;
@@ -858,6 +861,7 @@ body[data-console="complet"] .term-crest { display: none; }
 .term-verdict .vsujet { display: block; font-weight: 650; color: var(--term-text);
                         margin-bottom: 4px; }
 .term-verdict .vmeta { display: block; color: var(--term-dim); font-size: 11.5px; }
+.term-verdict .vraison { display: block; color: var(--term-text); margin-bottom: 2px; }
 .term-verdict .vmeta i { font-style: normal; opacity: .75; }
 
 /* ==========================================================================
