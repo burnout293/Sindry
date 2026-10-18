@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyse : explications, alertes, redémarrages</title>
+<!--
+  Mockup M35 (2.0.4): the analysis screen of a clean-up script (start-up,
+  scheduled tasks, services, registry, programs) whose items need words:
+  what it is, why it is proposed, and a warning when it cuts both ways —
+  an antivirus, a printer service, an updater. Some items need a restart.
+  Four variants; the tabs « Choisir » and « Récapitulatif » come from M34 C.
+  Code in English, visible text in French. Fictitious data.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grid: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A; --info: #7FB2FF;
+  --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C; --info-s: #12203A;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  --shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grid: #ECE8E0;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F; --info: #1F5FBF;
+  --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC; --info-s: #E8F0FC;
+  --shadow: 0 16px 40px rgba(20, 26, 36, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.topbar p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 260px; }
+.seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.explain { max-width: 1140px; margin: 18px auto 0; padding: 0 20px; color: var(--text-2); }
+.explain b { color: var(--text); }
+.explain .pros { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; }
+.explain .pros span::before { content: '+ '; color: var(--ok); font-weight: 800; }
+.explain .pros span.con::before { content: '− '; color: var(--err); }
+.explain .kind { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--border); }
+
+.stage { max-width: 1140px; margin: 14px auto 30px; padding: 0 20px; }
+.screen { position: relative; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.screen-head { padding: 22px 28px 6px; text-align: center; }
+.screen-head .back { position: absolute; left: 24px; top: 22px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.screen-head .back i { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); display: grid; place-items: center; font-style: normal; color: var(--text-2); }
+.screen-head h2 { margin: 26px 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+.screen-head p { margin: 0; color: var(--text-2); }
+.body { padding: 18px 28px 22px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; }
+.footer { position: sticky; bottom: 0; display: flex; align-items: center; gap: 14px; padding: 14px 28px; border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(6px); z-index: 5; flex-wrap: wrap; }
+.footer .sum { flex: 1; font-weight: 650; }
+.footer .sum small { display: block; font-weight: 500; color: var(--text-3); }
+.reboot-note { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; background: var(--warn-s); color: var(--warn); font-weight: 650; font-size: 12.5px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 11px; border: 1px solid var(--border);
+  background: var(--surface); font-weight: 700; white-space: nowrap; }
+.btn.primary { background: var(--acc); border-color: var(--acc); color: var(--ink); }
+.btn.danger { background: var(--err); border-color: var(--err); color: #fff; }
+.link { border: 0; background: none; padding: 0; color: var(--acc-on); font-weight: 700; font-size: 12px; white-space: nowrap; }
+
+/* Tabs (M34 C) */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 700; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 8px; align-items: center; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--acc); }
+.tabs .n { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.tabs button[aria-selected="true"] .n { background: var(--acc-soft); color: var(--acc-on); }
+
+/* Badges */
+.bd { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.bd .ico { width: 11px; height: 11px; }
+.bd.safe { background: var(--ok-s); color: var(--ok); }
+.bd.check { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+.bd.suspect { background: var(--err-s); color: var(--err); }
+.bd.caution { background: var(--warn-s); color: var(--warn); }
+.bd.against { background: var(--err); color: #fff; }
+.bd.reboot { background: var(--info-s); color: var(--info); }
+
+/* The list */
+.group-h { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 12.5px; font-weight: 700; color: var(--text-2); border-bottom: 1px solid var(--border); }
+.group-h .grow { flex: 1; }
+.group-h .count { color: var(--text-3); font-weight: 600; }
+.group-h .gi { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); }
+.group + .group { border-top: 1px solid var(--border); }
+.row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border); }
+.rows > .row:first-child { border-top: 0; }
+.row input { width: 17px; height: 17px; margin-top: 4px; accent-color: var(--acc); flex-shrink: 0; }
+.row .t { flex: 1; min-width: 0; }
+.row .t b { font-weight: 650; }
+.row .t .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; color: var(--text-3); font-size: 11.5px; }
+.row.sel { background: var(--acc-soft); }
+.row.clickable { cursor: pointer; }
+.tile { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-weight: 800; font-size: 12px; color: #fff; }
+.why-btn { border: 0; background: none; padding: 0; color: var(--text-3); font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.why-btn:hover { color: var(--acc-on); }
+.note { display: flex; gap: 8px; align-items: flex-start; margin-top: 7px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; }
+.note .ico { margin-top: 2px; }
+.note.info { background: var(--info-s); color: var(--text); }
+.note.info .ico { color: var(--info); }
+.note.warn { background: var(--warn-s); color: var(--text); }
+.note.warn .ico { color: var(--warn); }
+.note.danger { background: var(--err-s); color: var(--text); }
+.note.danger .ico { color: var(--err); }
+.note b { display: block; margin-bottom: 1px; }
+.confirm { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+
+/* Variant B: master-detail */
+.vb { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+.sheet { position: sticky; top: 70px; padding: 18px; }
+.sheet h3 { margin: 0 0 4px; font-size: 18px; }
+.sheet .sub { color: var(--text-3); font-size: 12px; }
+.sheet .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+.sheet h4 { margin: 16px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.sheet p { margin: 0; }
+.sheet .choose { margin-top: 18px; display: flex; gap: 10px; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); font-weight: 650; }
+.sheet .choose input { width: 18px; height: 18px; accent-color: var(--acc); }
+
+/* Variant C: by level of care */
+.level { border-radius: 18px; margin-bottom: 14px; overflow: hidden; }
+.level-h { display: flex; gap: 10px; align-items: center; padding: 12px 14px; font-weight: 750; }
+.level-h small { font-weight: 500; color: var(--text-2); display: block; }
+.level-h .grow { flex: 1; }
+.level.safe { border: 1px solid var(--border); background: var(--surface); }
+.level.check { border: 1px solid var(--border); background: var(--surface); }
+.level.caution { border: 1px solid color-mix(in srgb, var(--warn) 50%, var(--border)); background: var(--surface); }
+.level.caution .level-h { background: var(--warn-s); }
+.level.against { border: 1px solid color-mix(in srgb, var(--err) 60%, var(--border)); background: var(--surface); }
+.level.against .level-h { background: var(--err-s); }
+.level .rows { border-top: 1px solid var(--border); }
+.unlock { display: flex; gap: 8px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); font-weight: 650; }
+.unlock input { width: 17px; height: 17px; accent-color: var(--err); }
+
+/* Recap */
+.rtable { width: 100%; border-collapse: collapse; }
+.rtable th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); padding: 9px 14px; background: var(--surface-2); }
+.rtable td { padding: 9px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+.recap-alerts { padding: 14px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); }
+
+/* Variant D: review dialog */
+.modal-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); z-index: 30; display: grid; place-items: center; padding: 20px; }
+.modal { width: min(560px, 100%); max-height: 88%; overflow: auto; padding: 20px 22px; box-shadow: var(--shadow); }
+.modal h3 { margin: 0 0 4px; font-size: 19px; }
+.modal > p { margin: 0 0 12px; color: var(--text-2); }
+.modal .it { padding: 10px 0; border-top: 1px solid var(--border); }
+.modal .it-h { display: flex; gap: 10px; align-items: center; font-weight: 650; }
+.modal .ack { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 12.5px; }
+.modal .ack input { accent-color: var(--err); width: 16px; height: 16px; }
+.modal .choice { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
+.modal .choice label { display: flex; gap: 8px; align-items: center; }
+.modal .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* The contract proposal */
+.contract { max-width: 1140px; margin: 0 auto 60px; padding: 0 20px; }
+.contract .card { padding: 18px 20px; }
+.contract h3 { margin: 0 0 6px; font-size: 16px; }
+.contract p { margin: 0 0 10px; color: var(--text-2); }
+.contract table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; }
+.contract th, .contract td { text-align: left; padding: 7px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+.contract th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.contract code, .contract pre { font-family: var(--mono); font-size: 12px; }
+.contract pre { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-soft); border: 1px solid var(--border); overflow-x: auto; }
+.new { color: var(--acc-on); font-weight: 700; }
+
+@media (max-width: 900px) { .vb { grid-template-columns: 1fr; } .sheet { position: static; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Analyse — explications, alertes, redémarrages</h1>
+  <p>Un script de nettoyage dont certains éléments demandent des mots : ce que c'est, pourquoi c'est proposé, et une alerte quand c'est à double tranchant. Données fictives.</p>
+  <div class="seg" id="variants">
+    <button type="button" data-v="a" aria-pressed="true">A · Pourquoi ?</button>
+    <button type="button" data-v="b" aria-pressed="false">B · Fiche</button>
+    <button type="button" data-v="c" aria-pressed="false">C · Prudence</button>
+    <button type="button" data-v="d" aria-pressed="false">D · Revue</button>
+  </div>
+  <div class="seg" id="theme">
+    <button type="button" data-t="dark" aria-pressed="true">Sombre</button>
+    <button type="button" data-t="light" aria-pressed="false">Clair</button>
+  </div>
+</header>
+
+<div class="explain" id="explain"></div>
+
+<div class="stage">
+  <div class="screen" id="screen">
+    <div class="screen-head">
+      <span class="back"><i>←</i>Grand ménage</span>
+      <h2>Voici ce que j'ai trouvé</h2>
+      <p>Cochez ce que vous voulez retirer ou désactiver. Rien n'a encore été modifié.</p>
+    </div>
+    <div class="body" id="body"></div>
+    <div id="extra"></div>
+    <div class="footer">
+      <span class="sum" id="sum"></span>
+      <span id="rebootNote"></span>
+      <button type="button" class="btn primary" id="launch">Lancer</button>
+    </div>
+  </div>
+</div>
+
+<section class="contract">
+  <div class="card">
+    <h3>Ce que le script écrirait — proposition</h3>
+    <p>Rien de nouveau pour la vue : les variantes A, C et D <b>complètent la liste existante</b> ; seule B serait une vue
+      nouvelle (<code>## view : detail</code>). Il faut en revanche quatre champs de plus sur <code>[ITEM]</code> — les textes restent
+      dans le bloc <code>REPORT</code>, traduits, comme aujourd'hui.</p>
+    <table>
+      <tr><th>Champ</th><th>Valeur</th><th>Ce que l'écran en fait</th></tr>
+      <tr><td><code>confidence=low</code></td><td>existe</td><td>« À vérifier » : jamais coché d'office</td></tr>
+      <tr><td><code>risk=high</code></td><td>existe</td><td>« Suspect » : un indésirable, proposé et coché</td></tr>
+      <tr><td><code class="new">why=</code></td><td>une clé <code>[note:info]</code> de REPORT</td><td>Pourquoi c'est proposé, et ce que c'est</td></tr>
+      <tr><td><code class="new">warn=</code></td><td>une clé <code>[note:warn]</code> de REPORT</td><td>Ce qui peut arriver si on le coche — toujours visible</td></tr>
+      <tr><td><code class="new">advice=</code></td><td><code>caution</code> · <code>discouraged</code></td><td>« À double tranchant » : jamais coché d'office · « Déconseillé » : jamais coché d'office, et cocher se confirme</td></tr>
+      <tr><td><code class="new">reboot=true</code></td><td>—</td><td>Coché, il annonce un redémarrage : sur la ligne, en bas de l'écran, au récapitulatif et au bilan</td></tr>
+    </table>
+<pre>## SINDRY:REPORT
+## WhyAdware   : [note:info] Adware installed together with another program, without asking you.
+## WarnPrinter : [note:warn] Disabled, you will no longer be able to print.
+## WarnAntivir : [note:warn] It is your antivirus. Removing it leaves you unprotected until Microsoft Defender takes over, after a restart.
+## SINDRY:END
+
+[ITEM] Apps id=webcompanion name="WebCompanion" publisher=Lavasoft kind=app risk=high <span class="new">why=WhyAdware</span>
+[ITEM] Services id=spooler name="Print Spooler" kind=service <span class="new">advice=caution warn=WarnPrinter</span>
+[ITEM] Apps id=avast name="Avast Free Antivirus" kind=app <span class="new">advice=discouraged warn=WarnAntivir reboot=true</span></pre>
+  </div>
+</section>
+
+<script>
+(() => {
+  const P = {
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+    shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    bug: '<path d="m8 2 1.88 1.88M14.12 3.88 16 2M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6M12 20v-9"/>',
+    power: '<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    chev: '<path d="m6 9 6 6 6-6"/>',
+    ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+    startup: '<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+    task: '<path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5M16 2v4M8 2v4M3 10h5"/><circle cx="16" cy="16" r="6"/><path d="M16 14v2.2l1.6 1"/>',
+    service: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    registry: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0"/>',
+    app: '<path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
+  };
+  const ico = (n) => `<svg class="ico" viewBox="0 0 24 24">${P[n]}</svg>`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // --- Data -------------------------------------------------------------------------
+  const GROUPS = { apps: ['Programmes', 'app'], startup: ['Démarrage', 'startup'], tasks: ['Tâches planifiées', 'task'], services: ['Services', 'service'], registry: ['Registre', 'registry'] };
+  // level: safe (Sûr), check (À vérifier), suspect, caution (à double tranchant), against (déconseillé)
+  const ITEMS = [
+    { id: 'webcomp', g: 'apps', name: 'WebCompanion', sub: 'Lavasoft', level: 'suspect', color: '#C2255C',
+      about: 'Un logiciel publicitaire : il change la page d\'accueil et le moteur de recherche de vos navigateurs.',
+      why: 'Il a été installé en même temps qu\'un autre programme, sans que vous l\'ayez demandé.' },
+    { id: 'mcafee', g: 'apps', name: 'McAfee WebAdvisor', sub: 'McAfee', level: 'check', reboot: true, color: '#C92A2A',
+      about: 'Une extension de sécurité préinstallée avec beaucoup de PC.',
+      why: 'Inutile si Microsoft Defender vous protège déjà, et il se réinstalle souvent tout seul.',
+      warn: 'Difficile à retirer complètement : un redémarrage termine la désinstallation.' },
+    { id: 'driverb', g: 'apps', name: 'Driver Booster', sub: 'IObit', level: 'caution', color: '#1C7ED6',
+      about: 'Un outil qui met à jour les pilotes de votre matériel.',
+      why: 'Il se lance à chaque démarrage et affiche des publicités.',
+      warn: 'Pratique pour certains, mais il installe parfois des pilotes inadaptés. Gardez-le si vous vous en servez.' },
+    { id: 'avast', g: 'apps', name: 'Avast Free Antivirus', sub: 'Avast Software', level: 'against', reboot: true, color: '#E8590C',
+      about: 'Votre antivirus.',
+      why: 'Proposé seulement parce que deux antivirus se gênent : Microsoft Defender est aussi présent.',
+      warn: 'Le retirer vous laisse sans protection jusqu\'à ce que Microsoft Defender prenne le relais, après le redémarrage.' },
+    { id: 'adobearm', g: 'startup', name: 'Adobe Acrobat Update', sub: 'AdobeARM.exe', level: 'safe', color: '#E03131',
+      about: 'Le programme de mise à jour d\'Acrobat Reader.', why: 'Il se lance à chaque démarrage ; Acrobat cherche aussi ses mises à jour quand vous l\'ouvrez.' },
+    { id: 'discord', g: 'startup', name: 'Discord', sub: 'Update.exe --processStart Discord.exe', level: 'safe', color: '#5F3DC4',
+      about: 'L\'application de discussion Discord.', why: 'Elle ralentit le démarrage ; elle se lancera quand vous l\'ouvrirez.' },
+    { id: 'onedrive', g: 'startup', name: 'OneDrive', sub: 'Microsoft', level: 'check', color: '#1971C2',
+      about: 'La synchronisation de vos fichiers avec le cloud de Microsoft.', why: 'Elle occupe le démarrage même si vous ne vous en servez pas.',
+      warn: 'Si vous synchronisez vos fichiers, ils ne le seront plus qu\'à l\'ouverture de OneDrive.' },
+    { id: 'gupdate', g: 'tasks', name: 'GoogleUpdateTaskMachineUA', sub: 'Google', level: 'caution', color: '#2F9E44',
+      about: 'La tâche qui tient Google Chrome à jour.', why: 'Elle se lance toutes les heures.',
+      warn: 'Sans elle, Chrome ne se met plus à jour tout seul : ses failles de sécurité resteraient ouvertes.' },
+    { id: 'ccleaner', g: 'tasks', name: 'CCleaner Update', sub: 'Programme introuvable', level: 'safe', color: '#495057',
+      about: 'Une tâche laissée par CCleaner.', why: 'Le programme qu\'elle lance n\'existe plus : elle échoue à chaque fois.' },
+    { id: 'diagtrack', g: 'services', name: 'Expérience des utilisateurs connectés et télémétrie', sub: 'DiagTrack', level: 'safe', reboot: true, color: '#0C8599',
+      about: 'Le service qui envoie à Microsoft des données sur l\'utilisation du PC.', why: 'Il n\'est pas nécessaire au fonctionnement de Windows.' },
+    { id: 'spooler', g: 'services', name: 'Spouleur d\'impression', sub: 'Spooler', level: 'caution', color: '#5C940D',
+      about: 'Le service qui envoie vos documents à l\'imprimante.', why: 'Aucune imprimante n\'est installée sur ce PC.',
+      warn: 'Désactivé, vous ne pourrez plus imprimer, même en ajoutant une imprimante plus tard.' },
+    { id: 'wsearch', g: 'services', name: 'Windows Search', sub: 'WSearch', level: 'check', reboot: true, color: '#3B5BDB',
+      about: 'L\'indexation qui accélère la recherche de fichiers.', why: 'Elle sollicite beaucoup le disque sur un PC lent.',
+      warn: 'La recherche dans le menu Démarrer et l\'Explorateur deviendra plus lente.' },
+    { id: 'reg-adobe', g: 'registry', name: 'Clés d\'Adobe Reader désinstallé', sub: '14 clés', level: 'safe', color: '#868E96',
+      about: 'Des réglages restés après la désinstallation.', why: 'Plus aucun programme ne les lit.' },
+    { id: 'reg-assoc', g: 'registry', name: 'Associations de fichiers cassées', sub: '12 extensions', level: 'safe', color: '#868E96',
+      about: '« Ouvrir avec » renvoie vers des programmes supprimés.', why: 'Windows propose des choix qui n\'ouvrent plus rien.' },
+  ];
+  const LEVEL = {
+    safe: ['Sûr', 'safe', 'check'], check: ['À vérifier', 'check', 'info'], suspect: ['Suspect', 'suspect', 'bug'],
+    caution: ['À double tranchant', 'caution', 'warn'], against: ['Déconseillé', 'against', 'ban'],
+  };
+  // Ticked by default: what is safe, and what is suspect. Never what to check, cuts both ways, or is discouraged.
+  const picked = new Set(ITEMS.filter((i) => i.level === 'safe' || i.level === 'suspect').map((i) => i.id));
+  const ui = { v: 'a', tab: 'choose', open: new Set(), sel: 'avast', pending: null, unlocked: false, review: false, acks: new Set(), restart: 'end' };
+
+  const badge = (l) => `<span class="bd ${LEVEL[l][1]}">${ico(LEVEL[l][2])}${LEVEL[l][0]}</span>`;
+  const rebootBadge = (i) => (i.reboot ? `<span class="bd reboot">${ico('power')}Redémarrage</span>` : '');
+  const tile = (i) => `<span class="tile" style="background:${i.color}">${esc(i.name[0])}</span>`;
+  const note = (kind, title, text) => `<div class="note ${kind}">${ico(kind === 'info' ? 'info' : 'warn')}<span>${title ? `<b>${esc(title)}</b>` : ''}${esc(text)}</span></div>`;
+  const rebootPicked = () => ITEMS.filter((i) => i.reboot && picked.has(i.id));
+  const risky = () => ITEMS.filter((i) => picked.has(i.id) && (i.level === 'caution' || i.level === 'against'));
+
+  // Checking a discouraged item asks first (A, B); in C, its section is unlocked first.
+  function tryPick(id, on) {
+    const it = ITEMS.find((x) => x.id === id);
+    if (on && it.level === 'against' && ui.v !== 'd' && ui.v !== 'c') { ui.pending = id; return; }
+    on ? picked.add(id) : picked.delete(id);
+  }
+
+  // --- Variant A: a « Pourquoi ? » under each line ---------------------------------
+  function rowA(i) {
+    const open = ui.open.has(i.id);
+    const confirm = ui.pending === i.id ? `<div class="note danger">${ico('warn')}<span><b>Retirer quand même ?</b>${esc(i.warn)}
+        <span class="confirm"><button type="button" class="btn danger" data-confirm="${i.id}">Oui, le retirer</button><button type="button" class="btn" data-cancel>Non</button></span></span></div>` : '';
+    return `<div class="row"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>${tile(i)}
+      <div class="t"><b>${esc(i.name)}</b><div class="meta"><span>${esc(i.sub)}</span>${badge(i.level)}${rebootBadge(i)}
+        <button type="button" class="why-btn" data-why="${i.id}">${ico('info')}${open ? 'Masquer' : 'Pourquoi ?'}</button></div>
+        ${open ? note('info', 'De quoi s\'agit-il', `${i.about} ${i.why}`) : ''}
+        ${i.warn && ui.pending !== i.id ? note(i.level === 'against' ? 'danger' : 'warn', '', i.warn) : ''}${confirm}</div></div>`;
+  }
+  function listByGroup(rowFn) {
+    return `<div class="card">${Object.entries(GROUPS).map(([g, [label, icon]]) => {
+      const items = ITEMS.filter((i) => i.g === g);
+      const k = items.filter((i) => picked.has(i.id)).length;
+      return `<div class="group"><div class="group-h"><span class="gi">${ico(icon)}</span><span class="grow">${esc(label)}</span><span class="count">${k} sur ${items.length}</span></div>
+        <div class="rows">${items.map(rowFn).join('')}</div></div>`;
+    }).join('')}</div>`;
+  }
+
+  // --- Variant B: a sheet on the right ---------------------------------------------------
+  function rowB(i) {
+    return `<div class="row clickable${ui.sel === i.id ? ' sel' : ''}" data-select="${i.id}"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>${tile(i)}
+      <div class="t"><b>${esc(i.name)}</b><div class="meta">${badge(i.level)}${rebootBadge(i)}${i.warn ? `<span style="color:var(--warn)">${ico('warn')}</span>` : ''}</div></div></div>`;
+  }
+  function sheet() {
+    const i = ITEMS.find((x) => x.id === ui.sel);
+    const confirm = ui.pending === i.id ? `<div class="note danger">${ico('warn')}<span><b>Retirer quand même ?</b>Vous avez lu l'alerte ci-dessus.
+        <span class="confirm"><button type="button" class="btn danger" data-confirm="${i.id}">Oui, le retirer</button><button type="button" class="btn" data-cancel>Non</button></span></span></div>` : '';
+    return `<aside class="card sheet"><div style="display:flex;gap:12px;align-items:center">${tile(i)}<div><h3>${esc(i.name)}</h3><div class="sub">${esc(GROUPS[i.g][0])} · ${esc(i.sub)}</div></div></div>
+      <div class="badges">${badge(i.level)}${rebootBadge(i)}</div>
+      <h4>De quoi s'agit-il</h4><p>${esc(i.about)}</p>
+      <h4>Pourquoi c'est proposé</h4><p>${esc(i.why)}</p>
+      ${i.warn ? `<h4>Attention</h4>${note(i.level === 'against' ? 'danger' : 'warn', '', i.warn)}` : ''}
+      ${i.reboot ? `<h4>Redémarrage</h4><p>Coché, il demande de redémarrer le PC à la fin de l'entretien.</p>` : ''}
+      <label class="choose"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>Retirer ou désactiver cet élément</label>${confirm}</aside>`;
+  }
+
+  // --- Variant C: by level of care ------------------------------------------------------
+  function rowC(i) {
+    const locked = i.level === 'against' && !ui.unlocked;
+    return `<div class="row"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}${locked ? ' disabled' : ''}>${tile(i)}
+      <div class="t"><b>${esc(i.name)}</b><div class="meta"><span>${esc(GROUPS[i.g][0])} · ${esc(i.sub)}</span>${rebootBadge(i)}</div>
+        <div style="margin-top:4px;color:var(--text-2)">${esc(i.why)}</div>${i.warn ? note(i.level === 'against' ? 'danger' : 'warn', '', i.warn) : ''}</div></div>`;
+  }
+  const LEVELS_C = [
+    ['safe', 'Recommandé', 'Sans risque : coché d\'office.'],
+    ['suspect', 'Indésirables', 'Installés sans votre accord : cochés d\'office.'],
+    ['check', 'À vérifier', 'Utiles à certains : à vous de voir.'],
+    ['caution', 'À double tranchant', 'Lisez l\'alerte avant de cocher.'],
+    ['against', 'Déconseillé', 'Proposé pour information ; à ne retirer que si vous savez pourquoi.'],
+  ];
+  function levelsC() {
+    return LEVELS_C.map(([l, title, sub]) => {
+      const items = ITEMS.filter((i) => i.level === l);
+      if (!items.length) return '';
+      const cls = l === 'suspect' ? 'safe' : l;
+      return `<div class="level ${cls}"><div class="level-h">${badge(l)}<span class="grow">${esc(title)}<small>${esc(sub)}</small></span><span class="count">${items.filter((i) => picked.has(i.id)).length} sur ${items.length}</span></div>
+        <div class="rows">${items.map(rowC).join('')}</div>
+        ${l === 'against' ? `<label class="unlock"><input type="checkbox" data-unlock${ui.unlocked ? ' checked' : ''}>Je comprends les risques et je veux pouvoir cocher ces éléments</label>` : ''}</div>`;
+    }).join('');
+  }
+
+  // --- Variant D: compact list, a review before launching ----------------------------
+  function rowD(i) {
+    return `<div class="row"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>${tile(i)}
+      <div class="t"><b>${esc(i.name)}</b><div class="meta"><span title="${esc(`${i.about} ${i.why}`)}">${esc(i.sub)}</span>${badge(i.level)}${rebootBadge(i)}
+        ${i.warn ? `<span style="color:var(--warn);display:inline-flex;gap:4px;align-items:center" title="${esc(i.warn)}">${ico('warn')}Alerte au lancement</span>` : ''}</div></div></div>`;
+  }
+  function review() {
+    const r = risky(); const rb = rebootPicked();
+    const need = r.filter((i) => i.level === 'against');
+    const ready = need.every((i) => ui.acks.has(i.id));
+    return `<div class="modal-bg"><div class="card modal"><h3>Avant de lancer</h3><p>${r.length ? 'Ces éléments cochés peuvent avoir des conséquences :' : 'Rien de risqué n\'est coché.'}</p>
+      ${r.map((i) => `<div class="it"><div class="it-h">${tile(i)}${esc(i.name)} ${badge(i.level)}</div>${note(i.level === 'against' ? 'danger' : 'warn', '', i.warn)}
+        ${i.level === 'against' ? `<label class="ack"><input type="checkbox" data-ack="${i.id}"${ui.acks.has(i.id) ? ' checked' : ''}>Je veux quand même le retirer</label>` : ''}</div>`).join('')}
+      ${rb.length ? `<div class="it"><div class="it-h">${ico('power')} Redémarrage nécessaire — ${rb.length} élément${rb.length > 1 ? 's' : ''} coché${rb.length > 1 ? 's' : ''} le demande${rb.length > 1 ? 'nt' : ''}</div>
+        <div class="choice"><label><input type="radio" name="rs" data-restart="end"${ui.restart === 'end' ? ' checked' : ''}> Redémarrer à la fin de l'entretien</label>
+        <label><input type="radio" name="rs" data-restart="later"${ui.restart === 'later' ? ' checked' : ''}> Je redémarrerai plus tard</label></div></div>` : ''}
+      <div class="actions"><button type="button" class="btn" data-close-review>Revenir à la liste</button><button type="button" class="btn primary"${ready ? '' : ' disabled style="opacity:.5"'}>Lancer</button></div></div></div>`;
+  }
+
+  // --- The recap tab ---------------------------------------------------------------------
+  function recap() {
+    const rows = ITEMS.filter((i) => picked.has(i.id));
+    const r = risky(); const rb = rebootPicked();
+    if (!rows.length) return '<div class="card" style="padding:20px;text-align:center;color:var(--text-3)">Rien de coché.</div>';
+    return `<div class="card">${r.length || rb.length ? `<div class="recap-alerts">
+        ${r.map((i) => note(i.level === 'against' ? 'danger' : 'warn', i.name, i.warn)).join('')}
+        ${rb.length ? `<div class="note info">${ico('power')}<span><b>Redémarrage à la fin de l'entretien</b>${esc(rb.map((i) => i.name).join(', '))}.</span></div>` : ''}</div>` : ''}
+      <table class="rtable"><tr><th>Élément</th><th>Type</th><th>Prudence</th><th></th></tr>
+      ${rows.map((i) => `<tr><td><b>${esc(i.name)}</b><div style="color:var(--text-3);font-size:11.5px">${esc(i.sub)}</div></td><td>${esc(GROUPS[i.g][0])}</td>
+        <td>${badge(i.level)} ${rebootBadge(i)}</td><td><button type="button" class="link" data-unpick="${i.id}">Retirer</button></td></tr>`).join('')}</table></div>`;
+  }
+
+  // --- The variants ---------------------------------------------------------------------
+  const VARIANTS = {
+    a: { title: 'A · « Pourquoi ? » sous chaque ligne', kind: 'Complète la liste existante',
+      text: 'Des badges de prudence et de redémarrage sur chaque ligne ; « Pourquoi ? » déplie l\'explication. Les alertes restent toujours visibles. Cocher un élément déconseillé demande une confirmation, sur place.',
+      pros: ['Tout au même endroit', 'Explications à la demande', ['Longue liste chargée quand il y a beaucoup d\'alertes', 1]],
+      choose: () => listByGroup(rowA) },
+    b: { title: 'B · Fiche à droite', kind: 'Vue nouvelle',
+      text: 'Une liste courte à gauche ; un clic ouvre la fiche complète de l\'élément à droite : de quoi il s\'agit, pourquoi c\'est proposé, l\'alerte, le redémarrage.',
+      pros: ['Place pour de vraies explications', 'Liste très lisible', ['Un clic de plus pour savoir', 1]],
+      choose: () => `<div class="vb">${listByGroup(rowB)}${sheet()}</div>` },
+    c: { title: 'C · Par niveau de prudence', kind: 'Complète la liste existante',
+      text: 'Les éléments rangés par prudence plutôt que par type : recommandé, indésirables, à vérifier, à double tranchant, déconseillé. La section « Déconseillé » se déverrouille d\'une case.',
+      pros: ['On voit d\'un coup ce qui est risqué', 'Pourquoi toujours affiché', ['Un même type éclaté entre plusieurs sections', 1]],
+      choose: () => levelsC() },
+    d: { title: 'D · Revue avant de lancer', kind: 'Complète la liste existante',
+      text: 'Une liste compacte, explications au survol. Au moment de lancer, une revue reprend tout ce qui est risqué ou demande un redémarrage, et fait choisir quand redémarrer.',
+      pros: ['Liste la plus légère', 'Rien ne part sans être relu', ['Les alertes arrivent tard', 1]],
+      choose: () => listByGroup(rowD) },
+  };
+
+  function draw() {
+    const V = VARIANTS[ui.v];
+    document.getElementById('explain').innerHTML = `<b>${esc(V.title)}</b><span class="kind">${esc(V.kind)}</span> — ${esc(V.text)}
+      <div class="pros">${V.pros.map((p) => (Array.isArray(p) ? `<span class="con">${esc(p[0])}</span>` : `<span>${esc(p)}</span>`)).join('')}</div>`;
+    document.getElementById('body').innerHTML = `<div class="tabs"><button type="button" data-tab="choose" aria-selected="${ui.tab === 'choose'}">Choisir <span class="n">${ITEMS.length}</span></button>
+        <button type="button" data-tab="recap" aria-selected="${ui.tab === 'recap'}">Récapitulatif <span class="n">${picked.size}</span></button></div>
+      ${ui.tab === 'choose' ? V.choose() : recap()}`;
+    document.getElementById('extra').innerHTML = ui.v === 'd' && ui.review ? review() : '';
+    const rb = rebootPicked();
+    document.getElementById('sum').innerHTML = `${picked.size} élément${picked.size > 1 ? 's' : ''} coché${picked.size > 1 ? 's' : ''}<small>${risky().length} à double tranchant ou déconseillé${risky().length > 1 ? 's' : ''}</small>`;
+    document.getElementById('rebootNote').innerHTML = rb.length ? `<span class="reboot-note">${ico('power')}Redémarrage nécessaire · ${rb.length} élément${rb.length > 1 ? 's' : ''}</span>` : '';
+  }
+
+  document.getElementById('variants').onclick = (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    ui.v = b.dataset.v; ui.pending = null; ui.review = false;
+    document.querySelectorAll('#variants button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    draw();
+  };
+  document.getElementById('theme').onclick = (e) => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    document.documentElement.dataset.theme = b.dataset.t;
+    document.querySelectorAll('#theme button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  };
+  document.getElementById('launch').onclick = () => { if (ui.v === 'd') { ui.review = true; draw(); } };
+  const screen = document.getElementById('screen');
+  screen.addEventListener('change', (e) => {
+    const t = e.target, d = t.dataset;
+    if (d.pick) tryPick(d.pick, t.checked);
+    else if (d.unlock !== undefined) { ui.unlocked = t.checked; if (!t.checked) ITEMS.filter((i) => i.level === 'against').forEach((i) => picked.delete(i.id)); }
+    else if (d.ack) t.checked ? ui.acks.add(d.ack) : ui.acks.delete(d.ack);
+    else if (d.restart) ui.restart = d.restart;
+    else return;
+    draw();
+  });
+  screen.addEventListener('click', (e) => {
+    const el = e.target;
+    if (el.closest('input, label')) return;
+    const b = el.closest('[data-why], [data-confirm], [data-cancel], [data-tab], [data-unpick], [data-select], [data-close-review]'); if (!b) return;
+    const d = b.dataset;
+    if (d.why) ui.open.has(d.why) ? ui.open.delete(d.why) : ui.open.add(d.why);
+    else if (d.confirm) { picked.add(d.confirm); ui.pending = null; }
+    else if (d.cancel !== undefined) ui.pending = null;
+    else if (d.tab) ui.tab = d.tab;
+    else if (d.unpick) picked.delete(d.unpick);
+    else if (d.select) ui.sel = d.select;
+    else if (d.closeReview !== undefined) ui.review = false;
+    draw();
+  });
+  // `#b`, `#d,revue`, `#a,pourquoi`, `,recap`: a variant in a given state, for captures.
+  const [v, ...flags] = location.hash.slice(1).split(',');
+  if (VARIANTS[v]) { ui.v = v; document.querySelectorAll('#variants button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
+  if (flags.includes('revue')) { picked.add('avast'); picked.add('spooler'); picked.add('wsearch'); ui.review = true; }
+  if (flags.includes('pourquoi')) { ui.open.add('webcomp'); ui.open.add('onedrive'); ui.pending = 'avast'; }
+  if (flags.includes('recap')) { picked.add('spooler'); picked.add('mcafee'); ui.tab = 'recap'; }
+  draw();
+})();
+</script>
+</body>
+</html>
