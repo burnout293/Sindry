@@ -661,6 +661,8 @@ recommander un choix qu'une fois tous mesurés :
 | `date=` | `AAAA-MM-JJ` | Une date : dernière utilisation, installation |
 | `kind=` | `folder` `file` `registry` `app` `startup` `service` `task` `driver` `browser` | L'icône de la ligne |
 | `exe=` | chemin absolu local vers un `.exe`, un `.dll` ou un `.ico` | **La vraie icône** du programme (2.0.3), avec `kind=app`, `startup`, `service` ou `task`. Sindry la lit lui-même dans le fichier. Comme `path=`, **jamais renvoyé** — voir ci-dessous |
+| `appicon=` | un nom : minuscules, chiffres, tirets | **L'icône officielle** d'une application (2.0.4), téléchargée par Sindry depuis le dépôt `burnout293/Sindry-Icons` — voir ci-dessous |
+| `icon=` | un nom d'icône Lucide | Une icône **générique** pour l'élément, une application comme une catégorie (2.0.4) : `globe`, `music`, `code`… |
 | `confidence=` | `high` / `medium` / `low` | Sûr, Probable, À vérifier — **`low` n'est jamais coché d'office** |
 | `impact=` | `high` / `medium` / `low` | Impact élevé, moyen, faible |
 | `risk=` | `high` / `medium` / `low` | Suspect, Inhabituel — `low` n'affiche rien |
@@ -687,6 +689,28 @@ piégé, d'où ces règles :
 - n'écrivez pas `exe=` pour un service hébergé par `svchost.exe`, ni pour une tâche qui
   lance `rundll32.exe` ou `cmd.exe` : leur icône n'apprend rien. Désignez le vrai programme
   s'il est connu, sinon rien.
+
+**Quelle icône s'affiche.** De la plus précise à la plus générale : l'icône lue dans le
+fichier d'`exe=` (une application installée), puis l'icône téléchargée d'`appicon=`, puis
+l'icône Lucide d'`icon=`, puis celle du `kind`. Écrivez-en plusieurs : chacune sert de repli
+à la précédente.
+
+**`appicon=` : l'icône officielle d'une application qui n'est pas encore là (2.0.4).** Le
+script ne donne qu'un **nom** ; Sindry télécharge `icons/<nom>.png` depuis **un seul endroit**,
+le dépôt GitHub `burnout293/Sindry-Icons`. Un script ne peut donc ni faire contacter à Sindry
+un serveur de son choix, ni envoyer une image :
+
+- en HTTPS seulement, sans suivre de redirection ni envoyer d'identifiant ;
+- **toutes** les icônes que l'analyse nomme sont demandées, quel que soit l'état de leur
+  élément : le serveur n'apprend pas ce qui est installé ;
+- un PNG ou un ICO, reconnu à ses premiers octets, 128 Ko au plus — jamais un SVG ;
+- gardée 30 jours sur le disque, et revérifiée à chaque lecture ;
+- l'écran s'affiche d'abord avec l'icône de repli ; l'icône officielle prend sa place en
+  arrivant ;
+- l'utilisateur peut couper ce téléchargement (Réglages, 3.3) : rien ne quitte alors le PC.
+
+Une icône absente du dépôt n'est pas une erreur : l'élément garde son repli. Pour en ajouter
+une, c'est au dépôt `Sindry-Icons` qu'il faut la proposer, pas au script.
 
 #### Les champs de `[METRIC]`
 
@@ -764,6 +788,24 @@ ce sont les ids à supprimer.**
 
 Limites : 5 000 éléments par liste, 20 000 lignes par analyse, 400 caractères par texte.
 Au-delà, la suite est ignorée, et l'Expert le voit.
+
+**Les longues listes (2.0.4).** Au-delà de **12 éléments** dans les listes `[items]` d'une
+action, Sindry les présente autrement, sans rien à déclarer :
+
+| Ce que voit l'utilisateur | Détail |
+|---|---|
+| Les catégories **repliées** | Un parent (un élément qui en a d'autres sous lui) s'ouvre replié ; l'utilisateur le déplie, et Sindry retient son choix |
+| Une **recherche** | Sur le nom, l'éditeur et le chemin ; elle déplie et surligne ce qu'elle trouve |
+| **Afficher** : par catégories, ou liste A → Z | La liste A → Z montre chaque élément, sa catégorie à côté |
+| **Trier par** : nom, ou éditeur | Le tri par éditeur n'est proposé que si des éléments ont un `publisher=` |
+
+Pour un lot d'une seule action, le mode Simple montre le résumé de Sindry, en postes. Pour
+qu'il montre la liste elle-même, avec sa barre, déclarez une vue : `## view : tree`.
+
+**« Ce qui sera fait »** liste tout ce qui est coché, regroupé par option — une liste
+`[items]`, un `[multi]` — avec l'icône de chaque élément et sa version proposée (`to=`). En
+Expert, c'est un panneau ; en Simple, il s'affiche aussi, sous l'analyse, replié s'il dépasse
+quinze lignes.
 
 ### Les étiquettes : `[group:]`, `[show:]`, `[view:]`, `[scan]`
 
@@ -1346,6 +1388,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `ITEM_SANS_ID` | erreur | `[ITEM]` sans `id=` |
 | `ITEM_CHAMP` | erreur | `[ITEM]` avec un champ inconnu, une valeur hors liste, ou `exe=` sur un `kind` qui ne s'exécute pas |
 | `ITEM_EXE` | avertissement | `exe=` qui n'est pas un chemin local absolu vers un `.exe`, un `.dll` ou un `.ico` (2.0.3) |
+| `ITEM_ICONE` | avertissement | `icon=` qui n'est pas une icône Lucide, ou `appicon=` qui n'est pas un nom (minuscules, chiffres, tirets) (2.0.4) |
 | `LIBELLE_INCONNU` | erreur | `[ITEM] … label=` vise une clé absente du bloc `REPORT` |
 | `METRIC_CLE_INCONNUE` | erreur | `[METRIC]` vise une clé qui n'est pas un libellé du bloc `REPORT` |
 | `METRIC_CHAMP` | erreur | `[METRIC]` sans `value=`, avec un champ inconnu ou une valeur hors liste |

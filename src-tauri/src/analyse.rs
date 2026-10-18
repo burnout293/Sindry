@@ -196,7 +196,7 @@ const CHAMPS_FIND: [&str; 8] = [
     "recommended",
     "show",
 ];
-const CHAMPS_ITEM: [&str; 22] = [
+const CHAMPS_ITEM: [&str; 24] = [
     "id",
     "parent",
     "group",
@@ -221,13 +221,33 @@ const CHAMPS_ITEM: [&str; 22] = [
     // 2.0.3: the file whose icon the item shows; read by Sindry, never sent
     // back to the script (see `icon.rs`).
     "exe",
+    // 2.0.4: a Lucide icon for the item (shown when exe= gives nothing), and
+    // the name of an application icon kept in the Sindry-Icons repository,
+    // downloaded by Sindry (see `appicon.rs`).
+    "icon",
+    "appicon",
 ];
+
+/// The Lucide icon names the app ships, for `icon=` (2.0.4): an unknown name
+/// would draw an empty square. Same list as the validator's.
+fn is_lucide(name: &str) -> bool {
+    static NAMES: std::sync::OnceLock<BTreeSet<&'static str>> = std::sync::OnceLock::new();
+    NAMES
+        .get_or_init(|| {
+            include_str!("../../tools/lucide-icon-names.txt")
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty() && !l.starts_with('#'))
+                .collect()
+        })
+        .contains(name)
+}
 /// The kinds an `exe=` makes sense for: things that run.
 const KINDS_WITH_EXE: [&str; 4] = ["app", "startup", "service", "task"];
 /// Distinct files read for icons per analysis; the rest keep their kind icon.
 const MAX_ICON_FILES: usize = 300;
 
-/// Replaces each item's `exe=` with `icon`, the `data:` URL of that file's
+/// Replaces each item's `exe=` with `image`, the `data:` URL of that file's
 /// icon, read locally (`icon.rs`). A file read once serves every item that
 /// names it. An unreadable file just leaves the item with its kind icon.
 pub fn attach_icons(a: &mut Analyse) {
@@ -244,7 +264,7 @@ pub fn attach_icons(a: &mut Analyse) {
             read.insert(key.clone(), crate::icon::data_url(&exe));
         }
         if let Some(Some(url)) = read.get(&key) {
-            e.fields.insert("icon".into(), url.clone());
+            e.fields.insert("image".into(), url.clone());
         }
     }
 }
@@ -275,6 +295,12 @@ fn filtrer(
             Some(format!("{nom}={valeur} n’est pas un identifiant"))
         } else if nom == "value" && !est_nombre(&valeur) && !est_jeton(&valeur, 32) {
             Some(format!("value={valeur} n’est ni un nombre ni un jeton"))
+        } else if nom == "icon" && !is_lucide(&valeur) {
+            Some(format!("icon={valeur} n’est pas une icône Lucide"))
+        } else if nom == "appicon" && !crate::appicon::is_name(&valeur) {
+            Some(format!(
+                "appicon={valeur} n’est pas un nom d’icône (minuscules, chiffres, tirets)"
+            ))
         } else if nom == "exe" && crate::icon::local_path(&valeur).is_none() {
             Some(format!(
                 "exe={valeur} n’est pas un chemin local absolu vers un .exe, un .dll ou un .ico"
@@ -885,12 +911,41 @@ mod tests {
                 .find(|e| e.fields["id"] == id)
                 .unwrap()
                 .fields
-                .get("icon")
+                .get("image")
         };
         #[cfg(windows)]
         assert!(icon("a").is_some_and(|u| u.starts_with("data:image/x-icon;base64,")));
         assert!(icon("b").is_none() && icon("c").is_none() && icon("e").is_none());
         assert!(icon("d").is_none(), "an absent file keeps the kind icon");
+    }
+
+    #[test]
+    fn icon_names_a_lucide_icon_and_appicon_a_repository_icon() {
+        let a = lire(
+            &script(),
+            &lignes(
+                "[ITEM] Browsers id=a kind=app icon=globe appicon=firefox\n\
+                 [ITEM] Browsers id=b kind=app icon=not-an-icon appicon=\"Fire Fox\"\n\
+                 [ITEM] Browsers id=c kind=app image=data:image/png;base64,AAAA",
+            ),
+        );
+        assert_eq!(a.items.len(), 3);
+        assert_eq!(
+            a.items[0].fields.get("icon").map(String::as_str),
+            Some("globe")
+        );
+        assert_eq!(
+            a.items[0].fields.get("appicon").map(String::as_str),
+            Some("firefox")
+        );
+        assert!(
+            !a.items[1].fields.contains_key("icon") && !a.items[1].fields.contains_key("appicon")
+        );
+        assert!(
+            !a.items[2].fields.contains_key("image"),
+            "image is Sindry's, never the script's"
+        );
+        assert_eq!(a.anomalies.len(), 3, "{:?}", a.anomalies);
     }
 
     #[test]

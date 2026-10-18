@@ -2345,6 +2345,22 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .an-badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .an-badges .badge .ico { margin-right: 3px; }
 .an-pub { font-size: 11.5px; color: var(--text-3); }
+.an-categorie { padding: 0 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.an-t mark, .an-pub mark, .an-chemin mark { background: color-mix(in srgb, var(--acc) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+/* Lucide icon named by `icon=` (2.0.4): a mask, coloured like the text. */
+.an-ico-luc { display: block; width: 15px; height: 15px; background: currentColor;
+  -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+.an-ico-attente { display: grid; place-items: center; }
+/* The bar above long lists (2.0.4, M33): search, display, sort. */
+.an-barre-listes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; }
+.an-cherche-liste { position: relative; flex: 1 1 240px; display: flex; }
+.an-cherche-liste .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.an-cherche-liste .an-cherche { flex: 1; height: 34px; padding-left: 32px; font-size: 13px; }
+.an-seg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.an-seg button { border: 1px solid var(--border); background: var(--surface); padding: 4px 11px; font-size: 12px; font-weight: 700; color: var(--text-2); }
+.an-seg button:first-of-type { border-radius: 999px 0 0 999px; }
+.an-seg button:last-of-type { border-radius: 0 999px 999px 0; margin-left: -7px; }
+.an-seg button[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-on); position: relative; }
 .an-v { text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 72px; }
 .an-v small { display: block; font-weight: 500; font-size: 11px; color: var(--text-3); }
 .an-jauge { height: 5px; border-radius: 3px; background: var(--surface-3); margin-top: 5px; overflow: hidden; }
@@ -2471,7 +2487,26 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .an-journal .m-step { color: var(--term-step); } .an-journal .m-ok { color: var(--term-ok); } .an-journal .m-warn { color: var(--term-warn); }
 .an-journal .m-find, .an-journal .m-item, .an-journal .m-metric, .an-journal .m-note { color: var(--term-info); }
 .an-journal .m-log { color: var(--term-dim); }
-.an-plan { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.an-plan { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+/* « Ce qui sera fait », grouped and complete (2.0.4, M33). */
+.an-plan li { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.an-plan-g + .an-plan-g { margin-top: 10px; }
+.an-plan-h { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); }
+.an-plan-h span { margin-left: auto; font-weight: 600; color: var(--text-3); letter-spacing: 0; }
+.an-plan-ico { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; color: var(--text-2); }
+.an-plan-ico .an-ico-app { width: 16px; height: 16px; }
+.an-plan-ico .an-ico-luc { width: 13px; height: 13px; }
+.an-plan-t { min-width: 0; display: flex; flex-direction: column; }
+.an-plan-action { margin: 12px 0 6px; font-weight: 700; font-size: 12.5px; }
+.an-plan-action:first-child { margin-top: 0; }
+.an-plan-simple { margin-top: 12px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.an-plan-simple > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 9px; padding: 13px 18px; }
+.an-plan-simple > summary::-webkit-details-marker { display: none; }
+.an-plan-simple > summary .an-total { margin-left: auto; }
+.an-plan-simple .an-plan-chev { transition: transform .2s; transform: rotate(-90deg); color: var(--text-3); }
+.an-plan-simple[open] .an-plan-chev { transform: none; }
+.an-plan-simple-b { padding: 4px 18px 16px; max-height: 360px; overflow: auto; font-size: 13px; }
 .an-attention { display: flex; gap: 8px; align-items: flex-start; font-size: 11.5px; }
 .an-attention code { color: var(--warn); }
 .an-petit { font-size: 11px; margin: 0; }

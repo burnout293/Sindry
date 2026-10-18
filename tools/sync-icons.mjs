@@ -53,6 +53,7 @@ const SPRITE = {
   trash: 'trash-2',
   // Catalogues (M29): disable.
   'circle-off': 'circle-off',
+  'list-checks': 'list-checks',
   folder: 'folder',
   x: 'x',
   // Bulle d'aide : sert partout ou un reglage a besoin d'etre explique sans

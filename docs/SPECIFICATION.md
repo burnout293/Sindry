@@ -666,7 +666,7 @@ Avancé, seul l'historique s'y montre.
 |---|---|---|
 | **1 Général** | 1.1 Langue · 1.2 Mises à jour : versions stables, bêta aussi (la release publiée la plus récente, pré-version comprise), jamais · 1.3 Rechercher une mise à jour · 1.4 Présentation de Sindry (revoir la bienvenue) · 1.5 Numéros des réglages | partout |
 | **2 Apparence** | 2.1 Thème : clair, sombre, Windows (aussi l'icône soleil / lune) · 2.2 Taille de l'interface · 2.3 Ambiance (§15.4, §15.7) · 2.4 Partager une ambiance : importer, exporter, retirer, ouvrir le dossier, guide du format | partout |
-| **3 Catalogues** | 3.1 Les catalogues en tableau (2.0.2, maquette M29) : les commandes dans une barre — ajouter, mettre à jour, rechercher des mises à jour, modifier, activer ou désactiver, retirer —, reprises au clic droit ; le détail et la liste des actions à cocher sous le tableau ; ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des mises à jour (au démarrage, ou sur demande) | partout |
+| **3 Catalogues** | 3.1 Les catalogues en tableau (2.0.2, maquette M29) : les commandes dans une barre — ajouter, mettre à jour, rechercher des mises à jour, modifier, activer ou désactiver, retirer —, reprises au clic droit ; le détail et la liste des actions à cocher sous le tableau ; ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des mises à jour (au démarrage, ou sur demande) · 3.3 Icônes des applications : les télécharger depuis le dépôt Sindry-Icons, ou rien (2.0.4, §17.4) | partout |
 | **4 Actions** | 4.1 En cas d'échec : continuer ou arrêter la série · 4.2 Politique d'exécution : Bypass, RemoteSigned, Unrestricted (§6.7) · 4.3 Dossier des scripts · 4.4 Ré-analyser tous les scripts (§5.5) | Expert |
 | **5 Avancé** | 5.1 Taille maximale des journaux · 5.2 Emplacements protégés, en administrateur (§12.4) · 5.3 Rapport de conformité · 5.4 Exporter la configuration · 5.5 Importer une configuration · 5.6 Réinitialiser aux réglages d'usine | Expert |
 | | 5.7 Historique | partout |
@@ -1783,6 +1783,16 @@ En conséquence :
   flux, ni nom de périphérique, ni raccourci. Une image, la plus proche de 32 px, 64 Ko au
   plus, jointe à l'analyse par le moteur : l'interface ne demande jamais une icône par
   chemin. `exe=` ne revient jamais au script.
+- **Les icônes officielles des applications (2.0.4)** : `[ITEM] … appicon=<nom>` ne donne
+  qu'un nom, et Sindry télécharge `icons/<nom>.png` depuis **une seule adresse**, le dépôt
+  `burnout293/Sindry-Icons` (`appicon.rs`). Aucune adresse ne vient du script : il ne peut
+  faire contacter ni un serveur qui le pisterait, ni une machine du réseau local. HTTPS
+  seulement, aucune redirection suivie, aucun identifiant envoyé ; **toutes** les icônes
+  nommées sont demandées, quel que soit l'état de leur élément, pour que le serveur
+  n'apprenne pas ce qui est installé. Un PNG ou un ICO reconnu à ses premiers octets, 128 Ko
+  au plus, jamais un SVG ; gardé 30 jours dans `%LOCALAPPDATA%\Sindry\cache\icons` et
+  revérifié à chaque lecture, ce dossier appartenant à l'utilisateur. Réglage 3.3 pour tout
+  couper ; activé par défaut.
 - L'interface ne présente jamais l'analyse comme « sans risque ». Elle dit ce qu'elle fait :
   Sindry examine le PC.
 

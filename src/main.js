@@ -3451,12 +3451,16 @@ async function cablerMoteur() {
 
   // Ce qu'une analyse a rapporte, lu contre l'entete par le moteur (§17). Il
   // precede toujours `script:end`.
+  // Application icons (2.0.4): put in place as they arrive.
+  await ecouter('app-icon', ({ payload }) => A.iconeApp(payload?.name, payload?.url));
+
   await ecouter('script:analysis', ({ payload }) => {
     if (!course?.analyse || payload.run_id !== course.runId) return;
     const entree = catalogue.get(payload.script_id);
     if (!entree) return;
     A.oublier(entree.id);
     analyses.set(entree.id, A.modele(entree, payload.analysis, payload.success));
+    demanderIconesApp([analyses.get(entree.id)]);
     heuresAnalyse.set(entree.id, new Date());
   });
 
@@ -4752,6 +4756,35 @@ function grapheDuLot(modeles) {
   return modeles.map((m) => m.entree.meta.chart).find(Boolean) || 'donut';
 }
 
+/** Whether the Simple « Ce qui sera fait » was left open; null: not touched. */
+let planSimpleOuvert = null;
+
+/** A search field of an analysis keeps its focus and caret across a redraw:
+ *  the screen is redrawn at each letter typed. */
+function garderRecherche(redessiner) {
+  const champ = document.activeElement?.matches?.('[data-a-cherche], [data-a-cherche-liste]') ? document.activeElement : null;
+  const cible = champ && (champ.matches('[data-a-cherche-liste]')
+    ? `[data-a-cherche-liste][data-a-script="${CSS.escape(champ.dataset.aScript || '')}"]` : '[data-a-cherche]');
+  const position = champ?.selectionStart;
+  redessiner();
+  if (!champ) return;
+  const nouveau = document.querySelector(cible);
+  nouveau?.focus();
+  if (nouveau && position != null) nouveau.setSelectionRange(position, position);
+}
+
+/** Application icons (2.0.4): every name an analysis gives, asked once per
+ *  session, whatever the state of its item. They arrive as `app-icon`
+ *  events, after the screen is shown. */
+const iconesDemandees = new Set();
+function demanderIconesApp(modeles) {
+  if (reglagesActuels?.icones_sans_telechargement) return;
+  const noms = A.nomsIconesApp(modeles).filter((n) => !iconesDemandees.has(n));
+  if (!noms.length) return;
+  noms.forEach((n) => iconesDemandees.add(n));
+  invoke('app_icons', { names: noms }).catch((e) => console.error('Icones des applications :', e));
+}
+
 function rendreResumeAnalyse(groupe) {
   const g = groupe || groupeLancement;
   if (!g || !analyseSimple) return;
@@ -4766,6 +4799,16 @@ function rendreResumeAnalyse(groupe) {
   zone.innerHTML = modeles.length === 1 && modeles[0].entree.meta.view
     ? `<div class="an-carte">${A.vue(modeles[0], 'simple', { historique: historiqueDe(modeles[0].entree.id) })}</div>`
     : `<div class="an-carte">${A.resume(modeles, { graphe: grapheDuLot(modeles), ...A.etatUi() })}</div>`;
+  // « Ce qui sera fait », in Simple too (2.0.4, M33): open when short, and
+  // as the user left it afterwards.
+  const plan = A.planResume(modeles);
+  if (plan.n) {
+    const ouvert = planSimpleOuvert ?? plan.n <= 15;
+    zone.insertAdjacentHTML('beforeend', `<details class="an-plan-simple"${ouvert ? ' open' : ''}>
+      <summary>${ico('list-checks', 'i16')}<b>${esc(t('an.p.plan'))}</b><span class="an-total">${plan.n}</span>${ico('chevron', 'i14 an-plan-chev')}</summary>
+      <div class="an-plan-simple-b">${plan.html}</div></details>`);
+    zone.querySelector('.an-plan-simple').addEventListener('toggle', (e) => { planSimpleOuvert = e.target.open; });
+  }
   A.poserPartiels(zone);
 
   const visibles = scriptsRetenus(g);
@@ -4976,22 +5019,19 @@ function lireConfigCarte(entree) {
 
 /** Redessine ce qui montre une analyse : le resume Simple, la fiche Expert. */
 function rafraichirZonesAnalyse({ garderFocus = false } = {}) {
-  const champ = garderFocus && document.activeElement?.matches?.('[data-a-cherche]') ? document.activeElement : null;
-  const position = champ?.selectionStart;
-  if (analyseSimple && !document.getElementById('analyseZone').hidden && document.getElementById('anProgression').hidden) {
-    rendreResumeAnalyse();
-  }
-  document.querySelectorAll('.an-zone[id^="an-"]').forEach((z) => {
-    const entree = catalogue.get(z.id.slice(3));
-    if (!entree) return;
-    z.innerHTML = contenuAnalyseExpert(entree);
-    A.poserPartiels(z);
-  });
-  if (champ) {
-    const nouveau = document.querySelector('[data-a-cherche]');
-    nouveau?.focus();
-    if (nouveau && position != null) nouveau.setSelectionRange(position, position);
-  }
+  const redessiner = () => {
+    if (analyseSimple && !document.getElementById('analyseZone').hidden && document.getElementById('anProgression').hidden) {
+      rendreResumeAnalyse();
+    }
+    document.querySelectorAll('.an-zone[id^="an-"]').forEach((z) => {
+      const entree = catalogue.get(z.id.slice(3));
+      if (!entree) return;
+      z.innerHTML = contenuAnalyseExpert(entree);
+      A.poserPartiels(z);
+    });
+  };
+  if (garderFocus) garderRecherche(redessiner);
+  else redessiner();
 }
 
 async function analyserExpert(id) {
@@ -5309,7 +5349,7 @@ function cablerModeEtSimple() {
     }
     if (ev.target.closest('#btnSuivantVerifier')) return void suivreVerifier();
     // Les gestes du resume de l'analyse (§17) : cases, chevrons, interrupteurs.
-    if (ev.target.closest('#anResume') && A.agir(ev, analyses)) return void rendreResumeAnalyse();
+    if (ev.target.closest('#anResume') && A.agir(ev, analyses)) return void garderRecherche(() => rendreResumeAnalyse());
     const lancerOuFinir = ev.target.closest('#btnLancerEntretien');
     if (lancerOuFinir) {
       if (!lancerOuFinir.dataset.fin) return void lancerEntretien();
@@ -5334,7 +5374,11 @@ function cablerModeEtSimple() {
   });
 
   document.getElementById('anResume').addEventListener('change', (ev) => {
-    if (A.agir(ev, analyses)) rendreResumeAnalyse();
+    if (A.agir(ev, analyses)) garderRecherche(() => rendreResumeAnalyse());
+  });
+  // The search of long lists (2.0.4): redrawn at each letter.
+  document.getElementById('anResume').addEventListener('input', (ev) => {
+    if (ev.target.matches('[data-a-cherche-liste]') && A.agir(ev, analyses)) garderRecherche(() => rendreResumeAnalyse());
   });
 
   afficherJournal(false);
@@ -5704,6 +5748,7 @@ function remplirFormulaireReglages(reglages) {
   });
   majActionsAmbiance();
   document.getElementById('setCatalogueSelect').value = reglages.catalogue_check || 'startup';
+  document.getElementById('setIconesToggle').setAttribute('aria-checked', String(!reglages.icones_sans_telechargement));
   rendreReglagesCatalogue();
   document.getElementById('setEchecSelect').value = reglages.failure_policy;
   document.getElementById('setJournauxInput').value = reglages.log_cap_mb;
@@ -6426,6 +6471,14 @@ function cablerReglages() {
   document.getElementById('btnProtegesDroits').onclick = () => {
     fermerReglages();
     ouvrirFenetreDroits();
+  };
+  // 3.3, application icons (2.0.4). Turned back on, the names already asked
+  // are asked again at the next analysis.
+  document.getElementById('setIconesToggle').onclick = async (ev) => {
+    const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
+    ev.currentTarget.setAttribute('aria-checked', String(actif));
+    reglagesActuels = await invoke('set_app_icons', { value: actif });
+    if (actif) iconesDemandees.clear();
   };
   document.getElementById('setNumerosToggle').onclick = async (ev) => {
     const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';

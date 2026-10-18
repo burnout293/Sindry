@@ -179,6 +179,60 @@ const visibleDecl = (o, valeur, mode) => montre(o.def, mode) && (valeur == null 
 const enfantsDe = (o, id) => o.items.filter((it) => it.parent === id);
 const feuilles = (o) => o.items.filter((it) => !enfantsDe(o, it.id).length && !it.locked && it.state !== 'ok');
 const racines = (o) => o.items.filter((it) => !it.parent || !o.items.some((x) => x.id === it.parent));
+/** The elements of a list: everything that is not a parent. */
+const elementsDe = (o) => o.items.filter((it) => !enfantsDe(o, it.id).length);
+
+/* -------------------------------------------------------------------------
+   Long lists (2.0.4, mockups M31 to M33): beyond LISTE_LONGUE elements, the
+   [items] lists of an action open folded, under a bar to search them, show
+   them by category or A → Z, and sort them by name or publisher.
+   ------------------------------------------------------------------------- */
+
+const LISTE_LONGUE = 12;
+/** The [items] lists drawn as a list — not a table, tiles, a treemap or
+ *  duplicates — minus those a view already shows (`exclues`). */
+const listesAffichees = (m, exclues = new Set()) => Object.entries(m.options).filter(([k, o]) =>
+  o.def.kind === 'items' && !o.def.scan && !o.def.keep_one && !['table', 'tiles', 'treemap'].includes(o.def.view) && !exclues.has(k));
+const estLongue = (m, exclues) => listesAffichees(m, exclues).reduce((n, [, o]) => n + elementsDe(o).length, 0) > LISTE_LONGUE;
+
+/** What is searched, how it is shown and sorted, per action. Nothing here
+ *  goes to the script. */
+const LISTES = new Map();
+function etatListes(m) {
+  let e = LISTES.get(m.entree.id);
+  if (!e) { e = { q: '', affichage: 'arbre', tri: 'nom' }; LISTES.set(m.entree.id, e); }
+  return e;
+}
+/** Lowercase without accents, one character for one: a match found in the
+ *  folded text sits at the same place in the original. */
+const plier = (s) => [...String(s)].map((c) => c.normalize('NFD')[0].toLowerCase()).join('');
+function surligne(texte, q) {
+  const i = q ? plier(texte).indexOf(q) : -1;
+  if (i < 0) return esc(texte);
+  const chars = [...texte];
+  return `${esc(chars.slice(0, i).join(''))}<mark>${esc(chars.slice(i, i + [...q].length).join(''))}</mark>${esc(chars.slice(i + [...q].length).join(''))}`;
+}
+/** Is this parent folded? Its user's choice, else folded in a long list. */
+function estPlie(m, k, id) {
+  return selection(m).plie[`${k}/${id}`] ?? estLongue(m);
+}
+
+/** The bar above long lists: search, display, sort. */
+function barreListes(m, exclues) {
+  if (!estLongue(m, exclues)) return '';
+  const e = etatListes(m);
+  const id = esc(m.entree.id);
+  const listes = listesAffichees(m, exclues);
+  const avecParents = listes.some(([, o]) => o.items.some((it) => it.parent));
+  const avecEditeurs = listes.some(([, o]) => o.items.some((it) => it.publisher));
+  const seg = (attr, val, lib, actif) => `<button type="button" data-a-script="${id}" ${attr}="${val}" aria-pressed="${actif}">${esc(lib)}</button>`;
+  return `<div class="an-barre-listes">
+      <span class="an-cherche-liste">${ico('search', 'i14')}<input type="search" class="an-cherche" data-a-script="${id}" data-a-cherche-liste
+        placeholder="${esc(t('an.chercher_liste'))}" aria-label="${esc(t('an.chercher_liste'))}" value="${esc(e.q)}"></span>
+      ${avecParents ? `<span class="an-seg"><span>${esc(t('an.afficher'))}</span>${seg('data-a-affichage', 'arbre', t('an.par_categories'), e.affichage === 'arbre')}${seg('data-a-affichage', 'plat', t('an.liste_az'), e.affichage === 'plat')}</span>` : ''}
+      ${avecEditeurs ? `<span class="an-seg"><span>${esc(t('an.trier_par'))}</span>${seg('data-a-tri-liste', 'nom', t('an.tri_nom'), e.tri === 'nom')}${seg('data-a-tri-liste', 'editeur', t('an.tri_editeur'), e.tri === 'editeur')}</span>` : ''}
+    </div>`;
+}
 
 /* -------------------------------------------------------------------------
    La selection : ce qui repartira vers le script
@@ -334,14 +388,49 @@ const JETONS = {
   risk: { high: ['an.risk.high', 'high'], medium: ['an.risk.medium', 'med'] },
   health: { ok: ['an.health.ok', 'ok'], warn: ['an.health.warn', 'warn'], crit: ['an.health.crit', 'crit'] },
 };
-/** The real icon of a program (2.0.3): Sindry read it from the file the
- *  script named with `exe=` (`icon.rs`) — never an image from the script.
- *  Otherwise, the icon of the kind. */
+/** Application icons downloaded by Sindry from the Sindry-Icons repository
+ *  (`appicon.rs`, 2.0.4), by name. They arrive after the screen is shown. */
+const ICONES_APP = new Map();
+const IMAGE_ICONE = /^data:image\/(png|x-icon);base64,[A-Za-z0-9+/=]+$/;
+const NOM_LUCIDE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** An icon arrived: kept for the next drawings, and put in place at once
+ *  where its fallback is shown, without redrawing the screen. */
+export function iconeApp(nom, url) {
+  if (!url || !IMAGE_ICONE.test(url)) return;
+  ICONES_APP.set(nom, url);
+  document.querySelectorAll(`[data-appicon="${CSS.escape(nom)}"]`).forEach((el) => {
+    el.outerHTML = `<img class="an-ico-app" src="${url}" alt="" width="20" height="20">`;
+  });
+}
+
+/** Every `appicon=` an analysis names: all of them are fetched, whatever the
+ *  state of their item, so that the server cannot tell what is installed. */
+export function nomsIconesApp(modeles) {
+  const noms = new Set();
+  for (const m of modeles) for (const o of Object.values(m.options)) for (const it of o.items) if (it.appicon) noms.add(it.appicon);
+  return [...noms];
+}
+
+/** The icon of an item, from the most to the least specific:
+ *  - the real icon of the program, read by Sindry in the file `exe=` names
+ *    (`icon.rs`, 2.0.3) — never an image from the script;
+ *  - the official icon `appicon=` names, downloaded from the Sindry-Icons
+ *    repository (2.0.4) — until it arrives, the fallback below waits in its
+ *    place;
+ *  - the Lucide icon `icon=` names (2.0.4), drawn as a mask so that it takes
+ *    the colour of the text;
+ *  - the icon of its kind. */
 function iconeElement(it) {
-  if (typeof it.icon === 'string' && it.icon.startsWith('data:image/x-icon;base64,')) {
-    return `<img class="an-ico-app" src="${esc(it.icon)}" alt="" width="20" height="20">`;
+  if (typeof it.image === 'string' && IMAGE_ICONE.test(it.image)) {
+    return `<img class="an-ico-app" src="${it.image}" alt="" width="20" height="20">`;
   }
-  return ico(ICONE_GENRE[it.kind] || 'file', 'i14');
+  const telechargee = it.appicon && ICONES_APP.get(it.appicon);
+  if (telechargee) return `<img class="an-ico-app" src="${telechargee}" alt="" width="20" height="20">`;
+  const repli = typeof it.icon === 'string' && NOM_LUCIDE.test(it.icon)
+    ? `<span class="an-ico-luc" style="-webkit-mask-image:url(icons/${it.icon}.svg);mask-image:url(icons/${it.icon}.svg)"></span>`
+    : ico(ICONE_GENRE[it.kind] || 'file', 'i14');
+  return it.appicon ? `<span class="an-ico-attente" data-appicon="${esc(it.appicon)}">${repli}</span>` : repli;
 }
 const ICONE_GENRE = { folder: 'folder', file: 'file', registry: 'database', app: 'package', startup: 'power', service: 'settings', task: 'calendar-clock', driver: 'cpu', browser: 'globe' };
 const badge = (type, v) => {
@@ -426,11 +515,19 @@ function brique(m, k, mode) {
   return '';
 }
 
-function ligneItem(m, k, it, mode) {
+/**
+ * One element of an [items] list, and its children. `vue` (2.0.4): `q`, the
+ * search, highlighted in the name; `montres`, the children to show when a
+ * search or a filter keeps only some; `deplie`, forced open by a search;
+ * `trier`, the order of the children; `parent`, the category shown beside
+ * the name in the A → Z list.
+ */
+function ligneItem(m, k, it, mode, vue = {}) {
   const o = m.options[k];
   const s = selection(m);
   const enfants = enfantsDe(o, it.id);
-  const visibles = enfants.filter((e) => montre(e, mode));
+  const visibles = enfants.filter((e) => montre(e, mode) && (!vue.montres || vue.montres.has(e.id)));
+  if (vue.trier) visibles.sort(vue.trier);
   const verrou = !!it.locked;
   const fait = it.state === 'ok';
   let cochee = !!s.items[k][it.id];
@@ -449,38 +546,71 @@ function ligneItem(m, k, it, mode) {
     fait ? `<span class="badge low">${esc(t('an.a_jour'))}</span>` : '',
     verrou ? `<span class="badge neutre">${ico('lock', 'i12')}${esc(verrouTexte(it.locked))}</span>` : '',
     it.date ? `<span class="an-pub">${esc(dateCourte(it.date))}</span>` : '',
-    it.publisher ? `<span class="an-pub">${esc(it.publisher)}</span>` : '',
+    it.publisher ? `<span class="an-pub">${surligne(it.publisher, vue.q)}</span>` : '',
     it.count && !(Number(it.size) > 0) ? `<span class="an-pub">${esc(pl('an.n_elements', Number(it.count)))}</span>` : '',
+    vue.parent ? `<span class="an-pub an-categorie">${esc(nomElement(m, vue.parent))}</span>` : '',
   ].join('');
-  const plie = !!s.plie[`${k}/${it.id}`];
+  const plie = !vue.deplie && estPlie(m, k, it.id);
+  const sous = { ...vue, parent: null };
   return `<label class="an-ligne${verrou || fait ? ' inactive' : ''}${cochee || partiel ? '' : ' decoche'}">
       <input type="checkbox" ${attrs(m, k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${cochee ? ' checked' : ''}${partiel ? ' data-partiel="1"' : ''}${verrou || fait ? ' disabled' : ''}>
       <span class="an-ico">${iconeElement(it)}</span>
-      <span class="an-t"><b>${esc(nomElement(m, it))}</b>${it.path ? `<span class="an-chemin">${esc(it.path)}</span>` : ''}<span class="an-badges">${badges}</span></span>
+      <span class="an-t"><b>${surligne(nomElement(m, it), vue.q)}</b>${it.path ? `<span class="an-chemin">${surligne(it.path, vue.q)}</span>` : ''}<span class="an-badges">${badges}</span></span>
       <span class="an-v">${sousTotal ? taille(sousTotal) : ''}${visibles.length ? `<small>${esc(pl('an.n_elements', visibles.length))}</small>` : ''}</span>
       ${enfants.length ? `<button class="an-plier${plie ? ' plie' : ''}" type="button" ${attrs(m, k, `data-a-plier="${esc(it.id)}"`)} aria-label="${esc(t(plie ? 'an.deplier' : 'an.replier'))}">${ico('chevron', 'i14')}</button>` : ''}
-    </label>${enfants.length && !plie ? `<div class="an-enfants">${visibles.map((e) => ligneItem(m, k, e, mode)).join('')}</div>` : ''}`;
+    </label>${enfants.length && !plie ? `<div class="an-enfants">${visibles.map((e) => ligneItem(m, k, e, mode, sous)).join('')}</div>` : ''}`;
 }
 
 function briqueListe(m, k, mode) {
   const o = m.options[k];
   const s = selection(m);
-  const rac = racines(o).filter((it) => montre(it, mode));
+  const longue = estLongue(m);
+  const e = longue ? etatListes(m) : { q: '', affichage: 'arbre', tri: null };
+  const q = plier(e.q.trim());
   const f = feuilles(o);
   const aVerifier = f.filter((it) => it.confidence === 'low' || it.risk).length;
   const filtre = s.filtre[k] || 'tout';
-  const visibles = filtre === 'verifier'
-    ? rac.filter((r) => r.confidence === 'low' || r.risk || enfantsDe(o, r.id).some((e) => e.confidence === 'low' || e.risk))
-    : rac;
+  const parentDe = (it) => o.items.find((x) => x.id === it.parent);
+  const correspond = (it) => !q || plier(`${nomElement(m, it)} ${it.publisher || ''} ${it.path || ''}`).includes(q);
+  const garde = (it) => filtre !== 'verifier' || it.confidence === 'low' || !!it.risk;
+  const avant = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true });
+  const trier = e.tri ? (a, b) => (e.tri === 'editeur' ? avant(a.publisher || '\uffff', b.publisher || '\uffff') : 0) || avant(nomElement(m, a), nomElement(m, b)) : null;
+
+  let lignes;
+  if (longue && e.affichage === 'plat') {
+    // A → Z: every element, its category beside its name.
+    lignes = elementsDe(o)
+      .filter((it) => montre(it, mode) && (!it.parent || montre(parentDe(it), mode)) && garde(it)
+        && (correspond(it) || (it.parent && correspond(parentDe(it)))))
+      .sort(trier || (() => 0))
+      .map((it) => ligneItem(m, k, it, mode, { q, parent: it.parent ? parentDe(it) : null }));
+  } else {
+    // By category: a category shows when it matches, then with all its
+    // children, or when some of its children match, then with those only.
+    const montres = new Set();
+    const rac = racines(o).filter((r) => {
+      if (!montre(r, mode)) return false;
+      const enfants = enfantsDe(o, r.id).filter((x) => montre(x, mode));
+      if (!enfants.length) return correspond(r) && garde(r);
+      const elle = correspond(r);
+      const gardes = enfants.filter((x) => (elle || correspond(x)) && garde(x));
+      gardes.forEach((x) => montres.add(x.id));
+      return gardes.length > 0;
+    });
+    if (trier) rac.sort((a, b) => avant(nomElement(m, a), nomElement(m, b)));
+    const filtrant = !!q || filtre === 'verifier';
+    lignes = rac.map((it) => ligneItem(m, k, it, mode, { q, montres: filtrant ? montres : null, deplie: !!q, trier }));
+  }
   const n = f.filter((it) => s.items[k][it.id]).length;
   const filtres = aVerifier
     ? `<span class="an-filtres"><button type="button" ${attrs(m, k, 'data-a-filtre="tout"')} aria-pressed="${filtre === 'tout'}">${esc(t('an.filtre_tout'))}</button><button type="button" ${attrs(m, k, 'data-a-filtre="verifier"')} aria-pressed="${filtre === 'verifier'}">${esc(t('an.filtre_verifier', { n: aVerifier }))}</button></span>`
     : '';
+  const vide = q ? t('an.rien_ne_correspond', { q: e.q.trim() }) : t('an.rien_trouve');
   return `<div class="an-bloc"><div class="an-bloc-h"><span class="an-bh-t">${esc(libOption(m.entree, o.def))}</span>
       <button class="an-lien" type="button" ${attrs(m, k, 'data-a-tout="items"')}>${esc(t('an.tout_cocher'))}</button>
       <button class="an-lien" type="button" ${attrs(m, k, 'data-a-rien="items"')}>${esc(t('an.tout_decocher'))}</button>
       ${filtres}<span class="an-total">${esc(t('an.n_sur_n', { n, total: f.length }))}</span></div>
-    ${visibles.map((it) => ligneItem(m, k, it, mode)).join('') || `<div class="an-vide">${esc(t('an.rien_trouve'))}</div>`}
+    ${lignes.join('') || `<div class="an-vide">${esc(vide)}</div>`}
     ${notesPour(m, k, mode)}</div>`;
 }
 
@@ -543,7 +673,7 @@ export function corps(m, mode = 'expert') {
   const briques = Object.keys(m.options).map((k) => brique(m, k, mode)).join('');
   const n = compteMasques(m, mode);
   const masques = n && mode === 'simple' ? `<div class="an-masques">${ico('info', 'i14')}<span>${esc(pl('an.lignes_expert', n))}</span></div>` : '';
-  return `${metriquesHtml(m, mode)}${briques}${globales}${masques}${mode === 'expert' ? anomaliesHtml(m) : ''}`
+  return `${metriquesHtml(m, mode)}${barreListes(m)}${briques}${globales}${masques}${mode === 'expert' ? anomaliesHtml(m) : ''}`
     || `<div class="an-vide">${esc(t('an.rien_trouve'))}</div>`;
 }
 
@@ -850,7 +980,7 @@ export function vue(m, mode = 'expert', { historique = [] } = {}) {
   const reste = Object.keys(m.options).filter((k) => !montres.has(k)).map((k) => brique(m, k, mode)).join('');
   const globales = m.notes.filter((n) => !n.cible && montre(n, mode) && nom !== 'light').map((n) => noteHtml(m, n)).join('');
   if (!principal || nom === 'checklist' || nom === 'tree') return corps(m, mode);
-  return `<div class="an-vue">${principal}</div>${metriquesDejaVues ? '' : metriquesHtml(m, mode)}${reste}${globales}${mode === 'expert' ? anomaliesHtml(m) : ''}`;
+  return `<div class="an-vue">${principal}</div>${metriquesDejaVues ? '' : metriquesHtml(m, mode)}${barreListes(m, montres)}${reste}${globales}${mode === 'expert' ? anomaliesHtml(m) : ''}`;
 }
 
 /* -------------------------------------------------------------------------
@@ -1114,6 +1244,8 @@ export function agir(ev, modeles) {
     if (d.aTri) { ETAT.tri.sens = ETAT.tri.col === d.aTri ? -ETAT.tri.sens : 1; ETAT.tri.col = d.aTri; return true; }
     const m = modeles.get(d.aScript);
     if (!m) return false;
+    if (d.aAffichage) { etatListes(m).affichage = d.aAffichage; return true; }
+    if (d.aTriListe) { etatListes(m).tri = d.aTriListe; return true; }
     const k = d.aOpt;
     const s = selection(m);
     const o = m.options[k];
@@ -1123,7 +1255,7 @@ export function agir(ev, modeles) {
     if (d.aTout === 'items') { for (const it of o.items) if (!it.locked && it.state !== 'ok') s.items[k][it.id] = true; return true; }
     if (d.aRien === 'items') { for (const it of o.items) s.items[k][it.id] = false; return true; }
     if (d.aFiltre) { s.filtre[k] = d.aFiltre; return true; }
-    if (d.aPlier) { s.plie[`${k}/${d.aPlier}`] = !s.plie[`${k}/${d.aPlier}`]; return true; }
+    if (d.aPlier) { s.plie[`${k}/${d.aPlier}`] = !estPlie(m, k, d.aPlier); return true; }
     if (d.aGarder) { s.garder[k][d.aGarder] = d.aItem; return true; }
     if (d.aTm) { ETAT.tm[`${m.entree.id}/${k}`] = d.aTm; return true; }
     if (d.aTmRetour !== undefined) { delete ETAT.tm[`${m.entree.id}/${k}`]; return true; }
@@ -1134,6 +1266,11 @@ export function agir(ev, modeles) {
 
   // --- Les cases
   if (el.matches?.('[data-a-cherche]')) { ETAT.recherche = el.value; return true; }
+  if (el.matches?.('[data-a-cherche-liste]')) {
+    const m = modeles.get(el.dataset.aScript);
+    if (m) etatListes(m).q = el.value;
+    return !!m;
+  }
   const d = el.dataset || {};
   const m = modeles.get(d.aScript);
   if (!m || !d.aK) return false;
@@ -1164,24 +1301,58 @@ export function poserPartiels(racine) {
    Pour les panneaux de l'Expert
    ------------------------------------------------------------------------- */
 
-/** « Ce qui sera fait » : la liste exacte, d'apres les cases. */
-export function plan(m) {
+/**
+ * « Ce qui sera fait » (2.0.4, M33): the exact list, after the boxes — all of
+ * it, no longer the first eight of each list, grouped by option. Simple
+ * settings first, without a heading; then one group per list or choice.
+ */
+function groupesPlan(m, mode) {
   const s = selection(m);
-  const l = [];
+  const seuls = [];
+  const groupes = [];
+  const avant = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true });
   for (const [k, o] of Object.entries(m.options)) {
     const d = o.def;
     if (d.scan) continue;
-    if (d.kind === 'bool' && o.find && s.bool[k]) l.push(`${esc(libOption(m.entree, d))}${o.find.size ? ` — ${taille(o.find.size)}` : ''}`);
-    if (d.kind === 'multi') for (const [c, f] of Object.entries(o.finds)) if (s.choix[k][c]) l.push(`${esc(libChoix(m.entree, d, c))}${f.size ? ` — ${taille(f.size)}` : ''}${f.count ? ` (${esc(pl('an.n_fichiers', Number(f.count)))})` : ''}`);
+    if (d.kind === 'bool' && o.find && s.bool[k]) seuls.push(`${esc(libOption(m.entree, d))}${o.find.size ? ` — ${taille(o.find.size)}` : ''}`);
     if (d.kind === 'select' && s.select[k]) {
       const actuel = Object.entries(o.finds).find(([, f]) => f.current === 'true')?.[0];
-      if (actuel !== s.select[k]) l.push(`${esc(libOption(m.entree, d))} : ${esc(actuel ? libChoix(m.entree, d, actuel) : '?')} → ${esc(libChoix(m.entree, d, s.select[k]))}`);
+      if (actuel !== s.select[k]) seuls.push(`${esc(libOption(m.entree, d))} : ${esc(actuel ? libChoix(m.entree, d, actuel) : '?')} → ${esc(libChoix(m.entree, d, s.select[k]))}`);
+    }
+    if (d.kind === 'multi') {
+      const l = Object.entries(o.finds).filter(([c]) => s.choix[k][c])
+        .map(([c, f]) => `${esc(libChoix(m.entree, d, c))}${f.size ? ` — ${taille(f.size)}` : ''}${f.count ? ` (${esc(pl('an.n_fichiers', Number(f.count)))})` : ''}`);
+      if (l.length) groupes.push({ titre: libOption(m.entree, d), lignes: l });
     }
     if (d.kind === 'items') {
-      const liste = d.keep_one ? aSupprimer(m, k) : feuilles(o).filter((it) => s.items[k][it.id]);
-      liste.slice(0, 8).forEach((it) => l.push(`${esc(nomElement(m, it))}${it.path ? `<div class="an-chemin">${esc(it.path)}</div>` : ''}`));
-      if (liste.length > 8) l.push(esc(t('an.et_n_autres', { n: liste.length - 8 })));
+      const liste = (d.keep_one ? aSupprimer(m, k) : feuilles(o).filter((it) => s.items[k][it.id]))
+        .sort((a, b) => avant(nomElement(m, a), nomElement(m, b)));
+      if (liste.length) {
+        groupes.push({
+          titre: libOption(m.entree, d),
+          lignes: liste.map((it) => `<span class="an-plan-ico">${iconeElement(it)}</span><span class="an-plan-t">${esc(nomElement(m, it))}`
+            + `${it.to ? ` <span class="an-pub">${esc(it.version || '')} → ${esc(it.to)}</span>` : ''}`
+            + `${mode === 'expert' && it.path ? `<span class="an-chemin">${esc(it.path)}</span>` : ''}</span>`),
+        });
+      }
     }
   }
-  return l.length ? `<ol class="an-plan">${l.map((x) => `<li>${x}</li>`).join('')}</ol>` : `<span class="muted">${esc(t('an.plan_vide'))}</span>`;
+  if (seuls.length) groupes.unshift({ titre: '', lignes: seuls });
+  return groupes;
+}
+const groupePlanHtml = (g) => `<div class="an-plan-g">${g.titre ? `<div class="an-plan-h">${esc(g.titre)}<span>${g.lignes.length}</span></div>` : ''}`
+  + `<ul class="an-plan">${g.lignes.map((l) => `<li>${l}</li>`).join('')}</ul></div>`;
+
+export function plan(m) {
+  const g = groupesPlan(m, 'expert');
+  return g.length ? g.map(groupePlanHtml).join('') : `<span class="muted">${esc(t('an.plan_vide'))}</span>`;
+}
+
+/** The same for the Simple screen (2.0.4): every action of the lot, under
+ *  its title when there are several. `n`: how many lines in all. */
+export function planResume(modeles) {
+  const parts = modeles.map((m) => ({ m, g: groupesPlan(m, 'simple') })).filter((x) => x.g.length);
+  const n = parts.reduce((a, x) => a + x.g.reduce((b, g) => b + g.lignes.length, 0), 0);
+  const html = parts.map(({ m, g }) => `${parts.length > 1 ? `<div class="an-plan-action">${esc(titreAction(m.entree))}</div>` : ''}${g.map(groupePlanHtml).join('')}`).join('');
+  return { n, html };
 }

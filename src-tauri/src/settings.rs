@@ -191,6 +191,10 @@ pub struct Settings {
     /// sur demande.
     #[serde(default)]
     pub ambiances_fichiers: bool,
+    /// The user turned off the download of application icons (3.3, 2.0.4).
+    /// Stored the other way round so that the default, `false`, means "on".
+    #[serde(default)]
+    pub icones_sans_telechargement: bool,
 }
 
 /// Valeurs admises pour `catalogue_source` une fois la decision prise.
@@ -317,6 +321,7 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         sources_exclus: BTreeMap::new(),
         accent: String::new(),
         ambiances_fichiers: false,
+        icones_sans_telechargement: false,
     }
 }
 

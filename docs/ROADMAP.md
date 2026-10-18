@@ -69,6 +69,10 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — `author`, `created`, `updated` dans l'entête : dans la fiche de l'Expert, facultatifs même en `-Strict` (une note) ; dates vérifiées | Fait |
 | | — `HKLM\SOFTWARE\Sindry\Scripts\<id>` réservée aux actions (restauration) ; « Données de restauration des actions » à la désinstallation | Fait |
 | | — `[ITEM] … exe=` : la vraie icône d'un programme, lue sur place dans le fichier, sans chargeur de Windows ; chemins locaux seulement | Fait |
+| **2.0.4** | L'écran d'analyse des longues listes, et les icônes des applications (maquettes M31 à M33) | En cours |
+| | — au-delà de 12 éléments : catégories repliées, recherche qui déplie et surligne, affichage par catégories ou A → Z, tri par nom ou éditeur | Fait |
+| | — « Ce qui sera fait » complet (plus de limite à huit), groupé par option, avec les icônes ; aussi en Simple, sous l'analyse | Fait |
+| | — `icon=` : une icône Lucide par élément ; `appicon=` : l'icône officielle, téléchargée depuis le dépôt `Sindry-Icons` seulement ; réglage 3.3 pour couper | Fait |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

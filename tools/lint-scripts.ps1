@@ -86,7 +86,7 @@ $GRAPHIQUES = @('donut', 'crown', 'gauge', 'bar', 'rows', 'treemap', 'waffle')
 $CHAMPS_FIND   = @('size', 'count', 'state', 'checked', 'ms', 'current', 'recommended', 'show')
 $CHAMPS_ITEM   = @('id', 'parent', 'group', 'name', 'path', 'publisher', 'label', 'kind', 'confidence',
                    'impact', 'risk', 'locked', 'version', 'to', 'date', 'keep', 'size', 'count',
-                   'state', 'checked', 'show', 'exe')
+                   'state', 'checked', 'show', 'exe', 'icon', 'appicon')
 $CHAMPS_METRIC = @('value', 'unit', 'health', 'max', 'group', 'show')
 $VALEURS_CHAMP = @{
     state       = @('todo', 'ok')
@@ -905,6 +905,15 @@ function Test-Analyse {
                     if ($exe -and -not (Test-CheminIcone $exe)) {
                         Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_EXE' "[ITEM] '$cle' : exe=$exe n'est pas un chemin local absolu vers un .exe, un .dll ou un .ico ; Sindry gardera l'icône du kind."
                     }
+                }
+                # icon= and appicon= (2.0.4): a Lucide name, and the name of an
+                # icon of the Sindry-Icons repository. Wrong, the item keeps the
+                # icon of its kind — a warning, not an error.
+                if ($champsLigne.Contains('icon') -and $champsLigne['icon'] -and $ICONES.Count -gt 0 -and $ICONES -cnotcontains $champsLigne['icon']) {
+                    Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_ICONE' "[ITEM] '$cle' : icon=$($champsLigne['icon']) n'est pas une icône Lucide ; Sindry gardera l'icône du kind."
+                }
+                if ($champsLigne.Contains('appicon') -and $champsLigne['appicon'] -and $champsLigne['appicon'] -cnotmatch '^[a-z0-9]+(-[a-z0-9]+)*$') {
+                    Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_ICONE' "[ITEM] '$cle' : appicon=$($champsLigne['appicon']) n'est pas un nom d'icône (minuscules, chiffres, tirets)."
                 }
                 if ($champsLigne.Contains('label') -and $champsLigne['label']) {
                     $l = $champsLigne['label']

@@ -1,5 +1,6 @@
 mod ambiance;
 mod analyse;
+mod appicon;
 mod approval;
 mod catalogue;
 mod cli;
@@ -1458,6 +1459,33 @@ fn disk_space() -> Result<systeme::EspaceDisque, String> {
     systeme::espace_disque()
 }
 
+/// Application icons from the Sindry-Icons repository (2.0.4, §17.4): each
+/// one is sent as an `app-icon` event as soon as it is known, the screen being
+/// already shown. Nothing leaves the PC when the user turned it off (3.3).
+#[tauri::command]
+async fn app_icons(app: tauri::AppHandle, names: Vec<String>) -> Result<(), String> {
+    use tauri::Emitter;
+    if settings::load(&app)?.icones_sans_telechargement {
+        return Ok(());
+    }
+    let dir = discovery::base_dir(&app)?.join("cache").join("icons");
+    let emitter = app.clone();
+    appicon::fetch(dir, names, move |name, url| {
+        let _ = emitter.emit("app-icon", serde_json::json!({ "name": name, "url": url }));
+    })
+    .await;
+    Ok(())
+}
+
+/// Downloading application icons (3.3, 2.0.4), on by default.
+#[tauri::command]
+fn set_app_icons(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
+    with_settings(&app, |s| {
+        s.icones_sans_telechargement = !value;
+        Ok(())
+    })
+}
+
 /// Affiche ou masque la numerotation des reglages (« 2.3 »).
 #[tauri::command]
 fn set_show_setting_numbers(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
@@ -1760,6 +1788,8 @@ pub fn run() {
             hide_catalogue_reminder,
             set_failure_policy,
             set_show_setting_numbers,
+            app_icons,
+            set_app_icons,
             set_ui_scale,
             set_exec_policy,
             set_log_cap,

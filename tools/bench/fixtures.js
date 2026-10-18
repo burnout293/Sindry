@@ -244,6 +244,22 @@
         }),
       },
     }),
+    // 2.0.4, M31 to M33: a long list, by state, then category › application.
+    script('install-apps', 'Install applications', 'Installs and updates common applications with winget', 'apps', 'download', {
+      duration: 'slow',
+      options: [
+        optA('Update', 'items', 'Updates available', '', []),
+        optA('Install', 'items', 'Not installed yet', '', []),
+        optA('Reinstall', 'items', 'Already installed', '', []),
+      ],
+      meta: {
+        // `## view : tree`: in Simple too, the list itself, not the summary.
+        scan: true, view: 'tree', panels: ['plan'],
+        translations: trA('Installer des applications', 'Installe et met à jour les applications courantes avec winget', {
+          Update: ['Mises à jour disponibles', ''], Install: ['Pas encore installées', ''], Reinstall: ['Déjà installées', ''],
+        }),
+      },
+    }),
     script('duplicates', 'Find duplicate files', 'Keeps one copy of each', 'cleaning', 'copy', {
       options: [optA('Duplicates', 'items', 'Duplicate files', '', [], { keep_one: true })],
       meta: { scan: true, show: 'expert', translations: trA('Trouver les fichiers en double', 'Garde un exemplaire de chacun', { Duplicates: ['Fichiers en double', ''] }) },
@@ -353,6 +369,46 @@
         steps: ['Listing uninstalled programs', 'Looking for leftovers'], anomalies: ['[ITEM] Leftovers : champ « colour » inconnu — ignoré'], truncated: false,
       },
     },
+    'install-apps': (() => {
+      const cat = (option, id, name, icon) => ({ option, fields: { id, name, kind: 'app', icon } });
+      const app = (option, parent, id, name, publisher, extra = {}) => ({ option, fields: { id, parent, name, publisher, kind: 'app', icon: 'package', appicon: id.replace(/^[a-z]-/, ''), ...extra } });
+      const items = [
+        cat('Update', 'u-web', 'Browsers', 'globe'),
+        app('Update', 'u-web', 'u-firefox', 'Firefox', 'Mozilla', { version: '131.0', to: '131.0.3' }),
+        cat('Update', 'u-dev', 'Developer', 'code'),
+        app('Update', 'u-dev', 'u-git', 'Git', 'The Git Development Community', { version: '2.46.0', to: '2.47.0' }),
+        app('Update', 'u-dev', 'u-notepadpp', 'Notepad++', 'Notepad++ Team', { version: '8.6.9', to: '8.7' }),
+        cat('Update', 'u-media', 'Multimedia', 'play'),
+        app('Update', 'u-media', 'u-vlc', 'VLC media player', 'VideoLAN', { version: '3.0.20', to: '3.0.21' }),
+        cat('Install', 'i-web', 'Browsers', 'globe'),
+        app('Install', 'i-web', 'i-chrome', 'Google Chrome', 'Google'),
+        app('Install', 'i-web', 'i-brave', 'Brave', 'Brave Software'),
+        app('Install', 'i-web', 'i-opera', 'Opera', 'Opera Norway'),
+        cat('Install', 'i-chat', 'Communication', 'message-circle'),
+        app('Install', 'i-chat', 'i-discord', 'Discord', 'Discord Inc.'),
+        app('Install', 'i-chat', 'i-signal', 'Signal', 'Signal Messenger'),
+        app('Install', 'i-chat', 'i-zoom', 'Zoom', 'Zoom Communications'),
+        cat('Install', 'i-office', 'Office', 'briefcase'),
+        app('Install', 'i-office', 'i-libreoffice', 'LibreOffice', 'The Document Foundation'),
+        app('Install', 'i-office', 'i-sumatra', 'SumatraPDF', 'Krzysztof Kowalczyk'),
+        cat('Install', 'i-media', 'Multimedia', 'play'),
+        app('Install', 'i-media', 'i-spotify', 'Spotify', 'Spotify AB', { icon: 'music' }),
+        app('Install', 'i-media', 'i-audacity', 'Audacity', 'Audacity Team'),
+        app('Install', 'i-media', 'i-obs', 'OBS Studio', 'OBS Project'),
+        cat('Install', 'i-tools', 'Tools', 'wrench'),
+        app('Install', 'i-tools', 'i-7zip', '7-Zip', 'Igor Pavlov'),
+        app('Install', 'i-tools', 'i-everything', 'Everything', 'voidtools'),
+        app('Install', 'i-tools', 'i-powertoys', 'PowerToys', 'Microsoft'),
+        cat('Reinstall', 'r-web', 'Browsers', 'globe'),
+        app('Reinstall', 'r-web', 'r-edge', 'Microsoft Edge', 'Microsoft', { version: '130.0', checked: 'false' }),
+        cat('Reinstall', 'r-tools', 'Tools', 'wrench'),
+        app('Reinstall', 'r-tools', 'r-winrar', 'WinRAR', 'win.rar GmbH', { version: '7.01', checked: 'false' }),
+      ];
+      return {
+        lignes: ['[STEP] 1/2 Reading installed applications', '[STEP] 2/2 Comparing with the list'],
+        analyse: { finds: [], items, metrics: [], notes: [], steps: ['Reading installed applications', 'Comparing with the list'], anomalies: [], truncated: false },
+      };
+    })(),
     duplicates: {
       lignes: ['[STEP] 1/1 Comparing contents'],
       analyse: {
@@ -523,7 +579,7 @@
   // --- Execution simulee ---------------------------------------------------
   // Le banc rejoue une sortie plausible pour que la progression, les couleurs
   // de marqueur et le bilan soient reellement observables.
-  const auditeurs = { 'script:line': [], 'script:end': [], 'catalogue:progress': [] };
+  const auditeurs = { 'script:line': [], 'script:end': [], 'catalogue:progress': [], 'app-icon': [] };
   /** Catalogues ajoutes (`?sources`), et le contenu de celui de Dupont. */
   let tierces = new URLSearchParams(location.search).has('sources')
     ? [{ id: 'dupont', nom: 'Scripts de Dupont', depot: 'dupont/scripts-windows', cle_publique: 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3', installe: true }]
@@ -839,6 +895,14 @@
     list_scripts_grouped: () => groupes(),
     get_history: () => JSON.parse(JSON.stringify(historique)),
     run_script: (a) => lancer(a?.req),
+    app_icons: (a) => {
+      if (reglages.icones_sans_telechargement) return null;
+      (a?.names || []).forEach((name, i) => setTimeout(() => {
+        emettre('app-icon', { name, url: /^(firefox|git|vlc|chrome|discord|spotify|7zip)$/.test(name) ? ICONE_APP : null });
+      }, 300 + i * 60));
+      return null;
+    },
+    set_app_icons: (a) => { reglages.icones_sans_telechargement = !a.value; return JSON.parse(JSON.stringify(reglages)); },
     scan_script: (a) => analyserBanc(a?.req),
     disk_space: () => ({ lecteur: 'C:', total: 511_101_108_224, libre: 46_170_898_432 }),
     set_accent: (a) => { reglages.accent = a.accent; return JSON.parse(JSON.stringify(reglages)); },
@@ -1041,6 +1105,20 @@
       if (!document.documentElement.dataset.benchVisible) return;
       clearInterval(t);
       if (parametres.get('mode') === 'expert') document.querySelector('[data-mode-btn="expert"]')?.click();
+      // `?analyser=<id>` (2.0.4): that script's sheet, its analysis run —
+      // for captures of the analysis screen without a click.
+      const aAnalyser = parametres.get('analyser');
+      if (aAnalyser) {
+        setTimeout(() => document.querySelector(`.row.script[data-script="${CSS.escape(aAnalyser)}"]`)?.click(), 150);
+        setTimeout(() => document.querySelector(`[data-analyser="${CSS.escape(aAnalyser)}"]`)?.click(), 400);
+        // `&affichage=plat`, `&tri=editeur`, `&cherche=…`: the long-list bar.
+        setTimeout(() => {
+          if (parametres.get('affichage')) document.querySelector(`[data-a-affichage="${CSS.escape(parametres.get('affichage'))}"]`)?.click();
+          if (parametres.get('tri')) document.querySelector(`[data-a-tri-liste="${CSS.escape(parametres.get('tri'))}"]`)?.click();
+          const champ = document.querySelector('[data-a-cherche-liste]');
+          if (champ && parametres.get('cherche')) { champ.value = parametres.get('cherche'); champ.dispatchEvent(new Event('input', { bubbles: true })); }
+        }, 2600);
+      }
       if (parametres.get('reglages')) {
         document.getElementById('btnSettings')?.click();
         setTimeout(() => document.querySelector(`[data-rg-section="${parametres.get('reglages')}"]`)?.click(), 150);

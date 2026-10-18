@@ -161,37 +161,44 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     pas pour ce qui s'installe ou s'ajoute) ; `state=ok` rend la case inactive ; `exe=` ne
     vaut que pour `kind=app|startup|service|task`, avec un chemin local absolu (« Ce que
     l'écran d'analyse fait vraiment d'un `[ITEM]` »).
+30. **Les icônes d'un `[ITEM]`**, de la plus précise à la plus générale : `exe=` (le
+    fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
+    Sindry depuis le dépôt `Sindry-Icons` : un nom, jamais une adresse), `icon=<nom Lucide>`
+    (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
+31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
+    affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
+    déclare `## view : tree`.
 
 ### La sécurité
 
-30. **N'exécute jamais une valeur** : ni `Invoke-Expression`, ni `[scriptblock]::Create`,
+32. **N'exécute jamais une valeur** : ni `Invoke-Expression`, ni `[scriptblock]::Create`,
     ni commande construite avec une valeur de `$CONFIG`. Passe les valeurs en paramètres
     (`-LiteralPath`).
-31. Outils du système par leur **chemin complet** (`"$env:SystemRoot\System32\…"`) ; jamais
+33. Outils du système par leur **chemin complet** (`"$env:SystemRoot\System32\…"`) ; jamais
     le dossier courant ; `$PSScriptRoot` pour tes propres fichiers.
-32. **Avant de supprimer ou d'écraser**, vérifie que le chemin ne vise ni Windows, ni
+34. **Avant de supprimer ou d'écraser**, vérifie que le chemin ne vise ni Windows, ni
     Program Files, ni ProgramData, ni la racine d'un lecteur, ni un autre profil. Borne les
     nombres. Aucun secret dans une option.
-33. Données de restauration : sous `HKLM\SOFTWARE\Sindry\Scripts\<id>`, jamais dans un
+35. Données de restauration : sous `HKLM\SOFTWARE\Sindry\Scripts\<id>`, jamais dans un
     dossier de `%ProgramData%`.
 
 ### Le style du catalogue officiel
 
-34. Commentaires **en français** : chaque variable commentée **sur sa propre ligne**, en fin
+36. Commentaires **en français** : chaque variable commentée **sur sa propre ligne**, en fin
     de ligne ; chaque fonction commentée **à son début** (ce qu'elle fait, reçoit, renvoie).
-35. Au-delà de **200 lignes**, des chapitres balisés et adaptés au script : Sommaire, Résumé,
+37. Au-delà de **200 lignes**, des chapitres balisés et adaptés au script : Sommaire, Résumé,
     Variables, Fonctions, Préparation, Exécution, Journal (logs), Annexes…
-36. Un **maximum de drapeaux** — booléens, listes, ou tout autre type utile — pour activer,
+38. Un **maximum de drapeaux** — booléens, listes, ou tout autre type utile — pour activer,
     désactiver ou adapter vite chaque fonctionnalité, **regroupés avec les variables** en
     tête. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu)
     s'y modifient sans toucher au reste.
-37. Un **maximum de codes d'erreur** : chacun déclaré `[error]` avec sa description et, si
+39. Un **maximum de codes d'erreur** : chacun déclaré `[error]` avec sa description et, si
     possible, sa solution, et **traduit en français** dans `LANG fr` (règle 24).
-38. Un journal **clair pour un débutant**, lisible d'un coup d'œil : aéré, sans pavé, avec
+40. Un journal **clair pour un débutant**, lisible d'un coup d'œil : aéré, sans pavé, avec
     des tableaux et des listes alignés par des espaces quand ça s'y prête (le journal de
     Sindry est en chasse fixe). `desc` annonce les changements sensibles (services, tâches
     planifiées, démarrage…).
-39. **Le journal est en anglais, et une seule langue.** Sindry ne traduit pas une ligne de
+41. **Le journal est en anglais, et une seule langue.** Sindry ne traduit pas une ligne de
     sortie : ce que l'utilisateur doit lire dans sa langue passe par les **codes d'erreur**
     (description et solution traduites) et, en analyse, par les mots du bloc `REPORT`.
     N'écris jamais deux versions d'un message.
@@ -924,6 +931,8 @@ recommander un choix qu'une fois tous mesurés :
 | `date=` | `AAAA-MM-JJ` | Une date : dernière utilisation, installation |
 | `kind=` | `folder` `file` `registry` `app` `startup` `service` `task` `driver` `browser` | L'icône de la ligne |
 | `exe=` | chemin absolu local vers un `.exe`, un `.dll` ou un `.ico` | **La vraie icône** du programme (2.0.3), avec `kind=app`, `startup`, `service` ou `task`. Sindry la lit lui-même dans le fichier. Comme `path=`, **jamais renvoyé** — voir ci-dessous |
+| `appicon=` | un nom : minuscules, chiffres, tirets | **L'icône officielle** d'une application (2.0.4), téléchargée par Sindry depuis le dépôt `burnout293/Sindry-Icons` — voir ci-dessous |
+| `icon=` | un nom d'icône Lucide | Une icône **générique** pour l'élément, une application comme une catégorie (2.0.4) : `globe`, `music`, `code`… |
 | `confidence=` | `high` / `medium` / `low` | Sûr, Probable, À vérifier — **`low` n'est jamais coché d'office** |
 | `impact=` | `high` / `medium` / `low` | Impact élevé, moyen, faible |
 | `risk=` | `high` / `medium` / `low` | Suspect, Inhabituel — `low` n'affiche rien |
@@ -950,6 +959,28 @@ piégé, d'où ces règles :
 - n'écrivez pas `exe=` pour un service hébergé par `svchost.exe`, ni pour une tâche qui
   lance `rundll32.exe` ou `cmd.exe` : leur icône n'apprend rien. Désignez le vrai programme
   s'il est connu, sinon rien.
+
+**Quelle icône s'affiche.** De la plus précise à la plus générale : l'icône lue dans le
+fichier d'`exe=` (une application installée), puis l'icône téléchargée d'`appicon=`, puis
+l'icône Lucide d'`icon=`, puis celle du `kind`. Écrivez-en plusieurs : chacune sert de repli
+à la précédente.
+
+**`appicon=` : l'icône officielle d'une application qui n'est pas encore là (2.0.4).** Le
+script ne donne qu'un **nom** ; Sindry télécharge `icons/<nom>.png` depuis **un seul endroit**,
+le dépôt GitHub `burnout293/Sindry-Icons`. Un script ne peut donc ni faire contacter à Sindry
+un serveur de son choix, ni envoyer une image :
+
+- en HTTPS seulement, sans suivre de redirection ni envoyer d'identifiant ;
+- **toutes** les icônes que l'analyse nomme sont demandées, quel que soit l'état de leur
+  élément : le serveur n'apprend pas ce qui est installé ;
+- un PNG ou un ICO, reconnu à ses premiers octets, 128 Ko au plus — jamais un SVG ;
+- gardée 30 jours sur le disque, et revérifiée à chaque lecture ;
+- l'écran s'affiche d'abord avec l'icône de repli ; l'icône officielle prend sa place en
+  arrivant ;
+- l'utilisateur peut couper ce téléchargement (Réglages, 3.3) : rien ne quitte alors le PC.
+
+Une icône absente du dépôt n'est pas une erreur : l'élément garde son repli. Pour en ajouter
+une, c'est au dépôt `Sindry-Icons` qu'il faut la proposer, pas au script.
 
 ###### Les champs de `[METRIC]`
 
@@ -1027,6 +1058,24 @@ ce sont les ids à supprimer.**
 
 Limites : 5 000 éléments par liste, 20 000 lignes par analyse, 400 caractères par texte.
 Au-delà, la suite est ignorée, et l'Expert le voit.
+
+**Les longues listes (2.0.4).** Au-delà de **12 éléments** dans les listes `[items]` d'une
+action, Sindry les présente autrement, sans rien à déclarer :
+
+| Ce que voit l'utilisateur | Détail |
+|---|---|
+| Les catégories **repliées** | Un parent (un élément qui en a d'autres sous lui) s'ouvre replié ; l'utilisateur le déplie, et Sindry retient son choix |
+| Une **recherche** | Sur le nom, l'éditeur et le chemin ; elle déplie et surligne ce qu'elle trouve |
+| **Afficher** : par catégories, ou liste A → Z | La liste A → Z montre chaque élément, sa catégorie à côté |
+| **Trier par** : nom, ou éditeur | Le tri par éditeur n'est proposé que si des éléments ont un `publisher=` |
+
+Pour un lot d'une seule action, le mode Simple montre le résumé de Sindry, en postes. Pour
+qu'il montre la liste elle-même, avec sa barre, déclarez une vue : `## view : tree`.
+
+**« Ce qui sera fait »** liste tout ce qui est coché, regroupé par option — une liste
+`[items]`, un `[multi]` — avec l'icône de chaque élément et sa version proposée (`to=`). En
+Expert, c'est un panneau ; en Simple, il s'affiche aussi, sous l'analyse, replié s'il dépasse
+quinze lignes.
 
 ##### Les étiquettes : `[group:]`, `[show:]`, `[view:]`, `[scan]`
 
@@ -1609,6 +1658,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `ITEM_SANS_ID` | erreur | `[ITEM]` sans `id=` |
 | `ITEM_CHAMP` | erreur | `[ITEM]` avec un champ inconnu, une valeur hors liste, ou `exe=` sur un `kind` qui ne s'exécute pas |
 | `ITEM_EXE` | avertissement | `exe=` qui n'est pas un chemin local absolu vers un `.exe`, un `.dll` ou un `.ico` (2.0.3) |
+| `ITEM_ICONE` | avertissement | `icon=` qui n'est pas une icône Lucide, ou `appicon=` qui n'est pas un nom (minuscules, chiffres, tirets) (2.0.4) |
 | `LIBELLE_INCONNU` | erreur | `[ITEM] … label=` vise une clé absente du bloc `REPORT` |
 | `METRIC_CLE_INCONNUE` | erreur | `[METRIC]` vise une clé qui n'est pas un libellé du bloc `REPORT` |
 | `METRIC_CHAMP` | erreur | `[METRIC]` sans `value=`, avec un champ inconnu ou une valeur hors liste |

@@ -161,37 +161,44 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     pas pour ce qui s'installe ou s'ajoute) ; `state=ok` rend la case inactive ; `exe=` ne
     vaut que pour `kind=app|startup|service|task`, avec un chemin local absolu (« Ce que
     l'écran d'analyse fait vraiment d'un `[ITEM]` »).
+30. **Les icônes d'un `[ITEM]`**, de la plus précise à la plus générale : `exe=` (le
+    fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
+    Sindry depuis le dépôt `Sindry-Icons` : un nom, jamais une adresse), `icon=<nom Lucide>`
+    (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
+31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
+    affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
+    déclare `## view : tree`.
 
 ### La sécurité
 
-30. **N'exécute jamais une valeur** : ni `Invoke-Expression`, ni `[scriptblock]::Create`,
+32. **N'exécute jamais une valeur** : ni `Invoke-Expression`, ni `[scriptblock]::Create`,
     ni commande construite avec une valeur de `$CONFIG`. Passe les valeurs en paramètres
     (`-LiteralPath`).
-31. Outils du système par leur **chemin complet** (`"$env:SystemRoot\System32\…"`) ; jamais
+33. Outils du système par leur **chemin complet** (`"$env:SystemRoot\System32\…"`) ; jamais
     le dossier courant ; `$PSScriptRoot` pour tes propres fichiers.
-32. **Avant de supprimer ou d'écraser**, vérifie que le chemin ne vise ni Windows, ni
+34. **Avant de supprimer ou d'écraser**, vérifie que le chemin ne vise ni Windows, ni
     Program Files, ni ProgramData, ni la racine d'un lecteur, ni un autre profil. Borne les
     nombres. Aucun secret dans une option.
-33. Données de restauration : sous `HKLM\SOFTWARE\Sindry\Scripts\<id>`, jamais dans un
+35. Données de restauration : sous `HKLM\SOFTWARE\Sindry\Scripts\<id>`, jamais dans un
     dossier de `%ProgramData%`.
 
 ### Le style du catalogue officiel
 
-34. Commentaires **en français** : chaque variable commentée **sur sa propre ligne**, en fin
+36. Commentaires **en français** : chaque variable commentée **sur sa propre ligne**, en fin
     de ligne ; chaque fonction commentée **à son début** (ce qu'elle fait, reçoit, renvoie).
-35. Au-delà de **200 lignes**, des chapitres balisés et adaptés au script : Sommaire, Résumé,
+37. Au-delà de **200 lignes**, des chapitres balisés et adaptés au script : Sommaire, Résumé,
     Variables, Fonctions, Préparation, Exécution, Journal (logs), Annexes…
-36. Un **maximum de drapeaux** — booléens, listes, ou tout autre type utile — pour activer,
+38. Un **maximum de drapeaux** — booléens, listes, ou tout autre type utile — pour activer,
     désactiver ou adapter vite chaque fonctionnalité, **regroupés avec les variables** en
     tête. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu)
     s'y modifient sans toucher au reste.
-37. Un **maximum de codes d'erreur** : chacun déclaré `[error]` avec sa description et, si
+39. Un **maximum de codes d'erreur** : chacun déclaré `[error]` avec sa description et, si
     possible, sa solution, et **traduit en français** dans `LANG fr` (règle 24).
-38. Un journal **clair pour un débutant**, lisible d'un coup d'œil : aéré, sans pavé, avec
+40. Un journal **clair pour un débutant**, lisible d'un coup d'œil : aéré, sans pavé, avec
     des tableaux et des listes alignés par des espaces quand ça s'y prête (le journal de
     Sindry est en chasse fixe). `desc` annonce les changements sensibles (services, tâches
     planifiées, démarrage…).
-39. **Le journal est en anglais, et une seule langue.** Sindry ne traduit pas une ligne de
+41. **Le journal est en anglais, et une seule langue.** Sindry ne traduit pas une ligne de
     sortie : ce que l'utilisateur doit lire dans sa langue passe par les **codes d'erreur**
     (description et solution traduites) et, en analyse, par les mots du bloc `REPORT`.
     N'écris jamais deux versions d'un message.
