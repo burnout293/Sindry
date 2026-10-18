@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide des scripts Sindry</title>
+<meta name="description" content="Écrire un script PowerShell conforme à Sindry {{VERSION}} : le contrat complet, un générateur de squelette et la version pour IA.">
+<!-- Généré par tools/build-script-guides.mjs à partir de docs/FORMAT_SCRIPT.md. Ne pas modifier à la main. -->
+<style>
+:root {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --text: #141A24; --text-2: #5C6778;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F; --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC;
+  --code-bg: #FAF9F6; --c-meta: #A84A08; --c-com: #6B7585; --c-str: #0E7550; --c-mark: #1F5FBF;
+  --ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Mono', 'Cascadia Code', Consolas, 'SF Mono', monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536;
+    --border: #2A3445; --border-2: #42506A; --text: #E9EEF5; --text-2: #8C9AAE;
+    --acc: #FD7D26; --acc-2: #FF9447; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+    --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A; --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C;
+    --code-bg: #0D121B; --c-meta: #FF9A55; --c-com: #7F8DA2; --c-str: #3FD69B; --c-mark: #7FB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536;
+  --border: #2A3445; --border-2: #42506A; --text: #E9EEF5; --text-2: #8C9AAE;
+  --acc: #FD7D26; --acc-2: #FF9447; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A; --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C;
+  --code-bg: #0D121B; --c-meta: #FF9A55; --c-com: #7F8DA2; --c-str: #3FD69B; --c-mark: #7FB2FF;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 var(--ui); }
+a { color: var(--acc-on); }
+code, pre, kbd { font-family: var(--mono); }
+
+/* --- Barre du haut ------------------------------------------------------- */
+.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px;
+  height: 60px; padding: 0 20px; background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; white-space: nowrap; }
+.brand svg { width: 26px; height: 26px; color: var(--acc); flex-shrink: 0; }
+.brand small { font: 500 12px var(--mono); color: var(--text-2); padding: 2px 8px; border: 1px solid var(--border); border-radius: 99px; }
+.top .grow { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: 600 13.5px var(--ui);
+  cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--border-2); background: var(--surface-2); }
+.btn.primary { background: var(--acc); border-color: var(--acc); color: #fff; }
+.btn.primary:hover { background: var(--acc-2); }
+.btn svg { width: 16px; height: 16px; }
+.icon-btn { width: 36px; padding: 0; justify-content: center; }
+.menu-btn { display: none; }
+
+/* --- Mise en page --------------------------------------------------------- */
+.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); max-width: 1320px; margin: 0 auto; }
+.side { position: sticky; top: 60px; height: calc(100vh - 60px); overflow: auto; padding: 18px 14px 40px 20px;
+  border-right: 1px solid var(--border); }
+.search { position: relative; margin-bottom: 14px; }
+.search input { width: 100%; height: 38px; padding: 0 12px 0 34px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: 14px var(--ui); }
+.search input:focus { outline: 2px solid color-mix(in srgb, var(--acc) 45%, transparent); border-color: var(--acc); }
+.search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; color: var(--text-2); }
+.search .count { display: block; margin: 6px 2px 0; font-size: 12.5px; color: var(--text-2); min-height: 18px; }
+.toc { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+.toc li { margin: 0; }
+.toc a { display: block; padding: 5px 10px; border-radius: 8px; color: var(--text-2); text-decoration: none; line-height: 1.35; }
+.toc a:hover { background: var(--surface-2); color: var(--text); }
+.toc a.active { background: var(--acc-soft); color: var(--acc-on); font-weight: 600; }
+.toc .l3 a { padding-left: 24px; font-size: 12.8px; }
+.toc .hit-n { float: right; font: 600 11px var(--mono); color: var(--acc-on); }
+.toc li.dim { display: none; }
+.toc-group { margin: 14px 0 6px 10px; font: 700 11px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+main { min-width: 0; padding: 28px 40px 120px; }
+.doc { max-width: 900px; }
+
+/* --- Accueil --------------------------------------------------------------- */
+.hero { padding: 26px 28px; border-radius: 18px; border: 1px solid var(--border);
+  background: linear-gradient(135deg, var(--acc-soft), var(--surface) 60%); margin-bottom: 26px; }
+.hero h1 { margin: 0 0 6px; font-size: 30px; line-height: 1.2; }
+.hero p { margin: 0; color: var(--text-2); max-width: 680px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.card { display: block; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); text-decoration: none; }
+.card:hover { border-color: var(--acc); }
+.card b { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
+.card b svg { width: 18px; height: 18px; color: var(--acc); }
+.card span { display: block; margin-top: 4px; font-size: 13px; color: var(--text-2); line-height: 1.45; }
+
+/* --- Contenu du guide ------------------------------------------------------ */
+.doc > h1 { display: none; }
+.doc h2 { margin: 52px 0 14px; padding-top: 6px; font-size: 24px; line-height: 1.25; border-top: 1px solid var(--border); padding-top: 26px; }
+.doc h3 { margin: 32px 0 10px; font-size: 18.5px; }
+.doc h4 { margin: 24px 0 8px; font-size: 15.5px; }
+.doc h2 code, .doc h3 code, .doc h4 code { font-size: .9em; }
+.doc p, .doc li { max-width: 78ch; }
+.doc li + li { margin-top: 4px; }
+.doc :not(pre) > code { padding: 1px 6px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
+  font-size: .86em; overflow-wrap: anywhere; }
+.doc h2, .doc h3, .doc h4, .doc p, .doc li { overflow-wrap: anywhere; }
+.ref-grid > div { min-width: 0; }
+.doc hr { display: none; }
+.doc blockquote { margin: 18px 0; padding: 12px 18px; border-left: 4px solid var(--acc); border-radius: 0 12px 12px 0;
+  background: var(--acc-soft); }
+.doc blockquote h3 { margin-top: 4px; font-size: 16px; }
+.doc blockquote p { margin: 8px 0; }
+.doc strong { font-weight: 650; }
+.tbl-wrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 13.6px; }
+th, td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+th { background: var(--surface-2); font-weight: 650; font-size: 12.5px; letter-spacing: .02em; }
+tr:last-child td { border-bottom: 0; }
+tr.hidden { display: none; }
+.tbl-filter { display: flex; align-items: center; gap: 8px; margin: 14px 0 -6px; }
+.tbl-filter input { flex: 1; max-width: 320px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: 13.5px var(--ui); }
+.tbl-filter span { font-size: 12.5px; color: var(--text-2); }
+.sev { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+.sev.erreur { background: var(--err-s); color: var(--err); }
+.sev.avertissement { background: var(--warn-s); color: var(--warn); }
+.sev.note { background: var(--surface-2); color: var(--text-2); }
+pre { position: relative; margin: 14px 0; padding: 14px 16px; overflow-x: auto; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--code-bg); font-size: 12.8px; line-height: 1.55; tab-size: 4; }
+pre .copy { position: absolute; top: 8px; right: 8px; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); font: 600 12px var(--ui); cursor: pointer; opacity: 0; transition: opacity .15s; }
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+pre .copy.done { color: var(--ok); border-color: var(--ok); }
+.k-meta { color: var(--c-meta); }
+.k-com { color: var(--c-com); font-style: italic; }
+.k-str { color: var(--c-str); }
+.k-mark { color: var(--c-mark); font-weight: 600; }
+mark { background: color-mix(in srgb, var(--acc) 35%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* --- Générateur ------------------------------------------------------------- */
+.panel { margin: 0 0 26px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); overflow: hidden; }
+.panel > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 16px 22px;
+  font-weight: 700; font-size: 17px; }
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary svg { width: 20px; height: 20px; color: var(--acc); }
+.panel > summary .chev { margin-left: auto; transition: transform .2s; color: var(--text-2); }
+.panel[open] > summary .chev { transform: rotate(180deg); }
+.panel-body { padding: 4px 22px 22px; border-top: 1px solid var(--border); }
+.panel-body > p { color: var(--text-2); margin: 14px 0; }
+.form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field.w2 { grid-column: span 2; }
+.field.w4 { grid-column: span 4; }
+.field label { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.field input, .field select { height: 36px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: 14px var(--ui); min-width: 0; }
+.field input:focus, .field select:focus { outline: 2px solid color-mix(in srgb, var(--acc) 40%, transparent); border-color: var(--acc); }
+.field input.bad { border-color: var(--err); }
+.field small { font-size: 12px; color: var(--text-2); }
+.field small.bad { color: var(--err); }
+.checks { grid-column: span 4; display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 4px; }
+.checks label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; cursor: pointer; }
+.checks input { width: 16px; height: 16px; accent-color: var(--acc); }
+.out-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 0; }
+.out-head b { flex: 1; font-size: 14px; }
+.out-head code { font-size: 13px; color: var(--acc-on); }
+#out { max-height: 520px; }
+.ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ref-grid h4 { margin: 14px 0 6px; }
+.icons { display: flex; flex-wrap: wrap; gap: 6px; max-height: 210px; overflow: auto; padding: 10px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--code-bg); }
+.icons button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 7px; padding: 2px 8px;
+  font: 12px var(--mono); cursor: pointer; }
+.icons button:hover { border-color: var(--acc); color: var(--acc-on); }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; transition: all .2s;
+  padding: 10px 16px; border-radius: 10px; background: var(--text); color: var(--bg); font-weight: 600; font-size: 13.5px; z-index: 50; pointer-events: none; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; top: 60px; left: 0; bottom: 0; width: min(320px, 86vw); height: auto; z-index: 30; background: var(--bg);
+    transform: translateX(-102%); transition: transform .2s; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  body.nav-open .side { transform: none; }
+  .menu-btn { display: inline-flex; }
+  main { padding: 20px 16px 100px; }
+  .cards, .ref-grid { grid-template-columns: 1fr; }
+  .form { grid-template-columns: 1fr 1fr; }
+  .field.w2, .field.w4, .checks { grid-column: span 2; }
+  .top .label-long { display: none; }
+}
+@media (max-width: 560px) {
+  .top { gap: 8px; padding: 0 12px; }
+  .brand span, .brand small { display: none; }
+  .hero { padding: 20px 18px; }
+  .hero h1 { font-size: 24px; }
+  .form { grid-template-columns: 1fr; }
+  .field.w2, .field.w4, .checks { grid-column: span 1; }
+  .out-head { flex-wrap: wrap; }
+  .out-head b { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="btn icon-btn menu-btn" type="button" id="menuBtn" aria-label="Sommaire">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>Guide des scripts</span><small>Sindry {{VERSION}}</small>
+  </div>
+  <div class="grow"></div>
+  <button class="btn" type="button" id="aiCopy" title="Copier la version pour IA, à coller dans n'importe quelle IA">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+    <span class="label-long">Copier pour une IA</span>
+  </button>
+  <button class="btn icon-btn" type="button" id="aiDownload" title="Télécharger la version pour IA (SCRIPTS_POUR_IA.md)" aria-label="Télécharger la version pour IA">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+  </button>
+  <button class="btn icon-btn" type="button" id="themeBtn" aria-label="Changer de thème" title="Thème clair ou sombre">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+</header>
+
+<div class="layout">
+  <nav class="side" id="side" aria-label="Sommaire">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="search" placeholder="Rechercher (ex. SafeTest, [ITEM], BOM)" autocomplete="off" aria-label="Rechercher dans le guide">
+      <span class="count" id="qCount"></span>
+    </div>
+    <div class="toc-group">Outils</div>
+    <ul class="toc">
+      <li><a href="#creer">Créer un squelette</a></li>
+      <li><a href="#reference">Catégories, lots, icônes</a></li>
+    </ul>
+    <div class="toc-group">Le contrat</div>
+    <ul class="toc" id="toc">
+<!--TOC-->
+    </ul>
+  </nav>
+
+  <main>
+    <div class="doc" id="doc">
+      <section class="hero">
+        <h1>Écrire un script pour Sindry</h1>
+        <p>Tout ce qu'il faut pour qu'un script PowerShell soit accepté par Sindry et par son
+        validateur : le contrat complet, un générateur de squelette, les données de référence —
+        et une version de ce guide à donner à une IA.</p>
+        <div class="cards">
+          <a class="card" href="#creer"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Créer un squelette</b><span>Remplissez quelques champs : l'entête, la traduction et le code de départ sont prêts à copier.</span></a>
+          <a class="card" href="#en-deux-minutes"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>En deux minutes</b><span>Les cinq gestes pour un premier script, puis le contrat, section par section.</span></a>
+          <a class="card" href="#" data-ai-copy><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>Avec une IA</b><span>Copiez la version pour IA, collez-la dans votre IA, puis décrivez le script voulu.</span></a>
+        </div>
+      </section>
+
+      <details class="panel" id="creer" open>
+        <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Créer un squelette
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="panel-body">
+          <p>Le squelette produit passe le validateur en <code>-Strict</code> tel quel. Il reste à
+          écrire le travail du script, à la place du <code>TODO</code>. Pour un script qui analyse
+          avant d'agir, partez plutôt de <a href="#exemple-complet-faire-de-la-place">l'exemple complet</a>.</p>
+          <div class="form" id="form">
+            <div class="field"><label for="fNum">Numéro</label><input id="fNum" inputmode="numeric" maxlength="3"><small id="fNumHint"></small></div>
+            <div class="field"><label for="fName">Nom du fichier (anglais)</label><input id="fName" placeholder="SET_FAST_DNS"></div>
+            <div class="field"><label for="fCat">Catégorie</label><select id="fCat"></select></div>
+            <div class="field"><label for="fIcon">Icône Lucide</label><input id="fIcon" list="iconList" placeholder="zap" autocomplete="off"><small id="fIconHint"></small></div>
+            <div class="field w2"><label for="fTitle">Titre (anglais)</label><input id="fTitle" placeholder="Set fast DNS"></div>
+            <div class="field w2"><label for="fTitleFr">Titre (français)</label><input id="fTitleFr" placeholder="Utiliser un Internet plus rapide"></div>
+            <div class="field w2"><label for="fDesc">Description (anglais)</label><input id="fDesc" placeholder="Speeds up browsing with a faster resolver"></div>
+            <div class="field w2"><label for="fDescFr">Description (français)</label><input id="fDescFr" placeholder="Accélère la navigation"></div>
+            <div class="field"><label for="fAuthor">Auteur</label><input id="fAuthor" placeholder="Votre nom"></div>
+            <div class="field"><label for="fVersion">Version</label><input id="fVersion" value="1.0"></div>
+            <div class="field"><label for="fRisk">Risque</label><select id="fRisk"><option value="low">low — faible</option><option value="medium">medium — moyen</option><option value="high">high — élevé (confirmation)</option></select></div>
+            <div class="field"><label for="fDuration">Durée</label><select id="fDuration"><option value="fast">fast — rapide</option><option value="medium">medium</option><option value="slow">slow — annoncée</option></select></div>
+            <div class="field w2"><label for="fTags">Mots-clés (facultatif)</label><input id="fTags" placeholder="dns, network"></div>
+            <div class="field"><label for="fEngine">Interpréteur</label><select id="fEngine"><option value="auto">auto (conseillé)</option><option value="winps">winps — 5.1</option><option value="pwsh">pwsh — 7</option></select></div>
+            <div class="field"><label for="fErr">Premier code d'erreur</label><input id="fErr" value="E001" maxlength="7"><small id="fErrHint"></small></div>
+            <div class="checks">
+              <label><input type="checkbox" id="cAdmin" checked> Droits administrateur</label>
+              <label><input type="checkbox" id="cRev" checked> Réversible</label>
+              <label><input type="checkbox" id="cInt" checked> Interruptible</label>
+              <label><input type="checkbox" id="cReboot"> Redémarrage</label>
+              <label><input type="checkbox" id="cSafe" checked> Simulation (SafeTest)</label>
+              <label><input type="checkbox" id="cExpert"> Expert seulement</label>
+            </div>
+          </div>
+          <div class="out-head"><b>Votre script</b><code id="outName"></code>
+            <button class="btn" type="button" id="newId">Nouvel id</button>
+            <button class="btn" type="button" id="outCopy">Copier</button>
+            <button class="btn primary" type="button" id="outSave">Télécharger</button></div>
+          <pre id="out"></pre>
+          <datalist id="iconList"></datalist>
+        </div>
+      </details>
+
+      <details class="panel" id="reference">
+        <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Catégories, lots, icônes
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="panel-body">
+          <div class="ref-grid">
+            <div><h4>Catégories <small>(champ <code>category</code>)</small></h4><div class="tbl-wrap"><table id="catTable"></table></div></div>
+            <div><h4>Lots d'usine</h4><div class="tbl-wrap"><table id="lotTable"></table></div></div>
+          </div>
+          <h4>Icônes Lucide <small id="iconCount"></small></h4>
+          <div class="tbl-filter"><input id="iconFilter" type="search" placeholder="Filtrer les icônes (ex. trash, shield)"><span>Un clic copie le nom.</span></div>
+          <div class="icons" id="icons" style="margin-top:14px"></div>
+        </div>
+      </details>
+
+<!--CONTENT-->
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                  set(k, v) { try { localStorage.setItem(k, v); } catch { /* sans stockage */ } } };
+
+  // --- Petits messages ------------------------------------------------------
+  let toastTimer;
+  function toast(text) {
+    const t = $('toast'); t.textContent = text; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+  async function copy(text, what) {
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const a = document.createElement('textarea'); a.value = text; document.body.appendChild(a); a.select();
+      try { document.execCommand('copy'); } finally { a.remove(); }
+    }
+    toast(`${what} copié`);
+  }
+  function download(name, text, bom) {
+    const blob = new Blob([(bom ? '﻿' : '') + text.replace(/\r?\n/g, '\r\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // --- Thème -----------------------------------------------------------------
+  const saved = store.get('sindry-guide-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('themeBtn').onclick = () => {
+    const dark = document.documentElement.dataset.theme
+      ? document.documentElement.dataset.theme === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+    store.set('sindry-guide-theme', document.documentElement.dataset.theme);
+  };
+  $('menuBtn').onclick = () => document.body.classList.toggle('nav-open');
+  $('side').addEventListener('click', (e) => { if (e.target.closest('a')) document.body.classList.remove('nav-open'); });
+
+  // --- Version pour IA --------------------------------------------------------
+  const copyAi = (e) => { e?.preventDefault(); copy(DATA.ai, 'La version pour IA'); };
+  $('aiCopy').onclick = copyAi;
+  document.querySelectorAll('[data-ai-copy]').forEach((a) => (a.onclick = copyAi));
+  $('aiDownload').onclick = () => download('SCRIPTS_POUR_IA.md', DATA.ai, false);
+
+  // --- Blocs de code : bouton Copier ----------------------------------------
+  document.querySelectorAll('#doc pre').forEach((pre) => {
+    if (pre.id === 'out') return;
+    const b = document.createElement('button');
+    b.className = 'copy'; b.type = 'button'; b.textContent = 'Copier';
+    b.onclick = () => { copy(pre.querySelector('code')?.innerText ?? pre.innerText, 'Le code'); b.classList.add('done'); b.textContent = 'Copié'; setTimeout(() => { b.classList.remove('done'); b.textContent = 'Copier'; }, 1500); };
+    pre.appendChild(b);
+  });
+
+  // --- Grands tableaux : un filtre --------------------------------------------
+  document.querySelectorAll('#doc .tbl-wrap[data-rows]').forEach((wrap) => {
+    if (Number(wrap.dataset.rows) < 14) return;
+    const box = document.createElement('div'); box.className = 'tbl-filter';
+    box.innerHTML = '<input type="search" placeholder="Filtrer ce tableau"><span></span>';
+    wrap.before(box);
+    const input = box.querySelector('input'); const info = box.querySelector('span');
+    input.oninput = () => {
+      const q = input.value.trim().toLowerCase(); let n = 0;
+      wrap.querySelectorAll('tbody tr').forEach((tr) => { const ok = !q || tr.textContent.toLowerCase().includes(q); tr.classList.toggle('hidden', !ok); if (ok) n++; });
+      info.textContent = q ? `${n} ligne(s)` : '';
+    };
+  });
+
+  // --- Sommaire suivi au défilement ------------------------------------------
+  const links = [...document.querySelectorAll('#toc a')];
+  const byId = new Map(links.map((a) => [a.hash.slice(1), a]));
+  const heads = [...document.querySelectorAll('#doc h2[id], #doc h3[id]')];
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      links.forEach((a) => a.classList.remove('active'));
+      byId.get(en.target.id)?.classList.add('active');
+    });
+  }, { rootMargin: '-70px 0px -70% 0px' });
+  heads.forEach((h) => spy.observe(h));
+
+  // --- Recherche --------------------------------------------------------------
+  // Chaque titre du sommaire possède le texte qui le suit, jusqu'au titre suivant.
+  const sections = heads.map((h, i) => {
+    const nodes = []; let n = h.nextElementSibling;
+    while (n && !(n.matches?.('h2[id], h3[id]'))) { nodes.push(n); n = n.nextElementSibling; }
+    return { id: h.id, head: h, nodes, text: (h.textContent + ' ' + nodes.map((x) => x.textContent).join(' ')).toLowerCase() };
+  });
+  function clearMarks() {
+    document.querySelectorAll('#doc mark').forEach((m) => m.replaceWith(document.createTextNode(m.textContent)));
+    document.getElementById('doc').normalize();
+  }
+  function markIn(root, q) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (t) =>
+      t.parentElement.closest('button, script, mark') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const hits = []; let t;
+    while ((t = walker.nextNode())) if (t.nodeValue.toLowerCase().includes(q)) hits.push(t);
+    let first = null;
+    for (const node of hits) {
+      const v = node.nodeValue; const low = v.toLowerCase(); const frag = document.createDocumentFragment();
+      let i = 0, j;
+      while ((j = low.indexOf(q, i)) !== -1) {
+        frag.append(v.slice(i, j)); const m = document.createElement('mark'); m.textContent = v.slice(j, j + q.length);
+        frag.append(m); first ??= m; i = j + q.length;
+      }
+      frag.append(v.slice(i)); node.replaceWith(frag);
+    }
+    return first;
+  }
+  let searchTimer;
+  $('q').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      const q = $('q').value.trim().toLowerCase();
+      clearMarks();
+      links.forEach((a) => { a.querySelector('.hit-n')?.remove(); a.parentElement.classList.remove('dim'); });
+      if (q.length < 2) { $('qCount').textContent = ''; return; }
+      let total = 0, first = null;
+      for (const s of sections) {
+        const n = s.text.split(q).length - 1;
+        const a = byId.get(s.id);
+        if (a) {
+          a.parentElement.classList.toggle('dim', n === 0);
+          if (n) { const c = document.createElement('span'); c.className = 'hit-n'; c.textContent = n; a.prepend(c); }
+        }
+        if (n) { total += n; for (const node of [s.head, ...s.nodes]) { const m = markIn(node, q); first ??= m; } }
+      }
+      $('qCount').textContent = total ? `${total} résultat(s)` : 'Aucun résultat';
+      first?.scrollIntoView({ block: 'center' });
+    }, 220);
+  });
+  $('q').addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('q').value = ''; $('q').dispatchEvent(new Event('input')); } });
+
+  // --- Référence : catégories, lots, icônes -----------------------------------
+  $('catTable').innerHTML = '<thead><tr><th>Anglais</th><th>Français</th><th>Nom</th><th>Numéros</th></tr></thead><tbody>' +
+    DATA.categories.map((c, i) => `<tr><td><code>${esc(c.id)}</code></td><td><code>${esc(c.id_fr)}</code></td><td>${esc(c.name_fr)}</td><td><code>${i + 1}xx</code></td></tr>`).join('') + '</tbody>';
+  $('lotTable').innerHTML = '<thead><tr><th>Lot</th><th>Accueille</th></tr></thead><tbody>' +
+    DATA.lots.map((l) => `<tr><td>${esc(l.name_fr)}</td><td>${l.aggregate ? '<i>tout ce qui est rangé ailleurs</i>' : (l.categories || []).map((c) => `<code>${esc(c)}</code>`).join(' ')}</td></tr>`).join('') + '</tbody>';
+  $('iconCount').textContent = `(${DATA.icons.length})`;
+  const renderIcons = (q = '') => {
+    const list = q ? DATA.icons.filter((n) => n.includes(q)) : DATA.icons;
+    $('icons').innerHTML = list.slice(0, 600).map((n) => `<button type="button">${esc(n)}</button>`).join('') +
+      (list.length > 600 ? `<span style="font-size:12px;color:var(--text-2);padding:4px">… et ${list.length - 600} de plus : affinez le filtre.</span>` : '');
+  };
+  renderIcons();
+  $('iconFilter').oninput = (e) => renderIcons(e.target.value.trim().toLowerCase());
+  $('icons').onclick = (e) => { const b = e.target.closest('button'); if (b) { copy(b.textContent, 'Le nom'); $('fIcon').value = b.textContent; build(); } };
+  $('iconList').innerHTML = DATA.icons.map((n) => `<option value="${n}">`).join('');
+
+  // --- Le générateur ----------------------------------------------------------
+  $('fCat').innerHTML = DATA.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.name_fr)} — ${esc(c.id)}</option>`).join('');
+  $('fCat').value = 'tools';
+  const today = new Date(); const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const newGuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+  let guid = newGuid();
+  const icons = new Set(DATA.icons);
+  const val = (id) => $(id).value.trim();
+  const pad = (k, w) => k + ' '.repeat(Math.max(0, w - k.length));
+  const clean = (s) => s.replace(/[\r\n]+/g, ' ').trim();
+  const noAccents = (s) => !/[à-ÿÀ-ß]/.test(s);
+
+  function build() {
+    const cat = val('fCat');
+    const catIndex = DATA.categories.findIndex((c) => c.id === cat) + 1;
+    $('fNumHint').textContent = catIndex ? `Plage ${catIndex}xx pour cette catégorie` : '';
+    if (!val('fNum') && catIndex) $('fNum').placeholder = `${catIndex}00`;
+    const icon = val('fIcon') || 'wrench';
+    const iconOk = icons.has(icon);
+    $('fIcon').classList.toggle('bad', !iconOk);
+    $('fIconHint').textContent = iconOk ? '' : 'Inconnue de Lucide';
+    $('fIconHint').classList.toggle('bad', !iconOk);
+    const code = (val('fErr') || 'E001').toUpperCase();
+    const codeOk = /^[A-Z]{1,3}[0-9]{2,4}$/.test(code);
+    $('fErr').classList.toggle('bad', !codeOk);
+    $('fErrHint').textContent = codeOk ? '' : '1 à 3 majuscules, puis 2 à 4 chiffres';
+    $('fErrHint').classList.toggle('bad', !codeOk);
+
+    const title = clean(val('fTitle')) || 'My action';
+    const desc = clean(val('fDesc')) || 'What this action does';
+    const titleFr = clean(val('fTitleFr')) || title;
+    const descFr = clean(val('fDescFr')) || desc;
+    const safe = $('cSafe').checked;
+    const head = [
+      ['id', guid], ['lang', 'en'], ['title', title], ['desc', desc], ['category', cat], ['icon', icon],
+      ...(val('fTags') ? [['tags', clean(val('fTags'))]] : []),
+      ['version', val('fVersion') || '1.0'],
+      ['author', clean(val('fAuthor')) || 'Your name'], ['created', iso], ['updated', iso],
+      ['admin', String($('cAdmin').checked)], ['risk', val('fRisk')], ['duration', val('fDuration')],
+      ['reversible', String($('cRev').checked)], ['interruptible', String($('cInt').checked)],
+      ['reboot', String($('cReboot').checked)], ['engine', val('fEngine')],
+      ...($('cExpert').checked ? [['show', 'expert']] : []),
+    ];
+    const L = [];
+    L.push('## SINDRY:START', ...head.map(([k, v]) => `## ${pad(k, 13)} : ${v}`), '## SINDRY:END', '');
+    L.push('## SINDRY:OPTIONS');
+    if (safe) L.push('## SafeTest : [bool] Simulate — shows what would be done, changes nothing');
+    else L.push('## DetailedLog : [bool] Detailed log — writes every step to the log');
+    L.push('## SINDRY:END', '');
+    L.push('## SINDRY:REPORT', `## ${code} : [error] The action failed — See the technical detail in the log, then run the action again`, '## SINDRY:END', '');
+    L.push('## SINDRY:LANG fr', `## ${pad('title', 8)} : ${titleFr}`, `## ${pad('desc', 8)} : ${descFr}`);
+    if (safe) L.push('## SafeTest : Simuler — montre ce qui serait fait, sans rien modifier');
+    else L.push('## DetailedLog : Journal détaillé — écrit chaque étape dans le journal');
+    L.push(`## ${pad(code, 8)} : L'action a échoué — Lisez le détail technique dans le journal, puis relancez l'action`, '## SINDRY:END', '');
+    L.push('# ==============================================================================',
+      '# Variables et drapeaux : tout ce qui se règle, regroupé ici',
+      '# ==============================================================================', '');
+    L.push('$CONFIG = @{', safe ? '    SafeTest = $false' : '    DetailedLog = $false', '}', '');
+    L.push('# --- Sindry override (ne pas supprimer) ---', 'if ($env:SINDRY_CONFIG) {',
+      '    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |',
+      '        ForEach-Object { $CONFIG[$_.Name] = $_.Value }', '}', '');
+    if (safe) L.push('# Simulation : comparaison de CHAINE, la valeur arrive par JSON', '$SafeTest = ("$($CONFIG.SafeTest)" -eq \'True\')', '');
+    else L.push('# Journal detaille : comparaison de CHAINE, la valeur arrive par JSON', '$DetailedLog = ("$($CONFIG.DetailedLog)" -eq \'True\')', '');
+    L.push('# ==============================================================================',
+      '# Execution', '# ==============================================================================', '');
+    L.push('Write-Output "[STEP] 1/1 Doing the work"', 'try {');
+    if (safe) L.push('    if ($SafeTest) {', '        Write-Output "[INFO] SafeTest - would do the work"', '    } else {',
+      '        # TODO : le travail du script', '        Write-Output "[OK] Work done"', '    }');
+    else L.push('    # TODO : le travail du script', '    if ($DetailedLog) { Write-Output "[INFO] Details of the work" }', '    Write-Output "[OK] Work done"');
+    L.push('} catch {', `    Write-Output "[ERR] ${code} $($_.Exception.Message)"`, '    exit 1', '}', '',
+      'Write-Output "[DONE] Done"', 'exit 0');
+    const text = L.join('\n') + '\n';
+
+    const num = (val('fNum') || $('fNum').placeholder || '100').replace(/\D/g, '').padStart(3, '0').slice(0, 3);
+    const name = (val('fName') || title).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '') || 'MY_ACTION';
+    $('outName').textContent = `${num}_${name}.ps1`;
+    $('out').textContent = text;
+    $('out').dataset.text = text;
+    const warnEn = [title, desc].some((s) => !noAccents(s));
+    $('outName').title = warnEn ? "Le titre et la description de base s'écrivent en anglais" : '';
+  }
+  $('form').addEventListener('input', build);
+  $('form').addEventListener('change', build);
+  $('newId').onclick = () => { guid = newGuid(); build(); toast('Nouvel identifiant'); };
+  $('outCopy').onclick = () => copy($('out').dataset.text, 'Le script');
+  $('outSave').onclick = () => { download($('outName').textContent, $('out').dataset.text, true); toast('Enregistré en UTF-8 avec BOM'); };
+  build();
+})();
+</script>
+</body>
+</html>

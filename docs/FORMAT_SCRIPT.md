@@ -7,6 +7,10 @@ par un. Une règle ne peut plus changer d'un côté sans l'autre.
 
 Référence normative : `docs/SPECIFICATION.md` §5.
 
+**Deux versions de ce guide, générées depuis ce fichier** (`node tools/build-script-guides.mjs`) :
+`docs/GUIDE_SCRIPTS.html`, à ouvrir dans un navigateur — recherche, générateur de squelette ;
+`docs/SCRIPTS_POUR_IA.md`, à donner à une IA pour qu'elle écrive un script conforme.
+
 ---
 
 ## En deux minutes
@@ -1370,6 +1374,25 @@ Sans cette restriction, les transtypages PowerShell deviennent des faux positifs
 
 ---
 
+## Le style du catalogue officiel
+
+Le validateur vérifie le contrat ; ces règles-ci ne se vérifient qu'à la relecture. Elles
+sont **exigées pour le catalogue officiel**, et conseillées pour vos propres scripts : un
+script lisible et réglable sans relire tout son code, un journal qu'un débutant comprend.
+
+| Règle | Ce qu'elle demande |
+|---|---|
+| **Langue** | Code, noms, clés et sortie en anglais ; commentaires en français |
+| **Entête du fichier** | `author`, `created`, `updated` et `version` toujours à jour : `updated` et `version` changent à chaque modification |
+| **Variables** | Chacune commentée **sur sa ligne** |
+| **Fonctions** | Chacune commentée **à son début** : ce qu'elle fait, ce qu'elle reçoit, ce qu'elle renvoie |
+| **Chapitres** | Au-delà de 200 lignes, des chapitres balisés : Sommaire, Résumé, Variables, Fonctions, Préparation, Exécution, Journal, Annexes… — adaptés au script |
+| **Interrupteurs** | Un maximum de drapeaux (booléens, listes) pour activer, désactiver ou adapter chaque fonctionnalité, **regroupés avec les variables en tête du script**. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu) s'y modifient sans toucher au reste |
+| **Codes d'erreur** | Un maximum, chacun déclaré `[error]` avec sa description et, si possible, sa solution — voir « Les codes d'erreur » |
+| **Journal** | Clair pour un débutant, aéré, sans pavé ; des tableaux et des listes quand ça s'y prête. Le journal de Sindry est en chasse fixe, lignes conservées : des colonnes alignées par des espaces y tiennent |
+
+---
+
 ## Votre modèle : le squelette de ce document
 
 Le dépôt [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue) contient le catalogue officiel, et chacun de ses scripts passe le
@@ -1450,6 +1473,22 @@ sens sont `auto`, `winps` et `pwsh`.
 Au-delà de **30 000 caractères** de JSON, Sindry refuse le lancement (limite Windows sur
 une variable d'environnement). Un `[multi]` à très nombreux choix ou une `[string]` très
 longue peuvent y conduire.
+
+### Ce que l'écran d'analyse fait vraiment d'un `[ITEM]`
+
+Relevé dans l'interface (2.0.3). Rien de tout cela ne produit de constat :
+
+| Vous écrivez | L'écran en fait |
+|---|---|
+| `size=` | **De l'espace à libérer** : il entre dans « trouvé » et « coché », et sans `[FREED]` le bilan affiche « environ X libérés ». Un script qui installe, télécharge ou ajoute n'écrit **jamais** `size=` |
+| pas de `size=` | L'élément coché compte en « N éléments » |
+| `state=ok` | Badge « À jour », ligne **inactive**, case non cochable. Pour une chose déjà en place qu'on peut refaire (réinstaller), écrivez plutôt `checked=false` et `version=` |
+| `version=` seul | Un badge neutre, qui ne dit pas « installé » |
+| `version=` et `to=` | Un badge accentué `version → to` |
+| `name=` | Jamais traduit. `label=<clé de REPORT>` l'est, et s'affiche « Libellé — name » |
+| vue `tiles` | L'initiale du nom sur une pastille de couleur, et le nom : **ni l'icône d'`exe=`, ni la version** |
+| vue `table` | Colonnes fixes — parent, élément, confiance, taille — avec recherche : **ni version, ni éditeur** |
+| `## chart` | Tous les graphiques du résumé pèsent des **tailles** : sans `size=`, un poste quitte le graphique et passe sous « Aussi ». Et le premier script du lot qui déclare un `chart` l'impose à tout le résumé |
 
 ---
 
