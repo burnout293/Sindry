@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installer : récap, recherche, tris</title>
+<!--
+  Mockup M34 (2.0.4): the Simple screen of script 410 (Install applications),
+  in five variants. The data, the boxes, the search, the filters and the sorts
+  are real and shared; only the place of the recap and of the controls
+  changes, so that the variants compare on that alone.
+  Code in English, visible text in French. Fictitious data.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grid: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A; --ok-s: #0C2620;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  --shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grid: #ECE8E0;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F; --ok-s: #E6F5EC;
+  --shadow: 0 16px 40px rgba(20, 26, 36, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* --- The mockup bar ---------------------------------------------------- */
+.topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.topbar p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 260px; }
+.seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.explain { max-width: 1140px; margin: 18px auto 0; padding: 0 20px; color: var(--text-2); }
+.explain b { color: var(--text); }
+.explain .pros { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; }
+.explain .pros span::before { content: '+ '; color: var(--ok); font-weight: 800; }
+.explain .pros span.con::before { content: '− '; color: var(--err); }
+
+/* --- The Simple screen ---------------------------------------------------- */
+.stage { max-width: 1140px; margin: 14px auto 60px; padding: 0 20px; }
+.screen { position: relative; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.screen-head { padding: 22px 28px 6px; text-align: center; }
+.screen-head .back { position: absolute; left: 24px; top: 22px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.screen-head .back i { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); display: grid; place-items: center; font-style: normal; color: var(--text-2); }
+.screen-head h2 { margin: 26px 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+.screen-head p { margin: 0; color: var(--text-2); }
+.body { padding: 18px 28px 22px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; }
+.footer { position: sticky; bottom: 0; display: flex; align-items: center; gap: 14px; padding: 14px 28px; border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(6px); z-index: 5; }
+.footer .sum { flex: 1; font-weight: 650; }
+.footer .sum small { display: block; font-weight: 500; color: var(--text-3); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 11px; border: 1px solid var(--border);
+  background: var(--surface); font-weight: 700; white-space: nowrap; }
+.btn:hover { border-color: var(--border-2); }
+.btn.primary { background: var(--acc); border-color: var(--acc); color: var(--ink); }
+.link { border: 0; background: none; padding: 0; color: var(--acc-on); font-weight: 700; font-size: 12px; white-space: nowrap; }
+
+/* Controls */
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+.search { position: relative; flex: 1 1 260px; display: flex; }
+.search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+.search input { flex: 1; height: 38px; padding: 0 12px 0 36px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface-2); }
+.search input:focus { outline: 2px solid color-mix(in srgb, var(--acc) 45%, transparent); border-color: var(--acc); }
+.lab { font-size: 12px; font-weight: 650; color: var(--text-2); }
+.ctl { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.pill { display: inline-flex; }
+.pill button { border: 1px solid var(--border); background: var(--surface); padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.pill button:first-child { border-radius: 999px 0 0 999px; }
+.pill button:last-child { border-radius: 0 999px 999px 0; }
+.pill button + button { margin-left: -1px; }
+.pill button[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-on); position: relative; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 650; color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 6px; }
+.chip b { font-weight: 700; color: var(--text-3); }
+.chip[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-on); }
+.select { height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); padding: 0 10px; font-weight: 650; }
+
+/* The list */
+.group-h { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 12.5px; font-weight: 700; color: var(--text-2); border-bottom: 1px solid var(--border); }
+.group-h .grow { flex: 1; }
+.group-h .count { color: var(--text-3); font-weight: 600; }
+.group + .group { border-top: 1px solid var(--border); }
+.row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-top: 1px solid var(--border); cursor: pointer; }
+.group-h + .row, .rows > .row:first-child { border-top: 0; }
+.row.cat { font-weight: 700; }
+.row.child { padding-left: 46px; border-top-style: dashed; }
+.row input { width: 17px; height: 17px; accent-color: var(--acc); flex-shrink: 0; }
+.row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.row .t b { font-weight: 650; }
+.row .t small { color: var(--text-3); font-size: 11.5px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row .v { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.row .chev { color: var(--text-3); transition: transform .2s; }
+.row .chev.closed { transform: rotate(-90deg); }
+.tile { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-weight: 800; font-size: 13px; color: #fff; }
+.tile.cat { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+.tile.cat .ico { width: 14px; height: 14px; }
+.ver { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-2); color: var(--text-2); }
+.ver.up { border-color: var(--acc); color: var(--acc-on); background: var(--acc-soft); }
+.tag { padding: 0 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+mark { background: color-mix(in srgb, var(--acc) 32%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.empty { padding: 18px; text-align: center; color: var(--text-3); }
+
+/* The recap */
+.recap { display: flex; flex-direction: column; min-height: 0; }
+.recap-h { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+.recap-h b { font-size: 14px; }
+.recap-h .n { margin-left: auto; font-family: var(--mono); font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--acc-soft); color: var(--acc-on); }
+.recap-b { overflow: auto; padding: 8px 16px 14px; }
+.recap-g { margin-top: 10px; }
+.recap-g-h { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin-bottom: 6px; }
+.recap-g-h span { margin-left: auto; color: var(--text-3); letter-spacing: 0; }
+.recap-i { display: flex; align-items: center; gap: 9px; padding: 4px 0; }
+.recap-i .tile { width: 20px; height: 20px; border-radius: 6px; font-size: 10px; }
+.recap-i .t { flex: 1; min-width: 0; }
+.recap-i .t small { display: block; color: var(--text-3); font-size: 11px; }
+.recap-i .x { border: 0; background: none; color: var(--text-3); padding: 2px 4px; border-radius: 6px; }
+.recap-i .x:hover { color: var(--err); background: var(--surface-2); }
+.recap-f { padding: 10px 16px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 11.5px; }
+.recap-empty { color: var(--text-3); padding: 20px 0; text-align: center; }
+
+/* Variant A: a panel on the right */
+.va { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.va .recap { position: sticky; top: 70px; max-height: calc(100vh - 170px); }
+
+/* Variant B: a drawer */
+.drawer-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); z-index: 20; }
+.drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; z-index: 21; border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--shadow); }
+.drawer .recap-b { flex: 1; }
+
+/* Variant C: tabs */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 700; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 8px; align-items: center; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--acc); }
+.tabs .n { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.tabs button[aria-selected="true"] .n { background: var(--acc-soft); color: var(--acc-on); }
+.rtable { width: 100%; border-collapse: collapse; }
+.rtable th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); padding: 9px 14px; background: var(--surface-2); }
+.rtable td { padding: 9px 14px; border-top: 1px solid var(--border); vertical-align: middle; }
+.rtable .app { display: flex; align-items: center; gap: 10px; font-weight: 650; }
+.act { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.act.maj { background: var(--acc-soft); color: var(--acc-on); }
+.act.ins { background: var(--ok-s); color: var(--ok); }
+.act.re { background: var(--surface-2); color: var(--text-2); }
+
+/* Variant D: a popover of filters, the recap below */
+.pop-wrap { position: relative; }
+.pop { position: absolute; right: 0; top: 44px; z-index: 15; width: 330px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+.pop h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.pop h4 + .chips { margin-bottom: 14px; }
+.pop-f { display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; }
+.vd-recap { margin-top: 14px; }
+.vd-recap summary { list-style: none; cursor: pointer; }
+.vd-recap summary::-webkit-details-marker { display: none; }
+.vd-recap .recap-b { max-height: none; columns: 2 280px; column-gap: 28px; }
+.vd-recap .recap-g { break-inside: avoid; }
+
+/* Variant E: a basket at the bottom */
+.basket { position: sticky; bottom: 66px; z-index: 6; margin: 14px 28px 0; border-radius: 16px; box-shadow: var(--shadow); }
+.basket-h { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.basket-chips { display: flex; gap: 6px; overflow-x: auto; flex: 1; padding-bottom: 2px; scrollbar-width: thin; }
+.bchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 6px 3px 4px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); white-space: nowrap; font-size: 12px; font-weight: 600; }
+.bchip .tile { width: 18px; height: 18px; border-radius: 50%; font-size: 9px; }
+.bchip button { border: 0; background: none; color: var(--text-3); padding: 0 2px; }
+.basket-all { border-top: 1px solid var(--border); padding: 4px 16px 14px; max-height: 300px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0 24px; }
+.basket-all .recap-g { margin-top: 10px; }
+
+@media (max-width: 860px) {
+  .va { grid-template-columns: 1fr; }
+  .va .recap { position: static; max-height: none; }
+  .drawer { width: min(380px, 92%); }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Installer des applications — récap, recherche, tris</h1>
+  <p>Cinq places pour le récapitulatif et les filtres. Tout est cliquable : cases, recherche, filtres, tris, ×. Données fictives.</p>
+  <div class="seg" id="variants">
+    <button type="button" data-v="a" aria-pressed="true">A · Panneau</button>
+    <button type="button" data-v="b" aria-pressed="false">B · Tiroir</button>
+    <button type="button" data-v="c" aria-pressed="false">C · Onglets</button>
+    <button type="button" data-v="d" aria-pressed="false">D · Dessous</button>
+    <button type="button" data-v="e" aria-pressed="false">E · Panier</button>
+  </div>
+  <div class="seg" id="theme">
+    <button type="button" data-t="dark" aria-pressed="true">Sombre</button>
+    <button type="button" data-t="light" aria-pressed="false">Clair</button>
+  </div>
+</header>
+
+<div class="explain" id="explain"></div>
+
+<div class="stage">
+  <div class="screen" id="screen">
+    <div class="screen-head">
+      <span class="back"><i>←</i>Installer des applications</span>
+      <h2>Voici ce que j'ai trouvé</h2>
+      <p>Cochez ce que vous voulez installer ou mettre à jour. Rien n'a encore été modifié.</p>
+    </div>
+    <div class="body" id="body"></div>
+    <div id="extra"></div>
+    <div class="footer">
+      <span class="sum" id="sum"></span>
+      <button type="button" class="btn" id="footRecap" hidden></button>
+      <button type="button" class="btn primary">⤓ Lancer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // --- Icons (Lucide, ISC) ---------------------------------------------------
+  const P = {
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    chev: '<path d="m6 9 6 6 6-6"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>',
+    chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    office: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+    media: '<polygon points="6 3 20 12 6 21 6 3"/>',
+    tools: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    dev: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+    shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    filter: '<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>',
+    list: '<path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  };
+  const ico = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24">${P[n]}</svg>`;
+
+  // --- Data: state › category › application ----------------------------------
+  const CATS = { web: ['Navigateurs', 'globe'], chat: ['Communication', 'chat'], office: ['Bureautique', 'office'], media: ['Multimédia', 'media'],
+    tools: ['Outils', 'tools'], dev: ['Développement', 'dev'], sec: ['Sécurité', 'shield'] };
+  const STATES = { maj: 'Mises à jour disponibles', absent: 'Pas encore installées', installe: 'Déjà installées' };
+  const COLORS = ['#E8590C', '#1C7ED6', '#2F9E44', '#AE3EC9', '#F08C00', '#0CA678', '#D6336C', '#4263EB', '#5C940D', '#C2255C'];
+  let n = 0;
+  const app = (state, cat, name, pub, extra = {}) => ({ id: `a${++n}`, state, cat, name, pub, color: COLORS[n % COLORS.length], ...extra });
+  const APPS = [
+    app('maj', 'web', 'Firefox', 'Mozilla', { ver: '131.0', to: '131.0.3' }),
+    app('maj', 'dev', 'Git', 'The Git Development Community', { ver: '2.46.0', to: '2.47.0' }),
+    app('maj', 'dev', 'Notepad++', 'Notepad++ Team', { ver: '8.6.9', to: '8.7' }),
+    app('maj', 'media', 'VLC media player', 'VideoLAN', { ver: '3.0.20', to: '3.0.21' }),
+    app('absent', 'web', 'Google Chrome', 'Google'), app('absent', 'web', 'Brave', 'Brave Software'), app('absent', 'web', 'Opera', 'Opera Norway'),
+    app('absent', 'chat', 'Discord', 'Discord Inc.'), app('absent', 'chat', 'Signal', 'Signal Messenger'), app('absent', 'chat', 'Zoom', 'Zoom Communications'),
+    app('absent', 'chat', 'Thunderbird', 'Mozilla'),
+    app('absent', 'office', 'LibreOffice', 'The Document Foundation'), app('absent', 'office', 'SumatraPDF', 'Krzysztof Kowalczyk'), app('absent', 'office', 'Obsidian', 'Obsidian'),
+    app('absent', 'media', 'Spotify', 'Spotify AB'), app('absent', 'media', 'Audacity', 'Audacity Team'), app('absent', 'media', 'OBS Studio', 'OBS Project'),
+    app('absent', 'media', 'GIMP', 'The GIMP Team'),
+    app('absent', 'tools', '7-Zip', 'Igor Pavlov'), app('absent', 'tools', 'Everything', 'voidtools'), app('absent', 'tools', 'PowerToys', 'Microsoft'),
+    app('absent', 'tools', 'ShareX', 'ShareX Team'),
+    app('absent', 'dev', 'Visual Studio Code', 'Microsoft'), app('absent', 'dev', 'Python 3.13', 'Python Software Foundation'),
+    app('absent', 'sec', 'KeePassXC', 'KeePassXC Team'), app('absent', 'sec', 'Bitwarden', 'Bitwarden Inc.'),
+    app('installe', 'web', 'Microsoft Edge', 'Microsoft', { ver: '130.0' }), app('installe', 'tools', 'WinRAR', 'win.rar GmbH', { ver: '7.01' }),
+  ];
+  // What Sindry ticks: updates yes, missing applications yes, reinstalls no.
+  const picked = new Set(APPS.filter((a) => a.state !== 'installe').map((a) => a.id));
+
+  // --- Shared state of the screen -------------------------------------------------
+  const ui = { v: 'a', q: '', show: 'cats', sort: 'name', states: new Set(Object.keys(STATES)), cats: new Set(), open: new Set(),
+    drawer: false, tab: 'choose', pop: false, recapOpen: true, basketAll: false };
+
+  // --- Helpers -------------------------------------------------------------------
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const fold = (s) => [...String(s)].map((c) => c.normalize('NFD')[0].toLowerCase()).join('');
+  const hl = (text) => {
+    const q = fold(ui.q.trim());
+    const i = q ? fold(text).indexOf(q) : -1;
+    if (i < 0) return esc(text);
+    const ch = [...text];
+    return `${esc(ch.slice(0, i).join(''))}<mark>${esc(ch.slice(i, i + q.length).join(''))}</mark>${esc(ch.slice(i + q.length).join(''))}`;
+  };
+  const tile = (a) => `<span class="tile" style="background:${a.color}">${esc(a.name[0])}</span>`;
+  const cmp = (x, y) => x.localeCompare(y, 'fr', { sensitivity: 'base', numeric: true });
+  const sorter = (a, b) => (ui.sort === 'pub' ? cmp(a.pub, b.pub) : 0) || (ui.sort === 'za' ? cmp(b.name, a.name) : cmp(a.name, b.name));
+  const matches = (a) => {
+    const q = fold(ui.q.trim());
+    return (!q || fold(`${a.name} ${a.pub} ${CATS[a.cat][0]}`).includes(q)) && ui.states.has(a.state) && (!ui.cats.size || ui.cats.has(a.cat));
+  };
+  const verHtml = (a) => (a.to ? `<span class="ver up">${esc(a.ver)} → ${esc(a.to)}</span>` : a.ver ? `<span class="ver">${esc(a.ver)}</span>` : '');
+  const countOf = (state) => APPS.filter((a) => a.state === state && picked.has(a.id)).length;
+  const totalOf = (state) => APPS.filter((a) => a.state === state).length;
+
+  // --- The list, by state, then by category or A → Z --------------------------
+  function appRow(a, child) {
+    return `<label class="row${child ? ' child' : ''}"><input type="checkbox" data-pick="${a.id}"${picked.has(a.id) ? ' checked' : ''}>
+      ${tile(a)}<span class="t"><b>${hl(a.name)}</b><small>${verHtml(a)}<span>${hl(a.pub)}</span>${!child ? `<span class="tag">${esc(CATS[a.cat][0])}</span>` : ''}</small></span></label>`;
+  }
+  function list() {
+    const searching = !!ui.q.trim();
+    const out = [];
+    for (const [state, label] of Object.entries(STATES)) {
+      if (!ui.states.has(state)) continue;
+      const apps = APPS.filter((a) => a.state === state && matches(a));
+      const pickedN = countOf(state);
+      const head = `<div class="group-h"><span class="grow">${esc(label)}</span>
+        <button type="button" class="link" data-all="${state}">Tout cocher</button><button type="button" class="link" data-none="${state}">Tout décocher</button>
+        <span class="count">${pickedN} sur ${totalOf(state)}</span></div>`;
+      let rows = '';
+      if (!apps.length) rows = `<div class="empty">${searching ? `Rien ne correspond à « ${esc(ui.q.trim())} ».` : 'Rien ici.'}</div>`;
+      else if (ui.show === 'az') rows = apps.slice().sort(sorter).map((a) => appRow(a, false)).join('');
+      else {
+        const cats = [...new Set(apps.map((a) => a.cat))].sort((x, y) => cmp(CATS[x][0], CATS[y][0]));
+        rows = cats.map((c) => {
+          const inCat = apps.filter((a) => a.cat === c).sort(sorter);
+          const key = `${state}/${c}`;
+          const open = searching || ui.open.has(key);
+          const k = inCat.filter((a) => picked.has(a.id)).length;
+          const all = k === inCat.length;
+          return `<label class="row cat"><input type="checkbox" data-cat="${key}"${all ? ' checked' : ''}${k && !all ? ' data-mixed="1"' : ''}>
+              <span class="tile cat">${ico(CATS[c][1])}</span><span class="t"><b>${esc(CATS[c][0])}</b></span>
+              <span class="v">${k} sur ${inCat.length}</span><button type="button" class="link" data-fold="${key}" aria-label="Déplier">${ico('chev', `chev${open ? '' : ' closed'}`)}</button></label>
+            ${open ? inCat.map((a) => appRow(a, true)).join('') : ''}`;
+        }).join('');
+      }
+      out.push(`<div class="group">${head}<div class="rows">${rows}</div></div>`);
+    }
+    return `<div class="card">${out.join('') || '<div class="empty">Aucun état choisi dans les filtres.</div>'}</div>`;
+  }
+
+  // --- The recap of what is ticked, by state --------------------------------------
+  function recapGroups({ actions = false } = {}) {
+    const groups = Object.entries(STATES).map(([state, label]) => {
+      const apps = APPS.filter((a) => a.state === state && picked.has(a.id)).sort((a, b) => cmp(a.name, b.name));
+      if (!apps.length) return '';
+      const verb = { maj: 'Mettre à jour', absent: 'Installer', installe: 'Réinstaller' }[state];
+      return `<div class="recap-g"><div class="recap-g-h">${esc(actions ? verb : label)}<span>${apps.length}</span></div>
+        ${apps.map((a) => `<div class="recap-i">${tile(a)}<span class="t">${esc(a.name)}${a.to ? `<small>${esc(a.ver)} → ${esc(a.to)}</small>` : ''}</span>
+          <button type="button" class="x" data-unpick="${a.id}" title="Retirer">${ico('x')}</button></div>`).join('')}</div>`;
+    }).join('');
+    return groups || '<div class="recap-empty">Rien de coché pour l\'instant.</div>';
+  }
+  const total = () => picked.size;
+  function recapPanel(extraCls = '') {
+    return `<aside class="card recap ${extraCls}"><div class="recap-h">${ico('list')}<b>Ce qui sera fait</b><span class="n">${total()}</span>
+        ${extraCls.includes('drawer') ? `<button type="button" class="x link" data-close-drawer>${ico('x')}</button>` : ''}</div>
+      <div class="recap-b">${recapGroups()}</div>
+      <div class="recap-f">En lançant, vous acceptez les conditions de licence des éditeurs de ces applications.</div></aside>`;
+  }
+
+  // --- Controls ------------------------------------------------------------------
+  const searchBox = () => `<span class="search">${ico('search')}<input type="search" id="q" placeholder="Chercher une application, un éditeur, une catégorie" value="${esc(ui.q)}"></span>`;
+  const pill = (attr, items, current) => `<span class="pill">${items.map(([v, l]) => `<button type="button" ${attr}="${v}" aria-pressed="${current === v}">${esc(l)}</button>`).join('')}</span>`;
+  const showPill = () => `<span class="ctl"><span class="lab">Afficher</span>${pill('data-show', [['cats', 'Par catégories'], ['az', 'Liste A → Z']], ui.show)}</span>`;
+  const sortPill = () => `<span class="ctl"><span class="lab">Trier par</span>${pill('data-sort', [['name', 'Nom'], ['pub', 'Éditeur']], ui.sort)}</span>`;
+  const stateChips = () => `<span class="chips"><button type="button" class="chip" data-state-all aria-pressed="${ui.states.size === 3}">Tout</button>${Object.entries(STATES).map(([s, l]) =>
+    `<button type="button" class="chip" data-state="${s}" aria-pressed="${ui.states.size !== 3 && ui.states.has(s)}">${esc({ maj: 'Mises à jour', absent: 'À installer', installe: 'Installées' }[s])} <b>${totalOf(s)}</b></button>`).join('')}</span>`;
+  const catChips = () => `<span class="chips">${Object.entries(CATS).map(([c, [l, i]]) =>
+    `<button type="button" class="chip" data-catf="${c}" aria-pressed="${ui.cats.has(c)}">${ico(i)}${esc(l)}</button>`).join('')}</span>`;
+  const sortSelect = () => `<select class="select" id="sortSel" aria-label="Trier">
+      ${[['cats|name', 'Par catégories, A → Z'], ['az|name', 'Liste A → Z'], ['az|za', 'Liste Z → A'], ['az|pub', 'Par éditeur']].map(([v, l]) =>
+        `<option value="${v}"${`${ui.show}|${ui.sort}` === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+
+  // --- The five variants --------------------------------------------------------
+  const VARIANTS = {
+    a: {
+      title: 'A · Panneau à droite', text: 'Le récapitulatif reste toujours visible à droite, collé en haut quand on fait défiler. Au-dessus de la liste : recherche, affichage, tri.',
+      pros: ['Toujours sous les yeux', 'Proche de M33', ['Moins de place pour la liste', 1]],
+      render: () => `<div class="va"><div><div class="tools">${searchBox()}${showPill()}${sortPill()}</div>${list()}</div>${recapPanel()}</div>`,
+    },
+    b: {
+      title: 'B · Tiroir', text: 'La liste prend toute la largeur. Des filtres par état au-dessus ; le récapitulatif s\'ouvre en tiroir sur la droite, depuis le bouton du bas.',
+      pros: ['Liste en pleine largeur', 'Filtre par état d\'un clic', ['Récap caché tant qu\'on ne l\'ouvre pas', 1]],
+      render: () => `<div class="tools">${searchBox()}${sortSelect()}</div><div class="tools">${stateChips()}</div>${list()}`,
+      extra: () => (ui.drawer ? `<div class="drawer-bg" data-close-drawer></div>${recapPanel('drawer')}` : ''),
+      foot: () => `Voir le récapitulatif · ${total()}`,
+    },
+    c: {
+      title: 'C · Onglets', text: 'Deux onglets : « Choisir » avec ses filtres par catégorie, et « Récapitulatif », un tableau de ce qui sera fait, avec l\'action de chaque ligne.',
+      pros: ['Récap en tableau, très lisible', 'Filtres par catégorie', ['On ne voit pas les deux à la fois', 1]],
+      render: () => `<div class="tabs"><button type="button" data-tab="choose" aria-selected="${ui.tab === 'choose'}">Choisir <span class="n">${APPS.length}</span></button>
+          <button type="button" data-tab="recap" aria-selected="${ui.tab === 'recap'}">Récapitulatif <span class="n">${total()}</span></button></div>
+        ${ui.tab === 'choose' ? `<div class="tools">${searchBox()}${sortSelect()}</div><div class="tools">${catChips()}</div>${list()}` : recapTable()}`,
+    },
+    d: {
+      title: 'D · Dessous', text: 'Une seule ligne de contrôles : recherche, un bouton « Filtres » qui ouvre états et catégories, et le tri. Le récapitulatif suit la liste, sur deux colonnes, repliable.',
+      pros: ['Barre la plus sobre', 'Tous les filtres au même endroit', ['Récap loin en bas d\'une longue liste', 1]],
+      render: () => `<div class="tools">${searchBox()}<span class="pop-wrap"><button type="button" class="btn" data-pop>${ico('filter')}Filtres${ui.states.size < 3 || ui.cats.size ? ` · ${(3 - ui.states.size) + ui.cats.size}` : ''}</button>
+          ${ui.pop ? `<div class="pop"><h4>État</h4>${stateChips()}<h4>Catégorie</h4>${catChips()}<div class="pop-f"><button type="button" class="link" data-reset>Tout effacer</button><button type="button" class="link" data-pop>Fermer</button></div></div>` : ''}</span>${sortSelect()}</div>
+        ${list()}
+        <details class="card vd-recap"${ui.recapOpen ? ' open' : ''}><summary class="recap-h">${ico('list')}<b>Ce qui sera fait</b><span class="n">${total()}</span></summary><div class="recap-b">${recapGroups()}</div></details>`,
+    },
+    e: {
+      title: 'E · Panier', text: 'Les applications cochées s\'alignent dans un panier en bas, toujours visible ; « Tout voir » le déplie. Un seul contrôle combine affichage et tri, avec un filtre par état.',
+      pros: ['Récap compact et toujours là', 'Retirer d\'un clic', ['Peu lisible au-delà de 20 applications', 1]],
+      render: () => `<div class="tools">${searchBox()}${pill('data-combo', [['cats|name', 'Catégories'], ['az|name', 'A → Z'], ['az|pub', 'Éditeur']], `${ui.show}|${ui.sort}`)}</div><div class="tools">${stateChips()}</div>${list()}`,
+      extra: () => `<div class="card basket"><div class="basket-h">${ico('list')}<b>${total()}</b><span class="basket-chips">${APPS.filter((a) => picked.has(a.id)).map((a) =>
+          `<span class="bchip">${tile(a)}${esc(a.name)}<button type="button" data-unpick="${a.id}" title="Retirer">×</button></span>`).join('')}</span>
+          <button type="button" class="link" data-basket>${ui.basketAll ? 'Replier' : 'Tout voir'}</button></div>
+        ${ui.basketAll ? `<div class="basket-all">${recapGroups({ actions: true })}</div>` : ''}</div>`,
+    },
+  };
+  function recapTable() {
+    const rows = APPS.filter((a) => picked.has(a.id)).sort((a, b) => cmp(a.state, b.state) || cmp(a.name, b.name));
+    if (!rows.length) return '<div class="card empty">Rien de coché pour l\'instant.</div>';
+    const act = (a) => ({ maj: `<span class="act maj">Mettre à jour · ${esc(a.ver)} → ${esc(a.to)}</span>`, absent: '<span class="act ins">Installer</span>', installe: '<span class="act re">Réinstaller</span>' }[a.state]);
+    return `<div class="card"><table class="rtable"><tr><th>Application</th><th>Éditeur</th><th>Catégorie</th><th>Ce qui sera fait</th><th></th></tr>
+      ${rows.map((a) => `<tr><td><span class="app">${tile(a)}${esc(a.name)}</span></td><td>${esc(a.pub)}</td><td>${esc(CATS[a.cat][0])}</td><td>${act(a)}</td>
+        <td><button type="button" class="link" data-unpick="${a.id}">Retirer</button></td></tr>`).join('')}</table>
+      <div class="recap-f">En lançant, vous acceptez les conditions de licence des éditeurs de ces applications.</div></div>`;
+  }
+
+  // --- Drawing -------------------------------------------------------------------
+  function draw() {
+    const V = VARIANTS[ui.v];
+    const focus = document.activeElement?.id === 'q' ? document.activeElement.selectionStart : null;
+    document.getElementById('explain').innerHTML = `<b>${esc(V.title)}</b> — ${esc(V.text)}<div class="pros">${V.pros.map((p) => (Array.isArray(p)
+      ? `<span class="con">${esc(p[0])}</span>` : `<span>${esc(p)}</span>`)).join('')}</div>`;
+    document.getElementById('body').innerHTML = V.render();
+    document.getElementById('extra').innerHTML = V.extra ? V.extra() : '';
+    const counts = Object.keys(STATES).map((s) => countOf(s));
+    document.getElementById('sum').innerHTML = `${total()} application${total() > 1 ? 's' : ''} cochée${total() > 1 ? 's' : ''}
+      <small>${counts[0]} mise${counts[0] > 1 ? 's' : ''} à jour · ${counts[1]} à installer · ${counts[2]} à réinstaller</small>`;
+    const foot = document.getElementById('footRecap');
+    foot.hidden = !V.foot;
+    if (V.foot) foot.textContent = V.foot();
+    document.querySelectorAll('[data-mixed="1"]').forEach((c) => { c.indeterminate = true; });
+    if (focus != null) { const q = document.getElementById('q'); q.focus(); q.setSelectionRange(focus, focus); }
+  }
+
+  // --- Gestures ------------------------------------------------------------------
+  document.getElementById('variants').onclick = (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    ui.v = b.dataset.v; ui.drawer = false; ui.pop = false;
+    document.querySelectorAll('#variants button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    draw();
+  };
+  document.getElementById('theme').onclick = (e) => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    document.documentElement.dataset.theme = b.dataset.t;
+    document.querySelectorAll('#theme button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  };
+  document.getElementById('footRecap').onclick = () => { ui.drawer = true; draw(); };
+  const screen = document.getElementById('screen');
+  screen.addEventListener('input', (e) => { if (e.target.id === 'q') { ui.q = e.target.value; draw(); } });
+  screen.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'sortSel') { [ui.show, ui.sort] = t.value.split('|'); return draw(); }
+    if (t.dataset.pick) { t.checked ? picked.add(t.dataset.pick) : picked.delete(t.dataset.pick); return draw(); }
+    if (t.dataset.cat) {
+      const [state, cat] = t.dataset.cat.split('/');
+      APPS.filter((a) => a.state === state && a.cat === cat && matches(a)).forEach((a) => (t.checked ? picked.add(a.id) : picked.delete(a.id)));
+      return draw();
+    }
+  });
+  screen.addEventListener('click', (e) => {
+    const b = e.target.closest('button, [data-close-drawer]'); if (!b) return;
+    const d = b.dataset;
+    if (d.fold) { e.preventDefault(); ui.open.has(d.fold) ? ui.open.delete(d.fold) : ui.open.add(d.fold); }
+    else if (d.show) ui.show = d.show;
+    else if (d.sort) ui.sort = d.sort;
+    else if (d.combo) [ui.show, ui.sort] = d.combo.split('|');
+    else if (d.stateAll !== undefined) ui.states = new Set(Object.keys(STATES));
+    else if (d.state) { ui.states = ui.states.size === 3 ? new Set([d.state]) : ui.states.has(d.state) ? new Set([...ui.states].filter((s) => s !== d.state)) : new Set([...ui.states, d.state]); if (!ui.states.size) ui.states = new Set(Object.keys(STATES)); }
+    else if (d.catf) ui.cats.has(d.catf) ? ui.cats.delete(d.catf) : ui.cats.add(d.catf);
+    else if (d.all) APPS.filter((a) => a.state === d.all && matches(a)).forEach((a) => picked.add(a.id));
+    else if (d.none) APPS.filter((a) => a.state === d.none && matches(a)).forEach((a) => picked.delete(a.id));
+    else if (d.unpick) picked.delete(d.unpick);
+    else if (d.closeDrawer !== undefined) ui.drawer = false;
+    else if (d.tab) ui.tab = d.tab;
+    else if (d.pop !== undefined) ui.pop = !ui.pop;
+    else if (d.reset !== undefined) { ui.states = new Set(Object.keys(STATES)); ui.cats.clear(); }
+    else if (d.basket !== undefined) ui.basketAll = !ui.basketAll;
+    else return;
+    draw();
+  });
+  screen.addEventListener('toggle', (e) => { if (e.target.matches('.vd-recap')) ui.recapOpen = e.target.open; }, true);
+  // `#b,tiroir`, `#c,recap`, `#d,filtres`, `#e,panier`, `,ouvert`: a variant
+  // in a given state, for captures.
+  const [v, ...flags] = location.hash.slice(1).split(',');
+  if (VARIANTS[v]) {
+    ui.v = v;
+    document.querySelectorAll('#variants button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
+  }
+  if (flags.includes('tiroir')) ui.drawer = true;
+  if (flags.includes('recap')) ui.tab = 'recap';
+  if (flags.includes('filtres')) ui.pop = true;
+  if (flags.includes('panier')) ui.basketAll = true;
+  if (flags.includes('ouvert')) ['absent/web', 'absent/media', 'maj/dev'].forEach((k) => ui.open.add(k));
+  draw();
+})();
+</script>
+</body>
+</html>
