@@ -163,7 +163,7 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     l'écran d'analyse fait vraiment d'un `[ITEM]` »).
 30. **Les icônes d'un `[ITEM]`**, de la plus précise à la plus générale : `exe=` (le
     fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
-    Sindry depuis le dépôt `Sindry-Icons` : un nom, jamais une adresse), `icon=<nom Lucide>`
+    Sindry depuis le dépôt `Sindry-Media-Library` : un nom, jamais une adresse), `icon=<nom Lucide>`
     (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
 31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
     affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
@@ -931,7 +931,7 @@ recommander un choix qu'une fois tous mesurés :
 | `date=` | `AAAA-MM-JJ` | Une date : dernière utilisation, installation |
 | `kind=` | `folder` `file` `registry` `app` `startup` `service` `task` `driver` `browser` | L'icône de la ligne |
 | `exe=` | chemin absolu local vers un `.exe`, un `.dll` ou un `.ico` | **La vraie icône** du programme (2.0.3), avec `kind=app`, `startup`, `service` ou `task`. Sindry la lit lui-même dans le fichier. Comme `path=`, **jamais renvoyé** — voir ci-dessous |
-| `appicon=` | un nom : minuscules, chiffres, tirets | **L'icône officielle** d'une application (2.0.4), téléchargée par Sindry depuis le dépôt `burnout293/Sindry-Icons` — voir ci-dessous |
+| `appicon=` | un nom : minuscules, chiffres, tirets | **L'icône officielle** d'une application (2.0.4), téléchargée par Sindry depuis le dépôt `burnout293/Sindry-Media-Library` — voir ci-dessous |
 | `icon=` | un nom d'icône Lucide | Une icône **générique** pour l'élément, une application comme une catégorie (2.0.4) : `globe`, `music`, `code`… |
 | `confidence=` | `high` / `medium` / `low` | Sûr, Probable, À vérifier — **`low` n'est jamais coché d'office** |
 | `impact=` | `high` / `medium` / `low` | Impact élevé, moyen, faible |
@@ -967,7 +967,7 @@ l'icône Lucide d'`icon=`, puis celle du `kind`. Écrivez-en plusieurs : chacune
 
 **`appicon=` : l'icône officielle d'une application qui n'est pas encore là (2.0.4).** Le
 script ne donne qu'un **nom** ; Sindry télécharge `icons/<nom>.png` depuis **un seul endroit**,
-le dépôt GitHub `burnout293/Sindry-Icons`. Un script ne peut donc ni faire contacter à Sindry
+le dépôt GitHub `burnout293/Sindry-Media-Library`. Un script ne peut donc ni faire contacter à Sindry
 un serveur de son choix, ni envoyer une image :
 
 - en HTTPS seulement, sans suivre de redirection ni envoyer d'identifiant ;
@@ -980,7 +980,7 @@ un serveur de son choix, ni envoyer une image :
 - l'utilisateur peut couper ce téléchargement (Réglages, 3.3) : rien ne quitte alors le PC.
 
 Une icône absente du dépôt n'est pas une erreur : l'élément garde son repli. Pour en ajouter
-une, c'est au dépôt `Sindry-Icons` qu'il faut la proposer, pas au script.
+une, c'est au dépôt `Sindry-Media-Library` qu'il faut la proposer, pas au script.
 
 ###### Les champs de `[METRIC]`
 

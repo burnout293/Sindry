@@ -388,7 +388,7 @@ const JETONS = {
   risk: { high: ['an.risk.high', 'high'], medium: ['an.risk.medium', 'med'] },
   health: { ok: ['an.health.ok', 'ok'], warn: ['an.health.warn', 'warn'], crit: ['an.health.crit', 'crit'] },
 };
-/** Application icons downloaded by Sindry from the Sindry-Icons repository
+/** Application icons downloaded by Sindry from the Sindry-Media-Library repository
  *  (`appicon.rs`, 2.0.4), by name. They arrive after the screen is shown. */
 const ICONES_APP = new Map();
 const IMAGE_ICONE = /^data:image\/(png|x-icon);base64,[A-Za-z0-9+/=]+$/;
@@ -415,7 +415,7 @@ export function nomsIconesApp(modeles) {
 /** The icon of an item, from the most to the least specific:
  *  - the real icon of the program, read by Sindry in the file `exe=` names
  *    (`icon.rs`, 2.0.3) — never an image from the script;
- *  - the official icon `appicon=` names, downloaded from the Sindry-Icons
+ *  - the official icon `appicon=` names, downloaded from the Sindry-Media-Library
  *    repository (2.0.4) — until it arrives, the fallback below waits in its
  *    place;
  *  - the Lucide icon `icon=` names (2.0.4), drawn as a mask so that it takes

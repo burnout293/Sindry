@@ -163,7 +163,7 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     l'écran d'analyse fait vraiment d'un `[ITEM]` »).
 30. **Les icônes d'un `[ITEM]`**, de la plus précise à la plus générale : `exe=` (le
     fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
-    Sindry depuis le dépôt `Sindry-Icons` : un nom, jamais une adresse), `icon=<nom Lucide>`
+    Sindry depuis le dépôt `Sindry-Media-Library` : un nom, jamais une adresse), `icon=<nom Lucide>`
     (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
 31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
     affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,

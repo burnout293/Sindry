@@ -1,8 +1,8 @@
-//! Application icons from the Sindry-Icons repository (2.0.4, §17.4).
+//! Application icons from the Sindry-Media-Library repository (2.0.4, §17.4).
 //!
 //! A script names an icon with `[ITEM] … appicon=<name>`; Sindry downloads
 //! `<name>` from **one fixed place**, the `icons/` folder of the
-//! `burnout293/Sindry-Icons` repository, and shows it as a `data:` URL. The
+//! `burnout293/Sindry-Media-Library` repository, and shows it as a `data:` URL. The
 //! script never gives an address, so it can neither make Sindry contact a
 //! server of its choosing (a tracker, a machine of the local network) nor
 //! send an image of its own.
@@ -23,8 +23,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
-/// Where the icons live, and nowhere else: `burnout293/Sindry-Icons`.
-const BASE: &str = "https://raw.githubusercontent.com/burnout293/Sindry-Icons/main/icons/";
+/// Where the icons live, and nowhere else: `burnout293/Sindry-Media-Library`.
+const BASE: &str = "https://raw.githubusercontent.com/burnout293/Sindry-Media-Library/main/icons/";
 const MAX_BYTES: u64 = 128 * 1024;
 /// Names read per analysis; a real list has a few dozen.
 const MAX_NAMES: usize = 400;

@@ -907,7 +907,7 @@ function Test-Analyse {
                     }
                 }
                 # icon= and appicon= (2.0.4): a Lucide name, and the name of an
-                # icon of the Sindry-Icons repository. Wrong, the item keeps the
+                # icon of the Sindry-Media-Library repository. Wrong, the item keeps the
                 # icon of its kind — a warning, not an error.
                 if ($champsLigne.Contains('icon') -and $champsLigne['icon'] -and $ICONES.Count -gt 0 -and $ICONES -cnotcontains $champsLigne['icon']) {
                     Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_ICONE' "[ITEM] '$cle' : icon=$($champsLigne['icon']) n'est pas une icône Lucide ; Sindry gardera l'icône du kind."

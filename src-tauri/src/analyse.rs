@@ -222,7 +222,7 @@ const CHAMPS_ITEM: [&str; 24] = [
     // back to the script (see `icon.rs`).
     "exe",
     // 2.0.4: a Lucide icon for the item (shown when exe= gives nothing), and
-    // the name of an application icon kept in the Sindry-Icons repository,
+    // the name of an application icon kept in the Sindry-Media-Library repository,
     // downloaded by Sindry (see `appicon.rs`).
     "icon",
     "appicon",

@@ -1459,7 +1459,7 @@ fn disk_space() -> Result<systeme::EspaceDisque, String> {
     systeme::espace_disque()
 }
 
-/// Application icons from the Sindry-Icons repository (2.0.4, §17.4): each
+/// Application icons from the Sindry-Media-Library repository (2.0.4, §17.4): each
 /// one is sent as an `app-icon` event as soon as it is known, the screen being
 /// already shown. Nothing leaves the PC when the user turned it off (3.3).
 #[tauri::command]
