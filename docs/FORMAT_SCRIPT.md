@@ -1388,8 +1388,9 @@ script lisible et réglable sans relire tout son code, un journal qu'un débutan
 | **Fonctions** | Chacune commentée **à son début** : ce qu'elle fait, ce qu'elle reçoit, ce qu'elle renvoie |
 | **Chapitres** | Au-delà de 200 lignes, des chapitres balisés : Sommaire, Résumé, Variables, Fonctions, Préparation, Exécution, Journal, Annexes… — adaptés au script |
 | **Interrupteurs** | Un maximum de drapeaux (booléens, listes) pour activer, désactiver ou adapter chaque fonctionnalité, **regroupés avec les variables en tête du script**. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu) s'y modifient sans toucher au reste |
-| **Codes d'erreur** | Un maximum, chacun déclaré `[error]` avec sa description et, si possible, sa solution — voir « Les codes d'erreur » |
+| **Codes d'erreur** | Un maximum, chacun déclaré `[error]` avec sa description et, si possible, sa solution, traduites en français dans `LANG fr` — voir « Les codes d'erreur » |
 | **Journal** | Clair pour un débutant, aéré, sans pavé ; des tableaux et des listes quand ça s'y prête. Le journal de Sindry est en chasse fixe, lignes conservées : des colonnes alignées par des espaces y tiennent |
+| **Une seule langue au journal** | La sortie est en anglais, jamais en deux langues : Sindry ne traduit pas une ligne de journal. Ce que l'utilisateur doit lire dans sa langue passe par les codes d'erreur (description et solution traduites) et, en analyse, par les mots du bloc `REPORT` |
 
 ---
 

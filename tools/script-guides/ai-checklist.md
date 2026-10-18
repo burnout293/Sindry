@@ -7,8 +7,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Le fichier commence par `## SINDRY:START` et chaque bloc se ferme par `## SINDRY:END`.
 - [ ] Les quatorze champs obligatoires de l'entête sont présents, une seule fois chacun.
 - [ ] `id` est un GUID neuf ; `category` vient de la section 5.1 ; `icon` de la section 5.4.
-- [ ] Les dates, s'il y en a, sont au format `AAAA-MM-JJ`, `updated` ≥ `created`, aucune
-      dans le futur.
+- [ ] `author`, `created`, `updated` et `version` sont présents et à jour ; dates au format
+      `AAAA-MM-JJ`, `updated` ≥ `created`, aucune dans le futur.
 
 ### Options
 
@@ -45,5 +45,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 
 - [ ] Aucune valeur n'est exécutée ; les outils du système sont appelés par leur chemin
       complet ; aucun chemin de suppression ne peut viser un emplacement protégé.
-- [ ] Commentaires en français, code et sortie en anglais ; drapeaux regroupés en tête.
+- [ ] Commentaires en français (chaque variable sur sa ligne, chaque fonction à son début),
+      code et sortie en anglais ; chapitres au-delà de 200 lignes.
+- [ ] Les drapeaux et listes par défaut sont regroupés avec les variables en tête.
+- [ ] Le journal est aéré, en anglais seulement ; chaque erreur prévisible a son code.
 - [ ] Le fichier est à enregistrer en **UTF-8 avec BOM** — rappelle-le à l'utilisateur.

@@ -86,8 +86,11 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
 11. `admin : true` si le script a besoin des droits ; `reversible : false` si ce qu'il fait
     ne se défait pas ; `interruptible : false` si le tuer en route laisse le système
     incohérent ; `reboot : true` s'il faut redémarrer ensuite.
-12. Conseillés : `author`, `created`, `updated` (`AAAA-MM-JJ`, `updated` jamais avant
-    `created`, aucune date future). `version` et `updated` changent à chaque modification.
+12. **Toujours présents et à jour** : `author` (le créateur), `created` (date de création),
+    `updated` (date de la dernière modification) et `version`. Dates `AAAA-MM-JJ`, `updated`
+    jamais avant `created`, aucune date future ; `version` et `updated` changent à chaque
+    modification. Le validateur ne bloque pas leur absence, mais le style du catalogue les
+    exige.
 
 ### Les options : `SINDRY:OPTIONS` et `$CONFIG`
 
@@ -174,13 +177,24 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
 
 ### Le style du catalogue officiel
 
-34. Commentaires **en français** : chaque variable sur sa ligne, chaque fonction à son
-    début. Au-delà de 200 lignes, des chapitres balisés (Sommaire, Résumé, Variables,
-    Fonctions, Préparation, Exécution, Journal, Annexes).
-35. Les **drapeaux** et listes de comportement par défaut regroupés en tête, avec les
-    variables. Un **maximum de codes d'erreur**, avec leur solution.
-36. Un journal **aéré**, clair pour un débutant ; `desc` annonce les changements sensibles
-    (services, tâches planifiées, démarrage…).
+34. Commentaires **en français** : chaque variable commentée **sur sa propre ligne**, en fin
+    de ligne ; chaque fonction commentée **à son début** (ce qu'elle fait, reçoit, renvoie).
+35. Au-delà de **200 lignes**, des chapitres balisés et adaptés au script : Sommaire, Résumé,
+    Variables, Fonctions, Préparation, Exécution, Journal (logs), Annexes…
+36. Un **maximum de drapeaux** — booléens, listes, ou tout autre type utile — pour activer,
+    désactiver ou adapter vite chaque fonctionnalité, **regroupés avec les variables** en
+    tête. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu)
+    s'y modifient sans toucher au reste.
+37. Un **maximum de codes d'erreur** : chacun déclaré `[error]` avec sa description et, si
+    possible, sa solution, et **traduit en français** dans `LANG fr` (règle 24).
+38. Un journal **clair pour un débutant**, lisible d'un coup d'œil : aéré, sans pavé, avec
+    des tableaux et des listes alignés par des espaces quand ça s'y prête (le journal de
+    Sindry est en chasse fixe). `desc` annonce les changements sensibles (services, tâches
+    planifiées, démarrage…).
+39. **Le journal est en anglais, et une seule langue.** Sindry ne traduit pas une ligne de
+    sortie : ce que l'utilisateur doit lire dans sa langue passe par les **codes d'erreur**
+    (description et solution traduites) et, en analyse, par les mots du bloc `REPORT`.
+    N'écris jamais deux versions d'un message.
 
 ---
 
@@ -1637,8 +1651,9 @@ script lisible et réglable sans relire tout son code, un journal qu'un débutan
 | **Fonctions** | Chacune commentée **à son début** : ce qu'elle fait, ce qu'elle reçoit, ce qu'elle renvoie |
 | **Chapitres** | Au-delà de 200 lignes, des chapitres balisés : Sommaire, Résumé, Variables, Fonctions, Préparation, Exécution, Journal, Annexes… — adaptés au script |
 | **Interrupteurs** | Un maximum de drapeaux (booléens, listes) pour activer, désactiver ou adapter chaque fonctionnalité, **regroupés avec les variables en tête du script**. Les listes de comportement par défaut (ce qui est coché d'office, ce qui est exclu) s'y modifient sans toucher au reste |
-| **Codes d'erreur** | Un maximum, chacun déclaré `[error]` avec sa description et, si possible, sa solution — voir « Les codes d'erreur » |
+| **Codes d'erreur** | Un maximum, chacun déclaré `[error]` avec sa description et, si possible, sa solution, traduites en français dans `LANG fr` — voir « Les codes d'erreur » |
 | **Journal** | Clair pour un débutant, aéré, sans pavé ; des tableaux et des listes quand ça s'y prête. Le journal de Sindry est en chasse fixe, lignes conservées : des colonnes alignées par des espaces y tiennent |
+| **Une seule langue au journal** | La sortie est en anglais, jamais en deux langues : Sindry ne traduit pas une ligne de journal. Ce que l'utilisateur doit lire dans sa langue passe par les codes d'erreur (description et solution traduites) et, en analyse, par les mots du bloc `REPORT` |
 
 ---
 
@@ -1960,8 +1975,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Le fichier commence par `## SINDRY:START` et chaque bloc se ferme par `## SINDRY:END`.
 - [ ] Les quatorze champs obligatoires de l'entête sont présents, une seule fois chacun.
 - [ ] `id` est un GUID neuf ; `category` vient de la section 5.1 ; `icon` de la section 5.4.
-- [ ] Les dates, s'il y en a, sont au format `AAAA-MM-JJ`, `updated` ≥ `created`, aucune
-      dans le futur.
+- [ ] `author`, `created`, `updated` et `version` sont présents et à jour ; dates au format
+      `AAAA-MM-JJ`, `updated` ≥ `created`, aucune dans le futur.
 
 ### Options
 
@@ -1998,5 +2013,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 
 - [ ] Aucune valeur n'est exécutée ; les outils du système sont appelés par leur chemin
       complet ; aucun chemin de suppression ne peut viser un emplacement protégé.
-- [ ] Commentaires en français, code et sortie en anglais ; drapeaux regroupés en tête.
+- [ ] Commentaires en français (chaque variable sur sa ligne, chaque fonction à son début),
+      code et sortie en anglais ; chapitres au-delà de 200 lignes.
+- [ ] Les drapeaux et listes par défaut sont regroupés avec les variables en tête.
+- [ ] Le journal est aéré, en anglais seulement ; chaque erreur prévisible a son code.
 - [ ] Le fichier est à enregistrer en **UTF-8 avec BOM** — rappelle-le à l'utilisateur.
