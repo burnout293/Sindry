@@ -86,7 +86,8 @@ $GRAPHIQUES = @('donut', 'crown', 'gauge', 'bar', 'rows', 'treemap', 'waffle')
 $CHAMPS_FIND   = @('size', 'count', 'state', 'checked', 'ms', 'current', 'recommended', 'show')
 $CHAMPS_ITEM   = @('id', 'parent', 'group', 'name', 'path', 'publisher', 'label', 'kind', 'confidence',
                    'impact', 'risk', 'locked', 'version', 'to', 'date', 'keep', 'size', 'count',
-                   'state', 'checked', 'show', 'exe', 'icon', 'appicon')
+                   'state', 'checked', 'show', 'exe', 'icon', 'appicon',
+                   'about', 'why', 'warn', 'advice', 'reboot')
 $CHAMPS_METRIC = @('value', 'unit', 'health', 'max', 'group', 'show')
 $VALEURS_CHAMP = @{
     state       = @('todo', 'ok')
@@ -102,6 +103,8 @@ $VALEURS_CHAMP = @{
     locked      = @('open', 'system', 'protected', 'inuse')
     unit        = @('celsius', 'pct', 'hours', 'days', 's', 'count', 'cycles')
     health      = @('ok', 'warn', 'crit')
+    advice      = @('caution', 'discouraged')
+    reboot      = @('true', 'false')
 }
 
 # Catégories d'usine : un id anglais ET un id français par domaine, les deux acceptés
@@ -914,6 +917,14 @@ function Test-Analyse {
                 }
                 if ($champsLigne.Contains('appicon') -and $champsLigne['appicon'] -and $champsLigne['appicon'] -cnotmatch '^[a-z0-9]+(-[a-z0-9]+)*$') {
                     Add-Constat $Fichier $e.Ligne 'avertissement' 'ITEM_ICONE' "[ITEM] '$cle' : appicon=$($champsLigne['appicon']) n'est pas un nom d'icône (minuscules, chiffres, tirets)."
+                }
+                # about=, why=, warn= (2.0.4): what the item is, why it is
+                # proposed, what to beware of — each a note of the REPORT block.
+                foreach ($c in @('about', 'why', 'warn')) {
+                    $n = $champsLigne[$c]
+                    if ($n -and (-not $Rapport.Contains($n) -or $Rapport[$n].Genre -ne 'note')) {
+                        Add-Constat $Fichier $e.Ligne 'erreur' 'ITEM_TEXTE' "[ITEM] '$cle' : $c=$n n'est pas une note du bloc REPORT ([note:info] ou [note:warn]) ; Sindry n'afficherait rien."
+                    }
                 }
                 if ($champsLigne.Contains('label') -and $champsLigne['label']) {
                     $l = $champsLigne['label']

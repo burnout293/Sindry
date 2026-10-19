@@ -4800,9 +4800,9 @@ function rendreResumeAnalyse(groupe) {
     ? `<div class="an-carte">${A.vue(modeles[0], 'simple', { historique: historiqueDe(modeles[0].entree.id) })}</div>`
     : `<div class="an-carte">${A.resume(modeles, { graphe: grapheDuLot(modeles), ...A.etatUi() })}</div>`;
   // « Ce qui sera fait », in Simple too (2.0.4, M33): open when short, and
-  // as the user left it afterwards.
+  // as the user left it afterwards. The list screen (M36) has its own recap.
   const plan = A.planResume(modeles);
-  if (plan.n) {
+  if (plan.n && !zone.querySelector('.an-ecran')) {
     const ouvert = planSimpleOuvert ?? plan.n <= 15;
     zone.insertAdjacentHTML('beforeend', `<details class="an-plan-simple"${ouvert ? ' open' : ''}>
       <summary>${ico('list-checks', 'i16')}<b>${esc(t('an.p.plan'))}</b><span class="an-total">${plan.n}</span>${ico('chevron', 'i14 an-plan-chev')}</summary>
@@ -4839,7 +4839,8 @@ function rendreResumeAnalyse(groupe) {
   note.hidden = !aLancer.some(pointAvant);
   if (!note.hidden) note.textContent = t('simple.point_restauration_annonce');
   const noteRedemarrage = document.getElementById('anRebootNote');
-  noteRedemarrage.hidden = !aLancer.some(besoinRedemarrage);
+  // 2.0.4: a ticked element can ask for it too (reboot=true).
+  noteRedemarrage.hidden = !aLancer.some(besoinRedemarrage) && !A.redemarragesCoches(modeles);
   if (!noteRedemarrage.hidden) noteRedemarrage.textContent = t('simple.redemarrage_annonce');
 
   const tot = A.totalResume(modeles);

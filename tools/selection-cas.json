@@ -643,6 +643,57 @@
         "config": {},
         "a_faire": false
       }
+    },
+    {
+      "nom": "elements : avis (2.0.4), jamais coches d'office",
+      "options": [
+        {
+          "key": "Nettoyage",
+          "kind": "items"
+        }
+      ],
+      "analyse": {
+        "finds": [],
+        "items": [
+          {
+            "option": "Nettoyage",
+            "fields": {
+              "id": "a"
+            }
+          },
+          {
+            "option": "Nettoyage",
+            "fields": {
+              "id": "b",
+              "advice": "caution"
+            }
+          },
+          {
+            "option": "Nettoyage",
+            "fields": {
+              "id": "c",
+              "advice": "discouraged",
+              "checked": "true"
+            }
+          },
+          {
+            "option": "Nettoyage",
+            "fields": {
+              "id": "d",
+              "reboot": "true"
+            }
+          }
+        ]
+      },
+      "attendu": {
+        "config": {
+          "Nettoyage": [
+            "a",
+            "d"
+          ]
+        },
+        "a_faire": true
+      }
     }
   ]
 }

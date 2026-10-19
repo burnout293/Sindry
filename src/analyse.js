@@ -183,9 +183,15 @@ const racines = (o) => o.items.filter((it) => !it.parent || !o.items.some((x) =>
 const elementsDe = (o) => o.items.filter((it) => !enfantsDe(o, it.id).length);
 
 /* -------------------------------------------------------------------------
-   Long lists (2.0.4, mockups M31 to M33): beyond LISTE_LONGUE elements, the
-   [items] lists of an action open folded, under a bar to search them, show
-   them by category or A → Z, and sort them by name or publisher.
+   The list screen (2.0.4, mockup M36). An action whose [items] lists are long
+   (more than LISTE_LONGUE elements), or whose elements the script explains
+   (about=, why=, warn=, advice=), gets one screen for all its lists:
+   - tabs « Choisir » and « Récapitulatif »;
+   - a search, and category chips, one at a time;
+   - a « Filtres et tri » menu: the sort, the recommendation (or the list),
+     and the tags shown;
+   - when the script explains its elements, the sheet of the selected one on
+     the right; checking a discouraged element is confirmed there.
    ------------------------------------------------------------------------- */
 
 const LISTE_LONGUE = 12;
@@ -193,16 +199,14 @@ const LISTE_LONGUE = 12;
  *  duplicates — minus those a view already shows (`exclues`). */
 const listesAffichees = (m, exclues = new Set()) => Object.entries(m.options).filter(([k, o]) =>
   o.def.kind === 'items' && !o.def.scan && !o.def.keep_one && !['table', 'tiles', 'treemap'].includes(o.def.view) && !exclues.has(k));
-const estLongue = (m, exclues) => listesAffichees(m, exclues).reduce((n, [, o]) => n + elementsDe(o).length, 0) > LISTE_LONGUE;
-
-/** What is searched, how it is shown and sorted, per action. Nothing here
- *  goes to the script. */
-const LISTES = new Map();
-function etatListes(m) {
-  let e = LISTES.get(m.entree.id);
-  if (!e) { e = { q: '', affichage: 'arbre', tri: 'nom' }; LISTES.set(m.entree.id, e); }
-  return e;
+const expliquee = (it) => !!(it.about || it.why || it.warn || it.advice);
+/** Does this action get the list screen? */
+export function aEcran(m, exclues) {
+  const listes = listesAffichees(m, exclues);
+  const n = listes.reduce((a, [, o]) => a + elementsDe(o).length, 0);
+  return n > LISTE_LONGUE || listes.some(([, o]) => o.items.some(expliquee));
 }
+
 /** Lowercase without accents, one character for one: a match found in the
  *  folded text sits at the same place in the original. */
 const plier = (s) => [...String(s)].map((c) => c.normalize('NFD')[0].toLowerCase()).join('');
@@ -212,26 +216,250 @@ function surligne(texte, q) {
   const chars = [...texte];
   return `${esc(chars.slice(0, i).join(''))}<mark>${esc(chars.slice(i, i + [...q].length).join(''))}</mark>${esc(chars.slice(i + [...q].length).join(''))}`;
 }
-/** Is this parent folded? Its user's choice, else folded in a long list. */
+/** Is this parent folded? Only the user folds. */
 function estPlie(m, k, id) {
-  return selection(m).plie[`${k}/${id}`] ?? estLongue(m);
+  return !!selection(m).plie[`${k}/${id}`];
 }
 
-/** The bar above long lists: search, display, sort. */
-function barreListes(m, exclues) {
-  if (!estLongue(m, exclues)) return '';
-  const e = etatListes(m);
+/** The recommendation of an element (M35), from what the script says. */
+function niveauDe(it) {
+  if (it.advice === 'discouraged') return 'against';
+  if (it.advice === 'caution') return 'caution';
+  if (it.risk === 'high') return 'suspect';
+  if (it.confidence === 'low') return 'check';
+  if (it.confidence === 'medium') return 'likely';
+  if (it.confidence === 'high') return 'safe';
+  return null;
+}
+/** In the order of the menu and of the sort, as in M36. */
+const NIVEAUX = {
+  safe: ['an.niv.safe', 'low', 'check'], likely: ['an.niv.likely', 'low', 'check'], suspect: ['an.niv.suspect', 'high', 'bug'],
+  check: ['an.niv.check', 'neutre', 'info'], caution: ['an.niv.caution', 'med', 'warn'], against: ['an.niv.against', 'danger', 'ban'],
+};
+const badgeNiveau = (n) => `<span class="badge ${NIVEAUX[n][1]}">${ico(NIVEAUX[n][2], 'i12')}${esc(t(NIVEAUX[n][0]))}</span>`;
+const badgeReboot = () => `<span class="badge info">${ico('power', 'i12')}${esc(t('an.redemarrage'))}</span>`;
+const versionHtml = (it) => (it.to ? `<span class="badge acc">${esc(it.version || '')} → ${esc(it.to)}</span>` : it.version ? `<span class="badge neutre">${esc(it.version)}</span>` : '');
+/** A text of the REPORT block named by about=, why= or warn=, translated. */
+const texteRapport = (m, cle) => (cle ? rapport(m.entree, cle)?.label || '' : '');
+
+/** What is searched, filtered, sorted and selected, per action. Nothing here
+ *  goes to the script. */
+const ECRANS = new Map();
+function etatEcran(m) {
+  let e = ECRANS.get(m.entree.id);
+  if (!e) {
+    e = { onglet: 'choisir', q: '', cat: null, tri: null, genres: null, etiquettes: {}, menu: false, fiche: null, attente: null };
+    ECRANS.set(m.entree.id, e);
+  }
+  return e;
+}
+
+/** Every element of the screen: its list, itself, its category parent. */
+function entreesEcran(m, mode, exclues) {
+  const out = [];
+  for (const [k, o] of listesAffichees(m, exclues)) {
+    for (const it of elementsDe(o)) {
+      const parent = it.parent ? o.items.find((x) => x.id === it.parent) || null : null;
+      if (!montre(it, mode) || (parent && !montre(parent, mode))) continue;
+      out.push({ k, o, it, parent, cle: `${k}/${it.id}` });
+    }
+  }
+  return out;
+}
+
+/**
+ * What the screen can filter and sort on. Categories: the parents of the
+ * elements if they have some (Navigateurs, Bureautique…), else the lists
+ * themselves (Programmes, Démarrage…). The second dimension: the
+ * recommendation when the script gives one, else the lists when the
+ * categories are parents (Mises à jour, À installer…).
+ */
+function dimensions(m, entrees) {
+  const listes = [...new Set(entrees.map((x) => x.k))];
+  const avecParents = entrees.some((x) => x.parent);
+  const avecNiveau = entrees.some((x) => niveauDe(x.it));
+  const categorie = (x) => (avecParents && x.parent ? nomElement(m, x.parent) : libOption(m.entree, x.o.def));
+  const genre = avecNiveau ? 'niveau' : avecParents && listes.length > 1 ? 'liste' : null;
+  return {
+    listes,
+    avecCategories: avecParents || listes.length > 1,
+    categorie,
+    // Parents by name; lists in the script's order (Programmes, Démarrage…).
+    ordreCategories: avecParents ? (a, b) => avant(a, b)
+      : (a, b) => listes.findIndex((k) => libOption(m.entree, m.options[k].def) === a) - listes.findIndex((k) => libOption(m.entree, m.options[k].def) === b),
+    iconeCategorie: (x) => (avecParents && x.parent ? iconeElement({ ...x.parent, appicon: null, image: null }) : ''),
+    genre,
+    genreDe: (x) => (genre === 'niveau' ? niveauDe(x.it) : genre === 'liste' ? x.k : null),
+    libGenre: (g) => (genre === 'niveau' ? t(NIVEAUX[g][0]) : libOption(m.entree, m.options[g].def)),
+    ordreGenres: genre === 'niveau' ? Object.keys(NIVEAUX) : listes,
+    avecEditeurs: entrees.some((x) => x.it.publisher),
+    avecVersion: entrees.some((x) => x.it.version || x.it.to),
+    avecReboot: entrees.some((x) => x.it.reboot === 'true'),
+    explique: entrees.some((x) => expliquee(x.it)),
+  };
+}
+
+const avant = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true });
+const etiquette = (e, cle) => e.etiquettes[cle] ?? true;
+
+/** The screen itself: its tabs, then the choice or the recap. */
+function ecranListe(m, mode, exclues) {
+  const e = etatEcran(m);
+  const entrees = entreesEcran(m, mode, exclues);
+  if (!entrees.length) return '';
+  const D = dimensions(m, entrees);
+  const s = selection(m);
+  const n = entrees.filter((x) => s.items[x.k]?.[x.it.id]).length;
   const id = esc(m.entree.id);
-  const listes = listesAffichees(m, exclues);
-  const avecParents = listes.some(([, o]) => o.items.some((it) => it.parent));
-  const avecEditeurs = listes.some(([, o]) => o.items.some((it) => it.publisher));
-  const seg = (attr, val, lib, actif) => `<button type="button" data-a-script="${id}" ${attr}="${val}" aria-pressed="${actif}">${esc(lib)}</button>`;
-  return `<div class="an-barre-listes">
-      <span class="an-cherche-liste">${ico('search', 'i14')}<input type="search" class="an-cherche" data-a-script="${id}" data-a-cherche-liste
+  const onglet = (v, lib, nb) => `<button type="button" role="tab" data-a-script="${id}" data-a-onglet="${v}" aria-selected="${e.onglet === v}">${esc(lib)}<span class="an-onglet-n">${nb}</span></button>`;
+  return `<div class="an-ecran"><div class="an-onglets" role="tablist">${onglet('choisir', t('an.onglet_choisir'), entrees.length)}${onglet('recap', t('an.onglet_recap'), n)}</div>
+    ${e.onglet === 'recap' ? recapEcran(m, entrees, D) : choisirEcran(m, mode, entrees, D)}</div>`;
+}
+
+function choisirEcran(m, mode, entrees, D) {
+  const e = etatEcran(m);
+  const id = esc(m.entree.id);
+  const q = plier(e.q.trim());
+  const tri = e.tri || (D.avecCategories ? 'cat' : 'nom');
+  if (e.cat && !entrees.some((x) => D.categorie(x) === e.cat)) e.cat = null;
+  const visibles = entrees.filter((x) =>
+    (!q || plier(`${nomElement(m, x.it)} ${x.it.publisher || ''} ${x.it.path || ''} ${D.categorie(x)}`).includes(q))
+    && (!e.cat || D.categorie(x) === e.cat)
+    && (!e.genres || e.genres.has(D.genreDe(x))));
+  // By publisher, those without one last.
+  visibles.sort((a, b) => (tri === 'editeur' ? (!a.it.publisher - !b.it.publisher) || avant(a.it.publisher || '', b.it.publisher || '') : 0)
+    || avant(nomElement(m, a.it), nomElement(m, b.it)));
+
+  // « Filtres et tri » counts what departs from how the screen opens.
+  const ecarts = (e.tri && e.tri !== (D.avecCategories ? 'cat' : 'nom') ? 1 : 0) + (e.genres ? 1 : 0)
+    + Object.values(e.etiquettes).filter((v) => v === false).length;
+  const puce = (attrs2, actif, contenu) => `<button type="button" class="chip" data-a-script="${id}" ${attrs2} aria-pressed="${actif}">${contenu}</button>`;
+  const tris = [['cat', t('an.tri_categorie'), D.avecCategories], ['nom', t('an.tri_az'), true],
+    ['genre', D.genre === 'niveau' ? t('an.tri_niveau') : t('an.tri_liste'), !!D.genre], ['editeur', t('an.tri_editeur'), D.avecEditeurs]].filter((x) => x[2]);
+  const bascule = (cle, lib) => `<label class="an-bascule">${esc(lib)}<button type="button" class="switch" role="switch" data-a-script="${id}" data-a-etiquette="${cle}" aria-checked="${etiquette(e, cle)}"></button></label>`;
+  const menu = e.menu ? `<div class="an-menu-filtres">
+      <h4>${esc(t('an.trier_par'))}</h4><div class="chips">${tris.map(([v, lib]) => puce(`data-a-tri-ecran="${v}"`, tri === v, esc(lib))).join('')}</div>
+      ${D.genre ? `<h4>${esc(D.genre === 'niveau' ? t('an.tri_niveau') : t('an.tri_liste'))}</h4><div class="chips">${puce('data-a-genre-tous', !e.genres, esc(t('an.toutes')))}${D.ordreGenres
+        .filter((g) => entrees.some((x) => D.genreDe(x) === g))
+        .map((g) => puce(`data-a-genre="${esc(g)}"`, !!e.genres?.has(g), `${esc(D.libGenre(g))} <b>${entrees.filter((x) => D.genreDe(x) === g).length}</b>`)).join('')}</div>` : ''}
+      <h4>${esc(t('an.etiquettes'))}</h4><div class="an-bascules">${[
+        D.genre === 'niveau' ? bascule('niveau', t('an.et_niveau')) : '', D.avecVersion ? bascule('version', t('an.et_version')) : '',
+        D.avecReboot ? bascule('reboot', t('an.redemarrage')) : '', bascule('sub', t('an.et_sub'))].join('')}</div>
+      <div class="an-menu-pied"><button type="button" class="an-lien" data-a-script="${id}" data-a-remettre>${esc(t('an.tout_remettre'))}</button>
+        <button type="button" class="an-lien" data-a-script="${id}" data-a-menu>${esc(t('action.fermer'))}</button></div></div>` : '';
+  const outils = `<div class="an-outils"><span class="an-cherche-liste">${ico('search', 'i14')}<input type="search" class="an-cherche" data-a-script="${id}" data-a-cherche-liste
         placeholder="${esc(t('an.chercher_liste'))}" aria-label="${esc(t('an.chercher_liste'))}" value="${esc(e.q)}"></span>
-      ${avecParents ? `<span class="an-seg"><span>${esc(t('an.afficher'))}</span>${seg('data-a-affichage', 'arbre', t('an.par_categories'), e.affichage === 'arbre')}${seg('data-a-affichage', 'plat', t('an.liste_az'), e.affichage === 'plat')}</span>` : ''}
-      ${avecEditeurs ? `<span class="an-seg"><span>${esc(t('an.trier_par'))}</span>${seg('data-a-tri-liste', 'nom', t('an.tri_nom'), e.tri === 'nom')}${seg('data-a-tri-liste', 'editeur', t('an.tri_editeur'), e.tri === 'editeur')}</span>` : ''}
-    </div>`;
+      <span class="an-menu-zone"><button type="button" class="btn compact" data-a-script="${id}" data-a-menu aria-expanded="${e.menu}">${ico('sliders-horizontal', 'i14')}${esc(t('an.filtres_tri'))}${ecarts ? `<span class="an-ecarts">${ecarts}</span>` : ''}</button>${menu}</span></div>`;
+
+  // One category at a time: « Toutes », or one; clicking it again goes back to « Toutes ».
+  let puces = '';
+  if (D.avecCategories) {
+    const cats = [...new Map(entrees.map((x) => [D.categorie(x), x])).entries()].sort((a, b) => D.ordreCategories(a[0], b[0]));
+    puces = `<div class="chips an-puces-cat">${puce('data-a-cat=""', !e.cat, `${esc(t('an.toutes'))} <b>${entrees.length}</b>`)}${cats.map(([c, x]) =>
+      puce(`data-a-cat="${esc(c)}"`, e.cat === c, `${D.iconeCategorie(x)}${esc(c)} <b>${entrees.filter((y) => D.categorie(y) === c).length}</b>`)).join('')}</div>`;
+  }
+
+  // Groups, after the sort.
+  let groupes;
+  if (tri === 'cat') {
+    const cats = [...new Set(visibles.map((x) => D.categorie(x)))].sort(D.ordreCategories);
+    groupes = cats.map((c) => [esc(c), visibles.filter((x) => D.categorie(x) === c), D.iconeCategorie(visibles.find((x) => D.categorie(x) === c))]);
+  } else if (tri === 'genre') {
+    groupes = D.ordreGenres.map((g) => [D.genre === 'niveau' ? badgeNiveau(g) : esc(D.libGenre(g)), visibles.filter((x) => D.genreDe(x) === g), ''])
+      .filter(([, l]) => l.length);
+  } else groupes = [[esc(t(tri === 'editeur' ? 'an.tous_editeur' : 'an.tous_az')), visibles, '']];
+  const s = selection(m);
+  const liste = visibles.length
+    ? groupes.map(([titre, l, icone]) => `<div class="an-groupe-ecran"><div class="an-bloc-h">${icone ? `<span class="an-ico an-ico-cat">${icone}</span>` : ''}<span class="an-bh-t">${titre}</span>
+        <span class="an-total">${esc(t('an.n_sur_n', { n: l.filter((x) => s.items[x.k]?.[x.it.id]).length, total: l.length }))}</span></div>
+        ${l.map((x) => ligneEcran(m, mode, x, D, e, q, tri)).join('')}</div>`).join('')
+    : `<div class="an-vide">${esc(q ? t('an.rien_ne_correspond', { q: e.q.trim() }) : t('an.rien_trouve'))}</div>`;
+  const corpsListe = `<div class="an-bloc an-liste-ecran">${liste}</div>`;
+  return `${outils}${puces}${D.explique ? `<div class="an-split">${corpsListe}${ficheEcran(m, mode, visibles, D)}</div>` : corpsListe}`;
+}
+
+function ligneEcran(m, mode, x, D, e, q, tri) {
+  const s = selection(m);
+  const it = x.it;
+  const c = !!s.items[x.k]?.[it.id];
+  const verrou = !!it.locked;
+  const fait = it.state === 'ok';
+  const niv = niveauDe(it);
+  const tags = [
+    etiquette(e, 'sub') && (it.publisher || it.path) ? `<span class="an-pub">${surligne(it.publisher || it.path, q)}</span>` : '',
+    tri !== 'cat' && D.avecCategories ? `<span class="an-pub an-categorie">${esc(D.categorie(x))}</span>` : '',
+    etiquette(e, 'niveau') && niv ? badgeNiveau(niv) : '',
+    etiquette(e, 'version') ? versionHtml(it) : '',
+    etiquette(e, 'reboot') && it.reboot === 'true' ? badgeReboot() : '',
+    texteRapport(m, it.warn) ? `<span class="an-alerte-pt" title="${esc(texteRapport(m, it.warn))}">${ico('warn', 'i12')}</span>` : '',
+    fait ? `<span class="badge low">${esc(t('an.a_jour'))}</span>` : '',
+    verrou ? `<span class="badge neutre">${ico('lock', 'i12')}${esc(verrouTexte(it.locked))}</span>` : '',
+  ].join('');
+  const boite = `<input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${verrou || fait ? ' disabled' : ''}>`;
+  const dedans = `${boite}<span class="an-ico">${iconeElement(it)}</span>
+    <span class="an-t"><b>${surligne(nomElement(m, it), q)}</b><span class="an-badges">${tags}</span></span>
+    <span class="an-v">${Number(it.size) > 0 ? taille(it.size) : ''}</span>`;
+  const classes = `an-ligne an-ligne-ecran${c ? '' : ' decoche'}${verrou || fait ? ' inactive' : ''}`;
+  // With a sheet, a click on the line shows it; without, the line is the box's label.
+  return D.explique
+    ? `<div class="${classes}${etatEcran(m).fiche === x.cle ? ' choisie' : ''}" data-a-script="${esc(m.entree.id)}" data-a-fiche="${esc(x.cle)}">${dedans}</div>`
+    : `<label class="${classes}">${dedans}</label>`;
+}
+
+/** The sheet of the selected element; it follows the filters. */
+function ficheEcran(m, mode, visibles, D) {
+  const e = etatEcran(m);
+  const x = visibles.find((v) => v.cle === e.fiche) || visibles[0];
+  if (!x) return '<aside class="an-fiche"></aside>';
+  e.fiche = x.cle;
+  const it = x.it;
+  const s = selection(m);
+  const c = !!s.items[x.k]?.[it.id];
+  const niv = niveauDe(it);
+  const id = esc(m.entree.id);
+  const section = (titre, corps2) => (corps2 ? `<h4>${esc(titre)}</h4>${corps2}` : '');
+  const p = (cle) => (texteRapport(m, cle) ? `<p>${esc(texteRapport(m, cle))}</p>` : '');
+  const alerte = texteRapport(m, it.warn)
+    ? `<div class="an-note ${niv === 'against' ? 'danger' : 'warn'}">${ico('warn', 'i14')}<span>${esc(texteRapport(m, it.warn))}</span></div>` : '';
+  const confirmer = e.attente === x.cle ? `<div class="an-note danger an-confirmer">${ico('warn', 'i14')}<span><b>${esc(t('an.confirmer_titre'))}</b>${esc(t('an.confirmer_texte'))}
+      <span class="an-confirmer-b"><button type="button" class="btn compact danger" data-a-script="${id}" data-a-confirmer="${esc(x.cle)}">${esc(t('an.confirmer_oui'))}</button>
+      <button type="button" class="btn compact" data-a-script="${id}" data-a-annuler>${esc(t('an.confirmer_non'))}</button></span></span></div>` : '';
+  return `<aside class="an-fiche"><div class="an-fiche-h"><span class="an-ico">${iconeElement(it)}</span><span><b>${esc(nomElement(m, it))}</b>
+      <span class="an-pub">${esc([D.avecCategories ? D.categorie(x) : '', it.publisher || it.path || ''].filter(Boolean).join(' · '))}</span></span></div>
+    <div class="an-badges">${niv ? badgeNiveau(niv) : ''}${versionHtml(it)}${it.reboot === 'true' ? badgeReboot() : ''}</div>
+    ${section(t('an.fiche_quoi'), p(it.about))}${section(t('an.fiche_pourquoi'), p(it.why))}${section(t('an.fiche_attention'), alerte)}
+    ${it.reboot === 'true' ? section(t('an.redemarrage'), `<p>${esc(t('an.fiche_reboot'))}</p>`) : ''}
+    <label class="an-fiche-c"><input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${it.locked || it.state === 'ok' ? ' disabled' : ''}>${esc(t('an.fiche_cocher'))}</label>
+    ${confirmer}</aside>`;
+}
+
+/** « Récapitulatif »: what will be done, its warnings and restarts first. */
+function recapEcran(m, entrees, D) {
+  const s = selection(m);
+  const id = esc(m.entree.id);
+  const coches = entrees.filter((x) => s.items[x.k]?.[x.it.id]).sort((a, b) => avant(nomElement(m, a.it), nomElement(m, b.it)));
+  if (!coches.length) return `<div class="an-vide">${esc(t('an.recap_vide'))}</div>`;
+  const alertes = coches.filter((x) => texteRapport(m, x.it.warn)).map((x) => `<div class="an-note ${niveauDe(x.it) === 'against' ? 'danger' : 'warn'}">${ico('warn', 'i14')}<span><b>${esc(nomElement(m, x.it))}</b>${esc(texteRapport(m, x.it.warn))}</span></div>`);
+  const reboots = coches.filter((x) => x.it.reboot === 'true');
+  if (reboots.length) alertes.push(`<div class="an-note info">${ico('power', 'i14')}<span><b>${esc(t('an.reboot_fin'))}</b>${esc(reboots.map((x) => nomElement(m, x.it)).join(', '))}.</span></div>`);
+  const quoi = (x) => (D.genre === 'niveau'
+    ? `${niveauDe(x.it) ? badgeNiveau(niveauDe(x.it)) : ''}${x.it.reboot === 'true' ? badgeReboot() : ''}`
+    : `${D.listes.length > 1 ? `<span>${esc(libOption(m.entree, x.o.def))}</span> ` : ''}${versionHtml(x.it)}`);
+  return `<div class="an-bloc">${alertes.length ? `<div class="an-recap-alertes">${alertes.join('')}</div>` : ''}
+    <div class="an-defile-x"><table class="an-tab an-recap"><tr><th>${esc(t('an.col_element'))}</th>${D.avecCategories ? `<th>${esc(t('an.tri_categorie'))}</th>` : ''}<th>${esc(t(D.genre === 'niveau' ? 'an.tri_niveau' : 'an.col_quoi'))}</th><th></th></tr>
+    ${coches.map((x) => `<tr><td><span class="an-recap-el"><span class="an-plan-ico">${iconeElement(x.it)}</span><span><b>${esc(nomElement(m, x.it))}</b>${x.it.publisher || x.it.path ? `<span class="an-chemin">${esc(x.it.publisher || x.it.path)}</span>` : ''}</span></span></td>
+      ${D.avecCategories ? `<td>${esc(D.categorie(x))}</td>` : ''}<td><span class="an-badges">${quoi(x)}</span></td>
+      <td><button type="button" class="an-lien" data-a-script="${id}" data-a-decocher="${esc(x.cle)}">${esc(t('an.retirer'))}</button></td></tr>`).join('')}</table></div></div>`;
+}
+
+/** Elements ticked that ask for a restart, across the analyses (`reboot=true`). */
+export function redemarragesCoches(modeles) {
+  let n = 0;
+  for (const m of modeles) {
+    const s = selection(m);
+    for (const [k, o] of Object.entries(m.options)) if (o.def.kind === 'items') n += o.items.filter((it) => it.reboot === 'true' && s.items[k]?.[it.id]).length;
+  }
+  return n;
 }
 
 /* -------------------------------------------------------------------------
@@ -244,8 +472,9 @@ const SEL = new Map();
 const coche = (c) => (c.checked !== undefined ? c.checked === 'true'
   : c.state === 'todo' || (c.state !== 'ok' && (Number(c.size) > 0 || Number(c.count) > 0)));
 /** Un element « A verifier » (confidence=low) n'est jamais coche d'office. */
-const cocheItem = (it) => (it.checked !== undefined ? it.checked === 'true' && !it.locked
-  : !it.locked && it.state !== 'ok' && it.confidence !== 'low');
+const cocheItem = (it) => (it.advice ? false // 2.0.4: what cuts both ways or is discouraged, never by default
+  : it.checked !== undefined ? it.checked === 'true' && !it.locked
+    : !it.locked && it.state !== 'ok' && it.confidence !== 'low');
 
 /** Une nouvelle analyse remet la selection a l'avis du script. */
 export function oublier(scriptId) {
@@ -510,6 +739,8 @@ function brique(m, k, mode) {
     if (d.view === 'table') return vueTableau(m, k);
     if (d.view === 'tiles') return vueTuiles(m, k, mode);
     if (d.view === 'treemap') return vueTreemap(m, k);
+    // Drawn by the list screen (M36), with the other lists of the action.
+    if (aEcran(m)) return '';
     return briqueListe(m, k, mode);
   }
   return '';
@@ -564,53 +795,30 @@ function ligneItem(m, k, it, mode, vue = {}) {
 function briqueListe(m, k, mode) {
   const o = m.options[k];
   const s = selection(m);
-  const longue = estLongue(m);
-  const e = longue ? etatListes(m) : { q: '', affichage: 'arbre', tri: null };
-  const q = plier(e.q.trim());
   const f = feuilles(o);
   const aVerifier = f.filter((it) => it.confidence === 'low' || it.risk).length;
   const filtre = s.filtre[k] || 'tout';
-  const parentDe = (it) => o.items.find((x) => x.id === it.parent);
-  const correspond = (it) => !q || plier(`${nomElement(m, it)} ${it.publisher || ''} ${it.path || ''}`).includes(q);
   const garde = (it) => filtre !== 'verifier' || it.confidence === 'low' || !!it.risk;
-  const avant = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true });
-  const trier = e.tri ? (a, b) => (e.tri === 'editeur' ? avant(a.publisher || '\uffff', b.publisher || '\uffff') : 0) || avant(nomElement(m, a), nomElement(m, b)) : null;
-
-  let lignes;
-  if (longue && e.affichage === 'plat') {
-    // A → Z: every element, its category beside its name.
-    lignes = elementsDe(o)
-      .filter((it) => montre(it, mode) && (!it.parent || montre(parentDe(it), mode)) && garde(it)
-        && (correspond(it) || (it.parent && correspond(parentDe(it)))))
-      .sort(trier || (() => 0))
-      .map((it) => ligneItem(m, k, it, mode, { q, parent: it.parent ? parentDe(it) : null }));
-  } else {
-    // By category: a category shows when it matches, then with all its
-    // children, or when some of its children match, then with those only.
-    const montres = new Set();
-    const rac = racines(o).filter((r) => {
-      if (!montre(r, mode)) return false;
-      const enfants = enfantsDe(o, r.id).filter((x) => montre(x, mode));
-      if (!enfants.length) return correspond(r) && garde(r);
-      const elle = correspond(r);
-      const gardes = enfants.filter((x) => (elle || correspond(x)) && garde(x));
-      gardes.forEach((x) => montres.add(x.id));
-      return gardes.length > 0;
-    });
-    if (trier) rac.sort((a, b) => avant(nomElement(m, a), nomElement(m, b)));
-    const filtrant = !!q || filtre === 'verifier';
-    lignes = rac.map((it) => ligneItem(m, k, it, mode, { q, montres: filtrant ? montres : null, deplie: !!q, trier }));
-  }
+  // « À vérifier »: a category shows when one of its children is to check, with those only.
+  const montres = new Set();
+  const rac = racines(o).filter((r) => {
+    if (!montre(r, mode)) return false;
+    const enfants = enfantsDe(o, r.id).filter((x) => montre(x, mode));
+    if (!enfants.length) return garde(r);
+    const gardes = enfants.filter(garde);
+    gardes.forEach((x) => montres.add(x.id));
+    return gardes.length > 0;
+  });
+  const lignes = rac.map((it) => ligneItem(m, k, it, mode, { montres: filtre === 'verifier' ? montres : null }));
   const n = f.filter((it) => s.items[k][it.id]).length;
   const filtres = aVerifier
     ? `<span class="an-filtres"><button type="button" ${attrs(m, k, 'data-a-filtre="tout"')} aria-pressed="${filtre === 'tout'}">${esc(t('an.filtre_tout'))}</button><button type="button" ${attrs(m, k, 'data-a-filtre="verifier"')} aria-pressed="${filtre === 'verifier'}">${esc(t('an.filtre_verifier', { n: aVerifier }))}</button></span>`
     : '';
-  const vide = q ? t('an.rien_ne_correspond', { q: e.q.trim() }) : t('an.rien_trouve');
   return `<div class="an-bloc"><div class="an-bloc-h"><span class="an-bh-t">${esc(libOption(m.entree, o.def))}</span>
       <button class="an-lien" type="button" ${attrs(m, k, 'data-a-tout="items"')}>${esc(t('an.tout_cocher'))}</button>
       <button class="an-lien" type="button" ${attrs(m, k, 'data-a-rien="items"')}>${esc(t('an.tout_decocher'))}</button>
       ${filtres}<span class="an-total">${esc(t('an.n_sur_n', { n, total: f.length }))}</span></div>
-    ${lignes.join('') || `<div class="an-vide">${esc(vide)}</div>`}
+    ${lignes.join('') || `<div class="an-vide">${esc(t('an.rien_trouve'))}</div>`}
     ${notesPour(m, k, mode)}</div>`;
 }
 
@@ -673,7 +881,7 @@ export function corps(m, mode = 'expert') {
   const briques = Object.keys(m.options).map((k) => brique(m, k, mode)).join('');
   const n = compteMasques(m, mode);
   const masques = n && mode === 'simple' ? `<div class="an-masques">${ico('info', 'i14')}<span>${esc(pl('an.lignes_expert', n))}</span></div>` : '';
-  return `${metriquesHtml(m, mode)}${barreListes(m)}${briques}${globales}${masques}${mode === 'expert' ? anomaliesHtml(m) : ''}`
+  return `${metriquesHtml(m, mode)}${aEcran(m) ? ecranListe(m, mode) : ''}${briques}${globales}${masques}${mode === 'expert' ? anomaliesHtml(m) : ''}`
     || `<div class="an-vide">${esc(t('an.rien_trouve'))}</div>`;
 }
 
@@ -980,7 +1188,7 @@ export function vue(m, mode = 'expert', { historique = [] } = {}) {
   const reste = Object.keys(m.options).filter((k) => !montres.has(k)).map((k) => brique(m, k, mode)).join('');
   const globales = m.notes.filter((n) => !n.cible && montre(n, mode) && nom !== 'light').map((n) => noteHtml(m, n)).join('');
   if (!principal || nom === 'checklist' || nom === 'tree') return corps(m, mode);
-  return `<div class="an-vue">${principal}</div>${metriquesDejaVues ? '' : metriquesHtml(m, mode)}${barreListes(m, montres)}${reste}${globales}${mode === 'expert' ? anomaliesHtml(m) : ''}`;
+  return `<div class="an-vue">${principal}</div>${metriquesDejaVues ? '' : metriquesHtml(m, mode)}${aEcran(m, montres) ? ecranListe(m, mode, montres) : ''}${reste}${globales}${mode === 'expert' ? anomaliesHtml(m) : ''}`;
 }
 
 /* -------------------------------------------------------------------------
@@ -1202,6 +1410,33 @@ export function totalResume(modeles) {
 const ETAT_UI = { ouverts: new Set(), detailJauge: false };
 export const etatUi = () => ETAT_UI;
 
+/** The gestures of the list screen (M36); true if one applied. */
+function gesteEcran(m, d) {
+  const e = etatEcran(m);
+  const s = selection(m);
+  if (d.aOnglet) e.onglet = d.aOnglet;
+  else if (d.aMenu !== undefined) e.menu = !e.menu;
+  else if (d.aCat !== undefined) e.cat = d.aCat && e.cat !== d.aCat ? d.aCat : null;
+  else if (d.aTriEcran) e.tri = d.aTriEcran;
+  else if (d.aGenreTous !== undefined) e.genres = null;
+  else if (d.aGenre) {
+    const g = new Set(e.genres || []);
+    g.has(d.aGenre) ? g.delete(d.aGenre) : g.add(d.aGenre);
+    e.genres = g.size ? g : null;
+  } else if (d.aEtiquette) e.etiquettes[d.aEtiquette] = !(e.etiquettes[d.aEtiquette] ?? true);
+  else if (d.aRemettre !== undefined) Object.assign(e, { tri: null, genres: null, etiquettes: {} });
+  else if (d.aConfirmer) {
+    const [k, id] = [d.aConfirmer.slice(0, d.aConfirmer.indexOf('/')), d.aConfirmer.slice(d.aConfirmer.indexOf('/') + 1)];
+    if (s.items[k]) s.items[k][id] = true;
+    e.attente = null;
+  } else if (d.aAnnuler !== undefined) e.attente = null;
+  else if (d.aDecocher) {
+    const [k, id] = [d.aDecocher.slice(0, d.aDecocher.indexOf('/')), d.aDecocher.slice(d.aDecocher.indexOf('/') + 1)];
+    if (s.items[k]) s.items[k][id] = false;
+  } else return false;
+  return true;
+}
+
 /**
  * Applique un geste sur l'analyse. `modeles` : Map id de script -> modele.
  * Renvoie vrai si quelque chose a change (l'appelant redessine).
@@ -1219,6 +1454,14 @@ export function agir(ev, modeles) {
   if (!surBouton && el.matches?.('[data-a-poste]')) {
     const p = posteDe(el.dataset.aPoste);
     if (p) basculerPoste(p, el.checked);
+    return true;
+  }
+  // A line of the list screen with a sheet: a click shows its sheet (M36).
+  const rangee = surBouton && !el.closest?.('input, button, a, label') && el.closest?.('[data-a-fiche]');
+  if (rangee) {
+    const m = modeles.get(rangee.dataset.aScript);
+    if (!m) return false;
+    Object.assign(etatEcran(m), { fiche: rangee.dataset.aFiche, attente: null });
     return true;
   }
   const bouton = el.closest?.('button, th[data-a-tri]');
@@ -1244,8 +1487,7 @@ export function agir(ev, modeles) {
     if (d.aTri) { ETAT.tri.sens = ETAT.tri.col === d.aTri ? -ETAT.tri.sens : 1; ETAT.tri.col = d.aTri; return true; }
     const m = modeles.get(d.aScript);
     if (!m) return false;
-    if (d.aAffichage) { etatListes(m).affichage = d.aAffichage; return true; }
-    if (d.aTriListe) { etatListes(m).tri = d.aTriListe; return true; }
+    if (gesteEcran(m, d)) return true;
     const k = d.aOpt;
     const s = selection(m);
     const o = m.options[k];
@@ -1268,7 +1510,7 @@ export function agir(ev, modeles) {
   if (el.matches?.('[data-a-cherche]')) { ETAT.recherche = el.value; return true; }
   if (el.matches?.('[data-a-cherche-liste]')) {
     const m = modeles.get(el.dataset.aScript);
-    if (m) etatListes(m).q = el.value;
+    if (m) etatEcran(m).q = el.value;
     return !!m;
   }
   const d = el.dataset || {};
@@ -1287,6 +1529,10 @@ export function agir(ev, modeles) {
     const mode = d.aMode || 'expert';
     if (enfants.length) {
       for (const e of enfants) if (!e.locked && e.state !== 'ok') s.items[k][e.id] = el.checked && (montre(e, mode) || cocheItem(e));
+    } else if (el.checked && o.items.find((x) => x.id === d.aItem)?.advice === 'discouraged') {
+      // A discouraged element is ticked only once confirmed, in its sheet.
+      el.checked = false;
+      Object.assign(etatEcran(m), { fiche: `${k}/${d.aItem}`, attente: `${k}/${d.aItem}`, onglet: 'choisir' });
     } else s.items[k][d.aItem] = el.checked;
   } else return false;
   return true;

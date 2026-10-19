@@ -182,6 +182,8 @@ fn jetons(champ: &str) -> Option<&'static [&'static str]> {
         "locked" => &["open", "system", "protected", "inuse"],
         "unit" => &["celsius", "pct", "hours", "days", "s", "count", "cycles"],
         "health" => &["ok", "warn", "crit"],
+        "advice" => &["caution", "discouraged"],
+        "reboot" => &["true", "false"],
         _ => return None,
     })
 }
@@ -196,7 +198,7 @@ const CHAMPS_FIND: [&str; 8] = [
     "recommended",
     "show",
 ];
-const CHAMPS_ITEM: [&str; 24] = [
+const CHAMPS_ITEM: [&str; 29] = [
     "id",
     "parent",
     "group",
@@ -226,7 +228,17 @@ const CHAMPS_ITEM: [&str; 24] = [
     // downloaded by Sindry (see `appicon.rs`).
     "icon",
     "appicon",
+    // 2.0.4: what the item is, why it is proposed and what to beware of, each
+    // a note key of the REPORT block; whether it cuts both ways (caution) or
+    // is discouraged; and whether removing it needs a restart.
+    "about",
+    "why",
+    "warn",
+    "advice",
+    "reboot",
 ];
+/// The item fields that name a note of the REPORT block (2.0.4).
+const ITEM_NOTES: [&str; 3] = ["about", "why", "warn"];
 
 /// The Lucide icon names the app ships, for `icon=` (2.0.4): an unknown name
 /// would draw an empty square. Same list as the validator's.
@@ -447,6 +459,14 @@ pub fn lire(meta: &Script, lignes: &[String]) -> Analyse {
                     ));
                     fields.remove("exe");
                 }
+                for champ in ITEM_NOTES {
+                    if let Some(n) = fields.get(champ).filter(|n| !rapport(n, "note")) {
+                        a.anomalies.push(format!(
+                            "[ITEM] {cle} : {champ}={n} n’est pas une note du bloc REPORT — ignoré"
+                        ));
+                        fields.remove(champ);
+                    }
+                }
                 if let Some(l) = fields.get("label") {
                     if !rapport(l, "label") {
                         a.anomalies.push(format!(
@@ -632,8 +652,13 @@ fn coche(c: &BTreeMap<String, String>) -> bool {
     }
 }
 
-/// Un element « A verifier » (`confidence=low`) n'est jamais coche d'office.
+/// Un element « A verifier » (`confidence=low`) n'est jamais coche d'office,
+/// ni (2.0.4) ce qui est a double tranchant ou deconseille (`advice=`), meme
+/// avec `checked=true`.
 fn coche_element(e: &BTreeMap<String, String>) -> bool {
+    if present(e, "advice") {
+        return false;
+    }
     let verrou = present(e, "locked");
     match e.get("checked") {
         Some(v) => v == "true" && !verrou,
@@ -946,6 +971,34 @@ mod tests {
             "image is Sindry's, never the script's"
         );
         assert_eq!(a.anomalies.len(), 3, "{:?}", a.anomalies);
+    }
+
+    #[test]
+    fn about_why_warn_name_report_notes_and_advice_is_never_ticked() {
+        let a = lire(
+            &script(),
+            &lignes(
+                "[ITEM] Browsers id=a about=UpdateNote why=Untouched warn=UpdateNote advice=discouraged reboot=true checked=true\n\
+                 [ITEM] Browsers id=b about=Cache why=Unknown advice=maybe reboot=yes",
+            ),
+        );
+        assert_eq!(a.items.len(), 2);
+        let f = &a.items[0].fields;
+        for (k, v) in [
+            ("about", "UpdateNote"),
+            ("why", "Untouched"),
+            ("warn", "UpdateNote"),
+            ("advice", "discouraged"),
+            ("reboot", "true"),
+        ] {
+            assert_eq!(f.get(k).map(String::as_str), Some(v));
+        }
+        assert!(!coche_element(f), "advice= wins over checked=true");
+        let g = &a.items[1].fields;
+        assert!(["about", "why", "advice", "reboot"]
+            .iter()
+            .all(|k| !g.contains_key(*k)));
+        assert_eq!(a.anomalies.len(), 4, "{:?}", a.anomalies);
     }
 
     #[test]

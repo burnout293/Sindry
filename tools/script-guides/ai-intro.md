@@ -165,8 +165,14 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
     Sindry depuis le dépôt `Sindry-Media-Library` : un nom, jamais une adresse), `icon=<nom Lucide>`
     (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
-31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
-    affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
+31. Une action à **longue liste** (plus de 12 éléments) ou dont un élément est **expliqué**
+    gagne d'elle-même l'écran de liste : onglets Choisir / Récapitulatif, recherche,
+    catégories, filtres et tri, fiche à droite. Explique ce qui le mérite : `about=` (de quoi
+    il s'agit), `why=` (pourquoi c'est proposé), `warn=` (ce qu'on perd), chacun **une clé
+    `[note:…]` du `REPORT`**, jamais une phrase ; `advice=caution` pour ce qui est à double
+    tranchant, `advice=discouraged` pour ce qu'il vaut mieux garder (un antivirus) — jamais
+    cochés d'office ; `reboot=true` si le retirer demande un redémarrage, puis `[REBOOT]` à
+    la fin s'il a eu lieu. Pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
     déclare `## view : tree`.
 
 ### La sécurité

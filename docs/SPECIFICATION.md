@@ -1793,6 +1793,13 @@ En conséquence :
   au plus, jamais un SVG ; gardé 30 jours dans `%LOCALAPPDATA%\Sindry\cache\icons` et
   revérifié à chaque lecture, ce dossier appartenant à l'utilisateur. Réglage 3.3 pour tout
   couper ; activé par défaut.
+- **Les éléments expliqués (2.0.4, maquettes M35 et M36)** : `about=`, `why=` et `warn=` ne
+  portent qu'une clé de note du bloc `REPORT` — la sortie ne dicte aucune phrase à l'écran,
+  et une clé inconnue est ignorée. `advice=` (`caution`, `discouraged`) n'est jamais coché
+  d'office, même avec `checked=true` : la règle est la même dans l'interface et en ligne de
+  commande (`tools/selection-cas.json`). Un élément `discouraged` ne se coche qu'après une
+  confirmation, dans sa fiche. `reboot=true` ne fait qu'annoncer : seul `[REBOOT]` confirme
+  un redémarrage.
 - L'interface ne présente jamais l'analyse comme « sans risque ». Elle dit ce qu'elle fait :
   Sindry examine le PC.
 

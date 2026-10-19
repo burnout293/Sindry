@@ -165,8 +165,14 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     fichier d'une application installée), `appicon=<nom>` (l'icône officielle, téléchargée par
     Sindry depuis le dépôt `Sindry-Media-Library` : un nom, jamais une adresse), `icon=<nom Lucide>`
     (une icône générique, aussi pour une catégorie). Écris-en plusieurs : chacune sert de repli.
-31. Une action à **longue liste** (plus de 12 éléments) gagne d'elle-même repli, recherche,
-    affichage et tri ; pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
+31. Une action à **longue liste** (plus de 12 éléments) ou dont un élément est **expliqué**
+    gagne d'elle-même l'écran de liste : onglets Choisir / Récapitulatif, recherche,
+    catégories, filtres et tri, fiche à droite. Explique ce qui le mérite : `about=` (de quoi
+    il s'agit), `why=` (pourquoi c'est proposé), `warn=` (ce qu'on perd), chacun **une clé
+    `[note:…]` du `REPORT`**, jamais une phrase ; `advice=caution` pour ce qui est à double
+    tranchant, `advice=discouraged` pour ce qu'il vaut mieux garder (un antivirus) — jamais
+    cochés d'office ; `reboot=true` si le retirer demande un redémarrage, puis `[REBOOT]` à
+    la fin s'il a eu lieu. Pour qu'en mode Simple elle montre sa liste plutôt qu'un résumé,
     déclare `## view : tree`.
 
 ### La sécurité
@@ -937,6 +943,11 @@ recommander un choix qu'une fois tous mesurés :
 | `impact=` | `high` / `medium` / `low` | Impact élevé, moyen, faible |
 | `risk=` | `high` / `medium` / `low` | Suspect, Inhabituel — `low` n'affiche rien |
 | `locked=` | `open` `system` `protected` `inuse` | Visible mais **pas cochable**, avec la raison : programme ouvert, nécessaire à Windows… |
+| `about=` | une clé `[note:…]` du bloc `REPORT` | **De quoi il s'agit**, en une phrase (2.0.4) — dans la fiche de l'élément |
+| `why=` | une clé `[note:…]` du bloc `REPORT` | **Pourquoi c'est proposé** (2.0.4) |
+| `warn=` | une clé `[note:…]` du bloc `REPORT` | **Attention** : ce que l'utilisateur perd ou risque (2.0.4) — repris au récapitulatif |
+| `advice=` | `caution` / `discouraged` | **À double tranchant**, **Déconseillé** (2.0.4) — **jamais coché d'office**, même avec `checked=true` ; `discouraged` ne se coche qu'après une confirmation |
+| `reboot=` | `true` / `false` | Le retirer demande de redémarrer (2.0.4) : annoncé dans la fiche, au récapitulatif et avant de lancer |
 | `group=`, `keep=` | identifiant ; `true` / `false` | Pour `[items:keep-one]` : les exemplaires d'un même fichier, et celui à garder |
 | `size=` `count=` `state=` `checked=` `show=` | comme pour `[FIND]` | |
 
@@ -1059,23 +1070,50 @@ ce sont les ids à supprimer.**
 Limites : 5 000 éléments par liste, 20 000 lignes par analyse, 400 caractères par texte.
 Au-delà, la suite est ignorée, et l'Expert le voit.
 
-**Les longues listes (2.0.4).** Au-delà de **12 éléments** dans les listes `[items]` d'une
-action, Sindry les présente autrement, sans rien à déclarer :
+**L'écran de liste (2.0.4).** Une action dont les listes `[items]` comptent plus de
+**12 éléments** en tout, ou dont un élément est **expliqué** (`about=`, `why=`, `warn=`,
+`advice=`), présente toutes ses listes dans un seul écran, sans rien à déclarer de plus :
 
 | Ce que voit l'utilisateur | Détail |
 |---|---|
-| Les catégories **repliées** | Un parent (un élément qui en a d'autres sous lui) s'ouvre replié ; l'utilisateur le déplie, et Sindry retient son choix |
-| Une **recherche** | Sur le nom, l'éditeur et le chemin ; elle déplie et surligne ce qu'elle trouve |
-| **Afficher** : par catégories, ou liste A → Z | La liste A → Z montre chaque élément, sa catégorie à côté |
-| **Trier par** : nom, ou éditeur | Le tri par éditeur n'est proposé que si des éléments ont un `publisher=` |
+| Deux onglets : **Choisir** et **Récapitulatif** | Le récapitulatif liste ce qui est coché, ses avertissements (`warn=`) et ses redémarrages (`reboot=true`) en tête |
+| Une **recherche** | Sur le nom, l'éditeur, le chemin et la catégorie ; elle surligne ce qu'elle trouve |
+| Les **catégories**, une à la fois | Les parents des éléments s'ils en ont (Navigateurs, Bureautique…), sinon les listes elles-mêmes (Programmes, Démarrage…), dans l'ordre du script |
+| **Filtres et tri** | Trier par catégorie, nom, recommandation ou éditeur ; ne montrer qu'une recommandation (ou une liste) ; afficher ou masquer les étiquettes — recommandation, version, redémarrage, éditeur |
+| La **fiche** de l'élément choisi, à droite | Seulement si le script explique ses éléments : De quoi s'agit-il, Pourquoi c'est proposé, Attention, Redémarrage |
+
+La **recommandation** se lit dans ce que le script dit déjà : `advice=discouraged`
+Déconseillé, `advice=caution` À double tranchant, `risk=high` Suspect, puis `confidence=` —
+`low` À vérifier, `medium` Probable, `high` Sûr.
+
+**Expliquer un élément.** `about=`, `why=` et `warn=` nomment une **note** du bloc `REPORT`,
+jamais une phrase de la sortie, qui reste en anglais ; chaque note se traduit dans `LANG`.
+Une clé inconnue est ignorée (`ITEM_TEXTE`).
+
+```
+## SINDRY:REPORT
+## AvWhat : [note:info] Your antivirus.
+## AvWhy  : [note:info] Two antiviruses get in each other's way: Microsoft Defender is there too.
+## AvWarn : [note:warn] Removing it leaves you unprotected until Defender takes over.
+## SINDRY:END
+
+[ITEM] Programs id=avast kind=app name="Avast Free Antivirus" about=AvWhat why=AvWhy warn=AvWarn advice=discouraged reboot=true
+```
+
+- **`advice=`** marque ce qui coupe dans les deux sens — un programme utile à certains, un
+  service dont dépend une fonction — ou ce qu'il vaut mieux garder, comme un antivirus.
+  Rien de tout cela n'est coché d'office ; un élément `discouraged` ne se coche que depuis
+  sa fiche, après une confirmation.
+- **`reboot=true`** annonce le redémarrage d'avance. C'est toujours au script de le
+  confirmer à la fin par `[REBOOT]`, s'il a réellement retiré l'élément.
 
 Pour un lot d'une seule action, le mode Simple montre le résumé de Sindry, en postes. Pour
-qu'il montre la liste elle-même, avec sa barre, déclarez une vue : `## view : tree`.
+qu'il montre l'écran de liste, déclarez une vue : `## view : tree`.
 
 **« Ce qui sera fait »** liste tout ce qui est coché, regroupé par option — une liste
 `[items]`, un `[multi]` — avec l'icône de chaque élément et sa version proposée (`to=`). En
 Expert, c'est un panneau ; en Simple, il s'affiche aussi, sous l'analyse, replié s'il dépasse
-quinze lignes.
+quinze lignes — sauf quand l'écran de liste, qui a son récapitulatif, est affiché.
 
 ##### Les étiquettes : `[group:]`, `[show:]`, `[view:]`, `[scan]`
 
@@ -1105,12 +1143,13 @@ Les étiquettes ne se traduisent pas : le bloc `LANG` ne reprend que le libellé
 Dans cet ordre :
 
 1. **`checked=`** — l'avis du script l'emporte, sauf sur un élément `locked=` (jamais
-   cochable) et sur une option `[bool]` en `state=ok` (toujours décochée et grisée).
+   cochable) ou `advice=` (jamais coché d'office, 2.0.4) et sur une option `[bool]` en
+   `state=ok` (toujours décochée et grisée).
 2. Sinon, **`state=todo`** coche, et **`state=ok`** décoche et grise la case (« Déjà en place »).
 3. Sinon, pour un constat **`[FIND]`** : une **`size` ou un `count` supérieur à zéro** coche ;
    zéro, ou aucune mesure, décoche.
-4. Sinon, pour un élément **`[ITEM]`** : il est **coché**, sauf `locked=` (jamais cochable)
-   ou **`confidence=low`** (jamais coché d'office). Sa `size` n'entre pas en compte : un
+4. Sinon, pour un élément **`[ITEM]`** : il est **coché**, sauf `locked=` (jamais cochable),
+   **`confidence=low`** ou **`advice=`** (jamais cochés d'office). Sa `size` n'entre pas en compte : un
    élément de taille 0 est coché — écrivez `checked=false` si ce n'est pas votre avis.
 5. Un `[select]` présélectionne le choix `recommended=true`, sinon `current=true`, sinon le
    premier rapporté.
@@ -1660,6 +1699,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `ITEM_EXE` | avertissement | `exe=` qui n'est pas un chemin local absolu vers un `.exe`, un `.dll` ou un `.ico` (2.0.3) |
 | `ITEM_ICONE` | avertissement | `icon=` qui n'est pas une icône Lucide, ou `appicon=` qui n'est pas un nom (minuscules, chiffres, tirets) (2.0.4) |
 | `LIBELLE_INCONNU` | erreur | `[ITEM] … label=` vise une clé absente du bloc `REPORT` |
+| `ITEM_TEXTE` | erreur | `[ITEM] … about=`, `why=` ou `warn=` ne vise pas une note (`[note:info]`, `[note:warn]`) du bloc `REPORT` (2.0.4) |
 | `METRIC_CLE_INCONNUE` | erreur | `[METRIC]` vise une clé qui n'est pas un libellé du bloc `REPORT` |
 | `METRIC_CHAMP` | erreur | `[METRIC]` sans `value=`, avec un champ inconnu ou une valeur hors liste |
 | `NOTE_INCONNUE` | erreur | `[NOTE]` vise une note absente de `REPORT` ou une cible non déclarée, ou porte un champ autre que `show=` |

@@ -195,6 +195,39 @@
   const choixA = (value, label, extra = {}) => ({ value, label, desc: '', group: '', show: '', ...extra });
   const trA = (title, desc, options = {}, choices = {}, report = {}) => ({ fr: { title, desc, options, choices, report } });
 
+  // The texts of the « Grand ménage » sheets: [English, French, level].
+  const NOTES_MENAGE = {
+    WcWhat: ['An adware: it changes your browser’s home page and search.', 'Un logiciel publicitaire : il change la page d’accueil et la recherche du navigateur.'],
+    WcWhy: ['It came with another program, without you asking for it.', 'Il est arrivé avec un autre programme, sans que vous l’ayez demandé.'],
+    McWhat: ['A security extension preinstalled on many PCs.', 'Une extension de sécurité préinstallée avec beaucoup de PC.'],
+    McWhy: ['Useless if Microsoft Defender already protects you.', 'Inutile si Microsoft Defender vous protège déjà.'],
+    McWarn: ['Hard to remove: a restart finishes the uninstallation.', 'Difficile à retirer : un redémarrage termine la désinstallation.', 'warn'],
+    DbWhat: ['A tool that updates drivers.', 'Un outil qui met à jour les pilotes.'],
+    DbWhy: ['It starts with Windows and shows ads.', 'Il se lance à chaque démarrage et affiche des publicités.'],
+    DbWarn: ['It sometimes installs unsuitable drivers. Keep it if you use it.', 'Il installe parfois des pilotes inadaptés. Gardez-le si vous vous en servez.', 'warn'],
+    AvWhat: ['Your antivirus.', 'Votre antivirus.'],
+    AvWhy: ['Two antiviruses get in each other’s way: Microsoft Defender is there too.', 'Deux antivirus se gênent : Microsoft Defender est aussi présent.'],
+    AvWarn: ['Removing it leaves you unprotected until Defender takes over.', 'Le retirer vous laisse sans protection jusqu’à ce que Defender prenne le relais.', 'warn'],
+    AdWhat: ['Adobe Reader’s updater.', 'Le programme de mise à jour d’Adobe Reader.'],
+    AdWhy: ['Reader updates itself when you open it.', 'Reader se met à jour quand vous l’ouvrez.'],
+    OdWhat: ['The sync of your files with the cloud.', 'La synchronisation de vos fichiers avec le cloud.'],
+    OdWhy: ['It takes startup time even if you do not use it.', 'Elle occupe le démarrage même si vous ne vous en servez pas.'],
+    OdWarn: ['Your files will only sync when you open OneDrive.', 'Vos fichiers ne seront plus synchronisés qu’à l’ouverture de OneDrive.', 'warn'],
+    GuWhat: ['The task that keeps Google Chrome up to date.', 'La tâche qui tient Google Chrome à jour.'],
+    GuWarn: ['Without it, Chrome no longer updates itself.', 'Sans elle, Chrome ne se met plus à jour tout seul.', 'warn'],
+    CcWhat: ['A task left by CCleaner.', 'Une tâche laissée par CCleaner.'],
+    CcWhy: ['The program it starts no longer exists: it fails every time.', 'Le programme qu’elle lance n’existe plus : elle échoue à chaque fois.'],
+    DtWhat: ['The service that sends Microsoft data about how you use Windows.', 'Le service qui envoie à Microsoft des données d’utilisation.'],
+    DtWhy: ['Windows does not need it to work.', 'Windows n’en a pas besoin pour fonctionner.'],
+    SpWhat: ['The service that sends your documents to the printer.', 'Le service qui envoie vos documents à l’imprimante.'],
+    SpWarn: ['Disabled, you can no longer print.', 'Désactivé, vous ne pourrez plus imprimer.', 'warn'],
+    WsWhat: ['The indexing that speeds up file search.', 'L’indexation qui accélère la recherche de fichiers.'],
+    WsWhy: ['It works the disk hard on a slow PC.', 'Elle sollicite beaucoup le disque sur un PC lent.'],
+    WsWarn: ['Searching from the Start menu will be slower.', 'La recherche dans le menu Démarrer deviendra plus lente.', 'warn'],
+    RkWhat: ['Settings left behind after an uninstallation.', 'Des réglages restés après une désinstallation.'],
+    RkWhy: ['No program reads them anymore.', 'Plus aucun programme ne les lit.'],
+  };
+
   const ANALYSABLES = [
     script('free-space', 'Free up disk space', 'Removes temporary files, downloaded updates and browser caches', 'cleaning', 'trash-2', {
       duration: 'medium', reversible: false,
@@ -260,6 +293,25 @@
         }),
       },
     }),
+    // 2.0.4, M35 and M36: explained elements (about=, why=, warn=), advice=,
+    // reboot=, across five lists.
+    script('deep-clean', 'Deep clean', 'Removes what slows the PC down: programs, startup, tasks, services, registry', 'cleaning', 'sparkles', {
+      duration: 'slow',
+      options: [
+        optA('Programs', 'items', 'Programs', '', []),
+        optA('Startup', 'items', 'Startup', '', []),
+        optA('Tasks', 'items', 'Scheduled tasks', '', []),
+        optA('Services', 'items', 'Services', '', []),
+        optA('Registry', 'items', 'Registry', '', []),
+      ],
+      meta: {
+        scan: true, view: 'tree',
+        report: Object.fromEntries(Object.entries(NOTES_MENAGE).map(([k, [en, , level]]) => [k, { kind: 'note', level: level || 'info', label: en, desc: '' }])),
+        translations: trA('Grand ménage', 'Retire ce qui ralentit le PC : programmes, démarrage, tâches, services, registre', {
+          Programs: ['Programmes', ''], Startup: ['Démarrage', ''], Tasks: ['Tâches planifiées', ''], Services: ['Services', ''], Registry: ['Registre', ''],
+        }, {}, Object.fromEntries(Object.entries(NOTES_MENAGE).map(([k, [, fr]]) => [k, [fr, '']]))),
+      },
+    }),
     script('duplicates', 'Find duplicate files', 'Keeps one copy of each', 'cleaning', 'copy', {
       options: [optA('Duplicates', 'items', 'Duplicate files', '', [], { keep_one: true })],
       meta: { scan: true, show: 'expert', translations: trA('Trouver les fichiers en double', 'Garde un exemplaire de chacun', { Duplicates: ['Fichiers en double', ''] }) },
@@ -293,9 +345,8 @@
       },
     }),
   ];
-  SCRIPTS.cleaning.push(...ANALYSABLES.slice(0, 3));
-  SCRIPTS.privacy.push(ANALYSABLES[3]);
-  SCRIPTS.health.push(ANALYSABLES[4]);
+  // Each in the lot its category names (by position, an insertion shifted them).
+  for (const s of ANALYSABLES) SCRIPTS[s.meta.category].push(s);
 
   /** `?catalogue=reel` : ce que le moteur a vraiment lu du catalogue. Lecture
    *  synchrone : l'interface demande ses scripts des son demarrage. */
@@ -407,6 +458,29 @@
       return {
         lignes: ['[STEP] 1/2 Reading installed applications', '[STEP] 2/2 Comparing with the list'],
         analyse: { finds: [], items, metrics: [], notes: [], steps: ['Reading installed applications', 'Comparing with the list'], anomalies: [], truncated: false },
+      };
+    })(),
+    'deep-clean': (() => {
+      const el = (option, id, kind, name, extra = {}) => ({ option, fields: { id, kind, name, ...extra } });
+      const items = [
+        el('Programs', 'webcompanion', 'app', 'WebCompanion', { publisher: 'Lavasoft', risk: 'high', confidence: 'high', size: '96468992', about: 'WcWhat', why: 'WcWhy' }),
+        el('Programs', 'mcafee', 'app', 'McAfee WebAdvisor', { publisher: 'McAfee', advice: 'caution', reboot: 'true', size: '41943040', about: 'McWhat', why: 'McWhy', warn: 'McWarn' }),
+        el('Programs', 'booster', 'app', 'Driver Booster', { publisher: 'IObit', advice: 'caution', size: '125829120', about: 'DbWhat', why: 'DbWhy', warn: 'DbWarn' }),
+        el('Programs', 'avast', 'app', 'Avast Free Antivirus', { publisher: 'Avast Software', advice: 'discouraged', reboot: 'true', size: '734003200', about: 'AvWhat', why: 'AvWhy', warn: 'AvWarn' }),
+        el('Startup', 'adobearm', 'startup', 'Adobe Acrobat Update', { path: 'AdobeARM.exe', confidence: 'high', about: 'AdWhat', why: 'AdWhy' }),
+        el('Startup', 'discord', 'startup', 'Discord', { path: 'Update.exe', confidence: 'medium' }),
+        el('Startup', 'onedrive', 'startup', 'OneDrive', { publisher: 'Microsoft', advice: 'caution', about: 'OdWhat', why: 'OdWhy', warn: 'OdWarn' }),
+        el('Tasks', 'googleupdate', 'task', 'GoogleUpdateTaskMachineUA', { publisher: 'Google', confidence: 'medium', about: 'GuWhat', warn: 'GuWarn' }),
+        el('Tasks', 'ccleaner', 'task', 'CCleaner Update', { path: 'C:\\Program Files\\CCleaner\\CCUpdate.exe', confidence: 'high', about: 'CcWhat', why: 'CcWhy' }),
+        el('Services', 'diagtrack', 'service', 'Telemetry (DiagTrack)', { path: 'DiagTrack', confidence: 'high', reboot: 'true', about: 'DtWhat', why: 'DtWhy' }),
+        el('Services', 'spooler', 'service', 'Print Spooler', { path: 'Spooler', advice: 'discouraged', about: 'SpWhat', warn: 'SpWarn' }),
+        el('Services', 'wsearch', 'service', 'Windows Search', { path: 'WSearch', advice: 'caution', about: 'WsWhat', why: 'WsWhy', warn: 'WsWarn' }),
+        el('Registry', 'orphans', 'registry', 'Leftover keys', { count: '14', confidence: 'high', about: 'RkWhat', why: 'RkWhy' }),
+        el('Registry', 'assoc', 'registry', 'Broken file associations', { count: '12', confidence: 'low' }),
+      ];
+      return {
+        lignes: ['[STEP] 1/3 Reading programs', '[STEP] 2/3 Reading startup, tasks and services', '[STEP] 3/3 Reading the registry'],
+        analyse: { finds: [], items, metrics: [], notes: [], steps: ['Reading programs', 'Reading startup, tasks and services', 'Reading the registry'], anomalies: [], truncated: false },
       };
     })(),
     duplicates: {
@@ -696,7 +770,7 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.0.3', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '2.0.4', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
     // Sans parametre, Sindry est a jour.
@@ -705,7 +779,7 @@
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
       if (!maj) return null;
       const version = maj === 'signature' ? '1.5.1' : maj;
-      return { version, actuelle: '2.0.3', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '2.0.4', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -1111,12 +1185,18 @@
       if (aAnalyser) {
         setTimeout(() => document.querySelector(`.row.script[data-script="${CSS.escape(aAnalyser)}"]`)?.click(), 150);
         setTimeout(() => document.querySelector(`[data-analyser="${CSS.escape(aAnalyser)}"]`)?.click(), 400);
-        // `&affichage=plat`, `&tri=editeur`, `&cherche=…`: the long-list bar.
+        // The list screen (M36): `&cat=Services`, `&tri=genre`, `&cherche=…`,
+        // `&fiche=Programs/avast`, `&menu=1`, `&onglet=recap`.
         setTimeout(() => {
-          if (parametres.get('affichage')) document.querySelector(`[data-a-affichage="${CSS.escape(parametres.get('affichage'))}"]`)?.click();
-          if (parametres.get('tri')) document.querySelector(`[data-a-tri-liste="${CSS.escape(parametres.get('tri'))}"]`)?.click();
+          const clic = (sel) => document.querySelector(sel)?.click();
+          const p = (cle) => CSS.escape(parametres.get(cle));
+          if (parametres.get('cat')) clic(`[data-a-cat="${p('cat')}"]`);
+          if (parametres.get('tri')) { clic('.an-outils [data-a-menu]'); clic(`[data-a-tri-ecran="${p('tri')}"]`); clic('.an-outils [data-a-menu]'); }
           const champ = document.querySelector('[data-a-cherche-liste]');
           if (champ && parametres.get('cherche')) { champ.value = parametres.get('cherche'); champ.dispatchEvent(new Event('input', { bubbles: true })); }
+          if (parametres.get('fiche')) clic(`[data-a-fiche="${p('fiche')}"]`);
+          if (parametres.get('menu')) clic('.an-outils [data-a-menu]');
+          if (parametres.get('onglet')) clic(`[data-a-onglet="${p('onglet')}"]`);
         }, 2600);
       }
       if (parametres.get('reglages')) {
