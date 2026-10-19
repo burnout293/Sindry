@@ -1,0 +1,11 @@
+# Les icônes proposées par la version courte du guide pour IA (SCRIPTS_POUR_IA_COURT.md).
+# Une ligne par thème : « Thème : nom nom nom ». Chaque nom doit exister dans
+# tools/lucide-icon-names.txt — le générateur s'arrête sinon.
+Nettoyage et disque : trash-2 trash eraser brush-cleaning broom sparkles recycle archive hard-drive hard-drive-download database folder folder-x folder-cog folder-search file file-x files copy scan-search
+Performance et matériel : zap gauge rocket cpu memory-stick monitor monitor-cog laptop battery battery-charging power plug thermometer fan timer activity
+Vie privée et sécurité : shield shield-check shield-alert shield-off lock lock-open key fingerprint eye eye-off user-x ban bug
+Applications et Windows : package package-x package-plus package-check download app-window blocks puzzle layout-grid store box boxes rotate-ccw refresh-cw history
+Réseau : globe wifi wifi-off network router server cloud cloud-off cable bluetooth
+Santé et diagnostic : heart-pulse stethoscope circle-check triangle-alert info search list-checks clipboard-list scan
+Outils et réglages : settings settings-2 sliders-horizontal wrench hammer terminal code calendar-clock clock bell bell-off
+Périphériques et médias : printer keyboard mouse gamepad-2 usb music play image camera mic volume-2 volume-x languages palette sun moon

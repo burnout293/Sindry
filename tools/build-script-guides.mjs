@@ -4,14 +4,19 @@
 //                             skeleton generator and the AI version one click away
 //   docs/SCRIPTS_POUR_IA.md   for an AI: mission, context, the rules digested,
 //                             reference data, the whole contract, a final checklist
+//   docs/SCRIPTS_POUR_IA_COURT.md
+//                             the same for a model with a small context (2.0.4):
+//                             the same rules, a choice of icons, and only the
+//                             parts of the contract every script needs
 //
 // Sources: docs/FORMAT_SCRIPT.md (the contract), tools/categories.json,
 // tools/lots.json, tools/lucide-icon-names.txt, and the hand-written parts in
-// tools/script-guides/. Nothing else: a rule changes in FORMAT_SCRIPT.md, and
-// both guides follow at the next build.
+// tools/script-guides/ (the icons of the short version among them). Nothing
+// else: a rule changes in FORMAT_SCRIPT.md, and the guides follow at the next
+// build.
 //
-//   node tools/build-script-guides.mjs           write both files
-//   node tools/build-script-guides.mjs --check   fail if either is out of date (CI)
+//   node tools/build-script-guides.mjs           write the three files
+//   node tools/build-script-guides.mjs --check   fail if one is out of date (CI)
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -186,7 +191,8 @@ function demote(md, n) {
   }).join('\n');
 }
 
-function referenceData() {
+/** The reference data; `iconsPart` is the text of 5.4: the whole list, or a choice. */
+function referenceData(iconsPart = allIcons()) {
   const catRows = categories.map((c, i) =>
     `| \`${c.id}\` | \`${c.id_fr}\` | ${c.name_fr} / ${c.name_en} | \`${i + 1}xx\` |`).join('\n');
   const lotRows = lots.map((l) =>
@@ -214,7 +220,11 @@ ${lotRows}
 bas, le nom en majuscules, mots séparés par des tirets bas — par exemple
 \`105_CLEAN_THUMBNAIL_CACHE.ps1\`. Le numéro fixe l'ordre par défaut dans le lot.
 
-### 5.4 Les icônes Lucide — champ \`icon\`
+${iconsPart}`;
+}
+
+function allIcons() {
+  return `### 5.4 Les icônes Lucide — champ \`icon\`
 
 Les ${icons.length} noms admis, et aucun autre :
 
@@ -246,14 +256,117 @@ function buildAi() {
 }
 
 // ---------------------------------------------------------------------------
+// The short AI version (2.0.4). Its sections are picked by their title in the
+// contract: a title renamed there stops the build, and CI with it, instead of
+// leaving the short version behind.
+// ---------------------------------------------------------------------------
+
+/** What the short version keeps of the contract. `own`: the text under the
+ *  title, without its sub-sections; `table`: up to the end of its first table. */
+const EXTRACTS = [
+  ['## Le squelette'],
+  ['## Les marqueurs de sortie'],
+  ['### Le contrat, en quatre règles'],
+  ["### Les lignes de l'analyse", 'own'],
+  ['#### Les champs de `[FIND]`'],
+  ['#### Les champs de `[ITEM]`', 'table'],
+  ['#### Les champs de `[METRIC]`'],
+  ["### Le bloc `REPORT` : les mots de l'analyse"],
+  ['### Exemple complet — faire de la place'],
+];
+
+/** Moves every heading outside code by `delta` levels (at least 1). */
+function relevel(md, delta) {
+  let fence = false;
+  return md.split('\n').map((l) => {
+    if (/^\s*```/.test(l)) fence = !fence;
+    const h = !fence && l.match(/^(#{1,6})(\s.*)$/);
+    return h ? '#'.repeat(Math.max(1, h[1].length + delta)) + h[2] : l;
+  }).join('\n');
+}
+
+/** One section of the contract, its title brought to level 3. */
+function extract(title, mode) {
+  const lines = contract.split('\n');
+  const level = title.match(/^#+/)[0].length;
+  let fence = false, start = -1, end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) fence = !fence;
+    const h = !fence && lines[i].match(/^(#{1,6})\s/);
+    if (!h) continue;
+    if (start < 0) {
+      if (lines[i] === title) start = i;
+    } else if (mode === 'own' || h[1].length <= level) {
+      end = i;
+      break;
+    }
+  }
+  if (start < 0) throw new Error(`FORMAT_SCRIPT.md : section « ${title} » introuvable ; mettez a jour EXTRACTS dans tools/build-script-guides.mjs`);
+  let body = lines.slice(start, end);
+  if (mode === 'table') {
+    let last = body.findIndex((l) => l.startsWith('|'));
+    while (last + 1 < body.length && body[last + 1].startsWith('|')) last++;
+    body = body.slice(0, last + 1);
+  }
+  return relevel(body.join('\n').trimEnd(), 3 - level);
+}
+
+/** 5.4 in short: a choice of icons by theme, each checked against Lucide. */
+function shortIcons() {
+  const known = new Set(icons);
+  const rows = read('tools/script-guides/ai-court-icones.txt').split('\n')
+    .filter((l) => l.trim() && !l.startsWith('#'))
+    .map((l) => {
+      const [theme, names] = l.split(' : ');
+      const list = names.trim().split(/\s+/);
+      const unknown = list.filter((n) => !known.has(n));
+      if (unknown.length) throw new Error(`ai-court-icones.txt : pas des icones Lucide : ${unknown.join(', ')}`);
+      return `| ${theme.trim()} | ${list.join(', ')} |`;
+    });
+  return `### 5.4 Les icônes Lucide — champ \`icon\`
+
+Une sélection pour un outil de maintenance. Le validateur admet les ${icons.length} noms de
+Lucide (liste complète dans \`SCRIPTS_POUR_IA.md\`) : prends ici celui qui convient.
+
+| Thème | Noms |
+|---|---|
+${rows.join('\n')}
+`;
+}
+
+function buildAiShort() {
+  const rules = read('tools/script-guides/ai-intro.md');
+  const head = read('tools/script-guides/ai-court-entete.md').replace('{{VERSION}}', version);
+  // Everything after the long version's own header: mission, context, rules, method.
+  const body = rules.slice(rules.indexOf('\n---\n')).replace('{{DATA}}', referenceData(shortIcons()).trimEnd());
+  return [
+    head.trimEnd() + body.trimEnd(),
+    '',
+    '---',
+    '',
+    '## 6. Extraits du contrat — docs/FORMAT_SCRIPT.md',
+    '',
+    'Les parties du contrat dont chaque script se sert, telles quelles. Les autres titres cités',
+    'entre « » dans les règles sont dans la version complète, `SCRIPTS_POUR_IA.md`.',
+    '',
+    EXTRACTS.map(([title, mode]) => extract(title, mode)).join('\n\n'),
+    '',
+    '---',
+    '',
+    read('tools/script-guides/ai-checklist.md').trimEnd(),
+    '',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // The human version
 // ---------------------------------------------------------------------------
 
-function buildHtml(ai) {
+function buildHtml(ai, aiShort) {
   const ctx = { ids: new Set(['creer', 'reference']), toc: [] };
   const content = render(contract, ctx);
   const toc = ctx.toc.map((t) => `      <li class="l${t.level}"><a href="#${t.id}">${t.html.replace(/<\/?(code|strong|em)>/g, '')}</a></li>`).join('\n');
-  const data = JSON.stringify({ version, categories, lots, icons, ai }).replace(/</g, '\\u003c');
+  const data = JSON.stringify({ version, categories, lots, icons, ai, aiShort }).replace(/</g, '\\u003c');
   return read('tools/script-guides/guide.html')
     .replaceAll('{{VERSION}}', version)
     .replace('<!--TOC-->', toc)
@@ -264,9 +377,11 @@ function buildHtml(ai) {
 // ---------------------------------------------------------------------------
 
 const ai = buildAi();
+const aiShort = buildAiShort();
 const outputs = [
   ['docs/SCRIPTS_POUR_IA.md', ai],
-  ['docs/GUIDE_SCRIPTS.html', buildHtml(ai)],
+  ['docs/SCRIPTS_POUR_IA_COURT.md', aiShort],
+  ['docs/GUIDE_SCRIPTS.html', buildHtml(ai, aiShort)],
 ];
 
 if (process.argv.includes('--check')) {

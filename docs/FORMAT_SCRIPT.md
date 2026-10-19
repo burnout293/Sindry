@@ -7,9 +7,10 @@ par un. Une règle ne peut plus changer d'un côté sans l'autre.
 
 Référence normative : `docs/SPECIFICATION.md` §5.
 
-**Deux versions de ce guide, générées depuis ce fichier** (`node tools/build-script-guides.mjs`) :
+**Trois versions de ce guide, générées depuis ce fichier** (`node tools/build-script-guides.mjs`) :
 `docs/GUIDE_SCRIPTS.html`, à ouvrir dans un navigateur — recherche, générateur de squelette ;
-`docs/SCRIPTS_POUR_IA.md`, à donner à une IA pour qu'elle écrive un script conforme.
+`docs/SCRIPTS_POUR_IA.md`, à donner à une IA pour qu'elle écrive un script conforme ;
+`docs/SCRIPTS_POUR_IA_COURT.md`, trois fois plus léger, pour un modèle local à petite mémoire.
 
 ---
 

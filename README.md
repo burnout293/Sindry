@@ -143,7 +143,9 @@ avant d'agir, la norme d'analyse avec un exemple complet.
 Deux versions en sont générées : **[`docs/GUIDE_SCRIPTS.html`](docs/GUIDE_SCRIPTS.html)**, le guide à
 ouvrir dans un navigateur (recherche, générateur de squelette), et
 **[`docs/SCRIPTS_POUR_IA.md`](docs/SCRIPTS_POUR_IA.md)**, à donner à une IA pour qu'elle écrive un
-script conforme.
+script conforme — et sa version courte,
+**[`docs/SCRIPTS_POUR_IA_COURT.md`](docs/SCRIPTS_POUR_IA_COURT.md)**, trois fois plus légère, pour
+un modèle local à petite mémoire.
 
 Vérifiez-le avant de le lancer :
 
@@ -190,7 +192,7 @@ Ce banc ne part jamais dans le binaire : les fixtures vivent dans `tools/bench/`
 |---|---|
 | [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) | Ce que l'application doit faire, et pourquoi. Fait autorité en cas de doute. |
 | [`docs/FORMAT_SCRIPT.md`](docs/FORMAT_SCRIPT.md) | Écrire un script : squelette, règles, codes du validateur. |
-| [`docs/GUIDE_SCRIPTS.html`](docs/GUIDE_SCRIPTS.html) · [`docs/SCRIPTS_POUR_IA.md`](docs/SCRIPTS_POUR_IA.md) | Le même, généré : en guide interactif, et pour une IA. |
+| [`docs/GUIDE_SCRIPTS.html`](docs/GUIDE_SCRIPTS.html) · [`docs/SCRIPTS_POUR_IA.md`](docs/SCRIPTS_POUR_IA.md) · [`docs/SCRIPTS_POUR_IA_COURT.md`](docs/SCRIPTS_POUR_IA_COURT.md) | Le même, généré : en guide interactif, pour une IA, et en version courte pour un modèle local. |
 | [`docs/PRESENTATION.md`](docs/PRESENTATION.md) | Modifier la présentation du premier démarrage sans toucher au code. |
 | [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue) | Les scripts officiels, leur licence (MIT) et la liste des scripts prévus. |
 
