@@ -1,7 +1,7 @@
 # Sindry — écrire un script PowerShell conforme
 
 > **Référence complète, pour une IA.** Ce fichier est généré par
-> `tools/build-script-guides.mjs` (Sindry 2.0.3) à partir de `docs/FORMAT_SCRIPT.md`,
+> `tools/build-script-guides.mjs` (Sindry 2.0.4) à partir de `docs/FORMAT_SCRIPT.md`,
 > `tools/categories.json`, `tools/lots.json` et `tools/lucide-icon-names.txt`. Ne le modifiez
 > pas à la main : modifiez ses sources, puis relancez le générateur.
 
