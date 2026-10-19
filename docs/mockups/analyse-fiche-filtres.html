@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyse : fiche, filtres et tri</title>
+<!--
+  Mockup M36 (2.0.4): the choices of M34 and M35 brought together into one
+  analysis screen, the same for every script:
+  - tabs « Choisir » and « Récapitulatif » (M34 C);
+  - a search, and category chips, one at a time (M34);
+  - a « Filtres et tri » button: sort by category, application or
+    recommendation; filter by recommendation; show or hide tags (M35);
+  - the sheet on the right (M35 B), when the script explains its items.
+  Two scripts to check that it holds for both. Code in English, visible text
+  in French. Fictitious data.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grid: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A; --info: #7FB2FF;
+  --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C; --info-s: #12203A;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  --shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grid: #ECE8E0;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B; --ink: #1A0B06;
+  --acc: #E2640F; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F; --info: #1F5FBF;
+  --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC; --info-s: #E8F0FC;
+  --shadow: 0 16px 40px rgba(20, 26, 36, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.topbar p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 260px; }
+.seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+
+.stage { max-width: 1180px; margin: 18px auto 60px; padding: 0 20px; }
+.screen { position: relative; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.screen-head { padding: 22px 28px 6px; text-align: center; }
+.screen-head .back { position: absolute; left: 24px; top: 22px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.screen-head .back i { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); display: grid; place-items: center; font-style: normal; color: var(--text-2); }
+.screen-head h2 { margin: 26px 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+.screen-head p { margin: 0; color: var(--text-2); }
+.body { padding: 18px 28px 22px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; }
+.footer { position: sticky; bottom: 0; display: flex; align-items: center; gap: 14px; padding: 14px 28px; border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(6px); z-index: 5; flex-wrap: wrap; }
+.footer .sum { flex: 1; font-weight: 650; }
+.footer .sum small { display: block; font-weight: 500; color: var(--text-3); }
+.reboot-note { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; background: var(--warn-s); color: var(--warn); font-weight: 650; font-size: 12.5px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 11px; border: 1px solid var(--border);
+  background: var(--surface); font-weight: 700; white-space: nowrap; }
+.btn.primary { background: var(--acc); border-color: var(--acc); color: var(--ink); }
+.btn.danger { background: var(--err); border-color: var(--err); color: #fff; }
+.btn .n { font-family: var(--mono); font-size: 11px; padding: 0 7px; border-radius: 999px; background: var(--acc); color: var(--ink); }
+.link { border: 0; background: none; padding: 0; color: var(--acc-on); font-weight: 700; font-size: 12px; white-space: nowrap; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 700; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 8px; align-items: center; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--acc); }
+.tabs .n { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.tabs button[aria-selected="true"] .n { background: var(--acc-soft); color: var(--acc-on); }
+
+/* Toolbar */
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+.search { position: relative; flex: 1 1 280px; display: flex; }
+.search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+.search input { flex: 1; height: 38px; padding: 0 12px 0 36px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 650; color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 6px; }
+.chip b { font-weight: 700; color: var(--text-3); }
+.chip[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-on); }
+.chip[aria-pressed="true"] b { color: var(--acc-on); }
+.pop-wrap { position: relative; }
+.pop { position: absolute; right: 0; top: 44px; z-index: 15; width: 360px; padding: 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+.pop h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.pop .chips { margin-bottom: 16px; }
+.pop .toggles { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.pop .toggles label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; }
+.switch { width: 34px; height: 20px; border-radius: 999px; border: 0; background: var(--border-2); position: relative; padding: 0; }
+.switch::after { content: ''; position: absolute; left: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+.switch[aria-checked="true"] { background: var(--acc); }
+.switch[aria-checked="true"]::after { left: 17px; }
+.pop-f { display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; }
+
+/* Badges */
+.bd { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.bd .ico { width: 11px; height: 11px; }
+.bd.safe { background: var(--ok-s); color: var(--ok); }
+.bd.check { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+.bd.suspect { background: var(--err-s); color: var(--err); }
+.bd.caution { background: var(--warn-s); color: var(--warn); }
+.bd.against { background: var(--err); color: #fff; }
+.bd.reboot { background: var(--info-s); color: var(--info); }
+.ver { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-2); color: var(--text-2); }
+.ver.up { border-color: var(--acc); color: var(--acc-on); background: var(--acc-soft); }
+.tag { padding: 0 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: 11px; }
+
+/* List */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+.group-h { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 12.5px; font-weight: 700; color: var(--text-2); border-bottom: 1px solid var(--border); }
+.group-h .grow { flex: 1; }
+.group-h .count { color: var(--text-3); font-weight: 600; }
+.group-h .gi { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); }
+.group + .group { border-top: 1px solid var(--border); }
+.row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-top: 1px solid var(--border); }
+.rows > .row:first-child { border-top: 0; }
+.row input { width: 17px; height: 17px; accent-color: var(--acc); flex-shrink: 0; }
+.row .t { flex: 1; min-width: 0; }
+.row .t b { font-weight: 650; }
+.row .t .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px; color: var(--text-3); font-size: 11.5px; }
+.row.clickable { cursor: pointer; }
+.row.sel { background: var(--acc-soft); }
+.row .warn-dot { color: var(--warn); }
+.tile { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-weight: 800; font-size: 12px; color: #fff; }
+mark { background: color-mix(in srgb, var(--acc) 32%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.empty { padding: 18px; text-align: center; color: var(--text-3); }
+
+/* Sheet */
+.sheet { position: sticky; top: 70px; padding: 18px; }
+.sheet h3 { margin: 0 0 2px; font-size: 18px; }
+.sheet .sub { color: var(--text-3); font-size: 12px; }
+.sheet .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+.sheet h4 { margin: 16px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.sheet p { margin: 0; }
+.sheet .choose { margin-top: 18px; display: flex; gap: 10px; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); font-weight: 650; }
+.sheet .choose input { width: 18px; height: 18px; accent-color: var(--acc); }
+.note { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; }
+.note .ico { margin-top: 2px; }
+.note.warn { background: var(--warn-s); } .note.warn .ico { color: var(--warn); }
+.note.danger { background: var(--err-s); } .note.danger .ico { color: var(--err); }
+.note.info { background: var(--info-s); } .note.info .ico { color: var(--info); }
+.note b { display: block; }
+.confirm { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Recap */
+.rtable { width: 100%; border-collapse: collapse; }
+.rtable th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); padding: 9px 14px; background: var(--surface-2); }
+.rtable td { padding: 9px 14px; border-top: 1px solid var(--border); vertical-align: middle; }
+.recap-alerts { padding: 14px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); }
+.act { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.act.maj { background: var(--acc-soft); color: var(--acc-on); }
+.act.ins { background: var(--ok-s); color: var(--ok); }
+.act.re { background: var(--surface-2); color: var(--text-2); }
+
+.notes { max-width: 1180px; margin: 0 auto 60px; padding: 0 20px; color: var(--text-2); }
+.notes .card { padding: 16px 20px; }
+.notes h3 { margin: 0 0 8px; color: var(--text); font-size: 15px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li + li { margin-top: 4px; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } .sheet { position: static; } .pop { width: min(360px, 90vw); } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Analyse — fiche, filtres et tri</h1>
+  <p>M34 C et M35 B réunis : un seul écran d'analyse, le même pour tous les scripts. Basculez d'un script à l'autre pour comparer. Données fictives.</p>
+  <div class="seg" id="scripts">
+    <button type="button" data-s="clean" aria-pressed="true">Grand ménage</button>
+    <button type="button" data-s="apps" aria-pressed="false">Installer des applications</button>
+  </div>
+  <div class="seg" id="theme">
+    <button type="button" data-t="dark" aria-pressed="true">Sombre</button>
+    <button type="button" data-t="light" aria-pressed="false">Clair</button>
+  </div>
+</header>
+
+<div class="stage">
+  <div class="screen" id="screen">
+    <div class="screen-head">
+      <span class="back"><i>←</i><span id="scriptTitle"></span></span>
+      <h2>Voici ce que j'ai trouvé</h2>
+      <p id="scriptSub"></p>
+    </div>
+    <div class="body" id="body"></div>
+    <div class="footer">
+      <span class="sum" id="sum"></span>
+      <span id="rebootNote"></span>
+      <button type="button" class="btn primary">Lancer</button>
+    </div>
+  </div>
+</div>
+
+<section class="notes"><div class="card">
+  <h3>Ce qui est réglé ici</h3>
+  <ul>
+    <li><b>Une catégorie à la fois</b> : « Toutes », ou une seule ; un second clic revient à « Toutes ».</li>
+    <li><b>« Filtres et tri »</b> rassemble ce qui sert moins souvent : le tri, le filtre de recommandation (ou d'état), et les étiquettes à afficher. Sa pastille compte ce qui s'écarte du réglage d'origine.</li>
+    <li><b>La fiche à droite</b> s'affiche quand le script explique ses éléments (Grand ménage). Sans explication (Installer des applications), la liste prend toute la largeur.</li>
+    <li>Cocher un élément <b>déconseillé</b> se confirme dans la fiche ; le <b>redémarrage</b> s'annonce en bas de l'écran et au récapitulatif.</li>
+  </ul>
+</div></section>
+
+<script>
+(() => {
+  const P = {
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    sliders: '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+    bug: '<path d="m8 2 1.88 1.88M14.12 3.88 16 2M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6M12 20v-9"/>',
+    power: '<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+    app: '<path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>',
+    startup: '<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+    task: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    service: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    registry: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>',
+    chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    media: '<polygon points="6 3 20 12 6 21 6 3"/>',
+    tools: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    dev: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+    office: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+  };
+  const ico = (n) => `<svg class="ico" viewBox="0 0 24 24">${P[n]}</svg>`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const fold = (s) => [...String(s)].map((c) => c.normalize('NFD')[0].toLowerCase()).join('');
+  const cmp = (x, y) => x.localeCompare(y, 'fr', { sensitivity: 'base', numeric: true });
+  const COLORS = ['#E8590C', '#1C7ED6', '#2F9E44', '#AE3EC9', '#F08C00', '#0CA678', '#D6336C', '#4263EB', '#5C940D', '#C2255C'];
+
+  // --- Recommendation levels (Grand ménage) and states (Installer) ---------------
+  const LEVEL = { safe: ['Sûr', 'safe', 'check'], suspect: ['Suspect', 'suspect', 'bug'], check: ['À vérifier', 'check', 'info'],
+    caution: ['À double tranchant', 'caution', 'warn'], against: ['Déconseillé', 'against', 'ban'] };
+  const LEVEL_ORDER = ['suspect', 'safe', 'check', 'caution', 'against'];
+  const STATE = { maj: ['Mise à jour', 'maj'], absent: ['À installer', 'ins'], installe: ['Installée', 're'] };
+
+  // --- The two scripts -------------------------------------------------------------
+  let k = 0;
+  const it = (cat, name, sub, extra) => ({ id: `i${++k}`, cat, name, sub, color: COLORS[k % COLORS.length], ...extra });
+  const SCRIPTS = {
+    clean: {
+      title: 'Grand ménage', sub: 'Cochez ce que vous voulez retirer ou désactiver. Rien n\'a encore été modifié.',
+      cats: { apps: ['Programmes', 'app'], startup: ['Démarrage', 'startup'], tasks: ['Tâches planifiées', 'task'], services: ['Services', 'service'], registry: ['Registre', 'registry'] },
+      kindLabel: 'Recommandation', explained: true,
+      items: [
+        it('apps', 'WebCompanion', 'Lavasoft', { level: 'suspect', about: 'Un logiciel publicitaire : il change la page d\'accueil et le moteur de recherche de vos navigateurs.', why: 'Installé en même temps qu\'un autre programme, sans que vous l\'ayez demandé.' }),
+        it('apps', 'McAfee WebAdvisor', 'McAfee', { level: 'check', reboot: true, about: 'Une extension de sécurité préinstallée avec beaucoup de PC.', why: 'Inutile si Microsoft Defender vous protège déjà.', warn: 'Difficile à retirer : un redémarrage termine la désinstallation.' }),
+        it('apps', 'Driver Booster', 'IObit', { level: 'caution', about: 'Un outil qui met à jour les pilotes.', why: 'Il se lance à chaque démarrage et affiche des publicités.', warn: 'Il installe parfois des pilotes inadaptés. Gardez-le si vous vous en servez.' }),
+        it('apps', 'Avast Free Antivirus', 'Avast Software', { level: 'against', reboot: true, about: 'Votre antivirus.', why: 'Deux antivirus se gênent : Microsoft Defender est aussi présent.', warn: 'Le retirer vous laisse sans protection jusqu\'à ce que Microsoft Defender prenne le relais, après le redémarrage.' }),
+        it('startup', 'Adobe Acrobat Update', 'AdobeARM.exe', { level: 'safe', about: 'Le programme de mise à jour d\'Acrobat Reader.', why: 'Acrobat cherche aussi ses mises à jour quand vous l\'ouvrez.' }),
+        it('startup', 'Discord', 'Update.exe', { level: 'safe', about: 'L\'application de discussion Discord.', why: 'Elle ralentit le démarrage ; elle se lancera quand vous l\'ouvrirez.' }),
+        it('startup', 'OneDrive', 'Microsoft', { level: 'check', about: 'La synchronisation de vos fichiers avec le cloud.', why: 'Elle occupe le démarrage même si vous ne vous en servez pas.', warn: 'Vos fichiers ne seront plus synchronisés qu\'à l\'ouverture de OneDrive.' }),
+        it('tasks', 'GoogleUpdateTaskMachineUA', 'Google', { level: 'caution', about: 'La tâche qui tient Google Chrome à jour.', why: 'Elle se lance toutes les heures.', warn: 'Sans elle, Chrome ne se met plus à jour tout seul.' }),
+        it('tasks', 'CCleaner Update', 'Programme introuvable', { level: 'safe', about: 'Une tâche laissée par CCleaner.', why: 'Le programme qu\'elle lance n\'existe plus : elle échoue à chaque fois.' }),
+        it('services', 'Télémétrie (DiagTrack)', 'Microsoft', { level: 'safe', reboot: true, about: 'Le service qui envoie à Microsoft des données d\'utilisation.', why: 'Il n\'est pas nécessaire au fonctionnement de Windows.' }),
+        it('services', 'Spouleur d\'impression', 'Spooler', { level: 'caution', about: 'Le service qui envoie vos documents à l\'imprimante.', why: 'Aucune imprimante n\'est installée.', warn: 'Désactivé, vous ne pourrez plus imprimer.' }),
+        it('services', 'Windows Search', 'WSearch', { level: 'check', reboot: true, about: 'L\'indexation qui accélère la recherche de fichiers.', why: 'Elle sollicite beaucoup le disque sur un PC lent.', warn: 'La recherche dans le menu Démarrer deviendra plus lente.' }),
+        it('registry', 'Clés d\'Adobe Reader désinstallé', '14 clés', { level: 'safe', about: 'Des réglages restés après la désinstallation.', why: 'Plus aucun programme ne les lit.' }),
+        it('registry', 'Associations de fichiers cassées', '12 extensions', { level: 'safe', about: '« Ouvrir avec » renvoie vers des programmes supprimés.', why: 'Windows propose des choix qui n\'ouvrent plus rien.' }),
+      ],
+    },
+    apps: {
+      title: 'Installer des applications', sub: 'Cochez ce que vous voulez installer ou mettre à jour. Rien n\'a encore été modifié.',
+      cats: { web: ['Navigateurs', 'globe'], chat: ['Communication', 'chat'], office: ['Bureautique', 'office'], media: ['Multimédia', 'media'], tools: ['Outils', 'tools'], dev: ['Développement', 'dev'] },
+      kindLabel: 'État', explained: false,
+      items: [
+        it('web', 'Firefox', 'Mozilla', { state: 'maj', ver: '131.0', to: '131.0.3' }), it('dev', 'Git', 'The Git Development Community', { state: 'maj', ver: '2.46.0', to: '2.47.0' }),
+        it('media', 'VLC media player', 'VideoLAN', { state: 'maj', ver: '3.0.20', to: '3.0.21' }),
+        it('web', 'Google Chrome', 'Google', { state: 'absent' }), it('web', 'Brave', 'Brave Software', { state: 'absent' }),
+        it('chat', 'Discord', 'Discord Inc.', { state: 'absent' }), it('chat', 'Signal', 'Signal Messenger', { state: 'absent' }), it('chat', 'Thunderbird', 'Mozilla', { state: 'absent' }),
+        it('office', 'LibreOffice', 'The Document Foundation', { state: 'absent' }), it('office', 'SumatraPDF', 'Krzysztof Kowalczyk', { state: 'absent' }),
+        it('media', 'Spotify', 'Spotify AB', { state: 'absent' }), it('media', 'Audacity', 'Audacity Team', { state: 'absent' }),
+        it('tools', '7-Zip', 'Igor Pavlov', { state: 'absent' }), it('tools', 'PowerToys', 'Microsoft', { state: 'absent' }),
+        it('dev', 'Visual Studio Code', 'Microsoft', { state: 'absent' }),
+        it('web', 'Microsoft Edge', 'Microsoft', { state: 'installe', ver: '130.0' }), it('tools', 'WinRAR', 'win.rar GmbH', { state: 'installe', ver: '7.01' }),
+      ],
+    },
+  };
+  // Ticked by default: safe and suspect; updates and missing applications.
+  const picked = new Set();
+  for (const s of Object.values(SCRIPTS)) for (const i of s.items) if (['safe', 'suspect'].includes(i.level) || ['maj', 'absent'].includes(i.state)) picked.add(i.id);
+
+  const DEFAULT = { sort: 'cat', kinds: null, tags: { reboot: true, level: true, sub: true } };
+  const ui = { s: 'clean', tab: 'choose', q: '', cat: null, sort: 'cat', kinds: null, tags: { ...DEFAULT.tags }, pop: false, sel: null, pending: null };
+  const S = () => SCRIPTS[ui.s];
+  const kindOf = (i) => i.level || i.state;
+  const KINDS = () => (S().explained ? LEVEL_ORDER.map((l) => [l, LEVEL[l][0]]) : Object.entries(STATE).map(([s, v]) => [s, v[0]]));
+
+  const hl = (text) => {
+    const q = fold(ui.q.trim()); const i = q ? fold(text).indexOf(q) : -1;
+    if (i < 0) return esc(text);
+    const ch = [...text];
+    return `${esc(ch.slice(0, i).join(''))}<mark>${esc(ch.slice(i, i + q.length).join(''))}</mark>${esc(ch.slice(i + q.length).join(''))}`;
+  };
+  const tile = (i) => `<span class="tile" style="background:${i.color}">${esc(i.name[0])}</span>`;
+  const levelBadge = (l) => `<span class="bd ${LEVEL[l][1]}">${ico(LEVEL[l][2])}${LEVEL[l][0]}</span>`;
+  const stateBadge = (i) => (i.to ? `<span class="ver up">${esc(i.ver)} → ${esc(i.to)}</span>` : i.ver ? `<span class="ver">${esc(i.ver)}</span>` : '');
+  const rebootBadge = (i) => (i.reboot ? `<span class="bd reboot">${ico('power')}Redémarrage</span>` : '');
+  const visible = (i) => {
+    const q = fold(ui.q.trim());
+    return (!q || fold(`${i.name} ${i.sub} ${S().cats[i.cat][0]}`).includes(q)) && (!ui.cat || i.cat === ui.cat) && (!ui.kinds || ui.kinds.has(kindOf(i)));
+  };
+  const activeFilters = () => (ui.sort !== DEFAULT.sort ? 1 : 0) + (ui.kinds ? 1 : 0) + Object.entries(ui.tags).filter(([t, v]) => v !== DEFAULT.tags[t]).length;
+
+  // --- Controls ------------------------------------------------------------------
+  function toolbar() {
+    const cats = S().cats;
+    const count = (c) => S().items.filter((i) => i.cat === c).length;
+    const tagSwitch = (key, label) => `<label>${esc(label)}<button type="button" class="switch" role="switch" data-tag="${key}" aria-checked="${ui.tags[key]}"></button></label>`;
+    const sorts = [['cat', 'Catégorie'], ['app', 'Application A → Z'], ['kind', S().kindLabel]];
+    return `<div class="tools"><span class="search">${ico('search')}<input type="search" id="q" placeholder="Chercher un élément, un éditeur…" value="${esc(ui.q)}"></span>
+        <span class="pop-wrap"><button type="button" class="btn" data-pop>${ico('sliders')}Filtres et tri${activeFilters() ? ` <span class="n">${activeFilters()}</span>` : ''}</button>
+        ${ui.pop ? `<div class="pop">
+          <h4>Trier par</h4><div class="chips">${sorts.map(([v, l]) => `<button type="button" class="chip" data-sort="${v}" aria-pressed="${ui.sort === v}">${esc(l)}</button>`).join('')}</div>
+          <h4>${esc(S().kindLabel)}</h4><div class="chips"><button type="button" class="chip" data-kind-all aria-pressed="${!ui.kinds}">Toutes</button>${KINDS().map(([v, l]) =>
+            `<button type="button" class="chip" data-kind="${v}" aria-pressed="${!!ui.kinds && ui.kinds.has(v)}">${esc(l)} <b>${S().items.filter((i) => kindOf(i) === v).length}</b></button>`).join('')}</div>
+          <h4>Étiquettes affichées</h4><div class="toggles">${S().explained
+            ? `${tagSwitch('level', 'Recommandation')}${tagSwitch('reboot', 'Redémarrage')}${tagSwitch('sub', 'Éditeur ou emplacement')}`
+            : `${tagSwitch('level', 'Version')}${tagSwitch('sub', 'Éditeur')}`}</div>
+          <div class="pop-f"><button type="button" class="link" data-reset>Tout remettre</button><button type="button" class="link" data-pop>Fermer</button></div></div>` : ''}</span></div>
+      <div class="chips"><button type="button" class="chip" data-cat="" aria-pressed="${!ui.cat}">Toutes <b>${S().items.length}</b></button>${Object.entries(cats).map(([c, [l, i]]) =>
+        `<button type="button" class="chip" data-cat="${c}" aria-pressed="${ui.cat === c}">${ico(i)}${esc(l)} <b>${count(c)}</b></button>`).join('')}</div>`;
+  }
+
+  // --- The list ------------------------------------------------------------------
+  function row(i) {
+    const s = S();
+    const tags = [
+      ui.tags.sub ? `<span>${hl(i.sub)}</span>` : '',
+      ui.sort !== 'cat' ? `<span class="tag">${esc(s.cats[i.cat][0])}</span>` : '',
+      ui.tags.level ? (i.level ? levelBadge(i.level) : stateBadge(i)) : '',
+      ui.tags.reboot && s.explained ? rebootBadge(i) : '',
+      i.warn ? `<span class="warn-dot" title="${esc(i.warn)}">${ico('warn')}</span>` : '',
+    ].join('');
+    const click = s.explained ? ` clickable${ui.sel === i.id ? ' sel' : ''}" data-select="${i.id}` : '';
+    return `<div class="row${click}"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>${tile(i)}
+      <div class="t"><b>${hl(i.name)}</b><div class="meta">${tags}</div></div></div>`;
+  }
+  function groupBlock(title, icon, items) {
+    const n = items.filter((i) => picked.has(i.id)).length;
+    return `<div class="group"><div class="group-h">${icon ? `<span class="gi">${ico(icon)}</span>` : ''}<span class="grow">${title}</span><span class="count">${n} sur ${items.length}</span></div>
+      <div class="rows">${items.map(row).join('')}</div></div>`;
+  }
+  function list() {
+    const s = S();
+    const items = s.items.filter(visible).sort((a, b) => cmp(a.name, b.name));
+    if (!items.length) return `<div class="card empty">${ui.q.trim() ? `Rien ne correspond à « ${esc(ui.q.trim())} ».` : 'Rien dans ce filtre.'}</div>`;
+    let html;
+    if (ui.sort === 'app') html = groupBlock('Tous les éléments, de A à Z', '', items);
+    else if (ui.sort === 'kind') {
+      const order = s.explained ? LEVEL_ORDER : Object.keys(STATE);
+      html = order.map((k) => [k, items.filter((i) => kindOf(i) === k)]).filter(([, l]) => l.length)
+        .map(([k, l]) => groupBlock(s.explained ? levelBadge(k) : esc(STATE[k][0]), '', l)).join('');
+    } else {
+      html = Object.entries(s.cats).map(([c, [l, i]]) => [l, i, items.filter((x) => x.cat === c)]).filter(([, , l]) => l.length)
+        .map(([l, i, list]) => groupBlock(esc(l), i, list)).join('');
+    }
+    return `<div class="card">${html}</div>`;
+  }
+
+  // --- The sheet ------------------------------------------------------------------
+  function sheet() {
+    const s = S();
+    // The sheet follows the filters: an item they hide gives way to the first one shown.
+    const i = s.items.find((x) => x.id === ui.sel && visible(x)) || s.items.filter(visible).sort((a, b) => cmp(a.name, b.name))[0] || s.items[0];
+    ui.sel = i.id;
+    const confirm = ui.pending === i.id ? `<div class="note danger">${ico('warn')}<span><b>Retirer quand même ?</b>Vous avez lu l'alerte ci-dessus.
+      <span class="confirm"><button type="button" class="btn danger" data-confirm="${i.id}">Oui, le retirer</button><button type="button" class="btn" data-cancel>Non</button></span></span></div>` : '';
+    return `<aside class="card sheet"><div style="display:flex;gap:12px;align-items:center">${tile(i)}<div><h3>${esc(i.name)}</h3><div class="sub">${esc(s.cats[i.cat][0])} · ${esc(i.sub)}</div></div></div>
+      <div class="badges">${levelBadge(i.level)}${rebootBadge(i)}</div>
+      <h4>De quoi s'agit-il</h4><p>${esc(i.about)}</p>
+      <h4>Pourquoi c'est proposé</h4><p>${esc(i.why)}</p>
+      ${i.warn ? `<h4>Attention</h4><div class="note ${i.level === 'against' ? 'danger' : 'warn'}">${ico('warn')}<span>${esc(i.warn)}</span></div>` : ''}
+      ${i.reboot ? '<h4>Redémarrage</h4><p>Coché, il demande de redémarrer le PC à la fin de l\'entretien.</p>' : ''}
+      <label class="choose"><input type="checkbox" data-pick="${i.id}"${picked.has(i.id) ? ' checked' : ''}>${s.explained ? 'Retirer ou désactiver cet élément' : 'Installer'}</label>${confirm}</aside>`;
+  }
+
+  // --- The recap ------------------------------------------------------------------
+  function recap() {
+    const s = S();
+    const rows = s.items.filter((i) => picked.has(i.id)).sort((a, b) => cmp(a.name, b.name));
+    if (!rows.length) return '<div class="card empty">Rien de coché.</div>';
+    const risky = rows.filter((i) => i.warn && ['caution', 'against', 'check'].includes(i.level));
+    const reboot = rows.filter((i) => i.reboot);
+    const alerts = s.explained && (risky.length || reboot.length) ? `<div class="recap-alerts">
+        ${risky.map((i) => `<div class="note ${i.level === 'against' ? 'danger' : 'warn'}">${ico('warn')}<span><b>${esc(i.name)}</b>${esc(i.warn)}</span></div>`).join('')}
+        ${reboot.length ? `<div class="note info">${ico('power')}<span><b>Redémarrage à la fin de l'entretien</b>${esc(reboot.map((i) => i.name).join(', '))}.</span></div>` : ''}</div>` : '';
+    const what = (i) => (s.explained ? `${levelBadge(i.level)} ${rebootBadge(i)}`
+      : { maj: `<span class="act maj">Mettre à jour · ${esc(i.ver)} → ${esc(i.to)}</span>`, absent: '<span class="act ins">Installer</span>', installe: '<span class="act re">Réinstaller</span>' }[i.state]);
+    return `<div class="card">${alerts}<table class="rtable"><tr><th>Élément</th><th>Catégorie</th><th>${s.explained ? 'Recommandation' : 'Ce qui sera fait'}</th><th></th></tr>
+      ${rows.map((i) => `<tr><td><b>${esc(i.name)}</b><div style="color:var(--text-3);font-size:11.5px">${esc(i.sub)}</div></td><td>${esc(s.cats[i.cat][0])}</td><td>${what(i)}</td>
+        <td><button type="button" class="link" data-unpick="${i.id}">Retirer</button></td></tr>`).join('')}</table></div>`;
+  }
+
+  // --- Drawing --------------------------------------------------------------------
+  function draw() {
+    const s = S();
+    const focus = document.activeElement?.id === 'q' ? document.activeElement.selectionStart : null;
+    document.getElementById('scriptTitle').textContent = s.title;
+    document.getElementById('scriptSub').textContent = s.sub;
+    const mine = s.items.filter((i) => picked.has(i.id));
+    const choose = `${toolbar()}${s.explained ? `<div class="split">${list()}${sheet()}</div>` : list()}`;
+    document.getElementById('body').innerHTML = `<div class="tabs"><button type="button" data-tab="choose" aria-selected="${ui.tab === 'choose'}">Choisir <span class="n">${s.items.length}</span></button>
+        <button type="button" data-tab="recap" aria-selected="${ui.tab === 'recap'}">Récapitulatif <span class="n">${mine.length}</span></button></div>
+      ${ui.tab === 'choose' ? choose : recap()}`;
+    document.getElementById('sum').innerHTML = `${mine.length} élément${mine.length > 1 ? 's' : ''} coché${mine.length > 1 ? 's' : ''}`;
+    const rb = mine.filter((i) => i.reboot);
+    document.getElementById('rebootNote').innerHTML = rb.length ? `<span class="reboot-note">${ico('power')}Redémarrage nécessaire · ${rb.length} élément${rb.length > 1 ? 's' : ''}</span>` : '';
+    if (focus != null) { const q = document.getElementById('q'); q.focus(); q.setSelectionRange(focus, focus); }
+  }
+
+  // --- Gestures -------------------------------------------------------------------
+  document.getElementById('scripts').onclick = (e) => {
+    const b = e.target.closest('[data-s]'); if (!b) return;
+    Object.assign(ui, { s: b.dataset.s, cat: null, q: '', kinds: null, sel: null, pending: null, pop: false, sort: 'cat', tags: { ...DEFAULT.tags } });
+    document.querySelectorAll('#scripts button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    draw();
+  };
+  document.getElementById('theme').onclick = (e) => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    document.documentElement.dataset.theme = b.dataset.t;
+    document.querySelectorAll('#theme button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  };
+  const screen = document.getElementById('screen');
+  screen.addEventListener('input', (e) => { if (e.target.id === 'q') { ui.q = e.target.value; draw(); } });
+  screen.addEventListener('change', (e) => {
+    const d = e.target.dataset;
+    if (!d.pick) return;
+    const i = S().items.find((x) => x.id === d.pick);
+    if (e.target.checked && i.level === 'against') { ui.sel = i.id; ui.pending = i.id; e.target.checked = false; }
+    else e.target.checked ? picked.add(d.pick) : picked.delete(d.pick);
+    draw();
+  });
+  screen.addEventListener('click', (e) => {
+    if (e.target.closest('input, label')) return;
+    const b = e.target.closest('button, [data-select]'); if (!b) return;
+    const d = b.dataset;
+    if (d.pop !== undefined) ui.pop = !ui.pop;
+    else if (d.cat !== undefined) ui.cat = d.cat && ui.cat !== d.cat ? d.cat : null;
+    else if (d.sort) ui.sort = d.sort;
+    else if (d.kindAll !== undefined) ui.kinds = null;
+    else if (d.kind) {
+      const next = new Set(ui.kinds || []);
+      next.has(d.kind) ? next.delete(d.kind) : next.add(d.kind);
+      ui.kinds = next.size && next.size < KINDS().length ? next : null;
+    }
+    else if (d.tag) ui.tags[d.tag] = !ui.tags[d.tag];
+    else if (d.reset !== undefined) { ui.sort = DEFAULT.sort; ui.kinds = null; ui.tags = { ...DEFAULT.tags }; }
+    else if (d.tab) ui.tab = d.tab;
+    else if (d.select) ui.sel = d.select;
+    else if (d.confirm) { picked.add(d.confirm); ui.pending = null; }
+    else if (d.cancel !== undefined) ui.pending = null;
+    else if (d.unpick) picked.delete(d.unpick);
+    else return;
+    draw();
+  });
+  // `#apps`, `#clean,filtres`, `,recap`, `,services`: a state, for captures.
+  const [s0, ...flags] = location.hash.slice(1).split(',');
+  if (SCRIPTS[s0]) { ui.s = s0; document.querySelectorAll('#scripts button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.s === s0))); }
+  if (flags.includes('filtres')) { ui.pop = true; ui.sort = 'kind'; }
+  if (flags.includes('recap')) ui.tab = 'recap';
+  if (flags.includes('services')) ui.cat = 'services';
+  if (flags.includes('avast')) { ui.sel = 'i4'; ui.pending = 'i4'; }
+  draw();
+})();
+</script>
+</body>
+</html>
