@@ -32,6 +32,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Chaque `[ERR] X123` ou `[WARN] X123` vise un code déclaré `[error]` dans `REPORT`, et
       chaque code déclaré est utilisé.
 - [ ] Si `SafeTest` existe, rien ne modifie le système quand il vaut `$true`.
+- [ ] Aucun redémarrage direct. Un `[RESTART] <phase>` a `## resume : true`, est suivi de
+      `exit 3010`, et sa phase est reprise par un test de `$env:SINDRY_RESUME`.
 
 ### Analyse (si `scan : true`)
 

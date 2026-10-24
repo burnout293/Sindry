@@ -65,10 +65,13 @@ $VALEURS_ADMISES = @{
     # Facultatif : l'action entiere n'apparait qu'en Expert — ni montree ni lancee
     # en mode Simple. Voir « Ce qui ne s'affiche que dans un mode ».
     show          = @('expert')
+    # Facultatif (2.0.5) : le script peut demander un redemarrage au milieu de
+    # l'entretien, puis reprendre. Voir « Redemarrer au milieu d'un entretien ».
+    resume        = @('true', 'false')
 }
 
 $MARQUEURS = @('INFO', 'OK', 'WARN', 'ERR', 'STEP', 'CKPT', 'REBOOT', 'DONE', 'FIND', 'FREED',
-               'ITEM', 'METRIC', 'NOTE', 'LOG', 'PROGRESS')
+               'ITEM', 'METRIC', 'NOTE', 'LOG', 'PROGRESS', 'RESTART')
 
 # Types d'option. 'select' et 'multi' exigent des choix déclarés en sous-lignes.
 # 'items' est une liste trouvée par l'analyse : ses éléments n'existent pas dans
@@ -1025,6 +1028,73 @@ function Test-Presentation {
     }
 }
 
+function Test-Redemarrage {
+    <#
+      Redemarrer au milieu d'un entretien (2.0.5, FORMAT_SCRIPT.md). Le script ne
+      redemarre jamais le PC lui-meme : il le demande par « [RESTART] <phase> »
+      puis « exit 3010 », et Sindry redemarre apres avoir garde de quoi reprendre.
+      Au retour, la phase arrive dans $env:SINDRY_RESUME.
+        - un redemarrage direct (Restart-Computer, shutdown /r…) : erreur ;
+        - [RESTART] sans « resume : true », sans exit 3010, phase mal formee ou
+          jamais traitee : erreur ;
+        - « resume : true » sans lecture de SINDRY_RESUME : erreur ;
+        - exit 3010 sans [RESTART] : avertissement.
+      Seules les phases ecrites en toutes lettres se verifient.
+    #>
+    param([string] $Fichier, [string[]] $Lignes, [hashtable] $Champs)
+
+    $declare = $Champs.ContainsKey('resume') -and $Champs['resume'].Valeur.ToLower() -eq 'true'
+    $ligneResume = if ($Champs.ContainsKey('resume')) { $Champs['resume'].Ligne } else { 1 }
+    $litReprise = $false
+    $sort3010 = 0
+    $demandes = @()
+    for ($i = 0; $i -lt $Lignes.Count; $i++) {
+        $ligne = $Lignes[$i]
+        if ($ligne -match '^\s*#') { continue }
+        if ($ligne -match 'SINDRY_RESUME') { $litReprise = $true }
+        if ($ligne -match '(?i)\bexit\s+3010\b' -and $sort3010 -eq 0) { $sort3010 = $i + 1 }
+        if ($ligne -match '(?i)\b(Restart-Computer|Stop-Computer)\b' -or
+            $ligne -match '(?i)\bshutdown(\.exe)?["'']?\s+(.*\s)?[/-][rsgp]\b' -or
+            $ligne -match '(?i)\bwpeutil(\.exe)?\s+reboot\b' -or
+            $ligne -match '(?i)InitiateSystemShutdown') {
+            Add-Constat $Fichier ($i + 1) 'erreur' 'REDEMARRAGE_DIRECT' "Le script redémarre le PC lui-même : l'entretien serait coupé net. Demandez-le à Sindry : '[RESTART] <phase>' puis 'exit 3010' (redémarrage au milieu), ou '[REBOOT]' (à la fin)."
+        }
+        foreach ($m in [regex]::Matches($ligne, '["'']\s*\[RESTART\]\s*([^\s"'']*)')) {
+            $demandes += @{ Phase = $m.Groups[1].Value; Ligne = $i + 1 }
+        }
+    }
+
+    foreach ($d in $demandes) {
+        $p = $d.Phase
+        if (-not $declare) {
+            Add-Constat $Fichier $d.Ligne 'erreur' 'RESTART_SANS_RESUME' "[RESTART] sans '## resume : true' dans l'entête : Sindry ne redémarrerait pas, et l'action finirait en échec."
+        }
+        if ($p.StartsWith('$')) { continue }
+        if ($p -cnotmatch '^[a-z0-9-]{1,32}$') {
+            Add-Constat $Fichier $d.Ligne 'erreur' 'RESTART_PHASE' "[RESTART] '$p' : une phase s'écrit en minuscules, chiffres et tirets, 32 caractères au plus (ex. '[RESTART] apres-pilote')."
+            continue
+        }
+        # La phase doit etre attendue ailleurs : dans un test de SINDRY_RESUME.
+        $ailleurs = $false
+        for ($i = 0; $i -lt $Lignes.Count; $i++) {
+            if ($i + 1 -eq $d.Ligne -or $Lignes[$i] -match '^\s*#') { continue }
+            if ($Lignes[$i] -match ("['""]" + [regex]::Escape($p) + "['""]")) { $ailleurs = $true; break }
+        }
+        if (-not $ailleurs) {
+            Add-Constat $Fichier $d.Ligne 'erreur' 'RESTART_PHASE_NON_TRAITEE' "[RESTART] '$p' : aucune branche ne reprend cette phase ('if (`$env:SINDRY_RESUME -eq '$p')') ; au retour, le script recommencerait depuis le début."
+        }
+    }
+    if ($demandes.Count -gt 0 -and $sort3010 -eq 0) {
+        Add-Constat $Fichier $demandes[0].Ligne 'erreur' 'RESTART_SANS_3010' "[RESTART] sans 'exit 3010' : c'est le code de sortie qui confirme la demande de redémarrage."
+    }
+    if ($declare -and -not $litReprise) {
+        Add-Constat $Fichier $ligneResume 'erreur' 'RESUME_NON_LU' "'resume : true' mais le script ne lit jamais `$env:SINDRY_RESUME : après le redémarrage, il recommencerait depuis le début."
+    }
+    if ($sort3010 -gt 0 -and $demandes.Count -eq 0) {
+        Add-Constat $Fichier $sort3010 'avertissement' 'CODE_3010' "'exit 3010' sans [RESTART] : Sindry le lirait comme un échec. Pour un redémarrage à la fin, émettez [REBOOT] et sortez en 0."
+    }
+}
+
 function Test-SortieAnglaise {
     param([string] $Fichier, [string[]] $Lignes)
 
@@ -1120,6 +1190,7 @@ foreach ($f in $fichiers) {
     Test-Traduction     $relatif $lignes $options $langBase $rapport
     Test-Override       $relatif $lignes
     Test-Marqueurs      $relatif $lignes
+    Test-Redemarrage    $relatif $lignes $champs
     Test-SortieAnglaise $relatif $lignes
     Test-CodesErreur    $relatif $lignes $rapport
     Test-Analyse       $relatif $lignes $champs $options $rapport

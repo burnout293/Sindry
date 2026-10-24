@@ -2610,3 +2610,84 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .amb-ignorees { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--warn); }
 .amb-ignorees > span { color: var(--text-3); }
 .amb-ignorees .fic { font-family: var(--mono); font-weight: 500; color: var(--warn); letter-spacing: 0; }
+
+/* --- Reprise apres redemarrage (2.0.5, §6.10, maquette M37) ---------------- */
+.reprise-note { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.reprise-ligne { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 10px; font-size: 12.5px;
+  background: var(--surface-2); color: var(--text-2); }
+.reprise-ligne b { display: block; color: var(--text); }
+.reprise-ligne .ico { margin-top: 2px; flex-shrink: 0; }
+.reprise-ligne.warn { background: var(--warn-s); color: var(--warn); }
+.reprise-ligne.warn b { color: inherit; }
+.reprise-ligne.ok { background: var(--ok-s); color: var(--ok); }
+.reprise-ligne.ok b { color: inherit; }
+.reprise-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.reprise-note-sous { margin: 0; font-size: 12px; color: var(--text-3); }
+#redemarrageOverlay, #repriseDialogue { z-index: 95; }
+.redemarrage-carte, .reprise-carte { padding: 24px 24px 18px; }
+.redemarrage-carte .s-nav, .reprise-carte .s-nav { margin-top: 16px; flex-wrap: wrap; }
+.rebours { position: relative; margin: 0 auto 12px; }
+.rebours svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.rebours circle { fill: none; stroke-width: 6; }
+.rebours .piste { stroke: var(--surface-3); }
+.rebours .reste { stroke: var(--acc); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.rebours > span { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; }
+.rebours b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.rebours small { font-size: 10.5px; color: var(--text-3); }
+.arso-pastille { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 11px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 650; background: var(--surface-2); color: var(--text-2); }
+.arso-pastille.ok { background: var(--ok-s); color: var(--ok); }
+.reprise-avert, .reprise-erreur { margin: 10px 0 0; font-size: 12px; color: var(--warn); }
+.reprise-erreur { color: var(--err); }
+.reprise-compteur { margin: 12px 0 0; font-size: 11.5px; color: var(--text-3); }
+.reprise-pause, .reprise-offre { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; margin-bottom: 14px; padding: 12px 16px;
+  border-radius: 16px; background: var(--surface); border: 1px solid var(--border); color: var(--acc-on); }
+.reprise-offre { margin: 14px 0 0; }
+.reprise-pause-txt { flex: 1 1 220px; color: var(--text-2); font-size: 12.5px; }
+.reprise-pause-txt b { display: block; color: var(--text); font-size: 13.5px; }
+.reprise-actions { margin-top: 14px; text-align: left; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.reprise-action { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
+.reprise-action:first-child { border-top: 0; }
+.reprise-action b { display: block; }
+.reprise-action small { color: var(--text-3); }
+.reprise-action .dt { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 11px; font-weight: 800;
+  background: var(--surface-2); color: var(--text-2); }
+.reprise-action .dt.pause { background: var(--warn-s); color: var(--warn); }
+.tache-reprise { margin-left: 6px; padding: 1px 8px; font-size: 10.5px; vertical-align: 1px; }
+
+/* The restricted mode: the whole (small) window, above everything but the
+   restart window. */
+.restreint { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: var(--surface); color: var(--text); }
+body.restreint-actif .ambiance, body.restreint-actif .water, body.restreint-actif .gears { display: none !important; }
+.restreint-barre { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; flex-shrink: 0; font-size: 12px; font-weight: 650;
+  color: var(--text-2); background: var(--surface-2); border-bottom: 1px solid var(--border); user-select: none; }
+.restreint-barre img { width: 16px; height: 16px; }
+.restreint-corps { flex: 1; overflow: auto; padding: 18px 20px 14px; display: flex; flex-direction: column; gap: 12px; }
+.restreint-tete { display: flex; gap: 14px; align-items: center; }
+.restreint-tete img { width: 46px; height: 46px; }
+.restreint-tete h1 { margin: 0; font-size: 17px; font-weight: 800; }
+.restreint-tete p { margin: 2px 0 0; color: var(--text-2); font-size: 13px; }
+.restreint-action { padding: 12px 14px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--border); }
+.restreint-action b { display: block; font-size: 13.5px; }
+.restreint-action small { color: var(--text-3); font-size: 12px; }
+.restreint-prog { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin: 10px 0 8px; }
+.restreint-prog i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--acc), var(--acc-2)); transition: width .6s; }
+.restreint-points { display: flex; gap: 6px; }
+.restreint-points i { width: 10px; height: 10px; border-radius: 50%; background: var(--surface-3); border: 1px solid var(--border-2); }
+.restreint-points i.ok { background: var(--ok); border-color: var(--ok); }
+.restreint-points i.err { background: var(--err); border-color: var(--err); }
+.restreint-points i.run { background: var(--acc); border-color: var(--acc); }
+.restreint-arret, .restreint-pause { padding: 10px 12px; border-radius: 12px; background: var(--warn-s); color: var(--warn); font-size: 12.5px; }
+.restreint-pause { background: var(--surface-2); color: var(--text-2); }
+.restreint-arret b, .restreint-pause b { display: block; color: var(--text); }
+.restreint-pied { display: flex; align-items: center; gap: 10px; margin-top: auto; font-size: 12px; color: var(--text-3); }
+.restreint-pied span { flex: 1; }
+.an-lien.muted { color: var(--text-3); font-weight: 600; }
+
+/* 4.5: the restart cap. */
+.stepper { display: inline-flex; align-items: center; flex-shrink: 0; border: 1px solid var(--border-2); border-radius: 999px; overflow: hidden; }
+.stepper button { width: 34px; height: 32px; background: var(--surface-2); font-size: 16px; font-weight: 700; color: var(--text-2); }
+.stepper button:disabled { cursor: not-allowed; }
+.stepper span { min-width: 40px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stepper.off { opacity: .5; }
+.setrow-fin { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }

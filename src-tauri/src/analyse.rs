@@ -570,6 +570,25 @@ impl Memoire {
         }
     }
 
+    /// 2.0.5: after a restart, puts back what a script's selection held when the
+    /// run was saved — ids already checked against its analysis then, kept in
+    /// the resume journal (HKLM, written elevated only). Only for that content
+    /// of the file: `verifier` still compares the hash.
+    pub fn reprendre(&self, script_id: &str, hash: &str, ids: &BTreeMap<String, Vec<String>>) {
+        if let Ok(mut m) = self.par_script.lock() {
+            m.insert(
+                script_id.to_string(),
+                Memo {
+                    hash: hash.to_string(),
+                    ids: ids
+                        .iter()
+                        .map(|(k, v)| (k.clone(), v.iter().cloned().collect()))
+                        .collect(),
+                },
+            );
+        }
+    }
+
     /// Verifie qu'une selection `[items]` ne renvoie au script que des ids que sa
     /// derniere analyse, sur ce contenu exact du fichier, a annonces.
     pub fn verifier(

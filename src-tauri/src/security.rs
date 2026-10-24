@@ -68,6 +68,25 @@ pub fn detecter(source: &str) -> Vec<PointAttention> {
                 extrait: extrait(),
             });
         }
+        // 2.0.5 : un script ne redemarre jamais le PC lui-meme. Il le demande
+        // par `[RESTART]`, et c'est Sindry qui redemarre, apres avoir garde de
+        // quoi reprendre (§6.10) : sinon l'entretien est coupe net.
+        let arret = minuscule.contains("shutdown")
+            && ["/r", "/s", "/g", "/p", "-r", "-s"]
+                .iter()
+                .any(|o| minuscule.contains(&format!(" {o}")));
+        if arret
+            || minuscule.contains("restart-computer")
+            || minuscule.contains("stop-computer")
+            || minuscule.contains("initiatesystemshutdown")
+            || ligne_contient_toutes(&minuscule, &["wpeutil", "reboot"])
+        {
+            trouves.push(PointAttention {
+                code: "REDEMARRAGE_DIRECT".into(),
+                ligne: numero,
+                extrait: extrait(),
+            });
+        }
         for (code, variantes) in PERSISTANCE {
             if variantes
                 .iter()
@@ -158,6 +177,25 @@ mod tests {
         let points = detecter(source);
         assert_eq!(points.len(), 1);
         assert_eq!(points[0].code, "SUPPRESSION_FORCEE");
+    }
+
+    #[test]
+    fn a_script_that_restarts_the_pc_itself_is_flagged() {
+        for ligne in [
+            "Restart-Computer -Force",
+            "Stop-Computer",
+            "& \"$env:SystemRoot\\System32\\shutdown.exe\" /r /t 0",
+            "shutdown -s -t 60",
+            "wpeutil reboot",
+        ] {
+            let points = detecter(ligne);
+            assert!(
+                points.iter().any(|p| p.code == "REDEMARRAGE_DIRECT"),
+                "{ligne}"
+            );
+        }
+        assert!(detecter("shutdown /a").is_empty());
+        assert!(detecter("Write-Output '[RESTART] apres-pilote'").is_empty());
     }
 
     #[test]

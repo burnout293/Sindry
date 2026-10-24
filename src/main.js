@@ -2686,9 +2686,10 @@ function appliquerDroits(eleve) {
 /** Relance Sindry en administrateur. La fenetre elevee met un instant a
  *  apparaitre ; si l'utilisateur refuse l'invite UAC, celle-ci reste ouverte et
  *  rien n'est perdu. */
-async function relancerEnAdministrateur() {
+async function relancerEnAdministrateur(reprendre = false) {
   try {
-    await invoke('relaunch_elevated');
+    // 2.0.5: `reprendre`, the new instance carries on with the waiting run.
+    await invoke('relaunch_elevated', { reprendre: reprendre === true });
     setTimeout(() => laFenetre.close(), 1200);
   } catch (e) {
     console.error('Relance impossible :', e);
@@ -3446,6 +3447,13 @@ async function cablerMoteur() {
     if (payload.step) {
       const [n, total] = payload.step;
       if (total > 0) term.prog.style.width = `${Math.min(100, (n / total) * 100)}%`;
+      // The mini bar of the running task (it was never fed), and the
+      // restricted mode (2.0.5).
+      if (course.entretien) {
+        etapeEntretienActuelle = payload.step;
+        rendreTachesEntretien();
+        majRestreint();
+      }
     }
   });
 
@@ -3482,11 +3490,15 @@ async function cablerMoteur() {
 
     if (payload.changes?.length) journaliserTemoin(payload.changes);
     const lastError = course.lastError || null;
+    // 2.0.5: the action asks for a restart before going on (§6.10).
+    if (course.entretien && payload.restart_phase) return void demanderRedemarrage(payload);
     if (course.entretien) {
       const succes = payload.success && !payload.killed;
       entretienEnCours.resultats.push({
         id: payload.script_id, success: succes, simule: course.simule, freed: payload.freed ?? null,
         changes: payload.changes || [], watched: payload.watched || [],
+        // 2.0.5: a restart asked for at the end ([REBOOT]), offered in the summary.
+        reboot: !!payload.reboot_requested, repris: !!course.repris,
         ...(!succes && lastError ? { raison: codedReason(lastError) } : {}),
       });
       course = null;
@@ -3866,6 +3878,439 @@ function cablerInteractions() {
       }
     }
   };
+}
+
+/* -------------------------------------------------------------------------
+   Reprise apres redemarrage (2.0.5, specification §6.10, maquette M37)
+
+   An action asks for a restart midway (`[RESTART] <phase>`, exit 3010). Sindry
+   keeps what the run needs in the resume journal (HKLM, `reprise.rs`), makes
+   sure the relaunch task exists, then offers the restart with a countdown.
+   After it, the task relaunches Sindry elevated: the restricted mode — a
+   small window that cannot be closed — carries the run to its end, then the
+   usual interface comes back with the summary.
+   ------------------------------------------------------------------------- */
+
+/** `resume_state`: the journal found at startup, ARSO, the cap, rights. */
+let etatReprise = null;
+/** The restricted mode is on: the small window, nothing else. */
+let modeRestreint = false;
+/** « Arrêter… » in the restricted mode: 0, 1 asking, 2 asked. */
+let arretRestreint = 0;
+/** The countdown of the restart window. */
+let compteRebours = null;
+/** The checks put off at startup (updates, catalogue) until the run ends. */
+let verificationsDifferees = false;
+const DELAI_REDEMARRAGE = 60;
+
+const plafondRedemarrages = () => etatReprise?.plafond || 3;
+
+function idEntretien() {
+  entretienEnCours.repriseId ||= `e-${Date.now().toString(36)}`;
+  return entretienEnCours.repriseId;
+}
+
+/** What goes to the script: after a restart, what the journal kept; otherwise
+ *  the frozen settings and what the analysis ticked. */
+function configPour(entree) {
+  return entretienEnCours?.reprise?.configs?.[entree.id] ?? { ...configFigee(entree.id), ...configAnalysePour(entree) };
+}
+
+/** The phase the first action resumes at, once. */
+function phaseReprise(entree) {
+  const r = entretienEnCours?.reprise;
+  if (!r?.phase || r.premier !== entree.id) return null;
+  const phase = r.phase;
+  r.phase = null;
+  return phase;
+}
+
+/** What the interface needs, after the restart, to go on and draw the summary. */
+function interfaceJournal() {
+  return {
+    lotId: entretienEnCours.lotId,
+    lotNom: groupeLancement ? nomLot(groupeLancement.lot) : '',
+    lotIcon: groupeLancement?.lot?.icon || null,
+    total: entretienEnCours.total,
+    lances: entretienEnCours.lances || [],
+    resultats: entretienEnCours.resultats,
+    depuisExpert: entretienEnCours.depuisExpert || null,
+    mode: entretienEnCours.mode || 'simple',
+    at: entretienEnCours.at || Date.now(),
+  };
+}
+
+/** Writes the resume journal. Without rights, nothing: no resume. Returns
+ *  `{ ok, avert }` — `avert`, the relaunch task could not be made. */
+async function sauverJournal({ actions, enCours, phase = null, tache = false }) {
+  if (!estEleve || !entretienEnCours) return { ok: false, avert: null };
+  try {
+    const avert = await invoke('resume_save', {
+      req: {
+        id: idEntretien(),
+        actions: actions.map((s) => ({ script_id: s.id, config: configPour(s) })),
+        en_cours: enCours,
+        phase,
+        redemarrages: entretienEnCours.redemarrages || 0,
+        interface: interfaceJournal(),
+        tache,
+      },
+    });
+    return { ok: true, avert: avert || null };
+  } catch (e) {
+    console.error('Journal de reprise :', e);
+    return { ok: false, avert: String(e), erreur: true };
+  }
+}
+
+/** « Le PC peut redémarrer pendant l'entretien », and whether Windows will
+ *  sign the user back in by itself (ARSO). */
+function rendreNoteReprise(id, scripts) {
+  const zone = document.getElementById(id);
+  if (!zone) return;
+  const concerne = scripts.some((s) => s.meta.resume);
+  zone.hidden = !concerne;
+  if (!concerne) return;
+  const arso = etatReprise?.arso || 'inconnue';
+  const bouton = arso === 'activee' || arso === 'strategie' ? ''
+    : `<button class="btn compact" type="button" data-reprise-reglage-windows>${esc(t('reprise.ouvrir_reglage'))}</button>`;
+  const relance = etatReprise && !etatReprise.relancable
+    ? `<p class="reprise-note-sous">${esc(t('reprise.non_relancable'))}</p>` : '';
+  zone.innerHTML = `
+    <div class="reprise-ligne warn">${ico('power', 'i16')}<span><b>${esc(t('reprise.note_titre'))}</b>${esc(t('reprise.note_texte'))}</span></div>
+    <div class="reprise-ligne ${arso === 'activee' ? 'ok' : ''}">${ico(arso === 'activee' ? 'lock' : 'info', 'i16')}<span><b>${esc(t(`reprise.arso_${arso}`))}</b>${esc(t(`reprise.arso_${arso}_d`))}${bouton ? `<span class="reprise-act">${bouton}</span>` : ''}</span></div>
+    ${relance}`;
+}
+
+/** The action asks for a restart before going on. */
+async function demanderRedemarrage(payload) {
+  const entree = catalogue.get(payload.script_id);
+  course = null;
+  majEtatJournalCompact();
+  const arreter = (raison) => {
+    entretienEnCours.resultats.push({ id: payload.script_id, success: false, raison });
+    fileEntretien = [];
+    majProgression();
+    avancerEntretien();
+  };
+  if (!entree) return arreter(t('verdict.echec'));
+  if (!estEleve) return arreter(t('reprise.sans_droits'));
+  const n = (entretienEnCours.redemarrages || 0) + 1;
+  if (n > plafondRedemarrages()) return arreter(t('reprise.plafond_atteint', { max: plafondRedemarrages() }));
+  entretienEnCours.redemarrages = n;
+  const r = await sauverJournal({ actions: [entree, ...fileEntretien], enCours: false, phase: payload.restart_phase, tache: true });
+  if (!r.ok) return arreter(t('reprise.journal_impossible', { e: r.avert || '?' }));
+  ouvrirRedemarrage({ titre: titreDe(entree.id), restantes: fileEntretien.length + 1, n, avert: r.avert });
+}
+
+function arreterCompteRebours() {
+  clearInterval(compteRebours);
+  compteRebours = null;
+}
+
+/** The ring of the countdown, as an SVG: `reste` seconds out of 60. */
+function anneauRebours(reste, taille = 84) {
+  const r = taille / 2 - 5;
+  const c = 2 * Math.PI * r;
+  return `<div class="rebours" style="width:${taille}px;height:${taille}px">
+    <svg viewBox="0 0 ${taille} ${taille}"><circle class="piste" cx="${taille / 2}" cy="${taille / 2}" r="${r}"/>
+    <circle class="reste" data-rebours-cercle data-c="${c}" cx="${taille / 2}" cy="${taille / 2}" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - reste / DELAI_REDEMARRAGE)}"/></svg>
+    <span><b data-rebours>${reste}</b><small>s</small></span></div>`;
+}
+
+/** The restart window: 60 s, then the PC restarts — the run goes on alone. */
+function ouvrirRedemarrage({ titre, restantes, n, avert }) {
+  const zone = document.getElementById('redemarrageOverlay');
+  const arso = etatReprise?.arso === 'activee';
+  zone.innerHTML = `<div class="onb-card redemarrage-carte" role="alertdialog" aria-labelledby="redemarrageTitre">
+      ${anneauRebours(DELAI_REDEMARRAGE)}
+      <h1 id="redemarrageTitre">${esc(t('reprise.redemarrage_titre'))}</h1>
+      <p class="onb-text">${esc(t('reprise.redemarrage_texte', { titre }))} <b>${esc(t('reprise.restantes', { n: restantes }))}</b></p>
+      <p class="onb-text">${esc(t('reprise.enregistrez'))}</p>
+      <span class="arso-pastille ${arso ? 'ok' : ''}">${ico(arso ? 'lock' : 'info', 'i14')}${esc(t(arso ? 'reprise.session_seule' : 'reprise.session_ouvrir'))}</span>
+      ${avert ? `<p class="reprise-avert">${esc(t('reprise.non_relancable'))}</p>` : ''}
+      <p class="reprise-erreur" id="redemarrageErreur" hidden></p>
+      <div class="s-nav center"><button class="btn primary" type="button" data-reprise-redemarrer>${ico('power', 'i16')}${esc(t('reprise.redemarrer'))}</button>
+        <button class="btn" type="button" data-reprise-plus-tard>${esc(t('reprise.plus_tard'))}</button></div>
+      <p class="reprise-compteur">${esc(t('reprise.compteur', { n, max: plafondRedemarrages() }))}</p>
+    </div>`;
+  zone.hidden = false;
+  arreterCompteRebours();
+  let reste = DELAI_REDEMARRAGE;
+  compteRebours = setInterval(() => {
+    reste -= 1;
+    zone.querySelectorAll('[data-rebours]').forEach((x) => (x.textContent = String(Math.max(0, reste))));
+    zone.querySelectorAll('[data-rebours-cercle]').forEach((c) => c.setAttribute('stroke-dashoffset', String(c.dataset.c * (1 - Math.max(0, reste) / DELAI_REDEMARRAGE))));
+    if (reste <= 0) redemarrerMaintenant();
+  }, 1000);
+}
+
+async function redemarrerMaintenant() {
+  arreterCompteRebours();
+  try {
+    await invoke('restart_pc');
+  } catch (e) {
+    const err = document.getElementById('redemarrageErreur');
+    if (err) {
+      err.hidden = false;
+      err.textContent = t('reprise.redemarrage_refuse', { e: String(e) });
+    }
+  }
+}
+
+/** « Plus tard »: the run waits; it carries on at the next restart. */
+function plusTard() {
+  arreterCompteRebours();
+  document.getElementById('redemarrageOverlay').hidden = true;
+  const pause = document.getElementById('reprisePause');
+  pause.innerHTML = `${ico('power', 'i18')}<span class="reprise-pause-txt"><b>${esc(t('reprise.pause_titre'))}</b>${esc(t('reprise.pause_texte'))}</span>
+    <button class="btn compact primary" type="button" data-reprise-redemarrer>${esc(t('reprise.redemarrer'))}</button>
+    <button class="btn compact" type="button" data-reprise-abandonner>${esc(t('reprise.abandonner'))}</button>`;
+  pause.hidden = false;
+  document.getElementById('s3Titre').textContent = t('reprise.pause_titre');
+  document.getElementById('btnArreterEntretien').hidden = true;
+  entretienEnCours.enPause = true;
+  majProgression();
+}
+
+/** Gives up the waiting run: nothing is undone, the journal is forgotten. */
+function abandonnerEntretien() {
+  arreterCompteRebours();
+  document.getElementById('redemarrageOverlay').hidden = true;
+  const enAttente = fileEntretien.length + (entretienEnCours?.enPause ? 1 : 0);
+  if (entretienEnCours?.enPause) {
+    const id = entretienEnCours.lances?.find((x) => !entretienEnCours.resultats.some((r) => r.id === x));
+    if (id) entretienEnCours.resultats.push({ id, success: false, raison: t('reprise.abandonne') });
+  }
+  if (enAttente) fileEntretien = [];
+  entretienEnCours.enPause = false;
+  terminerEntretien();
+}
+
+/** The restart asked for at the end ([REBOOT]): offered, never forced (§6.5). */
+function rendreOffreRedemarrage() {
+  const zone = document.getElementById('offreRedemarrage');
+  const demande = entretienEnCours?.resultats.some((r) => r.reboot && r.success);
+  zone.hidden = !demande;
+  if (!demande) return;
+  zone.innerHTML = `${ico('power', 'i18')}<span class="reprise-pause-txt"><b>${esc(t('reprise.fin_titre'))}</b>${esc(t('reprise.fin_texte'))}</span>
+    <button class="btn compact primary" type="button" data-reprise-redemarrer>${esc(t('reprise.redemarrer'))}</button>
+    <button class="btn compact" type="button" data-reprise-offre-plus-tard>${esc(t('reprise.plus_tard'))}</button>`;
+}
+
+/** What to do with a journal found at startup: `auto` (relaunched by the task,
+ *  the PC restarted: the restricted mode), `dialogue` (ask), or nothing. */
+function decisionReprise(etat) {
+  const j = etat?.journal;
+  if (!j || !etat.verdict || etat.verdict === 'autre_compte') return null;
+  if (etat.verdict === 'expire') {
+    if (etat.elevated) invoke('resume_clear').catch(() => {});
+    return null;
+  }
+  if (etat.verdict === 'reprendre' && etat.relance && etat.elevated) return 'auto';
+  return 'dialogue';
+}
+
+/** A run found waiting or cut short, at a manual launch. */
+function ouvrirDialogueReprise(etat) {
+  const j = etat.journal;
+  const ui = j.interface || {};
+  const date = new Date(ui.at || j.cree * 1000).toLocaleString(currentLang(), { dateStyle: 'short', timeStyle: 'short' });
+  const genre = etat.verdict === 'en_attente' ? 'attente' : etat.verdict === 'reprendre' ? 'redemarre' : 'interrompu';
+  const lignes = j.actions.map((a, i) => `<div class="reprise-action"><span class="dt ${i === 0 && j.en_cours ? 'pause' : ''}">${i + 1}</span>
+      <span><b>${esc(titreDe(a.script_id))}</b><small>${esc(t(i === 0 && j.en_cours && !j.phase ? 'reprise.premiere_relancee' : 'reprise.a_faire'))}</small></span></div>`).join('');
+  const reprendre = genre === 'attente'
+    ? `<button class="btn primary" type="button" data-reprise-redemarrer>${ico('power', 'i16')}${esc(t('reprise.redemarrer'))}</button>`
+    : etat.elevated
+      ? `<button class="btn primary" type="button" data-reprise-reprendre>${esc(t('reprise.reprendre'))}</button>`
+      : `<button class="btn primary" type="button" data-reprise-reprendre-admin>${ico('shield', 'i16')}${esc(t('reprise.reprendre_admin'))}</button>`;
+  const zone = document.getElementById('repriseDialogue');
+  zone.innerHTML = `<div class="onb-card reprise-carte" role="alertdialog" aria-labelledby="repriseTitre">
+      <div class="onb-mark">${ico(genre === 'attente' ? 'power' : 'warn')}</div>
+      <h1 id="repriseTitre">${esc(t(`reprise.${genre}_titre`))}</h1>
+      <p class="onb-text">${esc(t(`reprise.${genre}_texte`, { lot: ui.lotNom || '', date }))}</p>
+      <div class="reprise-actions">${lignes}</div>
+      ${etat.elevated || genre === 'attente' ? '' : `<p class="onb-text">${esc(t('reprise.admin_note'))}</p>`}
+      <div class="s-nav center">${reprendre}<button class="btn" type="button" data-reprise-oublier>${esc(t('reprise.oublier'))}</button></div>
+      <p class="reprise-compteur">${esc(t('reprise.oublier_note'))}</p>
+    </div>`;
+  zone.hidden = false;
+}
+
+/** Carries on with the run of the journal: in the restricted mode after the
+ *  restart, on the usual screen when the user chose to. */
+async function reprendreEntretien() {
+  let j;
+  try {
+    j = await invoke('resume_begin');
+  } catch (e) {
+    console.error('Reprise impossible :', e);
+    if (modeRestreint) await sortirModeRestreint();
+    basculerMode('simple');
+    return;
+  }
+  const ui = j.interface || {};
+  const lances = ui.lances?.length ? ui.lances : j.actions.map((a) => a.script_id);
+  groupeLancement = {
+    lot: { id: ui.lotId || LOT_EXPERT, name: { [currentLang()]: ui.lotNom || '' }, icon: ui.lotIcon || 'sparkles', pinned: false, scripts: lances },
+    scripts: lances.map((id) => catalogue.get(id)).filter(Boolean),
+    missing: [],
+    expert: !!ui.depuisExpert,
+  };
+  exclusLancement = new Set();
+  entretienEnCours = {
+    lotId: groupeLancement.lot.id, total: ui.total || lances.length, resultats: ui.resultats || [], lances,
+    depuisExpert: ui.depuisExpert || null, mode: ui.mode || 'simple', at: ui.at, repriseId: j.id,
+    redemarrages: j.redemarrages || 0,
+    reprise: { configs: Object.fromEntries(j.actions.map((a) => [a.script_id, a.config])), phase: j.phase || null, premier: j.actions[0]?.script_id },
+  };
+  // A script gone from the catalogue since: one result less, with its reason.
+  fileEntretien = [];
+  for (const a of j.actions) {
+    const e = catalogue.get(a.script_id);
+    if (e) fileEntretien.push(e);
+    else entretienEnCours.resultats.push({ id: a.script_id, success: false, raison: t('verdict.echec') });
+  }
+  entretienActif = true;
+  basculerMode('simple', { etape: null });
+  afficherEtapeSimple(4);
+  document.getElementById('s3Titre').textContent = t('s3.titre');
+  startProgress();
+  document.getElementById('btnArreterEntretien').hidden = false;
+  document.getElementById('btnArreterEntretien').textContent = t('simple.arreter_apres');
+  document.getElementById('btnRetourAccueil').hidden = true;
+  document.getElementById('tasksBilan').hidden = false;
+  document.getElementById('tasksBilanDetail').textContent = nomLot(groupeLancement.lot);
+  document.getElementById('term').hidden = true;
+  document.getElementById('temoinBilan').hidden = true;
+  etapeEntretienActuelle = null;
+  majProgression();
+  avancerEntretien();
+}
+
+/** The restricted mode (§6.10): a small window that cannot be closed. */
+async function entrerModeRestreint() {
+  modeRestreint = true;
+  arretRestreint = 0;
+  verificationsDifferees = true;
+  document.body.classList.add('restreint-actif');
+  document.getElementById('restreintOverlay').hidden = false;
+  majRestreint();
+  try {
+    await invoke('set_restricted_window', { on: true });
+  } catch (e) {
+    console.error('Fenetre restreinte :', e);
+  }
+}
+
+async function sortirModeRestreint() {
+  modeRestreint = false;
+  document.body.classList.remove('restreint-actif');
+  document.getElementById('restreintOverlay').hidden = true;
+  try {
+    await invoke('set_restricted_window', { on: false });
+  } catch (e) {
+    console.error('Fenetre restreinte :', e);
+  }
+}
+
+/** What the restricted window shows: the action, its step, the run's progress. */
+function majRestreint() {
+  if (!modeRestreint || !entretienEnCours) return;
+  const zone = document.getElementById('restreintOverlay');
+  const lances = entretienEnCours.lances || [];
+  const total = entretienEnCours.total || lances.length || 1;
+  const faits = entretienEnCours.resultats.length;
+  const actuel = course?.entretien ? course.id : (fileEntretien[0]?.id || lances[faits] || null);
+  const [n, tot] = etapeEntretienActuelle || [];
+  const part = tot > 0 ? Math.max(0, n - 1) / tot : 0;
+  const pct = Math.min(100, ((faits + part) / total) * 100);
+  const points = lances.map((id) => {
+    const r = entretienEnCours.resultats.find((x) => x.id === id);
+    return `<i class="${r ? (r.success ? 'ok' : 'err') : id === actuel ? 'run' : ''}"></i>`;
+  }).join('');
+  const pause = entretienEnCours.enPause
+    ? `<div class="restreint-pause"><b>${esc(t('reprise.pause_titre'))}</b>${esc(t('reprise.pause_texte'))}
+        <span class="reprise-act"><button class="btn compact primary" type="button" data-reprise-redemarrer>${esc(t('reprise.redemarrer'))}</button>
+        <button class="btn compact" type="button" data-reprise-abandonner>${esc(t('reprise.abandonner'))}</button></span></div>` : '';
+  const arret = arretRestreint === 1
+    ? `<div class="restreint-arret"><b>${esc(t('reprise.arreter_titre'))}</b>${esc(t('reprise.arreter_texte'))}
+        <span class="reprise-act"><button class="btn compact" type="button" data-restreint-arret-oui>${esc(t('reprise.arreter_oui'))}</button>
+        <button class="btn compact primary" type="button" data-restreint-arret-non>${esc(t('reprise.continuer'))}</button></span></div>`
+    : arretRestreint === 2 ? `<div class="restreint-arret"><b>${esc(t('reprise.arret_demande'))}</b></div>` : '';
+  zone.innerHTML = `
+    <div class="restreint-barre" data-tauri-drag-region><img src="marque.png" alt="" draggable="false">Sindry</div>
+    <div class="restreint-corps">
+      <div class="restreint-tete"><img src="marque.png" alt="" draggable="false"><div><h1>${esc(t('reprise.restreint_titre'))}</h1><p>${esc(t('reprise.restreint_texte'))}</p></div></div>
+      <div class="restreint-action">
+        <b>${esc(actuel ? titreDe(actuel) : '')}</b>
+        <small>${esc(t('reprise.restreint_action', { n: Math.min(total, faits + 1), total }))}${tot > 0 ? ` · ${esc(t('reprise.restreint_etape', { n, total: tot }))}` : ''}</small>
+        <div class="restreint-prog"><i style="width:${pct}%"></i></div>
+        <div class="restreint-points">${points}</div>
+      </div>
+      ${pause}${arret}
+      <div class="restreint-pied"><span>${entretienEnCours.redemarrages ? esc(t('reprise.compteur', { n: entretienEnCours.redemarrages, max: plafondRedemarrages() })) : ''}</span>
+        ${arretRestreint || entretienEnCours.enPause ? '' : `<button class="an-lien muted" type="button" data-restreint-arreter>${esc(t('reprise.arreter'))}</button>`}</div>
+    </div>`;
+}
+
+/** The two rows of the Expert settings (4.5, 4.6). */
+function rendreReglagesReprise() {
+  const valeur = document.getElementById('maxRedemarragesValeur');
+  if (!valeur) return;
+  valeur.textContent = String(plafondRedemarrages());
+  const eleve = estEleve;
+  document.querySelectorAll('[data-max-redemarrages]').forEach((b) => (b.disabled = !eleve));
+  document.getElementById('maxRedemarrages').classList.toggle('off', !eleve);
+  const note = document.getElementById('maxRedemarragesNote');
+  note.hidden = eleve;
+  note.innerHTML = eleve ? '' : `${esc(t('reglages.max_redemarrages_admin'))} <button class="an-lien" type="button" data-reprise-admin>${esc(t('droits.relancer'))}</button>`;
+  const arso = etatReprise?.arso || 'inconnue';
+  document.getElementById('arsoEtat').innerHTML = arso === 'activee'
+    ? `<span class="badge low">${ico('check', 'i12')}${esc(t('reglages.arso_activee'))}</span>`
+    : `<span class="badge neutre">${esc(t(`reglages.arso_${arso}`))}</span>${arso === 'strategie' ? '' : ` <button class="btn compact" type="button" data-reprise-reglage-windows>${esc(t('reprise.ouvrir_reglage'))}</button>`}`;
+}
+
+function cablerReprise() {
+  document.addEventListener('click', async (ev) => {
+    const el = ev.target.closest('[data-reprise-redemarrer], [data-reprise-plus-tard], [data-reprise-abandonner], [data-reprise-offre-plus-tard], [data-reprise-reprendre], [data-reprise-reprendre-admin], [data-reprise-oublier], [data-reprise-reglage-windows], [data-reprise-admin], [data-restreint-arreter], [data-restreint-arret-oui], [data-restreint-arret-non], [data-max-redemarrages]');
+    if (!el) return;
+    const d = el.dataset;
+    if ('repriseRedemarrer' in d) return void redemarrerMaintenant();
+    if ('reprisePlusTard' in d) return void plusTard();
+    if ('repriseAbandonner' in d) return void abandonnerEntretien();
+    if ('repriseOffrePlusTard' in d) return void (document.getElementById('offreRedemarrage').hidden = true);
+    if ('repriseReglageWindows' in d) return void invoke('open_signin_settings').catch((e) => console.error(e));
+    if ('repriseAdmin' in d) return void relancerEnAdministrateur();
+    if ('repriseReprendre' in d) {
+      document.getElementById('repriseDialogue').hidden = true;
+      verificationsDifferees = true;
+      return void reprendreEntretien();
+    }
+    if ('repriseReprendreAdmin' in d) return void relancerEnAdministrateur(true);
+    if ('repriseOublier' in d) {
+      document.getElementById('repriseDialogue').hidden = true;
+      if (estEleve) await invoke('resume_clear').catch((e) => console.error(e));
+      return void apresDemarrage();
+    }
+    if ('restreintArreter' in d) { arretRestreint = 1; return void majRestreint(); }
+    if ('restreintArretNon' in d) { arretRestreint = 0; return void majRestreint(); }
+    if ('restreintArretOui' in d) {
+      arretRestreint = 2;
+      majRestreint();
+      return void arreterEntretien();
+    }
+    if (d.maxRedemarrages) {
+      const n = Math.min(10, Math.max(1, plafondRedemarrages() + Number(d.maxRedemarrages)));
+      try {
+        const fixe = await invoke('set_max_restarts', { n });
+        if (etatReprise) etatReprise.plafond = fixe;
+      } catch (e) {
+        console.error('Plafond de redemarrages :', e);
+      }
+      rendreReglagesReprise();
+    }
+  });
 }
 
 /* -------------------------------------------------------------------------
@@ -4547,6 +4992,8 @@ function majVerifier(groupe) {
   const besoinRedemarrer = retenus.some(besoinRedemarrage);
   noteRedemarrage.hidden = !besoinRedemarrer;
   if (besoinRedemarrer) noteRedemarrage.textContent = t('simple.redemarrage_annonce');
+  // 2.0.5: an action may restart the PC midway, then Sindry carries on.
+  rendreNoteReprise('repriseNote', retenus);
 
   const bouton = document.getElementById('btnSuivantVerifier');
   bouton.disabled = !retenus.length;
@@ -4842,6 +5289,7 @@ function rendreResumeAnalyse(groupe) {
   // 2.0.4: a ticked element can ask for it too (reboot=true).
   noteRedemarrage.hidden = !aLancer.some(besoinRedemarrage) && !A.redemarragesCoches(modeles);
   if (!noteRedemarrage.hidden) noteRedemarrage.textContent = t('simple.redemarrage_annonce');
+  rendreNoteReprise('anRepriseNote', aLancer);
 
   const tot = A.totalResume(modeles);
   const morceaux = [];
@@ -5127,6 +5575,10 @@ async function lancerEntretien() {
   const aLancer = scriptsALancer(groupe);
   entretienEnCours.lances = aLancer.map((s) => s.id);
   entretienEnCours.total = aLancer.length;
+  // 2.0.5: what a resume after a restart needs (journal, cap, summary).
+  entretienEnCours.redemarrages = 0;
+  entretienEnCours.at = Date.now();
+  entretienEnCours.mode = entretienEnCours.depuisExpert ? 'expert' : 'simple';
   fileEntretien = [...aLancer];
   etapeEntretienActuelle = null;
   majProgression();
@@ -5174,6 +5626,12 @@ async function lancerScriptEntretien(entree) {
   }
 
   try {
+    // 2.0.5: after a restart, the first action resumes at its phase.
+    const phase = phaseReprise(entree);
+    // The resume journal is written before the action starts: a run cut short
+    // (power cut, unexpected restart) is found again at the next launch. For an
+    // action that may restart the PC, the relaunch task is ready beforehand.
+    await sauverJournal({ actions: [entree, ...fileEntretien], enCours: true, phase, tache: !!entree.meta.resume });
     const demarre = await invoke('run_script', {
       req: {
         script_id: entree.id,
@@ -5181,13 +5639,16 @@ async function lancerScriptEntretien(entree) {
         // Le mode Expert est le panneau de configuration du mode Simple : ce
         // que l'utilisateur avance y a fige s'applique ici aussi, sinon
         // l'entretien tournerait avec d'autres reglages que ceux affiches.
-        // Et apres l'analyse, ce qui est coche (§17).
-        config: { ...configFigee(entree.id), ...configAnalysePour(entree) },
+        // Et apres l'analyse, ce qui est coche (§17) — ou, apres un
+        // redemarrage, ce que le journal a garde.
+        config: configPour(entree),
         policy: reglagesActuels?.exec_policy || null,
+        resume_phase: phase,
       },
     });
     departCourse = Date.now();
-    course = { runId: demarre.run_id, id: entree.id, logPath: demarre.log_path, entretien: true, simule: !!demarre.simulated };
+    course = { runId: demarre.run_id, id: entree.id, logPath: demarre.log_path, entretien: true, simule: !!demarre.simulated, repris: !!phase };
+    etapeEntretienActuelle = null;
     majProgression();
   } catch (e) {
     // La raison est conservee ET affichee : dans le journal pour le detail,
@@ -5210,6 +5671,13 @@ async function arreterEntretien() {
 
 function terminerEntretien() {
   entretienActif = false;
+  // 2.0.5: the run is over — its resume journal and relaunch task go.
+  arreterCompteRebours();
+  document.getElementById('reprisePause').hidden = true;
+  if (estEleve) invoke('resume_clear').catch((e) => console.error('Journal de reprise :', e));
+  rendreOffreRedemarrage();
+  if (modeRestreint) sortirModeRestreint();
+  if (verificationsDifferees) apresDemarrage();
   rendreBandeauMaj();
   rendreBandeauCatalogue();
   // The run is over, completed or stopped: the title says it (it used to keep
@@ -5265,6 +5733,8 @@ function rendreTachesEntretien() {
     let etat = '';
     if (resultat) etat = resultat.success ? 'ok' : 'err';
     else if (actif) etat = 'run';
+    // 2.0.5: the action that waits for the restart it asked for.
+    const enPause = !resultat && entretienEnCours?.enPause && s.id === entretienEnCours.lances?.find((x) => !entretienEnCours.resultats.some((r) => r.id === x));
 
     let icone = String(i + 1);
     let resultatTxt = `<span class="tres">${esc(t('simple.tache_en_attente'))}</span>`;
@@ -5277,6 +5747,8 @@ function rendreTachesEntretien() {
       resultatTxt = resultat?.raison
         ? `<span class="tres err" data-tip="${esc(resultat.raison)}">${esc(t('tache.echoue'))}</span>`
         : `<span class="tres err">${esc(t('tache.echoue'))}</span>`;
+    } else if (enPause) {
+      resultatTxt = `<span class="tres">${esc(t('reprise.pause_titre'))}</span>`;
     } else if (etat === 'run') {
       resultatTxt = `<span class="tres">${esc(t('tache.encours'))}</span>`;
       const [n, total] = etapeEntretienActuelle || [];
@@ -5286,7 +5758,7 @@ function rendreTachesEntretien() {
     return `
       <div class="task${etat === 'run' ? ' encours' : ''}">
         <span class="dt ${etat}">${icone}</span>
-        <div class="tbody"><div class="tt">${esc(titre)}</div>${barre}</div>
+        <div class="tbody"><div class="tt">${esc(titre)}${resultat?.repris ? ` <span class="badge acc tache-reprise">${esc(t('reprise.repris'))}</span>` : ''}</div>${barre}</div>
         ${resultatTxt}
       </div>`;
   });
@@ -5306,6 +5778,7 @@ function majProgression() {
     document.getElementById('s3Sous').textContent = t('s3.sous_restant', { n: estimerMinutesRestantes(groupe) });
   }
   rendreTachesEntretien();
+  majRestreint();
 }
 
 /** Bascule le journal partage (specification §2 : masque par defaut derriere
@@ -5784,6 +6257,7 @@ function reglagesOuverts() {
 
 function ouvrirReglages() {
   rendreEmplacementsProteges();
+  rendreReglagesReprise();
   remplirFormulaireReglages(reglagesActuels);
   document.getElementById('exportResultat').hidden = true;
   document.getElementById('importResultat').hidden = true;
@@ -6702,6 +7176,7 @@ async function demarrer() {
   cablerInfobulles();
   cablerConsole();
   cablerReglagesSimples();
+  cablerReprise();
   document.getElementById('testPill').onclick = basculerSimulation;
   document.getElementById('adminPill').onclick = ouvrirFenetreDroits;
   document.getElementById('btnFermerDroits').onclick = () => {
@@ -6785,15 +7260,41 @@ async function demarrer() {
 
   await rafraichirHistorique();
   await chargerLots();
+
+  // 2.0.5 (§6.10) : un entretien en attente d'un redemarrage, ou coupe net.
+  try {
+    etatReprise = await invoke('resume_state');
+  } catch (e) {
+    console.error('resume_state a echoue :', e);
+  }
+  const reprise = decisionReprise(etatReprise);
+  if (reprise === 'auto') {
+    // Relance par la tache apres le redemarrage : le mode restreint, rien
+    // d'autre. Mises a jour et catalogue attendent la fin de l'entretien.
+    await entrerModeRestreint();
+    await laFenetre.show();
+    return void reprendreEntretien();
+  }
   basculerMode('simple');
 
-  if (!reglages.onboarded) ouvrirVisite();
+  if (!reglages.onboarded && !reprise) ouvrirVisite();
 
   // La fenetre est creee invisible pour eviter un flash blanc avant la peinture.
   await laFenetre.show();
 
-  // Apres l'affichage, et sans l'attendre : une verification lente ou une
-  // machine hors ligne ne doit jamais retarder l'ouverture de la fenetre.
+  // Un entretien retrouve se decide d'abord : rien ne se met a jour avant.
+  if (reprise === 'dialogue') {
+    verificationsDifferees = true;
+    return void ouvrirDialogueReprise(etatReprise);
+  }
+  apresDemarrage();
+}
+
+/** Apres l'affichage, et sans l'attendre : une verification lente ou une
+ *  machine hors ligne ne doit jamais retarder l'ouverture de la fenetre. */
+function apresDemarrage() {
+  verificationsDifferees = false;
+  const reglages = reglagesActuels || {};
   if (reglages.update_policy !== 'never') verifierMaj({ silencieux: true });
   if (reglagesActuels?.catalogue_check !== 'manual') {
     if (etatCatalogue?.installe && sourceParId('officiel')?.active !== false) verifierCatalogue({ silencieux: true });

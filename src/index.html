@@ -190,6 +190,8 @@
               </div>
               <p class="restore-note" id="restoreNote" hidden></p>
               <p class="restore-note" id="rebootNote" hidden></p>
+              <!-- 2.0.5 : le PC peut redemarrer pendant l'entretien, et la reprise sans mot de passe (M37). -->
+              <div class="reprise-note" id="repriseNote" hidden></div>
               <div class="s-nav center">
                 <button class="btn primary big lancer" type="button" id="btnSuivantVerifier"></button>
               </div>
@@ -222,6 +224,7 @@
               </div>
               <p class="restore-note" id="anRestoreNote" hidden></p>
               <p class="restore-note" id="anRebootNote" hidden></p>
+              <div class="reprise-note" id="anRepriseNote" hidden></div>
               <div class="s-nav center">
                 <span class="an-total-bas" id="anTotal"></span>
                 <button class="btn primary big lancer" type="button" id="btnLancerEntretien"></button>
@@ -240,6 +243,8 @@
               <!-- Run progress (2.0.2): the ambiance's own graphic, as a band or a
                    badge, in an isolated frame; without one, Sindry's bar and its
                    percentage. -->
+              <!-- 2.0.5 : l'entretien attend un redemarrage (« Plus tard »). -->
+              <div class="reprise-pause" id="reprisePause" hidden></div>
               <div class="tasks-card">
                 <div class="prog-frame band" id="progBand" hidden></div>
                 <div class="tasks-head">
@@ -256,6 +261,8 @@
               <!-- Temoin des changements sensibles (§12.5) : ce que les actions
                    ont change dans Windows, en langage courant. -->
               <div class="temoin" id="temoinBilan" hidden></div>
+              <!-- 2.0.5 : le redemarrage demande a la fin ([REBOOT]), propose et jamais impose (§6.5). -->
+              <div class="reprise-offre" id="offreRedemarrage" hidden></div>
               <div class="s-nav center">
                 <button class="detail-toggle" type="button" id="btnDetailTechnique"></button>
               </div>
@@ -546,6 +553,17 @@
                   <span class="setrow-txt"><span class="num">4.4</span><span class="rg-libelle"><b data-i18n="reglages.reanalyser"></b><span class="desc" data-i18n="reglages.d_reanalyser"></span></span></span>
                   <button class="btn compact" type="button" id="btnReanalyserReglages"></button>
                 </div>
+                <!-- 2.0.5 : le plafond de redemarrages (HKLM, administrateur seulement), et ARSO. -->
+                <div class="setrow" data-num="4.5">
+                  <span class="setrow-txt"><span class="num">4.5</span><span class="rg-libelle"><b data-i18n="reglages.max_redemarrages"></b><span class="desc" data-i18n="reglages.d_max_redemarrages"></span><span class="desc" id="maxRedemarragesNote" hidden></span></span></span>
+                  <span class="stepper" id="maxRedemarrages">
+                    <button type="button" data-max-redemarrages="-1" aria-label="-1">−</button><span id="maxRedemarragesValeur">3</span><button type="button" data-max-redemarrages="1" aria-label="+1">+</button>
+                  </span>
+                </div>
+                <div class="setrow" data-num="4.6">
+                  <span class="setrow-txt"><span class="num">4.6</span><span class="rg-libelle"><b data-i18n="reglages.arso"></b><span class="desc" data-i18n="reglages.d_arso"></span></span></span>
+                  <span class="setrow-fin" id="arsoEtat"></span>
+                </div>
               </div>
             </section>
 
@@ -711,6 +729,12 @@
       </div>
     </div>
   </div>
+
+  <!-- 2.0.5 (§6.10, M37) : le redemarrage au milieu d'un entretien, l'entretien
+       retrouve au lancement, et le mode restreint apres le redemarrage. -->
+  <div class="backdrop" id="redemarrageOverlay" hidden></div>
+  <div class="backdrop" id="repriseDialogue" hidden></div>
+  <div class="restreint" id="restreintOverlay" role="dialog" aria-modal="true" hidden></div>
 
   <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 

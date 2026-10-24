@@ -85,7 +85,8 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     `auto|winps|pwsh` (préfère `auto`) ; booléens `true|false`.
 11. `admin : true` si le script a besoin des droits ; `reversible : false` si ce qu'il fait
     ne se défait pas ; `interruptible : false` si le tuer en route laisse le système
-    incohérent ; `reboot : true` s'il faut redémarrer ensuite.
+    incohérent ; `reboot : true` s'il faut redémarrer **à la fin** ; `resume : true` s'il
+    peut demander un redémarrage **au milieu**, puis reprendre (règle 42).
 12. **Toujours présents et à jour** : `author` (le créateur), `created` (date de création),
     `updated` (date de la dernière modification) et `version`. Dates `AAAA-MM-JJ`, `updated`
     jamais avant `created`, aucune date future ; `version` et `updated` changent à chaque
@@ -136,9 +137,10 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
 
 22. Un **marqueur en majuscules en tête** de chaque ligne utile : `[INFO]`, `[OK]`, `[WARN]`,
     `[ERR]`, `[STEP] n/m`, `[PROGRESS] 0-100`, `[CKPT]`, `[REBOOT]`, `[DONE]`,
-    `[FREED] <octets>`, `[LOG] Canal texte`.
+    `[FREED] <octets>`, `[LOG] Canal texte`, `[RESTART] <phase>` (règle 42).
 23. **Le seul verdict est `exit`** : termine par `exit 0` en cas de réussite, `exit 1` en
-    cas d'échec. Un `[ERR]` seul ne fait pas échouer le script.
+    cas d'échec, `exit 3010` seulement juste après un `[RESTART]` (règle 42). Un `[ERR]`
+    seul ne fait pas échouer le script.
 24. **Codes d'erreur** : déclare-les dans `REPORT`
     (`## E104 : [error] Description — Solution`), traduis-les dans `LANG`, et écris le code
     en **premier mot** : `[ERR] E104 <détail technique>`. Forme : une à trois majuscules,
@@ -208,6 +210,24 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     sortie : ce que l'utilisateur doit lire dans sa langue passe par les **codes d'erreur**
     (description et solution traduites) et, en analyse, par les mots du bloc `REPORT`.
     N'écris jamais deux versions d'un message.
+
+### Le redémarrage au milieu d'un entretien (si le script en a besoin)
+
+42. **Ne redémarre jamais le PC toi-même** : ni `Restart-Computer`, ni `Stop-Computer`, ni
+    `shutdown /r /s /g /p` — l'entretien serait coupé net (`REDEMARRAGE_DIRECT`). Si
+    l'action ne peut finir qu'après un redémarrage, **demande-le** : `## resume : true`
+    dans l'entête, puis `Write-Host "[RESTART] <phase>"` et **`exit 3010`**. Sindry
+    redémarre et te relance avec `$env:SINDRY_RESUME = '<phase>'` et la même
+    configuration ; teste-la **juste après l'override** (et la branche d'analyse) :
+    `if ($env:SINDRY_RESUME -eq 'delete-file') { …la suite… ; exit 0 }`. Phase en
+    minuscules, chiffres et tirets, 32 caractères au plus ; jamais de `[RESTART]` en
+    analyse ni en simulation (en `SafeTest`, dis ce que tu ferais) ; aucune option secrète
+    dans un script `resume` (« Redémarrer au milieu d'un entretien »).
+43. **Chaque phase doit pouvoir être rejouée** sans dommage : si le PC redémarre pendant,
+    elle recommence. Pour un redémarrage nécessaire seulement **à la fin**, c'est
+    `[REBOOT]` et `exit 0`, jamais `[RESTART]`. Les installeurs tiers reçoivent
+    `/norestart` (MSI : `REBOOT=ReallySuppress`) ; traduis leur 3010 ou 1641 en `[REBOOT]`
+    ou en `[RESTART]`.
 
 ---
 

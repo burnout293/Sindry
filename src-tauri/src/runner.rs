@@ -54,10 +54,24 @@ const FILE_SHARE_READ: u32 = 0x0000_0001;
 /// Marqueurs de la specification 5.3, et ceux de l'analyse (§17). Toute autre
 /// balise en debut de ligne est laissee telle quelle : le moteur affiche, il ne
 /// censure pas.
-const MARQUEURS: [&str; 15] = [
+const MARQUEURS: [&str; 16] = [
     "INFO", "OK", "WARN", "ERR", "STEP", "CKPT", "REBOOT", "DONE", "FREED", "FIND", "ITEM",
-    "METRIC", "NOTE", "LOG", "PROGRESS",
+    "METRIC", "NOTE", "LOG", "PROGRESS", "RESTART",
 ];
+
+/// The exit code that goes with `[RESTART]` (2.0.5): neither success nor
+/// failure, the rest comes after the restart (ERROR_SUCCESS_REBOOT_REQUIRED).
+pub const CODE_A_SUIVRE: i32 = 3010;
+
+/// A resume phase (2.0.5): lowercase letters, digits and dashes, 32 at most.
+/// It goes back to the script as `SINDRY_RESUME`; nothing else is accepted.
+pub fn phase_valide(phase: &str) -> bool {
+    !phase.is_empty()
+        && phase.len() <= 32
+        && phase
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+}
 
 /// Politiques d'execution admises (specification 6.7). Elles ne s'appliquent
 /// qu'au processus enfant : la politique de la machine n'est ni lue ni modifiee.
@@ -171,6 +185,10 @@ pub struct RunEnd {
     pub checkpoint_reached: bool,
     /// Le script a emis `[REBOOT]` : un redemarrage est reellement necessaire.
     pub reboot_requested: bool,
+    /// 2.0.5: the script asked for a restart in the middle of the run
+    /// (`[RESTART] <phase>`, then exit 3010), and may ask for it: `resume : true`,
+    /// neither an analysis nor a simulation. The phase it resumes at.
+    pub restart_phase: Option<String>,
     /// Octets annonces par `[FREED]` (§17) : ce qui a reellement ete libere.
     /// `None` si le script ne l'a pas dit — le bilan affiche alors l'estimation
     /// de l'analyse, precedee de « environ ».
@@ -365,6 +383,11 @@ pub struct RunRequest {
     /// `Bypass` par defaut, au niveau du processus enfant seul.
     #[serde(default)]
     pub policy: Option<String>,
+    /// 2.0.5: relaunch the script after a restart, at this phase
+    /// (`SINDRY_RESUME`). Accepted only when it is the phase the resume journal
+    /// (HKLM) holds for this script — see `lib.rs::run_script`.
+    #[serde(default)]
+    pub resume_phase: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -393,6 +416,11 @@ pub struct Cible {
     pub interruptible: bool,
     /// Lancer l'analyse (`SINDRY_MODE=scan`) et non l'action (§17).
     pub analyse: bool,
+    /// 2.0.5: the phase to resume at (`SINDRY_RESUME`), after a restart.
+    pub reprise: Option<String>,
+    /// 2.0.5: may this run ask for a restart? `resume : true`, and neither an
+    /// analysis nor a simulation. Otherwise `[RESTART]` is only displayed.
+    pub redemarrage_permis: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -687,7 +715,7 @@ pub fn lancer(
     // script une configuration a moitie lue.
     if config_json.len() > 30_000 {
         return Err(format!(
-            "La configuration de ce script est trop volumineuse ({} caracteres)              pour etre transmise a PowerShell.",
+            "La configuration de ce script est trop volumineuse ({} caracteres) pour etre transmise a PowerShell.",
             config_json.len()
         ));
     }
@@ -784,6 +812,12 @@ pub fn lancer(
             .env_remove("SINDRY_MODE")
             .env_remove("WINTOOL_MODE");
     }
+    // 2.0.5: the phase to resume at, after a restart. Same rule as the mode:
+    // set or removed, never inherited.
+    match &cible.reprise {
+        Some(phase) => commande.env("SINDRY_RESUME", phase),
+        None => commande.env_remove("SINDRY_RESUME"),
+    };
 
     #[cfg(windows)]
     commande.creation_flags(CREATE_NO_WINDOW);
@@ -802,6 +836,9 @@ pub fn lancer(
     let checkpoint = Arc::new(AtomicBool::new(false));
     let tue = Arc::new(AtomicBool::new(false));
     let reboot = Arc::new(AtomicBool::new(false));
+    // 2.0.5: the last valid `[RESTART] <phase>`, when this run may ask for one.
+    let phase_demandee: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let redemarrage_permis = cible.redemarrage_permis;
     // `u64::MAX` : aucun `[FREED]` lu.
     let libere = Arc::new(AtomicU64::new(u64::MAX));
 
@@ -830,6 +867,7 @@ pub fn lancer(
         let journal = journal.clone();
         let checkpoint = checkpoint.clone();
         let reboot = reboot.clone();
+        let phase_demandee = phase_demandee.clone();
         let libere = libere.clone();
         std::thread::spawn(move || {
             let mut lecteur = BufReader::new(flux);
@@ -850,6 +888,20 @@ pub fn lancer(
                         "ERR" => compteurs.lock().unwrap().err += 1,
                         "CKPT" => checkpoint.store(true, Ordering::Relaxed),
                         "REBOOT" => reboot.store(true, Ordering::Relaxed),
+                        // 2.0.5: kept only when this run may restart the PC,
+                        // and only a well-formed phase; the last one wins.
+                        "RESTART" if redemarrage_permis => {
+                            if let Some(p) = texte
+                                .trim_start()
+                                .split_once(']')
+                                .and_then(|(_, r)| r.split_whitespace().next())
+                                .filter(|p| phase_valide(p))
+                            {
+                                if let Ok(mut g) = phase_demandee.lock() {
+                                    *g = Some(p.to_string());
+                                }
+                            }
+                        }
                         // Le dernier `[FREED]` lisible l'emporte ; un nombre
                         // illisible n'est jamais compte comme zero.
                         "FREED" => {
@@ -917,6 +969,13 @@ pub fn lancer(
                 .filter(|f| lues_avant.contains(f))
                 .collect();
             let tue_par_nous = tue.load(Ordering::Relaxed);
+            // 2.0.5: a restart is asked for by `[RESTART] <phase>` AND exit 3010;
+            // one without the other is not a request.
+            let restart_phase = if !tue_par_nous && exit_code == Some(CODE_A_SUIVRE) {
+                phase_demandee.lock().ok().and_then(|g| g.clone())
+            } else {
+                None
+            };
             let c = compteurs
                 .lock()
                 .map(|c| (c.ok, c.warn, c.err))
@@ -934,6 +993,8 @@ pub fn lancer(
                     duree,
                     if tue_par_nous {
                         "interrompu par l'utilisateur"
+                    } else if restart_phase.is_some() {
+                        "a suivre apres redemarrage"
                     } else if exit_code == Some(0) {
                         "succes"
                     } else {
@@ -964,6 +1025,7 @@ pub fn lancer(
                 duration_ms: duree,
                 checkpoint_reached: checkpoint.load(Ordering::Relaxed),
                 reboot_requested: reboot.load(Ordering::Relaxed),
+                restart_phase,
                 freed: match libere.load(Ordering::Relaxed) {
                     u64::MAX => None,
                     n => Some(n),
@@ -1075,6 +1137,23 @@ fn preparer(
             entree.path
         ));
     }
+    // 2.0.5: a restart in the middle of a run is the script's to ask for
+    // (`resume : true`), never during an analysis — which changes nothing — nor
+    // a simulation, which must not restart the PC either.
+    let simule = req
+        .config
+        .get(crate::simulation::CLE)
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let redemarrage_permis = entree.meta.resume && !analyse && !simule;
+    if let Some(p) = &req.resume_phase {
+        if !redemarrage_permis || !phase_valide(p) {
+            return Err(format!(
+                "« {} » ne peut pas reprendre a la phase « {p} ».",
+                entree.meta.title
+            ));
+        }
+    }
     let cible = Cible {
         // Le chemin vient de la decouverte, pas de l'interface : il n'y a pas
         // de nom de fichier a reconstruire, donc rien a detourner.
@@ -1087,6 +1166,8 @@ fn preparer(
         // instant, sans la precaution du §6.3 (§17.5).
         interruptible: entree.meta.interruptible || analyse,
         analyse,
+        reprise: req.resume_phase.clone(),
+        redemarrage_permis,
     };
     Ok(cible)
 }
@@ -1662,6 +1743,67 @@ exit 0
             engine: "auto".into(),
             interruptible,
             analyse: false,
+            reprise: None,
+            redemarrage_permis: false,
+        }
+    }
+
+    /// 2.0.5: `[RESTART] <phase>` then exit 3010 is a restart request, only for
+    /// a run that may ask for one; `SINDRY_RESUME` brings the phase back.
+    #[test]
+    fn a_restart_request_needs_the_marker_the_exit_code_and_the_permission() {
+        const PHASES: &str = r#"Write-Output "[INFO] resume=$env:SINDRY_RESUME"
+if ($env:SINDRY_RESUME -eq 'fin') { Write-Output '[DONE] resumed'; exit 0 }
+Write-Output '[RESTART] fin'
+exit 3010
+"#;
+        let bac = Bac::neuf("restart");
+        let script = bac.poser("phases.ps1", PHASES);
+        let tourner = |permis: bool, reprise: Option<&str>| {
+            let (collecteur, rx) = attelage();
+            let mut c = cible(script.clone(), true);
+            c.redemarrage_permis = permis;
+            c.reprise = reprise.map(str::to_string);
+            lancer(
+                c,
+                BTreeMap::new(),
+                None,
+                &bac.0,
+                Arc::new(Runner::default()),
+                collecteur.clone(),
+            )
+            .expect("lancement");
+            let fin = rx.recv_timeout(Duration::from_secs(90)).expect("fin");
+            let texte = collecteur
+                .lignes
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|l| l.text.clone())
+                .collect::<Vec<_>>()
+                .join("\n");
+            (fin, texte)
+        };
+
+        let (fin, _) = tourner(true, None);
+        assert_eq!(fin.exit_code, Some(CODE_A_SUIVRE));
+        assert_eq!(fin.restart_phase.as_deref(), Some("fin"));
+        assert!(!fin.success);
+
+        let (fin, _) = tourner(false, None);
+        assert_eq!(fin.restart_phase, None, "a run without the permission");
+
+        let (fin, texte) = tourner(true, Some("fin"));
+        assert_eq!(fin.exit_code, Some(0));
+        assert_eq!(fin.restart_phase, None);
+        assert!(texte.contains("resume=fin"), "{texte}");
+    }
+
+    #[test]
+    fn a_resume_phase_is_a_short_lowercase_token() {
+        assert!(phase_valide("apres-pilote") && phase_valide("phase2"));
+        for faux in ["", "Apres", "a b", "a;b", &"x".repeat(33)] {
+            assert!(!phase_valide(faux), "{faux}");
         }
     }
 

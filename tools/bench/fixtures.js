@@ -99,6 +99,8 @@
         reversible: extra.reversible !== false,
         interruptible: extra.interruptible !== false,
         reboot: !!extra.reboot,
+        // Struct `contract::Script`, 2.0.5: restart midway, then resume.
+        resume: !!extra.resume,
         engine: 'auto',
         options: extra.options || [],
         translations: { fr: { title: titre, desc, options: {}, choices: {}, report: {} } },
@@ -297,6 +299,8 @@
     // reboot=, across five lists.
     script('deep-clean', 'Deep clean', 'Removes what slows the PC down: programs, startup, tasks, services, registry', 'cleaning', 'sparkles', {
       duration: 'slow',
+      // 2.0.5: `?redemarrage`, its action asks for a restart midway.
+      resume: true,
       options: [
         optA('Programs', 'items', 'Programs', '', []),
         optA('Startup', 'items', 'Startup', '', []),
@@ -683,6 +687,32 @@
 
   let compteur = 0;
   let enCours = null;
+  // 2.0.5: the resume journal of the bench (`?reprise=`), and the restart cap.
+  let plafondBanc = 3;
+  let repriseBanc = (() => {
+    const genre = new URLSearchParams(location.search).get('reprise');
+    if (!genre) return null;
+    const coupe = genre === 'interrompu';
+    return {
+      format: 1, id: 'e-banc', sid: 'S-1-5-21-1-2-3-1001', cree: Math.floor(Date.now() / 1000) - 600, demarrage: 0,
+      actions: [
+        { script_id: 'deep-clean', hash: 'h', config: {}, ids: {} },
+        { script_id: 'clean-cache', hash: 'h', config: {}, ids: {} },
+      ],
+      en_cours: true, phase: coupe ? null : 'apres-pilote', redemarrages: coupe ? 0 : 1,
+      interface: {
+        lotId: 'cleaning', lotNom: 'Faire le ménage', lotIcon: 'broom', total: 3,
+        lances: ['clean-temp', 'deep-clean', 'clean-cache'],
+        resultats: [{ id: 'clean-temp', success: true, simule: false, freed: 1503238553, changes: [], watched: [] }],
+        depuisExpert: null, mode: 'simple', at: Date.now() - 600000,
+      },
+    };
+  })();
+  document.head.append(Object.assign(document.createElement('style'), {
+    textContent: '.banc-restreint .restreint { inset: auto; top: 50%; left: 50%; width: 520px; height: 360px; transform: translate(-50%, -50%);'
+      + ' border-radius: 10px; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }'
+      + ' .banc-restreint body { background: radial-gradient(120% 90% at 30% 20%, #0E2A4A, #071426); }',
+  }));
 
   // Simulation (§6.9) : meme regle que simulation.rs, sur les reglages du banc.
   const simulable = (s) => (s.meta.options || []).some((o) => o.key === 'SafeTest');
@@ -728,18 +758,22 @@
       }, at / 4);
     });
 
+    // 2.0.5, `?redemarrage`: a `resume` action asks for a restart at its first
+    // pass ([RESTART] then 3010); resumed, it asks for one at the end ([REBOOT]).
+    const demandeRedemarrage = !!s?.meta.resume && !req?.resume_phase && new URLSearchParams(location.search).has('redemarrage');
     setTimeout(() => {
       if (!enCours || enCours.run_id !== run_id) return;
       const tue = enCours.arrete;
       enCours = null;
       emettre('script:end', {
         run_id, script_id,
-        exit_code: tue ? null : enErreur ? 1 : 0,
-        success: !tue && !enErreur,
+        exit_code: tue ? null : demandeRedemarrage ? 3010 : enErreur ? 1 : 0,
+        success: !tue && !enErreur && !demandeRedemarrage,
         killed: tue,
         duration_ms: 1420,
         checkpoint_reached: true,
-        reboot_requested: false,
+        reboot_requested: !!s?.meta.resume && !!req?.resume_phase,
+        restart_phase: !tue && demandeRedemarrage ? 'apres-pilote' : null,
         // `[FREED]` : seule l'action « Faire de la place » l'annonce sur le banc.
         freed: script_id === 'free-space' ? 917504000 : null,
         analysis: false,
@@ -770,7 +804,7 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.0.4', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '2.0.5', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
     // Sans parametre, Sindry est a jour.
@@ -779,7 +813,7 @@
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
       if (!maj) return null;
       const version = maj === 'signature' ? '1.5.1' : maj;
-      return { version, actuelle: '2.0.4', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '2.0.5', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -1055,6 +1089,48 @@
     },
     set_ui_scale: (a) => { reglages.ui_scale = a.value; return JSON.parse(JSON.stringify(reglages)); },
     relaunch_elevated: () => null,
+    // 2.0.5 (§6.10): the resume journal, in memory. `?reprise=auto|redemarre|
+    // attente|interrompu` puts one there at startup; `?arso=desactivee|
+    // strategie|inconnue`; `?nonrelancable`: the relaunch task cannot be made.
+    resume_state: () => {
+      const q = new URLSearchParams(location.search);
+      const eleve = !q.has('sansadmin');
+      const verdict = !repriseBanc ? null
+        : repriseBanc.phase ? (q.get('reprise') === 'attente' ? 'en_attente' : 'reprendre') : 'interrompu';
+      return {
+        journal: repriseBanc ? JSON.parse(JSON.stringify(repriseBanc)) : null,
+        verdict,
+        relance: q.get('reprise') === 'auto',
+        elevated: eleve,
+        plafond: plafondBanc,
+        arso: q.get('arso') || 'activee',
+        relancable: !q.has('nonrelancable'),
+      };
+    },
+    resume_save: (a) => {
+      const r = a?.req || {};
+      repriseBanc = {
+        format: 1, id: r.id, sid: 'S-1-5-21-1-2-3-1001', cree: Math.floor(Date.now() / 1000), demarrage: 0,
+        actions: (r.actions || []).map((x) => ({ script_id: x.script_id, hash: 'h', config: x.config || {}, ids: {} })),
+        en_cours: !!r.en_cours, phase: r.phase || null, redemarrages: r.redemarrages || 0, interface: r.interface || {},
+      };
+      return r.tache && new URLSearchParams(location.search).has('nonrelancable') ? 'La relance automatique demande Sindry installe dans Program Files.' : null;
+    },
+    resume_begin: () => {
+      if (!repriseBanc) throw new Error('Aucun entretien a reprendre.');
+      return JSON.parse(JSON.stringify(repriseBanc));
+    },
+    resume_clear: () => { repriseBanc = null; return null; },
+    restart_pc: () => { window.__BENCH_REDEMARRE = true; console.info('[banc] redemarrage demande'); return null; },
+    open_signin_settings: () => null,
+    set_max_restarts: (a) => {
+      if (new URLSearchParams(location.search).has('sansadmin')) throw new Error('REPRISE_SANS_DROITS');
+      plafondBanc = a.n;
+      return plafondBanc;
+    },
+    // The bench has no window to shrink: the restricted mode is drawn as the
+    // small window it would be, in the middle of the page.
+    set_restricted_window: (a) => { document.documentElement.classList.toggle('banc-restreint', !!a.on); return null; },
     simulation_state: () => bilanSimulation(),
     set_simulation_all: (a) => {
       TOUS.filter(simulable).forEach((s) => {

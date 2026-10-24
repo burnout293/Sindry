@@ -266,6 +266,7 @@ function buildAi() {
 const EXTRACTS = [
   ['## Le squelette'],
   ['## Les marqueurs de sortie'],
+  ["## Redémarrer au milieu d'un entretien (2.0.5)"],
   ['### Le contrat, en quatre règles'],
   ["### Les lignes de l'analyse", 'own'],
   ['#### Les champs de `[FIND]`'],

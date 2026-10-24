@@ -1,7 +1,7 @@
 # Sindry — écrire un script PowerShell conforme (version courte)
 
 > **Version courte, pour une IA à petite mémoire** (un modèle local, par exemple). Générée
-> par `tools/build-script-guides.mjs` (Sindry 2.0.4), comme la version complète
+> par `tools/build-script-guides.mjs` (Sindry 2.0.5), comme la version complète
 > `SCRIPTS_POUR_IA.md`. Ne la modifiez pas à la main.
 
 Ce document garde l'essentiel pour écrire un script que Sindry accepte : la mission, le
@@ -84,7 +84,8 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     `auto|winps|pwsh` (préfère `auto`) ; booléens `true|false`.
 11. `admin : true` si le script a besoin des droits ; `reversible : false` si ce qu'il fait
     ne se défait pas ; `interruptible : false` si le tuer en route laisse le système
-    incohérent ; `reboot : true` s'il faut redémarrer ensuite.
+    incohérent ; `reboot : true` s'il faut redémarrer **à la fin** ; `resume : true` s'il
+    peut demander un redémarrage **au milieu**, puis reprendre (règle 42).
 12. **Toujours présents et à jour** : `author` (le créateur), `created` (date de création),
     `updated` (date de la dernière modification) et `version`. Dates `AAAA-MM-JJ`, `updated`
     jamais avant `created`, aucune date future ; `version` et `updated` changent à chaque
@@ -135,9 +136,10 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
 
 22. Un **marqueur en majuscules en tête** de chaque ligne utile : `[INFO]`, `[OK]`, `[WARN]`,
     `[ERR]`, `[STEP] n/m`, `[PROGRESS] 0-100`, `[CKPT]`, `[REBOOT]`, `[DONE]`,
-    `[FREED] <octets>`, `[LOG] Canal texte`.
+    `[FREED] <octets>`, `[LOG] Canal texte`, `[RESTART] <phase>` (règle 42).
 23. **Le seul verdict est `exit`** : termine par `exit 0` en cas de réussite, `exit 1` en
-    cas d'échec. Un `[ERR]` seul ne fait pas échouer le script.
+    cas d'échec, `exit 3010` seulement juste après un `[RESTART]` (règle 42). Un `[ERR]`
+    seul ne fait pas échouer le script.
 24. **Codes d'erreur** : déclare-les dans `REPORT`
     (`## E104 : [error] Description — Solution`), traduis-les dans `LANG`, et écris le code
     en **premier mot** : `[ERR] E104 <détail technique>`. Forme : une à trois majuscules,
@@ -207,6 +209,24 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     sortie : ce que l'utilisateur doit lire dans sa langue passe par les **codes d'erreur**
     (description et solution traduites) et, en analyse, par les mots du bloc `REPORT`.
     N'écris jamais deux versions d'un message.
+
+### Le redémarrage au milieu d'un entretien (si le script en a besoin)
+
+42. **Ne redémarre jamais le PC toi-même** : ni `Restart-Computer`, ni `Stop-Computer`, ni
+    `shutdown /r /s /g /p` — l'entretien serait coupé net (`REDEMARRAGE_DIRECT`). Si
+    l'action ne peut finir qu'après un redémarrage, **demande-le** : `## resume : true`
+    dans l'entête, puis `Write-Host "[RESTART] <phase>"` et **`exit 3010`**. Sindry
+    redémarre et te relance avec `$env:SINDRY_RESUME = '<phase>'` et la même
+    configuration ; teste-la **juste après l'override** (et la branche d'analyse) :
+    `if ($env:SINDRY_RESUME -eq 'delete-file') { …la suite… ; exit 0 }`. Phase en
+    minuscules, chiffres et tirets, 32 caractères au plus ; jamais de `[RESTART]` en
+    analyse ni en simulation (en `SafeTest`, dis ce que tu ferais) ; aucune option secrète
+    dans un script `resume` (« Redémarrer au milieu d'un entretien »).
+43. **Chaque phase doit pouvoir être rejouée** sans dommage : si le PC redémarre pendant,
+    elle recommence. Pour un redémarrage nécessaire seulement **à la fin**, c'est
+    `[REBOOT]` et `exit 0`, jamais `[RESTART]`. Les installeurs tiers reçoivent
+    `/norestart` (MSI : `REBOOT=ReallySuppress`) ; traduis leur 3010 ou 1641 en `[REBOOT]`
+    ou en `[RESTART]`.
 
 ---
 
@@ -374,7 +394,8 @@ détail technique » ; c'est l'interface qui traduit la progression à partir de
 [STEP]     3/7 message      alimente la barre de progression
 [PROGRESS] 0-100            la progression en pourcentage, quand [STEP] ne convient pas
 [CKPT]     message          « interruption sans risque à partir d'ici »
-[REBOOT]   message          un redémarrage est réellement nécessaire
+[REBOOT]   message          un redémarrage est réellement nécessaire, à la fin de l'entretien
+[RESTART]  phase            redémarrer maintenant, puis reprendre à cette phase (2.0.5), suivi de exit 3010
 [DONE]     message          fin nominale
 [FREED]    octets           espace réellement libéré, repris dans le bilan
 [LOG]      Canal texte      une ligne de journal rangée dans un canal (mode Expert)
@@ -445,6 +466,149 @@ franchi. Émettez-en un dès que l'état du système redevient cohérent :
 ```powershell
 Write-Host "[CKPT] Backup complete - safe to interrupt from here"
 ```
+
+### Redémarrer au milieu d'un entretien (2.0.5)
+
+Certaines actions ne se terminent qu'après un redémarrage : un pilote qu'on désinscrit,
+dont le fichier reste chargé jusqu'au prochain démarrage ; une installation qui en réclame
+un avant la suivante. Le script ne redémarre **jamais** le PC lui-même — Windows tuerait
+Sindry au milieu de l'entretien. Il le **demande**, et Sindry s'occupe du reste :
+
+1. le script émet `[RESTART] <phase>`, puis se termine par **`exit 3010`** ;
+2. Sindry garde de quoi reprendre (dans HKLM), prépare sa relance, et propose le
+   redémarrage avec un compte à rebours de 60 secondes — l'entretien va au bout même si
+   personne n'est devant le PC ;
+3. après le redémarrage, Windows rouvre la session (s'il le permet, sinon à la connexion
+   de l'utilisateur) ; Sindry se relance seul, en administrateur, dans une petite fenêtre
+   « Action en cours » ;
+4. il relance **le même script**, avec la même configuration et **`SINDRY_RESUME=<phase>`**,
+   puis enchaîne les actions restantes. À la fin, le bilan habituel.
+
+| Règle | Détail |
+|---|---|
+| `## resume : true` | Obligatoire pour qu'un `[RESTART]` soit suivi. Sans lui, Sindry ne redémarre pas et l'action finit en échec |
+| La phase | Minuscules, chiffres et tirets, 32 caractères au plus : `[RESTART] delete-file` |
+| `exit 3010` | Juste après `[RESTART]` : ni succès, ni échec — la suite vient après le redémarrage. Sans `[RESTART]`, 3010 est un échec |
+| `$env:SINDRY_RESUME` | Absent au premier passage ; vaut la phase au retour. Testez-le **juste après l'override** (et la branche d'analyse), avant toute modification |
+| Une phase se rejoue | Si le PC redémarre pendant une phase, elle recommence : écrivez-la pour qu'un second passage ne fasse pas de dégâts |
+| Ni analyse, ni simulation | `[RESTART]` est ignoré en analyse (`SINDRY_MODE=scan`) et en simulation : en `SafeTest`, dites ce que vous feriez |
+| Un plafond | Trois redémarrages par entretien par défaut (réglage Expert 4.5) ; au-delà, l'entretien s'arrête |
+| Pas d'option secrète | La configuration est gardée pour la reprise : aucune option `Password`, `Token`… dans un script `resume` |
+| Installeurs tiers | Passez-leur `/norestart` (MSI : `REBOOT=ReallySuppress`), puis traduisez leur 3010 ou 1641 en `[REBOOT]` (à la fin) ou en `[RESTART]` |
+
+`Restart-Computer`, `Stop-Computer`, `shutdown /r`, `/s`, `/g` ou `/p` sont des **erreurs**
+du validateur (`REDEMARRAGE_DIRECT`), et Sindry les signale avant d'approuver un script.
+
+`[REBOOT]` garde son sens : un redémarrage nécessaire **à la fin**, proposé au bilan,
+jamais imposé. `[RESTART]`, c'est maintenant, au milieu, avec reprise.
+
+**Exemple complet.** Un pilote se désinscrit, le PC redémarre, puis son fichier — enfin
+libéré — se supprime :
+
+```powershell
+## SINDRY:START
+## id            : 8d4c2f6e-1b7a-4e3d-9c5f-2a6b8e0d4f17
+## lang          : en
+## title         : Remove a leftover driver
+## desc          : Unregisters the driver, restarts the PC, then deletes its file
+## category      : apps
+## icon          : package-x
+## tags          : driver, leftovers
+## version       : 1.0
+## author        : Your name
+## created       : 2026-10-24
+## updated       : 2026-10-24
+## admin         : true
+## risk          : high
+## duration      : medium
+## reversible    : false
+## interruptible : false
+## reboot        : false
+## resume        : true
+## engine        : auto
+## SINDRY:END
+
+## SINDRY:OPTIONS
+## SafeTest : [bool] Simulate — shows what would be done, changes nothing
+## SINDRY:END
+
+## SINDRY:REPORT
+## E201 : [error] The driver could not be unregistered — Restart the PC, then run the action again
+## E202 : [error] The driver file is still in use — Restart the PC once more, then run the action again
+## SINDRY:END
+
+## SINDRY:LANG fr
+## title    : Retirer un pilote resté en place
+## desc     : Désinscrit le pilote, redémarre le PC, puis supprime son fichier
+## SafeTest : Simuler — montre ce qui serait fait, sans rien modifier
+## E201     : Le pilote n'a pas pu être désinscrit — Redémarrez le PC, puis relancez l'action
+## E202     : Le fichier du pilote est encore utilisé — Redémarrez le PC une fois de plus, puis relancez l'action
+## SINDRY:END
+
+$CONFIG = @{
+    SafeTest = $false
+}
+
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
+        ForEach-Object { $CONFIG[$_.Name] = $_.Value }
+}
+
+# ==============================================================================
+
+# Comparaison de CHAINE, pas de booleen : la valeur arrive par JSON.
+$SafeTest = ("$($CONFIG.SafeTest)" -eq 'True')
+# Le pilote vise, ecrit en dur : jamais un chemin fabrique avec une valeur recue.
+$DRIVER = 'OldVendorFilter'
+# Son fichier, sous le dossier des pilotes de Windows.
+$FILE = "$env:SystemRoot\System32\drivers\$DRIVER.sys"
+
+# ==============================================================================
+# Phase 2, apres le redemarrage : Sindry relance le script avec SINDRY_RESUME.
+# Elle doit pouvoir etre rejouee sans dommage.
+# ==============================================================================
+if ($env:SINDRY_RESUME -eq 'delete-file') {
+    Write-Host "[STEP] 2/2 Deleting the driver file"
+    if ($SafeTest) {
+        Write-Host "[INFO] SafeTest - would delete $FILE"
+    } elseif (Test-Path -LiteralPath $FILE) {
+        try {
+            Remove-Item -LiteralPath $FILE -Force -ErrorAction Stop
+        } catch {
+            Write-Host "[ERR] E202 $($_.Exception.Message)"
+            exit 1
+        }
+        Write-Host "[OK]   Driver file deleted"
+    }
+    Write-Host "[DONE] Done"
+    exit 0
+}
+
+# ==============================================================================
+# Phase 1 : desinscrire le pilote. Son fichier reste charge jusqu'au redemarrage.
+# ==============================================================================
+Write-Host "[STEP] 1/2 Unregistering the driver"
+if ($SafeTest) {
+    # En simulation, jamais de redemarrage : on dit ce qu'on ferait.
+    Write-Host "[INFO] SafeTest - would unregister $DRIVER, then ask for a restart"
+    Write-Host "[DONE] Done"
+    exit 0
+}
+& "$env:SystemRoot\System32\sc.exe" delete $DRIVER | Out-Null
+# 1060 : le service n'existe deja plus, ce n'est pas un echec.
+if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1060) {
+    Write-Host "[ERR] E201 sc.exe delete returned $LASTEXITCODE"
+    exit 1
+}
+Write-Host "[OK]   Driver unregistered"
+# Sindry redemarre le PC, puis relance ce script a la phase 'delete-file'.
+Write-Host "[RESTART] delete-file"
+exit 3010
+```
+
+En ligne de commande (`sindry-cli`), il n'y a ni redémarrage ni reprise : l'entretien
+s'arrête au `[RESTART]` et sort en 3010, avec la liste des actions restantes.
 
 ---
 
@@ -901,6 +1065,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Chaque `[ERR] X123` ou `[WARN] X123` vise un code déclaré `[error]` dans `REPORT`, et
       chaque code déclaré est utilisé.
 - [ ] Si `SafeTest` existe, rien ne modifie le système quand il vaut `$true`.
+- [ ] Aucun redémarrage direct. Un `[RESTART] <phase>` a `## resume : true`, est suivi de
+      `exit 3010`, et sa phase est reprise par un test de `$env:SINDRY_RESUME`.
 
 ### Analyse (si `scan : true`)
 

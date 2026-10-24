@@ -11,6 +11,7 @@ mod history;
 mod icon;
 mod migration;
 mod preconfiguration;
+mod reprise;
 mod restore;
 mod runner;
 mod security;
@@ -21,10 +22,10 @@ mod systeme;
 mod temoin;
 mod update;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use settings::{Lot, Settings};
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 #[derive(Serialize)]
@@ -161,22 +162,27 @@ fn script_approuve(entree: &discovery::ScriptEntry) -> Result<bool, String> {
 /// Rend la main quand l'utilisateur a repondu. S'il refuse, il retrouve
 /// l'application telle qu'il l'a laissee : la fermeture est declenchee par
 /// l'interface une fois la nouvelle fenetre apparue.
+///
+/// `reprendre` (2.0.5) : la nouvelle instance reprend l'entretien en attente
+/// (`--reprendre`) — le seul argument qu'elle puisse recevoir d'ici.
 #[tauri::command]
-async fn relaunch_elevated() -> Result<(), String> {
+async fn relaunch_elevated(reprendre: Option<bool>) -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| format!("executable introuvable : {e}"))?;
-    tauri::async_runtime::spawn_blocking(move || relancer_en_administrateur(&exe))
+    let args = reprendre.unwrap_or(false).then_some(reprise::ARGUMENT);
+    tauri::async_runtime::spawn_blocking(move || relancer_en_administrateur(&exe, args))
         .await
         .map_err(|e| e.to_string())?
 }
 
 #[cfg(windows)]
-fn relancer_en_administrateur(exe: &std::path::Path) -> Result<(), String> {
+fn relancer_en_administrateur(exe: &std::path::Path, args: Option<&str>) -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::UI::Shell::ShellExecuteW;
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
     let large = |s: &std::ffi::OsStr| s.encode_wide().chain(Some(0)).collect::<Vec<u16>>();
     let verbe = large(std::ffi::OsStr::new("runas"));
     let fichier = large(exe.as_os_str());
+    let parametres = args.map(|a| large(std::ffi::OsStr::new(a)));
     // SAFETY: deux chaines UTF-16 terminees par un zero, qui vivent jusqu'au
     // retour de l'appel ; les autres pointeurs sont nuls, comme le permet l'API.
     let r = unsafe {
@@ -184,7 +190,7 @@ fn relancer_en_administrateur(exe: &std::path::Path) -> Result<(), String> {
             std::ptr::null_mut(),
             verbe.as_ptr(),
             fichier.as_ptr(),
-            std::ptr::null(),
+            parametres.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
             std::ptr::null(),
             SW_SHOWNORMAL,
         )
@@ -199,7 +205,7 @@ fn relancer_en_administrateur(exe: &std::path::Path) -> Result<(), String> {
 }
 
 #[cfg(not(windows))]
-fn relancer_en_administrateur(_exe: &std::path::Path) -> Result<(), String> {
+fn relancer_en_administrateur(_exe: &std::path::Path, _args: Option<&str>) -> Result<(), String> {
     Err("disponible sous Windows seulement".into())
 }
 
@@ -307,6 +313,19 @@ fn run_script(
     memoire: tauri::State<'_, Arc<analyse::Memoire>>,
     req: runner::RunRequest,
 ) -> Result<runner::RunStarted, String> {
+    // 2.0.5 : une phase de reprise n'est jamais celle que l'interface affirme,
+    // mais celle que le journal (HKLM, ecrit eleve) garde pour ce script.
+    if let Some(phase) = &req.resume_phase {
+        let attendue = reprise::lire().filter(|j| {
+            j.actions
+                .first()
+                .is_some_and(|a| a.script_id == req.script_id)
+                && j.phase.as_deref() == Some(phase.as_str())
+        });
+        if attendue.is_none() {
+            return Err("Aucune reprise n'est en attente pour ce script a cette phase.".into());
+        }
+    }
     let (req, entree, simule) = preparer_action(&app, &memoire, req, false)?;
     // Un `Arc` plutot qu'un etat emprunte : le fil qui attend la fin du
     // processus doit pouvoir liberer l'emplacement bien apres le retour de
@@ -783,6 +802,282 @@ fn enforce_log_cap(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn create_restore_point(description: String) -> Result<restore::RestoreOutcome, String> {
     restore::creer_point_de_restauration(&description)
+}
+
+// ---------------------------------------------------------------------------
+// Reprise apres redemarrage (2.0.5, §6.10) — voir `reprise.rs`
+// ---------------------------------------------------------------------------
+
+/// Sindry a-t-il ete lance par la tache de relance (`--reprendre`) ?
+struct Relance(bool);
+
+/// Le mode restreint est-il actif ? La fenetre ne se ferme pas tant qu'il l'est.
+static RESTREINT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+const REPRISE_SANS_DROITS: &str = "REPRISE_SANS_DROITS";
+
+#[derive(Serialize)]
+struct EtatReprise {
+    /// Le journal retrouve, s'il est lisible.
+    journal: Option<reprise::Journal>,
+    verdict: Option<reprise::Verdict>,
+    /// Lance par la tache de relance.
+    relance: bool,
+    elevated: bool,
+    /// Redemarrages au plus par entretien (reglage Expert, HKLM).
+    plafond: u32,
+    arso: reprise::Arso,
+    /// La relance automatique est possible : Sindry installe sous Program Files.
+    relancable: bool,
+}
+
+#[tauri::command]
+fn resume_state(relance: tauri::State<'_, Relance>) -> EtatReprise {
+    let sid = reprise::sid_courant().unwrap_or_default();
+    let journal = reprise::lire();
+    let verdict = journal
+        .as_ref()
+        .map(|j| reprise::juger(j, &sid, reprise::maintenant(), reprise::demarrage_pc()));
+    EtatReprise {
+        journal,
+        verdict,
+        relance: relance.0,
+        elevated: is_elevated(),
+        plafond: reprise::plafond(),
+        arso: reprise::arso(&sid),
+        relancable: reprise::exe_relancable().is_ok(),
+    }
+}
+
+#[derive(Deserialize)]
+struct ActionDemandee {
+    script_id: String,
+    #[serde(default)]
+    config: std::collections::BTreeMap<String, serde_json::Value>,
+}
+
+/// Ce que l'interface demande d'enregistrer. Les empreintes et les ids des
+/// selections, c'est Sindry qui les lit : la decouverte et la memoire d'analyse.
+#[derive(Deserialize)]
+struct DemandeJournal {
+    id: String,
+    actions: Vec<ActionDemandee>,
+    #[serde(default)]
+    en_cours: bool,
+    #[serde(default)]
+    phase: Option<String>,
+    #[serde(default)]
+    redemarrages: u32,
+    #[serde(default)]
+    interface: serde_json::Value,
+    /// Creer la tache de relance : une action peut demander un redemarrage.
+    #[serde(default)]
+    tache: bool,
+}
+
+/// Enregistre le journal (HKLM) et, si demande, la tache de relance. Rend un
+/// avertissement si la tache n'a pas pu etre creee : la reprise se fera alors
+/// au prochain lancement de Sindry, pas toute seule.
+#[tauri::command]
+fn resume_save(
+    app: tauri::AppHandle,
+    memoire: tauri::State<'_, Arc<analyse::Memoire>>,
+    req: DemandeJournal,
+) -> Result<Option<String>, String> {
+    if !is_elevated() {
+        return Err(REPRISE_SANS_DROITS.to_string());
+    }
+    let sid = reprise::sid_courant().ok_or("Compte Windows illisible.")?;
+    if let Some(p) = &req.phase {
+        if !runner::phase_valide(p) {
+            return Err(format!("Phase de reprise invalide : {p}"));
+        }
+    }
+    if req.redemarrages > reprise::plafond() {
+        return Err("PLAFOND_ATTEINT".to_string());
+    }
+    let decouverte = discovery::discover(&app)?;
+    let mut actions = Vec::new();
+    for a in req.actions {
+        let entree = decouverte
+            .scripts
+            .iter()
+            .find(|s| s.id == a.script_id)
+            .ok_or_else(|| format!("Script introuvable : {}", a.script_id))?;
+        // Les selections [items] : verifiees contre l'analyse maintenant, pour
+        // pouvoir etre rendues a la memoire apres le redemarrage.
+        let mut ids = std::collections::BTreeMap::new();
+        for o in entree.meta.options.iter().filter(|o| o.kind == "items") {
+            if let Some(v) = a.config.get(&o.key) {
+                let liste: Vec<String> = v
+                    .as_array()
+                    .map(|l| {
+                        l.iter()
+                            .filter_map(|x| x.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                memoire.verifier(&entree.id, &entree.hash, &o.key, &liste)?;
+                ids.insert(o.key.clone(), liste);
+            }
+        }
+        actions.push(reprise::Action {
+            script_id: entree.id.clone(),
+            hash: entree.hash.clone(),
+            config: a.config,
+            ids,
+        });
+    }
+    if actions.is_empty() {
+        reprise::effacer();
+        return Ok(None);
+    }
+    // Un meme entretien garde sa date de creation d'un enregistrement a l'autre.
+    let cree = reprise::lire()
+        .filter(|j| j.id == req.id)
+        .map(|j| j.cree)
+        .unwrap_or_else(reprise::maintenant);
+    reprise::ecrire(&reprise::Journal {
+        format: reprise::FORMAT,
+        id: req.id,
+        sid: sid.clone(),
+        cree,
+        demarrage: reprise::demarrage_pc(),
+        actions,
+        en_cours: req.en_cours,
+        phase: req.phase,
+        redemarrages: req.redemarrages,
+        interface: req.interface,
+    })?;
+    if req.tache {
+        if let Err(e) = reprise::creer_tache(&sid) {
+            return Ok(Some(e));
+        }
+    }
+    Ok(None)
+}
+
+/// Le debut d'une reprise : la tache de relance a servi, elle s'efface ; la
+/// memoire d'analyse retrouve les selections du journal. Rend le journal.
+#[tauri::command]
+fn resume_begin(
+    memoire: tauri::State<'_, Arc<analyse::Memoire>>,
+) -> Result<reprise::Journal, String> {
+    if !is_elevated() {
+        return Err(REPRISE_SANS_DROITS.to_string());
+    }
+    let sid = reprise::sid_courant().ok_or("Compte Windows illisible.")?;
+    let j = reprise::lire().ok_or("Aucun entretien a reprendre.")?;
+    match reprise::juger(&j, &sid, reprise::maintenant(), reprise::demarrage_pc()) {
+        reprise::Verdict::AutreCompte | reprise::Verdict::Expire => {
+            return Err("Cet entretien ne peut plus etre repris.".into())
+        }
+        _ => {}
+    }
+    let _ = reprise::supprimer_tache();
+    for a in &j.actions {
+        memoire.reprendre(&a.script_id, &a.hash, &a.ids);
+    }
+    Ok(j)
+}
+
+/// Fin d'un entretien repris, ou abandon : le journal et la tache s'effacent.
+#[tauri::command]
+fn resume_clear() -> Result<(), String> {
+    if !is_elevated() {
+        return Err(REPRISE_SANS_DROITS.to_string());
+    }
+    reprise::effacer();
+    reprise::supprimer_tache()
+}
+
+/// Redemarre le PC tout de suite (`shutdown /g`).
+#[tauri::command]
+fn restart_pc() -> Result<(), String> {
+    reprise::redemarrer()
+}
+
+/// Ouvre le reglage de Windows qui permet la reprise sans mot de passe (ARSO) :
+/// Comptes › Options de connexion. Une adresse fixe, rien d'autre.
+#[tauri::command]
+fn open_signin_settings() -> Result<(), String> {
+    std::process::Command::new(systeme::emplacements().windows.join("explorer.exe"))
+        .arg("ms-settings:signinoptions")
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Reglages de Windows injoignables : {e}"))
+}
+
+/// Le plafond de redemarrages : un reglage qui affaiblit une protection quand on
+/// le releve, donc en administrateur seulement.
+#[tauri::command]
+fn set_max_restarts(n: u32) -> Result<u32, String> {
+    if !is_elevated() {
+        return Err(REPRISE_SANS_DROITS.to_string());
+    }
+    reprise::fixer_plafond(n)?;
+    Ok(reprise::plafond())
+}
+
+/// Ce que la fenetre etait avant le mode restreint, pour le lui rendre.
+/// Taille, position, et agrandie ou non.
+type Fenetre = (tauri::PhysicalSize<u32>, tauri::PhysicalPosition<i32>, bool);
+static FENETRE_AVANT: Mutex<Option<Fenetre>> = Mutex::new(None);
+
+/// Le mode restreint (§6.10) : une petite fenetre qui ne se ferme pas, au premier
+/// plan, le temps que l'entretien repris se termine. Puis la fenetre d'avant.
+#[tauri::command]
+fn set_restricted_window(window: tauri::WebviewWindow, on: bool) -> Result<(), String> {
+    let e = |x: tauri::Error| x.to_string();
+    if on {
+        if let (Ok(taille), Ok(position), Ok(max)) = (
+            window.inner_size(),
+            window.outer_position(),
+            window.is_maximized(),
+        ) {
+            if let Ok(mut g) = FENETRE_AVANT.lock() {
+                g.get_or_insert((taille, position, max));
+            }
+        }
+        RESTREINT.store(true, std::sync::atomic::Ordering::SeqCst);
+        let _ = window.unmaximize();
+        window
+            .set_min_size(None::<tauri::LogicalSize<f64>>)
+            .map_err(e)?;
+        window
+            .set_size(tauri::LogicalSize::new(520.0, 360.0))
+            .map_err(e)?;
+        window.set_resizable(false).map_err(e)?;
+        window.set_closable(false).map_err(e)?;
+        window.set_minimizable(false).map_err(e)?;
+        window.set_always_on_top(true).map_err(e)?;
+        window.center().map_err(e)?;
+    } else {
+        RESTREINT.store(false, std::sync::atomic::Ordering::SeqCst);
+        window.set_always_on_top(false).map_err(e)?;
+        window.set_closable(true).map_err(e)?;
+        window.set_minimizable(true).map_err(e)?;
+        window.set_resizable(true).map_err(e)?;
+        window
+            .set_min_size(Some(tauri::LogicalSize::new(920.0, 640.0)))
+            .map_err(e)?;
+        match FENETRE_AVANT.lock().ok().and_then(|mut g| g.take()) {
+            Some((taille, position, max)) => {
+                window.set_size(taille).map_err(e)?;
+                window.set_position(position).map_err(e)?;
+                if max {
+                    let _ = window.maximize();
+                }
+            }
+            None => {
+                window
+                    .set_size(tauri::LogicalSize::new(1180.0, 760.0))
+                    .map_err(e)?;
+                window.center().map_err(e)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Charge les reglages, laisse `f` les modifier, sauvegarde, renvoie le resultat.
@@ -1698,10 +1993,23 @@ pub fn run() {
         systeme::signaler(message);
     }
 
+    // 2.0.5 : lance par la tache de relance, apres un redemarrage.
+    let relance = std::env::args().any(|a| a == reprise::ARGUMENT);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .setup(|app| {
+        // Le mode restreint (§6.10) : ni croix, ni Alt+F4, tant que l'entretien
+        // repris n'est pas termine.
+        .on_window_event(|_, evenement| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = evenement {
+                if RESTREINT.load(std::sync::atomic::Ordering::SeqCst) {
+                    api.prevent_close();
+                }
+            }
+        })
+        .setup(move |app| {
+            app.manage(Relance(relance));
             app.manage(Arc::new(runner::Runner::default()));
             app.manage(Arc::new(analyse::Memoire::default()));
             if let Some(message) = preparer_enfants(app.handle()) {
@@ -1749,6 +2057,14 @@ pub fn run() {
             preparer_approbation,
             approve_script,
             create_restore_point,
+            resume_state,
+            resume_save,
+            resume_begin,
+            resume_clear,
+            restart_pc,
+            open_signin_settings,
+            set_max_restarts,
+            set_restricted_window,
             record_script_run,
             record_lot_run,
             get_history,

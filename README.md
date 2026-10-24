@@ -145,7 +145,9 @@ ouvrir dans un navigateur (recherche, générateur de squelette), et
 **[`docs/SCRIPTS_POUR_IA.md`](docs/SCRIPTS_POUR_IA.md)**, à donner à une IA pour qu'elle écrive un
 script conforme — et sa version courte,
 **[`docs/SCRIPTS_POUR_IA_COURT.md`](docs/SCRIPTS_POUR_IA_COURT.md)**, trois fois plus légère, pour
-un modèle local à petite mémoire.
+un modèle local à petite mémoire. Une IA qui a déjà une version précédente n'a besoin que de
+**[`docs/SCRIPTS_POUR_IA_NOUVEAUTES.md`](docs/SCRIPTS_POUR_IA_NOUVEAUTES.md)** : les consignes qui
+changent, version par version.
 
 Vérifiez-le avant de le lancer :
 

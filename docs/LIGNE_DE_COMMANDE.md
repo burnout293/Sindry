@@ -155,6 +155,11 @@ en `--json`, est aussi un document : `{ "erreur": "…", "code": 3 }`.
 Pour `lancer`, le code résume la série : `1` si une action a échoué, sinon `3` si une a été
 refusée, sinon `3010` si l'une demande un redémarrage, sinon `0`.
 
+**Redémarrer au milieu (2.0.5).** Une action qui demande un redémarrage pour continuer
+(`[RESTART]`, puis `exit 3010`) arrête la série : elle est « à suivre après un
+redémarrage », les suivantes « non lancées », et le code est `3010`. La ligne de commande
+ne redémarre pas et ne reprend pas seule ; l'interface, elle, le fait (§6.10).
+
 **Une exécution à la fois** est la règle de l'interface (§6.6). Elle vaut dans un même
 processus : ne lancez pas une action depuis la console pendant que l'interface en exécute
 une autre.

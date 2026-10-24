@@ -524,9 +524,12 @@ du mode Simple. Comportement modifiable en mode Expert.
 
 ### 6.5 Redémarrage
 
-Annoncé d'avance à l'étape 2 si la case du script est cochée, confirmé à la fin si le
-script émet `[REBOOT]`. **Jamais déclenché au milieu d'un entretien** : il est proposé
-dans le bilan final, avec le choix de redémarrer maintenant ou plus tard.
+Annoncé d'avance à l'étape 2 si le script le déclare (`reboot : true`), confirmé à la fin
+s'il émet `[REBOOT]`. **Sindry ne redémarre jamais de lui-même au milieu d'un
+entretien** : un redémarrage demandé à la fin est proposé dans le bilan final, avec le
+choix de redémarrer maintenant ou plus tard (2.0.5 : la promesse est enfin tenue — le
+bilan le propose). Seul un script peut demander un redémarrage au milieu, et seulement
+pour reprendre ensuite (§6.10).
 
 ### 6.6 Concurrence
 
@@ -639,6 +642,55 @@ est transmise avec la valeur enregistrée, et qu'aucun script incapable de se si
 part quand la simulation est activée ; il ne peut pas garantir qu'un script qui la déclare
 l'honore complètement. Cette responsabilité est celle de l'auteur du script, et
 `docs/FORMAT_SCRIPT.md` la lui rappelle.
+
+### 6.10 Reprise après redémarrage (2.0.5, maquette M37)
+
+Un script qui ne peut finir qu'après un redémarrage le demande : `[RESTART] <phase>`, puis
+`exit 3010` (`## resume : true` dans son entête). Le script ne redémarre jamais le PC
+lui-même : l'entretien serait coupé net (`REDEMARRAGE_DIRECT`, erreur du validateur et
+alerte avant approbation).
+
+| Étape | Ce que fait Sindry |
+|---|---|
+| Avant chaque action | Il écrit le **journal de reprise** : ce qui reste, la configuration validée, les sélections d'analyse, les résultats déjà obtenus. Un entretien coupé par surprise se retrouve au lancement suivant (« Reprendre / Abandonner ») |
+| Avant une action `resume` | Il crée la **tâche de relance** : à l'ouverture de session de ce compte, `sindry.exe --reprendre`, élevé, sans UAC |
+| Au `[RESTART]` | Il garde la phase, puis propose le redémarrage avec un **compte à rebours de 60 s** (« Redémarrer maintenant », « Plus tard ») : l'entretien va au bout sans personne |
+| Le redémarrage | `shutdown /g` : Windows rouvre et **verrouille** la session du dernier utilisateur si la reprise sans mot de passe (ARSO) est permise ; sinon, la reprise attend sa connexion |
+| À la relance | **Mode restreint** : une petite fenêtre qui ne se ferme pas, « Action en cours », sans catalogue, mises à jour ni ambiance. Le script repart avec `SINDRY_RESUME=<phase>` et la même configuration ; les actions restantes suivent |
+| À la fin | Tâche et journal effacés ; l'interface habituelle revient avec le bilan complet, avant et après le redémarrage |
+
+**Où vit la confiance (§12.4).** Le journal décide de ce qu'un processus élevé exécute :
+il vit dans `HKLM\SOFTWARE\Sindry\Reprise`, qu'un programme sans droits ne peut pas
+écrire — jamais dans `%LOCALAPPDATA%` ni dans `settings.json`. Les empreintes et les ids des
+sélections y sont ceux que Sindry lit lui-même (découverte, mémoire d'analyse), pas ceux
+que l'interface affirme. Une phase de reprise n'est acceptée que si c'est celle que le
+journal garde pour ce script. À la reprise, chaque action repasse par le chemin habituel :
+empreinte (un script modifié entre-temps est sauté), approbation, garde.
+
+**La tâche** ne porte que `--reprendre`, jamais un script ni un réglage, et ne pointe que
+vers l'exe installé sous Program Files (installation par machine, modifiable en
+administrateur seulement) ; ailleurs — une build de développement — elle n'est pas
+créée et la reprise attend le prochain lancement. Elle expire au bout de sept jours. Elle
+est créée et effacée hors de la fenêtre du témoin (§12.5), qui n'ignore donc rien : un
+script qui la modifierait serait signalé.
+
+**Ce qui est refusé.** Un journal d'un autre compte, ou de plus de sept jours. Un
+redémarrage de plus que le **plafond** (réglage Expert 4.5, trois par défaut, de 1 à 10,
+dans HKLM : le relever affaiblit une protection). Un `[RESTART]` en analyse ou en
+simulation. Sans droits administrateur, il n'y a pas de reprise : l'action s'arrête et le
+bilan dit pourquoi.
+
+**Session protégée par mot de passe.** Sindry ne voit, ne demande et ne stocke **jamais**
+un mot de passe. La reprise sans personne repose sur ARSO, le mécanisme de Windows Update :
+Windows garde lui-même les identifiants et verrouille la session rouverte. Sindry lit si
+c'est permis (stratégie `DisableAutomaticRestartSignOn`, choix de l'utilisateur sous
+`Winlogon\UserARSO\<SID>`) et l'annonce (« activée », « désactivée », « interdite », ou
+« à vérifier » quand Windows ne dit rien) avec un lien vers le réglage de Windows (4.6).
+Écartés : une session « super admin » (les scripts agiraient sur le mauvais profil) et
+l'ouverture automatique classique (Sindry détiendrait le mot de passe).
+
+**Ligne de commande** : ni redémarrage ni reprise ; elle s'arrête au `[RESTART]` et sort en
+3010.
 
 ---
 

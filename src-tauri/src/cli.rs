@@ -1142,6 +1142,7 @@ fn analyser(
         expected_hash: e.hash.clone(),
         config: figee,
         policy: Some(politique.to_string()),
+        resume_phase: None,
     };
     let (req, entree) = preparer_analyse(h, req)?;
     let base = discovery::base_dir(h)?;
@@ -1438,7 +1439,21 @@ fn lancer(h: &tauri::AppHandle, cibles: &[String], o: &Options) -> Res<i32> {
         if !o.json {
             println!("{}", resume_resultat(&r));
         }
+        let a_suivre = r.statut == "a_suivre";
         resultats.push(r);
+        if a_suivre {
+            for reste in a_lancer.iter().skip(resultats.len()) {
+                resultats.push(ResultatAction::sans_lancement(
+                    reste,
+                    "non_lance",
+                    Some(l!(
+                        "attend le redemarrage demande par l'action precedente",
+                        "waits for the restart the previous action asked for"
+                    )),
+                ));
+            }
+            break;
+        }
         if echec && reglages.failure_policy == "stop" {
             for reste in a_lancer.iter().skip(resultats.len()) {
                 resultats.push(ResultatAction::sans_lancement(
@@ -1578,6 +1593,7 @@ fn lancer_une(
         expected_hash: e.hash.clone(),
         config,
         policy: Some(politique.to_string()),
+        resume_phase: None,
     };
     let memoire = h.state::<Arc<analyse::Memoire>>().inner().clone();
     let (req, entree, simule) = match preparer_action(h, &memoire, req, o.simuler) {
@@ -1617,6 +1633,10 @@ fn lancer_une(
         titre: titre(e),
         statut: if fin.killed {
             "interrompu"
+        } else if fin.restart_phase.is_some() {
+            // 2.0.5 : le script attend un redemarrage pour continuer. La ligne
+            // de commande ne redemarre pas et ne reprend pas seule (§6.10).
+            "a_suivre"
         } else if succes {
             "reussi"
         } else {
@@ -1626,7 +1646,7 @@ fn lancer_une(
         simule: x.demarre.simulated || simule,
         code_sortie: fin.exit_code,
         duree_ms: Some(fin.duration_ms),
-        redemarrage: fin.reboot_requested,
+        redemarrage: fin.reboot_requested || fin.restart_phase.is_some(),
         libere: fin.freed,
         journal: Some(fin.log_path),
         changements: fin.changes,
@@ -1640,6 +1660,10 @@ fn resume_resultat(r: &ResultatAction) -> String {
         "refuse" => l!("refuse", "refused"),
         "interrompu" => l!("interrompu", "stopped"),
         "non_lance" => l!("non lance", "not run"),
+        "a_suivre" => l!(
+            "a suivre apres un redemarrage",
+            "to be continued after a restart"
+        ),
         _ => l!("echec", "failed"),
     };
     let mut s = format!("-- {} : {etat}", r.titre);

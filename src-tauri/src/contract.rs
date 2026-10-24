@@ -182,6 +182,10 @@ pub struct Script {
     pub reversible: bool,
     pub interruptible: bool,
     pub reboot: bool,
+    /// `resume : true` (2.0.5): the script may ask, by `[RESTART] <phase>`, for
+    /// the PC to restart in the middle of a run, and is then relaunched with
+    /// `SINDRY_RESUME=<phase>`. Optional, `false` when absent.
+    pub resume: bool,
     pub engine: String,
     pub options: Vec<Opt>,
     pub translations: BTreeMap<String, Translation>,
@@ -907,6 +911,7 @@ pub fn parse(source: &str) -> Script {
         reversible: as_bool(&get("reversible")),
         interruptible: as_bool(&get("interruptible")),
         reboot: as_bool(&get("reboot")),
+        resume: as_bool(&get("resume")),
         engine: if head.contains_key("engine") {
             get("engine")
         } else {
