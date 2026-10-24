@@ -1634,7 +1634,7 @@ fn lancer_une(
         statut: if fin.killed {
             "interrompu"
         } else if fin.restart_phase.is_some() {
-            // 2.0.5 : le script attend un redemarrage pour continuer. La ligne
+            // 2.1.0 : le script attend un redemarrage pour continuer. La ligne
             // de commande ne redemarre pas et ne reprend pas seule (§6.10).
             "a_suivre"
         } else if succes {

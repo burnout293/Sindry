@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Redémarrage et reprise</title>
 <!--
-  Mockup M37 (2.0.5): a maintenance run that restarts the PC in its middle and
+  Mockup M37 (2.1.0): a maintenance run that restarts the PC in its middle and
   resumes on its own afterwards.
   - « Vérifier »: the run announces the restart, and whether Windows will sign
     the user back in by itself (Automatic Restart Sign-On, ARSO);
@@ -274,7 +274,7 @@ button { cursor: pointer; }
   const ui = { scene: 'verifier', arso: true, admin: true, later: false, stop: 0, again: false, endOffer: true };
   let timer = null, left = 60;
 
-  const appbar = (step) => `<div class="appbar"><img src="${LOGO}" alt=""><b>Sindry</b><span class="ver">2.0.5</span>
+  const appbar = (step) => `<div class="appbar"><img src="${LOGO}" alt=""><b>Sindry</b><span class="ver">2.1.0</span>
     <span class="steps"><span class="${step > 1 ? 'done' : 'on'}">Choisir</span><span class="${step > 2 ? 'done' : step === 2 ? 'on' : ''}">Vérifier</span><span class="${step === 3 ? 'on' : ''}">Entretien</span></span></div>`;
   const head = (title, sub) => `<div class="screen-head"><span class="back"><i>←</i>Faire le ménage</span><h2>${title}</h2><p>${sub}</p></div>`;
   const ring = (n, size = 92) => {

@@ -2611,7 +2611,7 @@ body.inactive .onb-illu * { animation-play-state: paused; }
 .amb-ignorees > span { color: var(--text-3); }
 .amb-ignorees .fic { font-family: var(--mono); font-weight: 500; color: var(--warn); letter-spacing: 0; }
 
-/* --- Reprise apres redemarrage (2.0.5, §6.10, maquette M37) ---------------- */
+/* --- Reprise apres redemarrage (2.1.0, §6.10, maquette M37) ---------------- */
 .reprise-note { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 .reprise-ligne { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 10px; font-size: 12.5px;
   background: var(--surface-2); color: var(--text-2); }

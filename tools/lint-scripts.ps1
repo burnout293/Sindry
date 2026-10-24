@@ -65,7 +65,7 @@ $VALEURS_ADMISES = @{
     # Facultatif : l'action entiere n'apparait qu'en Expert — ni montree ni lancee
     # en mode Simple. Voir « Ce qui ne s'affiche que dans un mode ».
     show          = @('expert')
-    # Facultatif (2.0.5) : le script peut demander un redemarrage au milieu de
+    # Facultatif (2.1.0) : le script peut demander un redemarrage au milieu de
     # l'entretien, puis reprendre. Voir « Redemarrer au milieu d'un entretien ».
     resume        = @('true', 'false')
 }
@@ -1030,7 +1030,7 @@ function Test-Presentation {
 
 function Test-Redemarrage {
     <#
-      Redemarrer au milieu d'un entretien (2.0.5, FORMAT_SCRIPT.md). Le script ne
+      Redemarrer au milieu d'un entretien (2.1.0, FORMAT_SCRIPT.md). Le script ne
       redemarre jamais le PC lui-meme : il le demande par « [RESTART] <phase> »
       puis « exit 3010 », et Sindry redemarre apres avoir garde de quoi reprendre.
       Au retour, la phase arrive dans $env:SINDRY_RESUME.
@@ -1161,7 +1161,7 @@ $racine = (Resolve-Path $Path).Path
 $idsVus = @{}
 
 # Le contrat d'avant Sindry 2.0, quand l'application s'appelait WinTool :
-# `## WINTOOL:START`, `$env:WINTOOL_CONFIG`... Lu jusqu'a la 2.1 : le script est
+# `## WINTOOL:START`, `$env:WINTOOL_CONFIG`... Lu jusqu'a la v3 : le script est
 # ramene au contrat de Sindry ligne a ligne (les numeros ne bougent pas), et une
 # note demande la conversion. Une note ne fait pas echouer -Strict : le catalogue
 # a le temps de migrer. Meme regle que contract::depuis_ancien_contrat.
@@ -1176,7 +1176,7 @@ foreach ($f in $fichiers) {
             if ($l -match '^\s*##') { $l = $l.Replace("$($ANCIEN):", 'SINDRY:') }
             $l.Replace("$($ANCIEN)_CONFIG", 'SINDRY_CONFIG').Replace("$($ANCIEN)_MODE", 'SINDRY_MODE')
         })
-        Add-Constat $relatif 1 'note' 'CONTRAT_ANCIEN' "Contrat d'avant Sindry 2.0 ($($ANCIEN):START, `$env:$($ANCIEN)_CONFIG) : lu jusqu'a la 2.1. Remplacez $ANCIEN par SINDRY dans les marqueurs et les variables."
+        Add-Constat $relatif 1 'note' 'CONTRAT_ANCIEN' "Contrat d'avant Sindry 2.0 ($($ANCIEN):START, `$env:$($ANCIEN)_CONFIG) : lu jusqu'a la v3. Remplacez $ANCIEN par SINDRY dans les marqueurs et les variables."
     }
 
     Test-Encodage $relatif $f.FullName

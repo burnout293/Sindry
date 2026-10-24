@@ -16,7 +16,7 @@
 //!
 //! C'est, avec la lecture de l'ancien contrat des scripts
 //! (`contract::depuis_ancien_contrat`), le seul endroit qui nomme encore
-//! WinTool. Les deux disparaitront en 2.1.
+//! WinTool. Les deux disparaitront en v3.
 
 use std::fs;
 use std::path::{Path, PathBuf};

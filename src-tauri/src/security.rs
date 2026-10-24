@@ -68,7 +68,7 @@ pub fn detecter(source: &str) -> Vec<PointAttention> {
                 extrait: extrait(),
             });
         }
-        // 2.0.5 : un script ne redemarre jamais le PC lui-meme. Il le demande
+        // 2.1.0 : un script ne redemarre jamais le PC lui-meme. Il le demande
         // par `[RESTART]`, et c'est Sindry qui redemarre, apres avoir garde de
         // quoi reprendre (§6.10) : sinon l'entretien est coupe net.
         let arret = minuscule.contains("shutdown")

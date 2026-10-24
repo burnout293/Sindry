@@ -1,4 +1,4 @@
-//! Reprendre un entretien apres un redemarrage (2.0.5, specification §6.10).
+//! Reprendre un entretien apres un redemarrage (2.1.0, specification §6.10).
 //!
 //! Un script demande un redemarrage au milieu d'un entretien par
 //! `[RESTART] <phase>` puis `exit 3010` (`runner.rs`). Sindry garde ici ce qu'il

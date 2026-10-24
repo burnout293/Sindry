@@ -570,7 +570,7 @@ impl Memoire {
         }
     }
 
-    /// 2.0.5: after a restart, puts back what a script's selection held when the
+    /// 2.1.0: after a restart, puts back what a script's selection held when the
     /// run was saved — ids already checked against its analysis then, kept in
     /// the resume journal (HKLM, written elevated only). Only for that content
     /// of the file: `verifier` still compares the hash.

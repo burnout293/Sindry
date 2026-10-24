@@ -208,7 +208,7 @@ validateur les rappelle par une note, qui ne fait jamais échouer `-Strict`.
 | `reversible` | `true` / `false` | `false` **pré-coche** « nécessite un point de restauration » |
 | `interruptible` | `true` / `false` | `false` = ne peut pas être tué sans risque |
 | `reboot` | `true` / `false` | `true` annonce un redémarrage **à la fin** : dans les faits de la fiche, avant le lancement et au bilan, qui le propose. Il ne se règle pas dans Sindry (1.7) : c'est le script qui le sait, et `[REBOOT]` le confirme |
-| `resume` | `true` / `false` | Facultatif (2.0.5). `true` = le script peut demander un redémarrage **au milieu** de l'entretien, puis reprendre — voir « Redémarrer au milieu d'un entretien » |
+| `resume` | `true` / `false` | Facultatif (2.1.0). `true` = le script peut demander un redémarrage **au milieu** de l'entretien, puis reprendre — voir « Redémarrer au milieu d'un entretien » |
 | `engine` | `auto` / `winps` / `pwsh` | Interpréteur requis |
 | `scan` | `true` / `false` | Facultatif. `true` = le script sait analyser avant d'agir — voir « Le mode analyse » |
 | `view` | une vue | Facultatif. La présentation de l'analyse — voir « Choisir sa vue » |
@@ -448,7 +448,7 @@ en double-clic, avec ses valeurs par défaut.
 
 Jusqu'à la 1.8, l'application s'appelait WinTool, et le contrat aussi : `## WINTOOL:START`,
 `## WINTOOL:OPTIONS`, `$env:WINTOOL_CONFIG`, `$env:WINTOOL_MODE`. **Sindry 2.0 lit encore
-ces scripts, jusqu'à la 2.1** — le temps que les catalogues migrent :
+ces scripts, jusqu'à la v3** — le temps que les catalogues migrent :
 
 - le script est ramené au contrat de Sindry ligne à ligne, avant toute lecture ; les
   numéros de ligne ne bougent pas, les autres constats tombent au bon endroit ;
@@ -461,7 +461,7 @@ La conversion tient en un remplacement : `WINTOOL` par `SINDRY`, dans les marque
 deux variables. Rien d'autre ne change. **Un script modifié doit être approuvé à nouveau**
 (son empreinte change) : pour un catalogue signé, c'est une nouvelle version de l'index.
 
-En 2.1, l'ancien contrat ne sera plus lu : un script resté à `WINTOOL:START` n'aura plus
+En v3, l'ancien contrat ne sera plus lu : un script resté à `WINTOOL:START` n'aura plus
 d'entête (`ENTETE_ABSENT`), et ses réglages ne lui parviendront plus.
 
 ---
@@ -480,7 +480,7 @@ détail technique » ; c'est l'interface qui traduit la progression à partir de
 [PROGRESS] 0-100            la progression en pourcentage, quand [STEP] ne convient pas
 [CKPT]     message          « interruption sans risque à partir d'ici »
 [REBOOT]   message          un redémarrage est réellement nécessaire, à la fin de l'entretien
-[RESTART]  phase            redémarrer maintenant, puis reprendre à cette phase (2.0.5), suivi de exit 3010
+[RESTART]  phase            redémarrer maintenant, puis reprendre à cette phase (2.1.0), suivi de exit 3010
 [DONE]     message          fin nominale
 [FREED]    octets           espace réellement libéré, repris dans le bilan
 [LOG]      Canal texte      une ligne de journal rangée dans un canal (mode Expert)
@@ -552,7 +552,7 @@ franchi. Émettez-en un dès que l'état du système redevient cohérent :
 Write-Host "[CKPT] Backup complete - safe to interrupt from here"
 ```
 
-## Redémarrer au milieu d'un entretien (2.0.5)
+## Redémarrer au milieu d'un entretien (2.1.0)
 
 Certaines actions ne se terminent qu'après un redémarrage : un pilote qu'on désinscrit,
 dont le fichier reste chargé jusqu'au prochain démarrage ; une installation qui en réclame
@@ -1516,7 +1516,7 @@ validateur sans l'ajouter ici est un défaut.**
 | Code | Gravité | Déclencheur |
 |---|---|---|
 | `BOM_ABSENT` | erreur | Fichier non-ASCII sans BOM UTF-8 |
-| `CONTRAT_ANCIEN` | note | Contrat d'avant la 2.0 (`WINTOOL:START`, `$env:WINTOOL_CONFIG`) : lu jusqu'à la 2.1 |
+| `CONTRAT_ANCIEN` | note | Contrat d'avant la 2.0 (`WINTOOL:START`, `$env:WINTOOL_CONFIG`) : lu jusqu'à la v3 |
 | `ENTETE_ABSENT` | erreur | Pas de bloc `SINDRY:START` |
 | `ENTETE_NON_FERME` | erreur | `SINDRY:START` sans `SINDRY:END` |
 | `CHAMP_MANQUANT` | erreur | Champ d'entête obligatoire absent |
@@ -1586,7 +1586,7 @@ validateur sans l'ajouter ici est un défaut.**
 | `VUE_INCONNUE` | erreur | `view` ou `[view:]` hors des vues admises, ou `view` d'une autre forme que `<vue> expert=<vue>` |
 | `GRAPHIQUE_INCONNU` | erreur | `chart` hors des graphiques admis |
 | `PANNEAU_INCONNU` | erreur | `panels` cite un panneau inconnu |
-| `REDEMARRAGE_DIRECT` | erreur | Le script redémarre le PC lui-même (`Restart-Computer`, `shutdown /r`…) au lieu de le demander (2.0.5) |
+| `REDEMARRAGE_DIRECT` | erreur | Le script redémarre le PC lui-même (`Restart-Computer`, `shutdown /r`…) au lieu de le demander (2.1.0) |
 | `RESTART_SANS_RESUME` | erreur | `[RESTART]` sans `## resume : true` dans l'entête |
 | `RESTART_PHASE` | erreur | Phase de `[RESTART]` mal formée : minuscules, chiffres et tirets, 32 au plus |
 | `RESTART_PHASE_NON_TRAITEE` | erreur | Phase émise par `[RESTART]` qu'aucun test de `SINDRY_RESUME` ne reprend |

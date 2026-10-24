@@ -21,7 +21,7 @@ Version du document : 0.1 — 22/09/2026
 
 > **Le nom.** L'application s'appelle **Sindry** depuis la 2.0. Elle portait un autre nom
 > jusqu'à la 1.8 ; il ne subsiste plus que là où il le faut pour reprendre une ancienne
-> installation et lire les anciens scripts (§18), et disparaîtra en 2.1.
+> installation et lire les anciens scripts (§18), et disparaîtra en v3 (reporté : la 2.1.0 les lit encore).
 
 ---
 
@@ -527,7 +527,7 @@ du mode Simple. Comportement modifiable en mode Expert.
 Annoncé d'avance à l'étape 2 si le script le déclare (`reboot : true`), confirmé à la fin
 s'il émet `[REBOOT]`. **Sindry ne redémarre jamais de lui-même au milieu d'un
 entretien** : un redémarrage demandé à la fin est proposé dans le bilan final, avec le
-choix de redémarrer maintenant ou plus tard (2.0.5 : la promesse est enfin tenue — le
+choix de redémarrer maintenant ou plus tard (2.1.0 : la promesse est enfin tenue — le
 bilan le propose). Seul un script peut demander un redémarrage au milieu, et seulement
 pour reprendre ensuite (§6.10).
 
@@ -643,7 +643,7 @@ part quand la simulation est activée ; il ne peut pas garantir qu'un script qui
 l'honore complètement. Cette responsabilité est celle de l'auteur du script, et
 `docs/FORMAT_SCRIPT.md` la lui rappelle.
 
-### 6.10 Reprise après redémarrage (2.0.5, maquette M37)
+### 6.10 Reprise après redémarrage (2.1.0, maquette M37)
 
 Un script qui ne peut finir qu'après un redémarrage le demande : `[RESTART] <phase>`, puis
 `exit 3010` (`## resume : true` dans son entête). Le script ne redémarre jamais le PC
@@ -1902,7 +1902,7 @@ Chaque étape ne fait rien si elle est déjà faite : relancer la migration est 
 qui a été fait au démarrage s'affiche parmi les anomalies de l'Expert, un échec aussi — sans
 jamais bloquer le lancement.
 
-### 18.3 Les scripts : l'ancien contrat, lu jusqu'à la 2.1
+### 18.3 Les scripts : l'ancien contrat, lu jusqu'à la v3
 
 Les scripts écrits pour WinTool commencent par `## WINTOOL:START` et lisent
 `$env:WINTOOL_CONFIG`. Sindry 2.0 les ramène au contrat de Sindry ligne à ligne avant de
@@ -1911,7 +1911,7 @@ le signale en Expert (`CONTRAT_ANCIEN`). Le validateur relève une **note**, qui
 échouer `-Strict` : la CI d'un catalogue reste verte le temps qu'il migre.
 `tools/construire-index-catalogue.ps1` lit les deux formes.
 
-En 2.1, cette lecture disparaît, avec la migration : ce sont les deux seuls endroits du code
+En v3, cette lecture disparaît, avec la migration (prévue d'abord en 2.1, reportée : le catalogue n'a pas fini de migrer) : ce sont les deux seuls endroits du code
 qui nomment encore l'ancien nom (`contract::depuis_ancien_contrat`, `migration.rs`).
 
 ### 18.4 Les mises à jour, d'un nom à l'autre

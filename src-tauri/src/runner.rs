@@ -59,11 +59,11 @@ const MARQUEURS: [&str; 16] = [
     "METRIC", "NOTE", "LOG", "PROGRESS", "RESTART",
 ];
 
-/// The exit code that goes with `[RESTART]` (2.0.5): neither success nor
+/// The exit code that goes with `[RESTART]` (2.1.0): neither success nor
 /// failure, the rest comes after the restart (ERROR_SUCCESS_REBOOT_REQUIRED).
 pub const CODE_A_SUIVRE: i32 = 3010;
 
-/// A resume phase (2.0.5): lowercase letters, digits and dashes, 32 at most.
+/// A resume phase (2.1.0): lowercase letters, digits and dashes, 32 at most.
 /// It goes back to the script as `SINDRY_RESUME`; nothing else is accepted.
 pub fn phase_valide(phase: &str) -> bool {
     !phase.is_empty()
@@ -185,7 +185,7 @@ pub struct RunEnd {
     pub checkpoint_reached: bool,
     /// Le script a emis `[REBOOT]` : un redemarrage est reellement necessaire.
     pub reboot_requested: bool,
-    /// 2.0.5: the script asked for a restart in the middle of the run
+    /// 2.1.0: the script asked for a restart in the middle of the run
     /// (`[RESTART] <phase>`, then exit 3010), and may ask for it: `resume : true`,
     /// neither an analysis nor a simulation. The phase it resumes at.
     pub restart_phase: Option<String>,
@@ -383,7 +383,7 @@ pub struct RunRequest {
     /// `Bypass` par defaut, au niveau du processus enfant seul.
     #[serde(default)]
     pub policy: Option<String>,
-    /// 2.0.5: relaunch the script after a restart, at this phase
+    /// 2.1.0: relaunch the script after a restart, at this phase
     /// (`SINDRY_RESUME`). Accepted only when it is the phase the resume journal
     /// (HKLM) holds for this script — see `lib.rs::run_script`.
     #[serde(default)]
@@ -416,9 +416,9 @@ pub struct Cible {
     pub interruptible: bool,
     /// Lancer l'analyse (`SINDRY_MODE=scan`) et non l'action (§17).
     pub analyse: bool,
-    /// 2.0.5: the phase to resume at (`SINDRY_RESUME`), after a restart.
+    /// 2.1.0: the phase to resume at (`SINDRY_RESUME`), after a restart.
     pub reprise: Option<String>,
-    /// 2.0.5: may this run ask for a restart? `resume : true`, and neither an
+    /// 2.1.0: may this run ask for a restart? `resume : true`, and neither an
     /// analysis nor a simulation. Otherwise `[RESTART]` is only displayed.
     pub redemarrage_permis: bool,
 }
@@ -547,7 +547,7 @@ pub fn trappe_de_substitution(source: &str) -> Option<usize> {
         }
         let bas = ligne.to_ascii_lowercase();
 
-        // L'ancien contrat ($env:WINTOOL_CONFIG) est lu jusqu'a la 2.1 : la
+        // L'ancien contrat ($env:WINTOOL_CONFIG) est lu jusqu'a la v3 : la
         // trappe doit y etre cherchee aussi.
         if bas.contains("$env:sindry_config") || bas.contains("$env:wintool_config") {
             if let Some(gauche) = ligne.split('=').next() {
@@ -782,7 +782,7 @@ pub fn lancer(
         .envs(systeme::environnement_enfants().iter().map(|(k, v)| (k, v)))
         .env("SINDRY_CONFIG", &config_json)
         // Les scripts a l'ancien contrat lisent encore WINTOOL_CONFIG (lu
-        // jusqu'a la 2.1, voir contract::depuis_ancien_contrat).
+        // jusqu'a la v3, voir contract::depuis_ancien_contrat).
         .env("WINTOOL_CONFIG", &config_json)
         // `Import-Module Truc` cherche d'abord dans les dossiers de modules de
         // l'utilisateur, sous Documents, inscriptibles sans elevation : y
@@ -812,7 +812,7 @@ pub fn lancer(
             .env_remove("SINDRY_MODE")
             .env_remove("WINTOOL_MODE");
     }
-    // 2.0.5: the phase to resume at, after a restart. Same rule as the mode:
+    // 2.1.0: the phase to resume at, after a restart. Same rule as the mode:
     // set or removed, never inherited.
     match &cible.reprise {
         Some(phase) => commande.env("SINDRY_RESUME", phase),
@@ -836,7 +836,7 @@ pub fn lancer(
     let checkpoint = Arc::new(AtomicBool::new(false));
     let tue = Arc::new(AtomicBool::new(false));
     let reboot = Arc::new(AtomicBool::new(false));
-    // 2.0.5: the last valid `[RESTART] <phase>`, when this run may ask for one.
+    // 2.1.0: the last valid `[RESTART] <phase>`, when this run may ask for one.
     let phase_demandee: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let redemarrage_permis = cible.redemarrage_permis;
     // `u64::MAX` : aucun `[FREED]` lu.
@@ -888,7 +888,7 @@ pub fn lancer(
                         "ERR" => compteurs.lock().unwrap().err += 1,
                         "CKPT" => checkpoint.store(true, Ordering::Relaxed),
                         "REBOOT" => reboot.store(true, Ordering::Relaxed),
-                        // 2.0.5: kept only when this run may restart the PC,
+                        // 2.1.0: kept only when this run may restart the PC,
                         // and only a well-formed phase; the last one wins.
                         "RESTART" if redemarrage_permis => {
                             if let Some(p) = texte
@@ -969,7 +969,7 @@ pub fn lancer(
                 .filter(|f| lues_avant.contains(f))
                 .collect();
             let tue_par_nous = tue.load(Ordering::Relaxed);
-            // 2.0.5: a restart is asked for by `[RESTART] <phase>` AND exit 3010;
+            // 2.1.0: a restart is asked for by `[RESTART] <phase>` AND exit 3010;
             // one without the other is not a request.
             let restart_phase = if !tue_par_nous && exit_code == Some(CODE_A_SUIVRE) {
                 phase_demandee.lock().ok().and_then(|g| g.clone())
@@ -1137,7 +1137,7 @@ fn preparer(
             entree.path
         ));
     }
-    // 2.0.5: a restart in the middle of a run is the script's to ask for
+    // 2.1.0: a restart in the middle of a run is the script's to ask for
     // (`resume : true`), never during an analysis — which changes nothing — nor
     // a simulation, which must not restart the PC either.
     let simule = req
@@ -1748,7 +1748,7 @@ exit 0
         }
     }
 
-    /// 2.0.5: `[RESTART] <phase>` then exit 3010 is a restart request, only for
+    /// 2.1.0: `[RESTART] <phase>` then exit 3010 is a restart request, only for
     /// a run that may ask for one; `SINDRY_RESUME` brings the phase back.
     #[test]
     fn a_restart_request_needs_the_marker_the_exit_code_and_the_permission() {

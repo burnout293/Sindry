@@ -2688,7 +2688,7 @@ function appliquerDroits(eleve) {
  *  rien n'est perdu. */
 async function relancerEnAdministrateur(reprendre = false) {
   try {
-    // 2.0.5: `reprendre`, the new instance carries on with the waiting run.
+    // 2.1.0: `reprendre`, the new instance carries on with the waiting run.
     await invoke('relaunch_elevated', { reprendre: reprendre === true });
     setTimeout(() => laFenetre.close(), 1200);
   } catch (e) {
@@ -3448,7 +3448,7 @@ async function cablerMoteur() {
       const [n, total] = payload.step;
       if (total > 0) term.prog.style.width = `${Math.min(100, (n / total) * 100)}%`;
       // The mini bar of the running task (it was never fed), and the
-      // restricted mode (2.0.5).
+      // restricted mode (2.1.0).
       if (course.entretien) {
         etapeEntretienActuelle = payload.step;
         rendreTachesEntretien();
@@ -3490,14 +3490,14 @@ async function cablerMoteur() {
 
     if (payload.changes?.length) journaliserTemoin(payload.changes);
     const lastError = course.lastError || null;
-    // 2.0.5: the action asks for a restart before going on (§6.10).
+    // 2.1.0: the action asks for a restart before going on (§6.10).
     if (course.entretien && payload.restart_phase) return void demanderRedemarrage(payload);
     if (course.entretien) {
       const succes = payload.success && !payload.killed;
       entretienEnCours.resultats.push({
         id: payload.script_id, success: succes, simule: course.simule, freed: payload.freed ?? null,
         changes: payload.changes || [], watched: payload.watched || [],
-        // 2.0.5: a restart asked for at the end ([REBOOT]), offered in the summary.
+        // 2.1.0: a restart asked for at the end ([REBOOT]), offered in the summary.
         reboot: !!payload.reboot_requested, repris: !!course.repris,
         ...(!succes && lastError ? { raison: codedReason(lastError) } : {}),
       });
@@ -3881,7 +3881,7 @@ function cablerInteractions() {
 }
 
 /* -------------------------------------------------------------------------
-   Reprise apres redemarrage (2.0.5, specification §6.10, maquette M37)
+   Reprise apres redemarrage (2.1.0, specification §6.10, maquette M37)
 
    An action asks for a restart midway (`[RESTART] <phase>`, exit 3010). Sindry
    keeps what the run needs in the resume journal (HKLM, `reprise.rs`), makes
@@ -4992,7 +4992,7 @@ function majVerifier(groupe) {
   const besoinRedemarrer = retenus.some(besoinRedemarrage);
   noteRedemarrage.hidden = !besoinRedemarrer;
   if (besoinRedemarrer) noteRedemarrage.textContent = t('simple.redemarrage_annonce');
-  // 2.0.5: an action may restart the PC midway, then Sindry carries on.
+  // 2.1.0: an action may restart the PC midway, then Sindry carries on.
   rendreNoteReprise('repriseNote', retenus);
 
   const bouton = document.getElementById('btnSuivantVerifier');
@@ -5575,7 +5575,7 @@ async function lancerEntretien() {
   const aLancer = scriptsALancer(groupe);
   entretienEnCours.lances = aLancer.map((s) => s.id);
   entretienEnCours.total = aLancer.length;
-  // 2.0.5: what a resume after a restart needs (journal, cap, summary).
+  // 2.1.0: what a resume after a restart needs (journal, cap, summary).
   entretienEnCours.redemarrages = 0;
   entretienEnCours.at = Date.now();
   entretienEnCours.mode = entretienEnCours.depuisExpert ? 'expert' : 'simple';
@@ -5626,7 +5626,7 @@ async function lancerScriptEntretien(entree) {
   }
 
   try {
-    // 2.0.5: after a restart, the first action resumes at its phase.
+    // 2.1.0: after a restart, the first action resumes at its phase.
     const phase = phaseReprise(entree);
     // The resume journal is written before the action starts: a run cut short
     // (power cut, unexpected restart) is found again at the next launch. For an
@@ -5671,7 +5671,7 @@ async function arreterEntretien() {
 
 function terminerEntretien() {
   entretienActif = false;
-  // 2.0.5: the run is over — its resume journal and relaunch task go.
+  // 2.1.0: the run is over — its resume journal and relaunch task go.
   arreterCompteRebours();
   document.getElementById('reprisePause').hidden = true;
   if (estEleve) invoke('resume_clear').catch((e) => console.error('Journal de reprise :', e));
@@ -5733,7 +5733,7 @@ function rendreTachesEntretien() {
     let etat = '';
     if (resultat) etat = resultat.success ? 'ok' : 'err';
     else if (actif) etat = 'run';
-    // 2.0.5: the action that waits for the restart it asked for.
+    // 2.1.0: the action that waits for the restart it asked for.
     const enPause = !resultat && entretienEnCours?.enPause && s.id === entretienEnCours.lances?.find((x) => !entretienEnCours.resultats.some((r) => r.id === x));
 
     let icone = String(i + 1);
@@ -7261,7 +7261,7 @@ async function demarrer() {
   await rafraichirHistorique();
   await chargerLots();
 
-  // 2.0.5 (§6.10) : un entretien en attente d'un redemarrage, ou coupe net.
+  // 2.1.0 (§6.10) : un entretien en attente d'un redemarrage, ou coupe net.
   try {
     etatReprise = await invoke('resume_state');
   } catch (e) {

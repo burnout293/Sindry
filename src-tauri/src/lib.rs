@@ -163,7 +163,7 @@ fn script_approuve(entree: &discovery::ScriptEntry) -> Result<bool, String> {
 /// l'application telle qu'il l'a laissee : la fermeture est declenchee par
 /// l'interface une fois la nouvelle fenetre apparue.
 ///
-/// `reprendre` (2.0.5) : la nouvelle instance reprend l'entretien en attente
+/// `reprendre` (2.1.0) : la nouvelle instance reprend l'entretien en attente
 /// (`--reprendre`) — le seul argument qu'elle puisse recevoir d'ici.
 #[tauri::command]
 async fn relaunch_elevated(reprendre: Option<bool>) -> Result<(), String> {
@@ -313,7 +313,7 @@ fn run_script(
     memoire: tauri::State<'_, Arc<analyse::Memoire>>,
     req: runner::RunRequest,
 ) -> Result<runner::RunStarted, String> {
-    // 2.0.5 : une phase de reprise n'est jamais celle que l'interface affirme,
+    // 2.1.0 : une phase de reprise n'est jamais celle que l'interface affirme,
     // mais celle que le journal (HKLM, ecrit eleve) garde pour ce script.
     if let Some(phase) = &req.resume_phase {
         let attendue = reprise::lire().filter(|j| {
@@ -805,7 +805,7 @@ fn create_restore_point(description: String) -> Result<restore::RestoreOutcome, 
 }
 
 // ---------------------------------------------------------------------------
-// Reprise apres redemarrage (2.0.5, §6.10) — voir `reprise.rs`
+// Reprise apres redemarrage (2.1.0, §6.10) — voir `reprise.rs`
 // ---------------------------------------------------------------------------
 
 /// Sindry a-t-il ete lance par la tache de relance (`--reprendre`) ?
@@ -1993,7 +1993,7 @@ pub fn run() {
         systeme::signaler(message);
     }
 
-    // 2.0.5 : lance par la tache de relance, apres un redemarrage.
+    // 2.1.0 : lance par la tache de relance, apres un redemarrage.
     let relance = std::env::args().any(|a| a == reprise::ARGUMENT);
 
     tauri::Builder::default()

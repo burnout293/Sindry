@@ -99,7 +99,7 @@
         reversible: extra.reversible !== false,
         interruptible: extra.interruptible !== false,
         reboot: !!extra.reboot,
-        // Struct `contract::Script`, 2.0.5: restart midway, then resume.
+        // Struct `contract::Script`, 2.1.0: restart midway, then resume.
         resume: !!extra.resume,
         engine: 'auto',
         options: extra.options || [],
@@ -299,7 +299,7 @@
     // reboot=, across five lists.
     script('deep-clean', 'Deep clean', 'Removes what slows the PC down: programs, startup, tasks, services, registry', 'cleaning', 'sparkles', {
       duration: 'slow',
-      // 2.0.5: `?redemarrage`, its action asks for a restart midway.
+      // 2.1.0: `?redemarrage`, its action asks for a restart midway.
       resume: true,
       options: [
         optA('Programs', 'items', 'Programs', '', []),
@@ -687,7 +687,7 @@
 
   let compteur = 0;
   let enCours = null;
-  // 2.0.5: the resume journal of the bench (`?reprise=`), and the restart cap.
+  // 2.1.0: the resume journal of the bench (`?reprise=`), and the restart cap.
   let plafondBanc = 3;
   let repriseBanc = (() => {
     const genre = new URLSearchParams(location.search).get('reprise');
@@ -758,7 +758,7 @@
       }, at / 4);
     });
 
-    // 2.0.5, `?redemarrage`: a `resume` action asks for a restart at its first
+    // 2.1.0, `?redemarrage`: a `resume` action asks for a restart at its first
     // pass ([RESTART] then 3010); resumed, it asks for one at the end ([REBOOT]).
     const demandeRedemarrage = !!s?.meta.resume && !req?.resume_phase && new URLSearchParams(location.search).has('redemarrage');
     setTimeout(() => {
@@ -804,7 +804,7 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.0.5', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '2.1.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
     // Sans parametre, Sindry est a jour.
@@ -813,7 +813,7 @@
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
       if (!maj) return null;
       const version = maj === 'signature' ? '1.5.1' : maj;
-      return { version, actuelle: '2.0.5', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '2.1.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -1089,7 +1089,7 @@
     },
     set_ui_scale: (a) => { reglages.ui_scale = a.value; return JSON.parse(JSON.stringify(reglages)); },
     relaunch_elevated: () => null,
-    // 2.0.5 (§6.10): the resume journal, in memory. `?reprise=auto|redemarre|
+    // 2.1.0 (§6.10): the resume journal, in memory. `?reprise=auto|redemarre|
     // attente|interrompu` puts one there at startup; `?arso=desactivee|
     // strategie|inconnue`; `?nonrelancable`: the relaunch task cannot be made.
     resume_state: () => {

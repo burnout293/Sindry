@@ -1,7 +1,7 @@
 # Sindry — écrire un script PowerShell conforme (version courte)
 
 > **Version courte, pour une IA à petite mémoire** (un modèle local, par exemple). Générée
-> par `tools/build-script-guides.mjs` (Sindry 2.0.5), comme la version complète
+> par `tools/build-script-guides.mjs` (Sindry 2.1.0), comme la version complète
 > `SCRIPTS_POUR_IA.md`. Ne la modifiez pas à la main.
 
 Ce document garde l'essentiel pour écrire un script que Sindry accepte : la mission, le
@@ -395,7 +395,7 @@ détail technique » ; c'est l'interface qui traduit la progression à partir de
 [PROGRESS] 0-100            la progression en pourcentage, quand [STEP] ne convient pas
 [CKPT]     message          « interruption sans risque à partir d'ici »
 [REBOOT]   message          un redémarrage est réellement nécessaire, à la fin de l'entretien
-[RESTART]  phase            redémarrer maintenant, puis reprendre à cette phase (2.0.5), suivi de exit 3010
+[RESTART]  phase            redémarrer maintenant, puis reprendre à cette phase (2.1.0), suivi de exit 3010
 [DONE]     message          fin nominale
 [FREED]    octets           espace réellement libéré, repris dans le bilan
 [LOG]      Canal texte      une ligne de journal rangée dans un canal (mode Expert)
@@ -467,7 +467,7 @@ franchi. Émettez-en un dès que l'état du système redevient cohérent :
 Write-Host "[CKPT] Backup complete - safe to interrupt from here"
 ```
 
-### Redémarrer au milieu d'un entretien (2.0.5)
+### Redémarrer au milieu d'un entretien (2.1.0)
 
 Certaines actions ne se terminent qu'après un redémarrage : un pilote qu'on désinscrit,
 dont le fichier reste chargé jusqu'au prochain démarrage ; une installation qui en réclame

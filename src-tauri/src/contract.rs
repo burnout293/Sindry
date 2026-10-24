@@ -182,7 +182,7 @@ pub struct Script {
     pub reversible: bool,
     pub interruptible: bool,
     pub reboot: bool,
-    /// `resume : true` (2.0.5): the script may ask, by `[RESTART] <phase>`, for
+    /// `resume : true` (2.1.0): the script may ask, by `[RESTART] <phase>`, for
     /// the PC to restart in the middle of a run, and is then relaunched with
     /// `SINDRY_RESUME=<phase>`. Optional, `false` when absent.
     pub resume: bool,
@@ -225,7 +225,7 @@ fn split_label(reste: &str) -> (String, String) {
 
 /// Le contrat d'avant la 2.0, quand l'application s'appelait WinTool : ses
 /// marqueurs `## WINTOOL:START`, `## WINTOOL:OPTIONS`… et ses variables
-/// `$env:WINTOOL_CONFIG`, `$env:WINTOOL_MODE`. **Lu jusqu'a la 2.1**, le temps
+/// `$env:WINTOOL_CONFIG`, `$env:WINTOOL_MODE`. **Lu jusqu'a la v3**, le temps
 /// que les catalogues passent a `SINDRY` : c'est le seul endroit, avec la
 /// migration (`migration.rs`), ou l'ancien nom subsiste.
 const ANCIEN: &str = "WINTOOL";
@@ -422,7 +422,7 @@ pub fn parse(source: &str) -> Script {
             severity: Severity::Warning,
             code: "CONTRAT_ANCIEN".into(),
             message: format!(
-                "Contrat d'avant Sindry 2.0 ({ANCIEN}:START, $env:{ANCIEN}_CONFIG) : lu jusqu'a la 2.1. \
+                "Contrat d'avant Sindry 2.0 ({ANCIEN}:START, $env:{ANCIEN}_CONFIG) : lu jusqu'a la v3. \
                  Remplacez {ANCIEN} par SINDRY dans les marqueurs et les variables."
             ),
         });

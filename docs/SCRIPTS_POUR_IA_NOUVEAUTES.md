@@ -7,7 +7,7 @@
 
 ---
 
-## 2.0.5 — depuis la 2.0.4 : redémarrer au milieu d'un entretien
+## 2.1.0 — depuis la 2.0.4 : redémarrer au milieu d'un entretien
 
 Un script peut maintenant **demander** un redémarrage au milieu d'un entretien, puis
 reprendre là où il en était. Sindry redémarre, se relance seul et relance le script à la

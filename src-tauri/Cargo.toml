@@ -1,6 +1,6 @@
 [package]
 name = "sindry"
-version = "2.0.5"
+version = "2.1.0"
 description = "Outil de maintenance Windows"
 authors = ["Buly"]
 edition = "2021"
@@ -59,7 +59,7 @@ base64 = "0.22"
 windows-registry = "0.6"
 # La relance en administrateur (ShellExecuteW, verbe « runas ») et la console de
 # la ligne de commande (AttachConsole). Deja dans l'arbre, a cette version.
-# 2.0.5, la reprise apres redemarrage : le SID du compte (jeton du processus) et
+# 2.1.0, la reprise apres redemarrage : le SID du compte (jeton du processus) et
 # l'heure de demarrage du PC (GetTickCount64).
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_System_Console", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_System_SystemInformation"] }
 
