@@ -99,7 +99,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | **2.4.0** | Demandé le 25/10/2026 | À faire |
 | | — les nouveautés dans Sindry : celles de la dernière version majeure et de toutes les versions mineures qui ont suivi | À faire |
 | | — **version portable**, démarrable depuis une clé USB (avancée depuis la v3) | À faire |
-| **SindryOS** | Un système démarrable pour soigner Windows sans le démarrer — étude demandée le 25/10/2026 | À étudier |
+| **SindryOS** | Un système démarrable pour soigner Windows sans le démarrer : étude dans [`ETUDE_SINDRYOS.md`](ETUDE_SINDRYOS.md) | Étude faite, à décider |
 | **v3** | Le cap fixé le 24/10/2026 ; les versions 2.x y mènent pas à pas, et d'autres objectifs s'ajouteront | À étudier |
 | | — **version portable** : un exe sans installation, ses données à côté de lui — avancée en 2.4.0 | Prévu en 2.4.0 |
 | | — **un chat avec une IA générative** spécialisée pour Sindry, qui écrit un script sur demande — à voir si c'est possible | À étudier |
