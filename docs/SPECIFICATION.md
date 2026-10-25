@@ -750,8 +750,8 @@ Avancé, seul l'historique s'y montre.
 | **2 Apparence** | 2.1 Thème : clair, sombre, Windows (aussi l'icône soleil / lune) · 2.2 Taille de l'interface · 2.3 Ambiance (§15.4, §15.7) · 2.4 Partager une ambiance : importer, exporter, retirer, ouvrir le dossier, guide du format | partout |
 | **3 Catalogues** | 3.1 Les catalogues en tableau (2.0.2, maquette M29) : les commandes dans une barre — ajouter, mettre à jour, rechercher des mises à jour, modifier, activer ou désactiver, retirer —, reprises au clic droit ; le détail et la liste des actions à cocher sous le tableau ; ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des mises à jour (au démarrage, ou sur demande) · 3.3 Icônes des applications : les télécharger depuis le dépôt Sindry-Media-Library, ou rien (2.0.4, §17.4) | partout |
 | **4 Actions** | 4.1 En cas d'échec : continuer ou arrêter la série · 4.2 Politique d'exécution : Bypass, RemoteSigned, Unrestricted (§6.7) · 4.3 Dossier des scripts · 4.4 Ré-analyser tous les scripts (§5.5) | Expert |
-| **5 Avancé** | 5.1 Taille maximale des journaux · 5.2 Emplacements protégés, en administrateur (§12.4) · 5.3 Rapport de conformité · 5.4 Exporter la configuration · 5.5 Importer une configuration · 5.6 Réinitialiser aux réglages d'usine | Expert |
-| | 5.7 Historique | partout |
+| **5 Avancé** | 5.1 Taille maximale des journaux · 5.2 Emplacements protégés, en administrateur (§12.4) · 5.3 Rapport de conformité · 5.4 Exporter la configuration · 5.5 Importer une configuration · 5.6 Réinitialiser aux réglages d'usine · 5.7 Journal de diagnostic (2.3.0, §9) | Expert |
+| | 5.8 Historique (5.7 jusqu'à la 2.2.0) | partout |
 
 Les emplacements protégés **pour une seule action** (2.0) se règlent dans la configuration
 de l'action, en Expert et en administrateur (§12.4).
@@ -814,6 +814,29 @@ fichier et refuse proprement un fichier corrompu ou issu d'une version incompati
 Le plafond porte sur la taille parce que c'est elle qui gêne réellement l'utilisateur —
 et il serait contradictoire qu'un outil dont la raison d'être est de libérer de la place
 laisse ses propres journaux s'accumuler sans limite.
+
+**Savoir ce qui a tourné (2.3.0).** Un fichier journal porte le nom du script
+(`2026-10-25_102200_705_IMPROVE_TASKBAR.log`, `-analyse` pour une analyse) : avant, il
+portait son identifiant, et le dossier n'était qu'une liste de GUID. Dans le panneau
+Journal, chaque action commence par une ligne d'en-tête : son titre, son fichier, sa
+version, le moteur, et « diagnostic » s'il est actif. Les lignes de plusieurs actions d'un
+entretien se suivent, et l'on sait à qui elles sont.
+
+**Le journal de diagnostic (5.7, 2.3.0).** Activé, il pose `SINDRY_DIAG=1` pour chaque
+script, analyse comprise ; sinon la variable est retirée, jamais héritée. Les scripts qui
+le suivent écrivent le détail de leurs erreurs (`[LOG] Diag` : type, HResult, ligne), et
+l'en-tête du fichier note `diagnostic : oui`. Il ne change rien à ce que fait l'action.
+
+**Pourquoi une action a échoué.** Le dernier `[ERR]` codé, traduit (2.0.3) ; à défaut, le
+dernier `[ERR]` tel que le script l'a écrit (2.3.0). Cette raison s'affiche sous le nom de
+l'action, au bilan, et dans le verdict de l'Expert ; elle n'était auparavant qu'une
+info-bulle, et une erreur sans code n'en laissait aucune. Le titre du bilan suit l'issue :
+« C'est terminé ! » si tout a réussi, « Terminé, avec des échecs », ou « Rien n'a abouti ».
+
+**Les accents d'un message de Windows (2.3.0).** PowerShell 5.1 écrit dans la page de
+codes OEM de la console. Sindry la décode strictement, puis essaie la page de la langue de
+l'utilisateur, puis 850 et 437 : sur un Windows réglé en UTF-8 (« Bêta : Unicode UTF-8 »)
+dont la console écrit encore en 850, la lecture tolérante rendait « ex�cution ».
 
 ---
 
@@ -1818,6 +1841,13 @@ analyser, et elle est sautée sinon.
    serait inscrite « faite » sans avoir rien fait. Une action qui n'a rapporté que des
    mesures non plus : elle a fait son travail en analysant. Quand il ne reste rien à lancer,
    le bouton le dit.
+   - **Réappliquer (2.3.0).** Ce qui est déjà en place (`state=ok`) reste grisé. Quand
+     l'analyse en a trouvé, un bouton « Réappliquer quand même » (s'il ne reste rien
+     d'autre à faire) ou « Réappliquer ce qui est en place » rend ces cases cochables, sans
+     en cocher aucune : « Cochez ce qu'il faut refaire ». L'Expert a le même bouton en tête
+     de l'analyse. Avant, un PC déjà réglé ne pouvait que « Revenir au mode Expert ».
+     L'interrupteur vaut pour l'action, jusqu'à la prochaine analyse ; la sélection d'office
+     (et `tools/selection-cas.json`) ne change pas.
 4. **Bilan** — reprend `[FREED]` quand le script l'a émis, sinon l'estimation de l'analyse
    précédée de « environ ». Un chiffre n'est jamais présenté comme mesuré s'il est estimé.
 

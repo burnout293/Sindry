@@ -8,20 +8,23 @@
 > Les versions les plus récentes viennent en premier. Une IA restée sur une version plus
 > ancienne lit toutes les entrées jusqu'à la sienne, de bas en haut.
 
-<!-- empreinte des consignes : 6013d300101e32f2 — tenue par tools/build-script-guides.mjs, ne pas modifier -->
+<!-- empreinte des consignes : d3395f8a8e29c1ab — tenue par tools/build-script-guides.mjs, ne pas modifier -->
 
 ---
 
-## 2.2.0 — depuis la 2.1.0 : ranger les réglages en sections
+## 2.3.0 — depuis la 2.1.0 : sections, échecs expliqués, réapplication
 
-Une action qui a beaucoup de réglages les range maintenant en **onglets** dans la fiche
-Expert. Rien d'autre ne change : les règles 1 à 43 restent valables, aucune n'est
-remplacée.
+La 2.2.0 n'est pas sortie seule : ses consignes arrivent avec la 2.3.0. Trois nouveautés :
+- une action qui a beaucoup de réglages les range en **onglets** dans la fiche Expert ;
+- un échec s'**explique** : code, cible, type d'erreur, et un mode diagnostic ;
+- l'utilisateur peut **réappliquer** ce qui est déjà en place.
 
-### Règle nouvelle
+Les règles 1 à 43 restent valables, aucune n'est remplacée.
 
-À ajouter après la règle 43, dans une nouvelle partie « Les réglages nombreux (plus de
-10) ».
+### Règles nouvelles
+
+À ajouter après la règle 43, dans deux nouvelles parties : « Les réglages nombreux (plus
+de 10) » pour la 44, « Les échecs et ce qui est déjà en place » pour les 45 et 46.
 
 44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
     section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
@@ -31,6 +34,39 @@ remplacée.
     l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
     (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
     (« Ranger les réglages en sections »).
+
+45. **Dans un `catch`, écris le code, la cible et le type d'erreur**, puis le message :
+    `[ERR] E705 $Key: $($_.Exception.GetType().Name) - $($_.Exception.Message)`, jamais le
+    message seul ; il devient la raison de l'échec au bilan. Recopie la fonction
+    `Write-Diag` et appelle-la dans chaque `catch` (`Write-Diag $_`) : en mode diagnostic
+    (`$env:SINDRY_DIAG -eq '1'`), elle écrit le détail en lignes `[LOG] Diag`, sans rien de
+    secret (« Expliquer un échec »).
+
+46. **Une action accepte ce qui est déjà en place** : avec « Réappliquer », l'utilisateur
+    peut cocher un élément `state=ok`, et ton script le reçoit comme les autres. Réécrire une
+    valeur déjà juste ne doit rien casser. Un choix de `[multi]` qui est un réglage rapporte
+    `state=todo` ou `state=ok`, comme un `[bool]`.
+
+### La fonction `Write-Diag`
+
+À recopier telle quelle dans le script, avec les autres fonctions :
+
+```powershell
+# Ecrit le detail d'une erreur attrapee, en mode diagnostic seulement (SINDRY_DIAG=1).
+# Recoit l'enregistrement d'erreur ($_) ; ne renvoie rien.
+function Write-Diag($Erreur) {
+    if ($env:SINDRY_DIAG -ne '1') { return }
+    $e = $Erreur.Exception
+    Write-Host ("[LOG] Diag {0} HResult=0x{1:X8}" -f $e.GetType().FullName, $e.HResult)
+    Write-Host "[LOG] Diag $($Erreur.CategoryInfo)"
+    Write-Host "[LOG] Diag $($Erreur.InvocationInfo.PositionMessage -replace '\s+', ' ')"
+    if ($e.InnerException) { Write-Host "[LOG] Diag Inner: $($e.InnerException.Message)" }
+}
+```
+
+| Variable | Valeur | Sens |
+|---|---|---|
+| `SINDRY_DIAG` | `1`, ou absente | **Nouveau** : le réglage 5.7 de Sindry, « Journal de diagnostic », est actif |
 
 ### Dans les options et le bloc `REPORT`
 
@@ -79,6 +115,15 @@ utilisateur peut donc désigner un réglage par son numéro.
 
 - [ ] Au-delà de 10 réglages, chacun a sa `[section:Cle]`, et chaque section ou sous-titre
       est déclaré `[section]` dans `REPORT` et traduit.
+
+À la partie « Sortie » :
+
+- [ ] Chaque `catch` écrit un `[ERR]` avec code, cible et type d'erreur, puis appelle
+      `Write-Diag $_`.
+
+À la partie « Analyse » :
+
+- [ ] Refaire l'action sur ce qui est déjà en place (`state=ok`) ne casse rien.
 
 ---
 

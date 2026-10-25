@@ -240,6 +240,19 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
     (« Ranger les réglages en sections »).
 
+### Les échecs et ce qui est déjà en place
+
+45. **Dans un `catch`, écris le code, la cible et le type d'erreur**, puis le message :
+    `[ERR] E705 $Key: $($_.Exception.GetType().Name) - $($_.Exception.Message)`, jamais le
+    message seul ; il devient la raison de l'échec au bilan. Recopie la fonction
+    `Write-Diag` et appelle-la dans chaque `catch` (`Write-Diag $_`) : en mode diagnostic
+    (`$env:SINDRY_DIAG -eq '1'`), elle écrit le détail en lignes `[LOG] Diag`, sans rien de
+    secret (« Expliquer un échec »).
+46. **Une action accepte ce qui est déjà en place** : avec « Réappliquer », l'utilisateur
+    peut cocher un élément `state=ok`, et ton script le reçoit comme les autres. Réécrire une
+    valeur déjà juste ne doit rien casser. Un choix de `[multi]` qui est un réglage rapporte
+    `state=todo` ou `state=ok`, comme un `[bool]`.
+
 ---
 
 ## 4. La méthode

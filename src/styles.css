@@ -2753,3 +2753,13 @@ body.restreint-actif .ambiance, body.restreint-actif .water, body.restreint-acti
 .maj-etapes li.err .dt { background: var(--err-s); color: var(--err); border-color: transparent; }
 .maj-note { margin: 14px 0 0; font-size: 11.5px; color: var(--text-3); }
 .maj-erreur { margin: 14px 0 0; font-size: 12.5px; color: var(--err); }
+
+/* --- 2.3.0 --------------------------------------------------------------- */
+/* The head line of each action in the log: which file, version, engine. */
+.tl.tl-entete { color: var(--term-text); font-weight: 650; margin-top: 8px; padding-top: 6px; border-top: 1px dashed color-mix(in srgb, var(--term-dim) 45%, transparent); }
+.tl.tl-entete:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+/* Why an action failed, under its name in the summary (it was a tooltip). */
+.task .traison { color: var(--err); font-size: 12.5px; line-height: 1.4; margin-top: 2px; overflow-wrap: anywhere; }
+/* The summary title follows the outcome. */
+.bilan-echec { color: var(--err); }
+.bilan-partiel { color: var(--warn); }

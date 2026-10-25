@@ -1822,6 +1822,15 @@ fn set_admin_startup(app: tauri::AppHandle, value: bool) -> Result<Settings, Str
     })
 }
 
+/// 5.7 (2.3.0) : le journal de diagnostic (`SINDRY_DIAG=1` pour chaque script).
+#[tauri::command]
+fn set_diagnostic(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
+    with_settings(&app, |s| {
+        s.diagnostic = value;
+        Ok(())
+    })
+}
+
 /// Affiche ou masque la numerotation des reglages (« 2.3 »).
 #[tauri::command]
 fn set_show_setting_numbers(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
@@ -2147,6 +2156,7 @@ pub fn run() {
             set_show_setting_numbers,
             set_option_numbers,
             set_admin_startup,
+            set_diagnostic,
             app_icons,
             set_app_icons,
             set_ui_scale,

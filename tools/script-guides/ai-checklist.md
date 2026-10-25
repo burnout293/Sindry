@@ -36,6 +36,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Si `SafeTest` existe, rien ne modifie le système quand il vaut `$true`.
 - [ ] Aucun redémarrage direct. Un `[RESTART] <phase>` a `## resume : true`, est suivi de
       `exit 3010`, et sa phase est reprise par un test de `$env:SINDRY_RESUME`.
+- [ ] Chaque `catch` écrit un `[ERR]` avec code, cible et type d'erreur, puis appelle
+      `Write-Diag $_`.
 
 ### Analyse (si `scan : true`)
 
@@ -44,6 +46,7 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Au moins une ligne `[FIND]`, `[ITEM]` ou `[METRIC]` est émise, et chacune vise ce qui
       est déclaré.
 - [ ] Les `id=` sont stables ; à l'action, ils ne servent que de clés.
+- [ ] Refaire l'action sur ce qui est déjà en place (`state=ok`) ne casse rien.
 
 ### Sécurité et style
 

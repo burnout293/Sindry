@@ -356,34 +356,95 @@ extern "system" {
         cible: *mut u16,
         place: i32,
     ) -> i32;
+    fn GetLocaleInfoEx(langue: *const u16, quoi: u32, donnees: *mut u16, place: i32) -> i32;
 }
 
 /// Decode du texte ecrit dans la page de codes OEM de la console — celle de
 /// PowerShell 5.1 quand sa sortie est redirigee. Sur un Windows francais, les
 /// messages d'erreur de PowerShell lui-meme (« Acces refuse ») y arrivent ;
 /// lus octet par octet, leurs accents devenaient des caracteres de controle.
+///
+/// 2.3.0 : chaque page est essayee **strictement**. Quand la page OEM du
+/// systeme est UTF-8 (65001, l'option « Bêta : Unicode UTF-8 » de Windows)
+/// alors que la console ecrit encore dans l'ancienne page, la lecture
+/// tolerante rendait « ex�cution » : on essaie alors la page OEM de la langue
+/// de l'utilisateur, puis 850 (Europe de l'Ouest) et 437.
 #[cfg(windows)]
 pub fn depuis_oem(brut: &[u8]) -> Option<String> {
     const CP_OEMCP: u32 = 1;
     if brut.is_empty() {
         return Some(String::new());
     }
+    [CP_OEMCP, page_oem_de_la_langue(), 850, 437]
+        .into_iter()
+        .filter(|&p| p != 0)
+        .find_map(|p| decoder_page(brut, p))
+}
+
+/// Le texte dans cette page de codes, ou rien si un octet n'y a pas de sens.
+#[cfg(windows)]
+fn decoder_page(brut: &[u8], page: u32) -> Option<String> {
+    const MB_ERR_INVALID_CHARS: u32 = 0x8;
     let n = i32::try_from(brut.len()).ok()?;
     // SAFETY : `brut` vit pendant les deux appels et `n` est sa longueur ; le
     // premier appel ne fait que mesurer, le second ecrit au plus `place`
     // unites dans un tampon de cette taille.
     unsafe {
-        let place = MultiByteToWideChar(CP_OEMCP, 0, brut.as_ptr(), n, std::ptr::null_mut(), 0);
+        let place = MultiByteToWideChar(
+            page,
+            MB_ERR_INVALID_CHARS,
+            brut.as_ptr(),
+            n,
+            std::ptr::null_mut(),
+            0,
+        );
         if place <= 0 {
             return None;
         }
         let mut tampon = vec![0u16; place as usize];
-        let ecrit = MultiByteToWideChar(CP_OEMCP, 0, brut.as_ptr(), n, tampon.as_mut_ptr(), place);
+        let ecrit = MultiByteToWideChar(
+            page,
+            MB_ERR_INVALID_CHARS,
+            brut.as_ptr(),
+            n,
+            tampon.as_mut_ptr(),
+            place,
+        );
         if ecrit <= 0 {
             return None;
         }
         tampon.truncate(ecrit as usize);
         Some(String::from_utf16_lossy(&tampon))
+    }
+}
+
+/// La page OEM de la langue de l'utilisateur (850 pour le francais), meme
+/// quand le systeme est passe a UTF-8 ; 0 si elle est illisible.
+#[cfg(windows)]
+fn page_oem_de_la_langue() -> u32 {
+    const LOCALE_IDEFAULTCODEPAGE: u32 = 0x0B;
+    const LOCALE_RETURN_NUMBER: u32 = 0x2000_0000;
+    let mut valeur = [0u16; 2];
+    // SAFETY : langue nulle = celle de l'utilisateur ; avec
+    // LOCALE_RETURN_NUMBER, la fonction ecrit un u32 dans les deux unites du
+    // tampon, dont la taille lui est donnee.
+    let n = unsafe {
+        GetLocaleInfoEx(
+            std::ptr::null(),
+            LOCALE_IDEFAULTCODEPAGE | LOCALE_RETURN_NUMBER,
+            valeur.as_mut_ptr(),
+            2,
+        )
+    };
+    if n <= 0 {
+        return 0;
+    }
+    let page = u32::from(valeur[0]) | (u32::from(valeur[1]) << 16);
+    // 65001 ne departagerait rien : c'est justement la page qui a echoue.
+    if page == 65001 {
+        0
+    } else {
+        page
     }
 }
 
@@ -429,6 +490,22 @@ pub fn espace_disque() -> Result<EspaceDisque, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 2.3.0: the bytes of a French error message in code page 850 are not
+    /// UTF-8; read strictly, a UTF-8 page refuses them instead of turning them
+    /// into « � », and the next page reads them right.
+    #[cfg(windows)]
+    #[test]
+    fn une_page_qui_ne_convient_pas_cede_la_place_a_la_suivante() {
+        let brut = b"Tentative d'ex\x82cution d'une op\x82ration non autoris\x82e.";
+        assert_eq!(decoder_page(brut, 65001), None);
+        assert_eq!(
+            decoder_page(brut, 850).as_deref(),
+            Some("Tentative d'exécution d'une opération non autorisée.")
+        );
+        let lu = depuis_oem(brut).expect("une page convient");
+        assert!(!lu.contains('\u{fffd}'), "{lu}");
+    }
 
     #[test]
     fn les_familles_d_injection_sont_reconnues_sans_egard_a_la_casse() {

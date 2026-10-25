@@ -271,6 +271,13 @@ fn colonne(s: &str, n: usize) -> String {
 Options
 ------------------------------------------------------------------------ */
 
+/// 2.3.0: the diagnostic log (setting 5.7) holds for the command line too.
+fn diagnostic_actif(h: &tauri::AppHandle) -> bool {
+    crate::settings::load(h)
+        .map(|s| s.diagnostic)
+        .unwrap_or(false)
+}
+
 #[derive(Default)]
 struct Options {
     json: bool,
@@ -1143,6 +1150,7 @@ fn analyser(
         config: figee,
         policy: Some(politique.to_string()),
         resume_phase: None,
+        diagnostic: diagnostic_actif(h),
     };
     let (req, entree) = preparer_analyse(h, req)?;
     let base = discovery::base_dir(h)?;
@@ -1594,6 +1602,7 @@ fn lancer_une(
         config,
         policy: Some(politique.to_string()),
         resume_phase: None,
+        diagnostic: diagnostic_actif(h),
     };
     let memoire = h.state::<Arc<analyse::Memoire>>().inner().clone();
     let (req, entree, simule) = match preparer_action(h, &memoire, req, o.simuler) {

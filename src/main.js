@@ -3329,6 +3329,30 @@ function codedReason(coded) {
   return coded.solution ? `${coded.label} — ${coded.solution}` : coded.label;
 }
 
+/** 2.3.0: the reason of a failure — the last coded `[ERR]`, translated;
+ *  failing that, the last `[ERR]` as the script wrote it. */
+function raisonEchec(c) {
+  if (c?.lastError) return `${c.lastError.code} — ${codedReason(c.lastError)}`;
+  return c?.lastErrorText || '';
+}
+
+/**
+ * 2.3.0: a line at the head of each action's output — which file, which
+ * version, which engine. In a maintenance run the lines of several scripts
+ * follow one another, and nothing said whose they were.
+ */
+function ajouterEnTeteAction(entree, demarre) {
+  const fichier = (entree.path || '').split(/[\\/]/).pop() || entree.id;
+  const morceaux = [fichier, entree.meta.version ? `v${entree.meta.version}` : '', demarre?.engine || '',
+    reglagesActuels?.diagnostic ? t('console.diagnostic') : ''].filter(Boolean);
+  const texte = `▶ ${A.titreAction(entree)} — ${morceaux.join(' · ')}`;
+  const ligne = document.createElement('div');
+  ligne.className = 'tl tl-entete';
+  ligne.innerHTML = `<span class="t">${heureLigne(0)}</span><span>${esc(texte)}</span>`;
+  term.corps.appendChild(ligne);
+  ajouterLigneCompacte({ stream: 'stdout', marker: null, text: texte });
+}
+
 function ouvrirTerminal(entree, demarre) {
   const tr = entree.meta.translations?.[currentLang()];
   term.titre.textContent = tr?.title || entree.meta.title || entree.id;
@@ -3351,6 +3375,7 @@ function ouvrirTerminal(entree, demarre) {
   term.log.dataset.path = demarre.log_path || '';
   term.fermer.hidden = true;
   etiqueterFermerJournal();
+  ajouterEnTeteAction(entree, demarre);
 }
 
 /** « Fermer » du journal : une croix et le mot, comme les autres boutons du
@@ -3417,7 +3442,7 @@ function titreDe(id) {
 /** Les analyses qui ont modifie Windows, alors qu'elles ne le devaient pas. */
 const temoinAnalyses = new Map();
 
-function afficherVerdict(fin, lastError = null) {
+function afficherVerdict(fin, raison = '') {
   const secondes = (fin.duration_ms / 1000).toFixed(1);
   const bloc = document.createElement('div');
 
@@ -3457,10 +3482,8 @@ function afficherVerdict(fin, lastError = null) {
   bloc.innerHTML =
     `<b>${esc(titre)}</b>` +
     (sujet ? `<span class="vsujet">${esc(sujet)}</span>` : '') +
-    // A failure the script explained with a declared code (2.0.3).
-    (!fin.success && !fin.killed && lastError
-      ? `<span class="vraison">${esc(lastError.code)} — ${esc(codedReason(lastError))}</span>`
-      : '') +
+    // Why it failed: a declared code (2.0.3), or the last [ERR] as written (2.3.0).
+    (!fin.success && !fin.killed && raison ? `<span class="vraison">${esc(raison)}</span>` : '') +
     `<span class="vmeta">${esc(details.join(' · '))}</span>` +
     (marqueurs.length
       ? `<span class="vmeta">${esc(marqueurs.join(' · '))} <i>${esc(t('verdict.compte_marqueurs'))}</i></span>`
@@ -3665,6 +3688,8 @@ async function cablerMoteur() {
     if (payload.marker === 'ERR') {
       const coded = errorCodeOf(catalogue.get(course.id), payload.marker, payload.text);
       if (coded) course.lastError = coded;
+      // 2.3.0: an error without a declared code is a reason too, as written.
+      else course.lastErrorText = payload.text.replace(/^\s*\[ERR\]\s*/, '');
     }
     if (course.analyse) {
       course.lignes.push(payload);
@@ -3716,6 +3741,7 @@ async function cablerMoteur() {
 
     if (payload.changes?.length) journaliserTemoin(payload.changes);
     const lastError = course.lastError || null;
+    const raison = raisonEchec(course);
     // 2.1.0: the action asks for a restart before going on (§6.10).
     if (course.entretien && payload.restart_phase) return void demanderRedemarrage(payload);
     if (course.entretien) {
@@ -3725,7 +3751,7 @@ async function cablerMoteur() {
         changes: payload.changes || [], watched: payload.watched || [],
         // 2.1.0: a restart asked for at the end ([REBOOT]), offered in the summary.
         reboot: !!payload.reboot_requested, repris: !!course.repris,
-        ...(!succes && lastError ? { raison: codedReason(lastError) } : {}),
+        ...(!succes && raison ? { raison } : {}),
       });
       course = null;
       majEtatJournalCompact();
@@ -3743,7 +3769,7 @@ async function cablerMoteur() {
     majEtatJournalCompact();
     document.querySelectorAll('[data-run]').forEach((b) => (b.disabled = false));
     term.stop.dataset.force = '';
-    afficherVerdict(payload, lastError);
+    afficherVerdict(payload, raison);
     rendreLots();
   });
 }
@@ -5289,6 +5315,7 @@ async function analyser(entree, { simple = false } = {}) {
         // reste de sa configuration.
         config: configFigee(entree.id),
         policy: reglagesActuels?.exec_policy || null,
+        diagnostic: !!reglagesActuels?.diagnostic,
       },
     });
   } catch (e) {
@@ -5323,6 +5350,7 @@ function finirAnalyse(fin) {
     temoinAnalyses.delete(fin.script_id);
   }
   const lignes = course?.lignes || [];
+  const raison = raisonEchec(course);
   course = null;
   journauxAnalyse.set(fin.script_id, lignes);
   majEtatJournalCompact();
@@ -5331,7 +5359,7 @@ function finirAnalyse(fin) {
   if (!document.getElementById('simple').hidden) {
     term.stop.hidden = true;
   } else {
-    afficherVerdict(fin);
+    afficherVerdict(fin, raison);
   }
   const a = attenteAnalyse;
   attenteAnalyse = null;
@@ -5375,6 +5403,7 @@ async function rendreEtapeAnalyse(groupe, { reprendre = false } = {}) {
   document.getElementById('anTotal').textContent = '';
   const bouton = document.getElementById('btnLancerEntretien');
   bouton.hidden = true;
+  document.getElementById('btnReappliquer').hidden = true;
   majProgressionAnalyse(null);
 
   for (const [i, s] of analysables.entries()) {
@@ -5465,14 +5494,28 @@ function demanderIconesApp(modeles) {
   invoke('app_icons', { names: noms }).catch((e) => console.error('Icones des applications :', e));
 }
 
-function rendreResumeAnalyse(groupe) {
-  const g = groupe || groupeLancement;
-  if (!g || !analyseSimple) return;
-  const modeles = analyseSimple.ids.map((id) => {
+/** The analyses of the Simple screen that succeeded, as models. */
+function modelesAnalyseSimple() {
+  return (analyseSimple?.ids || []).map((id) => {
     const s = catalogue.get(id);
     const m = s && analyseValide(s);
     return m && m.succes ? m : null;
   }).filter(Boolean);
+}
+
+/** « Réappliquer » (2.3.0, option B), for every action of the Simple screen
+ *  that found something in place: one switch for the whole lot. */
+function basculerReappliquer() {
+  const modeles = modelesAnalyseSimple().filter((m) => A.nEnPlace(m, 'simple') > 0);
+  const v = !modeles.some((m) => A.reappliquer(m));
+  for (const m of modeles) A.reappliquer(m, v);
+  rendreResumeAnalyse();
+}
+
+function rendreResumeAnalyse(groupe) {
+  const g = groupe || groupeLancement;
+  if (!g || !analyseSimple) return;
+  const modeles = modelesAnalyseSimple();
   const zone = document.getElementById('anResume');
   // Une action seule a l'ecran garde la vue que son script a choisie ; un lot
   // de plusieurs actions est resume par Sindry, en postes.
@@ -5546,17 +5589,29 @@ function rendreResumeAnalyse(groupe) {
   bouton.textContent = aLancer.length ? t('simple.lancer')
     : bouton.dataset.fin ? t(entretienEnCours?.depuisExpert ? 'simple.retour_expert' : 'simple.termine_retour')
       : t('simple.rien_a_lancer');
+
+  // 2.3.0 (option B): what the analysis found in place can be redone. Put
+  // forward when nothing else is left; switched on, it says what to do next.
+  const reapp = document.getElementById('btnReappliquer');
+  const enPlace = modeles.filter((m) => A.nEnPlace(m, 'simple') > 0);
+  const actif = enPlace.some((m) => A.reappliquer(m));
+  reapp.hidden = !enPlace.length;
+  reapp.textContent = t(actif ? 'an.reappliquer_fin' : bouton.dataset.fin ? 'an.reappliquer_quand_meme' : 'an.reappliquer');
+  reapp.title = t('an.reappliquer_d');
+  if (actif && !aLancer.length) document.getElementById('anTotal').textContent = t('an.reappliquer_choisir');
 }
 
 /** Une analyse laisse-t-elle quelque chose a cocher ? Ce qui est deja en place
  *  (`state=ok`) ou verrouille ne se coche pas ; une liste dont le choix actuel
  *  est le seul rapporte non plus. */
 function cochable(m) {
+  // 2.3.0: with « Réappliquer », what is in place can be ticked too.
+  const ouvert = (x) => x.state !== 'ok' || A.reappliquer(m);
   return Object.values(m.options).some((o) => {
     const d = o.def;
     if (d.scan) return false;
-    if (d.kind === 'bool') return !!o.find && o.find.state !== 'ok';
-    if (d.kind === 'multi') return Object.values(o.finds).some((f) => f.state !== 'ok');
+    if (d.kind === 'bool') return !!o.find && ouvert(o.find);
+    if (d.kind === 'multi') return Object.values(o.finds).some(ouvert);
     if (d.kind === 'select') {
       const choix = Object.values(o.finds);
       return choix.length > 1 || choix.some((f) => f.current !== 'true');
@@ -5564,7 +5619,7 @@ function cochable(m) {
     // Les feuilles seules : un element parent (« Services de télémétrie ») ne
     // porte pas d'etat, ses enfants si.
     if (d.kind === 'items') {
-      return o.items.some((it) => !it.locked && it.state !== 'ok' && !o.items.some((x) => x.parent === it.id));
+      return o.items.some((it) => !it.locked && ouvert(it) && !o.items.some((x) => x.parent === it.id));
     }
     return false;
   });
@@ -5607,6 +5662,7 @@ function contenuAnalyseExpert(entree) {
   const tete = `<div class="an-tete">
       <span class="an-tete-t"><b>${esc(t('an.analyse_de', { heure: heure ? heure.toLocaleTimeString(currentLang() === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' }) : '' }))}</b>
         <span>${esc(A.resumeTotaux(A.totaux(m), m))}</span></span>
+      ${A.nEnPlace(m, 'expert') ? `<button class="btn compact${A.reappliquer(m) ? ' on' : ''}" type="button" data-reappliquer-an="${esc(entree.id)}" aria-pressed="${A.reappliquer(m)}" title="${esc(t('an.reappliquer_d'))}">${esc(t(A.reappliquer(m) ? 'an.reappliquer_fin' : 'an.reappliquer'))}</button>` : ''}
       <button class="btn compact" type="button" data-relancer-an="${esc(entree.id)}">${esc(t('an.relancer'))}</button>
     </div>
     ${m.succes ? '' : `<p class="card-warn">${esc(t('an.analyse_echouee'))}</p>`}
@@ -5732,6 +5788,14 @@ function gesteAnalyseExpert(ev) {
     if (!entree) return;
     const ouverts = panneauxDe(entree);
     ouverts.has(cle) ? ouverts.delete(cle) : ouverts.add(cle);
+    return void rafraichirZonesAnalyse();
+  }
+  // 2.3.0 (option B): « Réappliquer » for this action.
+  const reapp = ev.target.closest('[data-reappliquer-an]');
+  if (reapp && ev.type === 'click') {
+    const entree = catalogue.get(reapp.dataset.reappliquerAn);
+    const m = entree && analyseValide(entree);
+    if (m) A.reappliquer(m, !A.reappliquer(m));
     return void rafraichirZonesAnalyse();
   }
   const journal = ev.target.closest('[data-journal-an]');
@@ -5877,10 +5941,12 @@ async function lancerScriptEntretien(entree) {
         config: configPour(entree),
         policy: reglagesActuels?.exec_policy || null,
         resume_phase: phase,
+        diagnostic: !!reglagesActuels?.diagnostic,
       },
     });
     departCourse = Date.now();
     course = { runId: demarre.run_id, id: entree.id, logPath: demarre.log_path, entretien: true, simule: !!demarre.simulated, repris: !!phase };
+    ajouterEnTeteAction(entree, demarre);
     etapeEntretienActuelle = null;
     majProgression();
   } catch (e) {
@@ -5920,11 +5986,19 @@ function terminerEntretien() {
   document.getElementById('btnArreterEntretien').hidden = true;
   document.getElementById('btnRetourAccueil').hidden = false;
   document.getElementById('btnRetourAccueil').textContent = t(entretienEnCours?.depuisExpert ? 'simple.retour_expert' : 'simple.termine_retour');
-  document.getElementById('s3Sous').textContent = t('s3.sous_fini');
   const ok = entretienEnCours.resultats.filter((r) => r.success).length;
   const total = entretienEnCours.resultats.length;
-  document.getElementById('tasksBilan').hidden = false;
-  document.getElementById('tasksBilan').textContent = t('simple.bilan_titre');
+  // 2.3.0: the words follow the outcome. « C'est terminé ! » and « Tout est
+  // terminé. » above an action that failed read as a success.
+  const issue = !total || ok === total ? 'ok' : ok === 0 ? 'echec' : 'partiel';
+  const echecs = total - ok;
+  document.getElementById('s3Sous').textContent = issue === 'ok' ? t('s3.sous_fini')
+    : t(echecs > 1 ? 's3.sous_echecs' : 's3.sous_echec', { n: echecs });
+  const titreBilan = document.getElementById('tasksBilan');
+  titreBilan.hidden = false;
+  titreBilan.textContent = t(issue === 'ok' ? 'simple.bilan_titre' : issue === 'echec' ? 'simple.bilan_titre_echec' : 'simple.bilan_titre_partiel');
+  titreBilan.classList.toggle('bilan-echec', issue === 'echec');
+  titreBilan.classList.toggle('bilan-partiel', issue === 'partiel');
   const simules = entretienEnCours.resultats.filter((r) => r.simule).length;
   rendreTemoinBilan();
   document.getElementById('tasksBilanDetail').textContent = t(total === 1 ? 'simple.bilan_detail_un' : 'simple.bilan_detail', { ok, total })
@@ -5991,7 +6065,8 @@ function rendreTachesEntretien() {
     return `
       <div class="task${etat === 'run' ? ' encours' : ''}">
         <span class="dt ${etat}">${icone}</span>
-        <div class="tbody"><div class="tt">${esc(titre)}${resultat?.repris ? ` <span class="badge acc tache-reprise">${esc(t('reprise.repris'))}</span>` : ''}</div>${barre}</div>
+        <div class="tbody"><div class="tt">${esc(titre)}${resultat?.repris ? ` <span class="badge acc tache-reprise">${esc(t('reprise.repris'))}</span>` : ''}</div>${
+          etat === 'err' && resultat?.raison ? `<div class="traison">${esc(resultat.raison)}</div>` : ''}${barre}</div>
         ${resultatTxt}
       </div>`;
   });
@@ -6057,6 +6132,7 @@ function cablerModeEtSimple() {
     if (ev.target.closest('#btnSuivantVerifier')) return void suivreVerifier();
     // Les gestes du resume de l'analyse (§17) : cases, chevrons, interrupteurs.
     if (ev.target.closest('#anResume') && A.agir(ev, analyses)) return void garderRecherche(() => rendreResumeAnalyse());
+    if (ev.target.closest('#btnReappliquer')) return void basculerReappliquer();
     const lancerOuFinir = ev.target.closest('#btnLancerEntretien');
     if (lancerOuFinir) {
       if (!lancerOuFinir.dataset.fin) return void lancerEntretien();
@@ -6466,6 +6542,7 @@ function remplirFormulaireReglages(reglages) {
   // 2.2.0: 1.6 and 1.7.
   document.getElementById('setNumerosOptions').value = reglages.numeros_options || 'auto';
   document.getElementById('setAdminDemarrage').setAttribute('aria-checked', String(!!reglages.admin_au_demarrage));
+  document.getElementById('setDiagnostic').setAttribute('aria-checked', String(!!reglages.diagnostic));
 }
 
 /** La numerotation des reglages (« 2.3 ») se pose sur <body> : une seule
@@ -7228,6 +7305,12 @@ function cablerReglages() {
     const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
     ev.currentTarget.setAttribute('aria-checked', String(actif));
     reglagesActuels = await invoke('set_admin_startup', { value: actif });
+  };
+  // 5.7 (2.3.0): the diagnostic log — every script receives SINDRY_DIAG=1.
+  document.getElementById('setDiagnostic').onclick = async (ev) => {
+    const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
+    ev.currentTarget.setAttribute('aria-checked', String(actif));
+    reglagesActuels = await invoke('set_diagnostic', { value: actif });
   };
 
   document.getElementById('btnOuvrirDossierReglages').onclick = async () => {

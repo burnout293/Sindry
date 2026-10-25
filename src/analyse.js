@@ -177,7 +177,7 @@ const choixDe = (o, valeur) => o.def.choices.find((c) => c.value === valeur);
 /** Un choix ou une option qu'une etiquette [show:…] reserve a l'autre mode. */
 const visibleDecl = (o, valeur, mode) => montre(o.def, mode) && (valeur == null || montre(choixDe(o, valeur), mode));
 const enfantsDe = (o, id) => o.items.filter((it) => it.parent === id);
-const feuilles = (o) => o.items.filter((it) => !enfantsDe(o, it.id).length && !it.locked && it.state !== 'ok');
+const feuilles = (o, reapp = false) => o.items.filter((it) => !enfantsDe(o, it.id).length && !it.locked && (reapp || it.state !== 'ok'));
 const racines = (o) => o.items.filter((it) => !it.parent || !o.items.some((x) => x.id === it.parent));
 /** The elements of a list: everything that is not a parent. */
 const elementsDe = (o) => o.items.filter((it) => !enfantsDe(o, it.id).length);
@@ -395,11 +395,12 @@ function ligneEcran(m, mode, x, D, e, q, tri) {
     fait ? `<span class="badge low">${esc(t('an.a_jour'))}</span>` : '',
     verrou ? `<span class="badge neutre">${ico('lock', 'i12')}${esc(verrouTexte(it.locked))}</span>` : '',
   ].join('');
-  const boite = `<input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${verrou || fait ? ' disabled' : ''}>`;
+  const grise = verrou || enPlace(m, it);
+  const boite = `<input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${grise ? ' disabled' : ''}>`;
   const dedans = `${boite}<span class="an-ico">${iconeElement(it)}</span>
     <span class="an-t"><b>${surligne(nomElement(m, it), q)}</b><span class="an-badges">${tags}</span></span>
     <span class="an-v">${Number(it.size) > 0 ? taille(it.size) : ''}</span>`;
-  const classes = `an-ligne an-ligne-ecran${c ? '' : ' decoche'}${verrou || fait ? ' inactive' : ''}`;
+  const classes = `an-ligne an-ligne-ecran${c ? '' : ' decoche'}${grise ? ' inactive' : ''}`;
   // With a sheet, a click on the line shows it; without, the line is the box's label.
   return D.explique
     ? `<div class="${classes}${etatEcran(m).fiche === x.cle ? ' choisie' : ''}" data-a-script="${esc(m.entree.id)}" data-a-fiche="${esc(x.cle)}">${dedans}</div>`
@@ -429,7 +430,7 @@ function ficheEcran(m, mode, visibles, D) {
     <div class="an-badges">${niv ? badgeNiveau(niv) : ''}${versionHtml(it)}${it.reboot === 'true' ? badgeReboot() : ''}</div>
     ${section(t('an.fiche_quoi'), p(it.about))}${section(t('an.fiche_pourquoi'), p(it.why))}${section(t('an.fiche_attention'), alerte)}
     ${it.reboot === 'true' ? section(t('an.redemarrage'), `<p>${esc(t('an.fiche_reboot'))}</p>`) : ''}
-    <label class="an-fiche-c"><input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${it.locked || it.state === 'ok' ? ' disabled' : ''}>${esc(t('an.fiche_cocher'))}</label>
+    <label class="an-fiche-c"><input type="checkbox" ${attrs(m, x.k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${c ? ' checked' : ''}${it.locked || enPlace(m, it) ? ' disabled' : ''}>${esc(t('an.fiche_cocher'))}</label>
     ${confirmer}</aside>`;
 }
 
@@ -479,6 +480,44 @@ const cocheItem = (it) => (it.advice ? false // 2.0.4: what cuts both ways or is
 /** Une nouvelle analyse remet la selection a l'avis du script. */
 export function oublier(scriptId) {
   SEL.delete(scriptId);
+}
+
+/* --- Réappliquer (2.3.0, option B) ----------------------------------------
+   What the analysis found already in place (`state=ok`) is greyed: there is
+   nothing to do. « Réappliquer » makes it tickable again, never ticked by
+   default: the user picks what to redo — a setting Windows put back, or an
+   action to try again. One switch per action; a new analysis resets it. */
+
+/** Is « Réappliquer » on for this action? With `v`, switches it; switched
+ *  off, what is in place is unticked again. */
+export function reappliquer(m, v) {
+  const s = selection(m);
+  if (v === undefined) return !!s.reappliquer;
+  s.reappliquer = !!v;
+  if (!s.reappliquer) {
+    for (const [k, o] of Object.entries(m.options)) {
+      if (o.def.kind === 'bool' && o.find?.state === 'ok') s.bool[k] = false;
+      if (o.def.kind === 'multi') for (const [c, f] of Object.entries(o.finds)) if (f.state === 'ok') s.choix[k][c] = false;
+      if (o.def.kind === 'items') for (const it of o.items) if (it.state === 'ok') s.items[k][it.id] = false;
+    }
+  }
+  return s.reappliquer;
+}
+
+/** A box that stays greyed because it is in place — unless « Réappliquer » is on. */
+const enPlace = (m, x) => x?.state === 'ok' && !selection(m).reappliquer;
+
+/** What this mode shows as already in place: the switch appears only if there is some. */
+export function nEnPlace(m, mode = 'expert') {
+  let n = 0;
+  for (const o of Object.values(m.options)) {
+    const d = o.def;
+    if (d.scan || !visibleDecl(o, null, mode)) continue;
+    if (d.kind === 'bool' && o.find?.state === 'ok' && montre(o.find, mode)) n += 1;
+    if (d.kind === 'multi') n += Object.entries(o.finds).filter(([c, f]) => f.state === 'ok' && montre(f, mode) && visibleDecl(o, c, mode)).length;
+    if (d.kind === 'items' && !d.keep_one) n += o.items.filter((it) => it.state === 'ok' && !it.locked && !enfantsDe(o, it.id).length && montre(it, mode)).length;
+  }
+  return n;
 }
 
 export function selection(m) {
@@ -537,7 +576,7 @@ export function configAnalyse(m) {
     else if (d.kind === 'multi' && Object.keys(o.finds).length) cfg[k] = Object.keys(o.finds).filter((c) => s.choix[k][c]);
     else if (d.kind === 'select' && s.select[k]) cfg[k] = s.select[k];
     else if (d.kind === 'items') {
-      cfg[k] = d.keep_one ? aSupprimer(m, k).map((it) => it.id) : feuilles(o).filter((it) => s.items[k][it.id]).map((it) => it.id);
+      cfg[k] = d.keep_one ? aSupprimer(m, k).map((it) => it.id) : feuilles(o, s.reappliquer).filter((it) => s.items[k][it.id]).map((it) => it.id);
     }
   }
   return cfg;
@@ -559,7 +598,7 @@ export function aFaire(m) {
       const actuel = Object.entries(o.finds).find(([, f]) => f.current === 'true')?.[0];
       if (s.select[k] !== actuel) return true;
     }
-    if (d.kind === 'items' && (d.keep_one ? aSupprimer(m, k).length : feuilles(o).some((it) => s.items[k][it.id]))) return true;
+    if (d.kind === 'items' && (d.keep_one ? aSupprimer(m, k).length : feuilles(o, s.reappliquer).some((it) => s.items[k][it.id]))) return true;
   }
   return false;
 }
@@ -576,7 +615,14 @@ export function totaux(m) {
       if (o.find.state !== 'ok') trouve += v;
       if (s.bool[k]) { choisi += v; if (!v) { if (o.find.state === 'todo') reglages += 1; else elements += Number(o.find.count) || 1; } }
     }
-    if (d.kind === 'multi') for (const [c, f] of Object.entries(o.finds)) { const v = Number(f.size) || 0; trouve += v; if (s.choix[k][c]) choisi += v; }
+    // A choice that is a setting (state=, no size) counts as a setting to apply (2.3.0).
+    if (d.kind === 'multi') {
+      for (const [c, f] of Object.entries(o.finds)) {
+        const v = Number(f.size) || 0;
+        trouve += v;
+        if (s.choix[k][c]) { choisi += v; if (!v && f.state) reglages += 1; }
+      }
+    }
     if (d.kind === 'select' && Object.keys(o.finds).length) {
       const actuel = Object.entries(o.finds).find(([, f]) => f.current === 'true')?.[0];
       if (s.select[k] && s.select[k] !== actuel) reglages += 1;
@@ -585,7 +631,7 @@ export function totaux(m) {
       if (d.keep_one) {
         for (const it of aSupprimer(m, k)) { const v = Number(it.size) || 0; trouve += v; choisi += v; }
       } else {
-        for (const it of feuilles(o)) {
+        for (const it of feuilles(o, s.reappliquer)) {
           const v = Number(it.size) || 0;
           trouve += v;
           if (s.items[k][it.id]) { if (v) choisi += v; else elements += 1; }
@@ -695,8 +741,8 @@ function brique(m, k, mode) {
     const fait = f.state === 'ok';
     const etat = f.state === 'todo' ? `<span class="badge acc">${esc(t('an.a_faire'))}</span>` : fait ? `<span class="badge low">${esc(t('an.deja_en_place'))}</span>` : '';
     const meta = f.count && !f.state ? `<span class="muted">${esc(pl('an.n_elements', Number(f.count)))}</span>` : '';
-    return `<label class="an-ligne${fait ? ' inactive' : ''}${s.bool[k] ? '' : ' decoche'}">
-        <input type="checkbox" ${attrs(m, k, 'data-a-k="bool"')}${s.bool[k] ? ' checked' : ''}${fait ? ' disabled' : ''}>
+    return `<label class="an-ligne${enPlace(m, f) ? ' inactive' : ''}${s.bool[k] ? '' : ' decoche'}">
+        <input type="checkbox" ${attrs(m, k, 'data-a-k="bool"')}${s.bool[k] ? ' checked' : ''}${enPlace(m, f) ? ' disabled' : ''}>
         <span class="an-t"><b>${esc(lib)}</b><span class="an-badges">${etat}${meta}</span></span>
         <span class="an-v">${Number(f.size) > 0 ? taille(f.size) : ''}</span></label>${notesPour(m, k, mode)}`;
   }
@@ -708,12 +754,19 @@ function brique(m, k, mode) {
     const max = Math.max(1, ...entrees.map(([, f]) => Number(f.size) || 0));
     const total = Object.entries(o.finds).reduce((n, [c, f]) => n + (s.choix[k][c] ? Number(f.size) || 0 : 0), 0);
     const lignes = entrees.map(([c, f]) => {
-      const vide = !(Number(f.size) > 0) && !(Number(f.count) > 0);
-      return `<label class="an-ligne${vide ? ' inactive' : ''}${s.choix[k][c] ? '' : ' decoche'}">
-          <input type="checkbox" ${attrs(m, k, `data-a-k="choix" data-a-choix="${esc(c)}"`)}${s.choix[k][c] ? ' checked' : ''}${vide ? ' disabled' : ''}>
-          <span class="an-t"><b>${esc(libChoix(m.entree, d, c))}</b>
-            ${vide ? `<span class="muted">${esc(t('an.rien_a_nettoyer'))}</span>` : `<span class="an-jauge"><i style="width:${Math.max(1.5, (Number(f.size) / max) * 100)}%"></i></span>`}</span>
-          <span class="an-v">${vide ? '' : taille(f.size)}${f.count && !vide ? `<small>${esc(pl('an.n_fichiers', Number(f.count)))}</small>` : ''}</span>
+      // 2.3.0: a choice that reports a state (a setting) is not « nothing to
+      // clean »: it says À faire or Déjà en place, like a [bool].
+      const vide = !f.state && !(Number(f.size) > 0) && !(Number(f.count) > 0);
+      const grise = vide || enPlace(m, f);
+      const etat = f.state === 'todo' ? `<span class="badge acc">${esc(t('an.a_faire'))}</span>`
+        : f.state === 'ok' ? `<span class="badge low">${esc(t('an.deja_en_place'))}</span>` : '';
+      const mesure = vide ? `<span class="muted">${esc(t('an.rien_a_nettoyer'))}</span>`
+        : Number(f.size) > 0 ? `<span class="an-jauge"><i style="width:${Math.max(1.5, (Number(f.size) / max) * 100)}%"></i></span>` : '';
+      return `<label class="an-ligne${grise ? ' inactive' : ''}${s.choix[k][c] ? '' : ' decoche'}">
+          <input type="checkbox" ${attrs(m, k, `data-a-k="choix" data-a-choix="${esc(c)}"`)}${s.choix[k][c] ? ' checked' : ''}${grise ? ' disabled' : ''}>
+          <span class="an-t"><b>${esc(libChoix(m.entree, d, c))}</b>${etat ? `<span class="an-badges">${etat}</span>` : ''}
+            ${mesure}</span>
+          <span class="an-v">${Number(f.size) > 0 ? taille(f.size) : ''}${f.count && !vide ? `<small>${esc(pl('an.n_fichiers', Number(f.count)))}</small>` : ''}</span>
         </label>${notesPour(m, `${k}.${c}`, mode)}`;
     }).join('');
     return `<div class="an-bloc"><div class="an-bloc-h"><span class="an-bh-t">${esc(lib)}</span>
@@ -765,7 +818,7 @@ function ligneItem(m, k, it, mode, vue = {}) {
   let partiel = false;
   if (enfants.length) {
     // Ce que ce mode cache n'entre pas dans l'etat affiche du parent.
-    const e = enfants.filter((x) => !x.locked && x.state !== 'ok' && montre(x, mode));
+    const e = enfants.filter((x) => !x.locked && !enPlace(m, x) && montre(x, mode));
     const n = e.filter((x) => s.items[k][x.id]).length;
     cochee = e.length > 0 && n === e.length;
     partiel = n > 0 && n < e.length;
@@ -783,8 +836,9 @@ function ligneItem(m, k, it, mode, vue = {}) {
   ].join('');
   const plie = !vue.deplie && estPlie(m, k, it.id);
   const sous = { ...vue, parent: null };
-  return `<label class="an-ligne${verrou || fait ? ' inactive' : ''}${cochee || partiel ? '' : ' decoche'}">
-      <input type="checkbox" ${attrs(m, k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${cochee ? ' checked' : ''}${partiel ? ' data-partiel="1"' : ''}${verrou || fait ? ' disabled' : ''}>
+  const grise = verrou || enPlace(m, it);
+  return `<label class="an-ligne${grise ? ' inactive' : ''}${cochee || partiel ? '' : ' decoche'}">
+      <input type="checkbox" ${attrs(m, k, `data-a-k="item" data-a-item="${esc(it.id)}" data-a-mode="${mode}"`)}${cochee ? ' checked' : ''}${partiel ? ' data-partiel="1"' : ''}${grise ? ' disabled' : ''}>
       <span class="an-ico">${iconeElement(it)}</span>
       <span class="an-t"><b>${surligne(nomElement(m, it), vue.q)}</b>${it.path ? `<span class="an-chemin">${surligne(it.path, vue.q)}</span>` : ''}<span class="an-badges">${badges}</span></span>
       <span class="an-v">${sousTotal ? taille(sousTotal) : ''}${visibles.length ? `<small>${esc(pl('an.n_elements', visibles.length))}</small>` : ''}</span>
@@ -795,7 +849,7 @@ function ligneItem(m, k, it, mode, vue = {}) {
 function briqueListe(m, k, mode) {
   const o = m.options[k];
   const s = selection(m);
-  const f = feuilles(o);
+  const f = feuilles(o, s.reappliquer);
   const aVerifier = f.filter((it) => it.confidence === 'low' || it.risk).length;
   const filtre = s.filtre[k] || 'tout';
   const garde = (it) => filtre !== 'verifier' || it.confidence === 'low' || !!it.risk;
@@ -993,7 +1047,7 @@ function vueAvantApres(m, mode) {
   return `<table class="an-aa"><tr><th></th><th>${esc(t('an.reglage'))}</th><th>${esc(t('an.aujourdhui'))}</th><th></th><th>${esc(t('an.apres'))}</th></tr>${lignes.map(([k, o]) => {
     const fait = o.find.state === 'ok';
     const apres = fait || s.bool[k];
-    return `<tr><td><input type="checkbox" ${attrs(m, k, 'data-a-k="bool"')}${s.bool[k] ? ' checked' : ''}${fait ? ' disabled' : ''}></td><td>${esc(libOption(m.entree, o.def))}</td>
+    return `<tr><td><input type="checkbox" ${attrs(m, k, 'data-a-k="bool"')}${s.bool[k] ? ' checked' : ''}${enPlace(m, o.find) ? ' disabled' : ''}></td><td>${esc(libOption(m.entree, o.def))}</td>
       <td>${fait ? `<span class="badge low">${esc(t('an.en_place'))}</span>` : `<span class="badge neutre">${esc(t('an.pas_en_place'))}</span>`}</td><td class="an-fl">→</td>
       <td>${apres ? `<span class="badge low">${esc(t('an.en_place'))}</span>` : `<span class="badge neutre">${esc(t('an.inchange'))}</span>`}</td></tr>`;
   }).join('')}</table>`;
@@ -1004,7 +1058,7 @@ function vueTableau(m, k) {
   const o = m.options[k];
   const q = ETAT.recherche.toLowerCase();
   const nomParent = (it) => (it.parent ? o.items.find((x) => x.id === it.parent)?.name || '' : '');
-  const lignes = feuilles(o).map((it) => ({ it, prog: nomParent(it) }))
+  const lignes = feuilles(o, s.reappliquer).map((it) => ({ it, prog: nomParent(it) }))
     .filter(({ it, prog }) => !q || `${prog} ${nomElement(m, it)} ${it.path || ''}`.toLowerCase().includes(q));
   const ordre = { high: 0, medium: 1, low: 2 };
   const v = (x) => (ETAT.tri.col === 'taille' ? Number(x.it.size) || 0 : ETAT.tri.col === 'prog' ? x.prog : ETAT.tri.col === 'confiance' ? ordre[x.it.confidence] ?? 3 : nomElement(m, x.it));
@@ -1024,7 +1078,7 @@ function vueTreemap(m, k) {
   const o = m.options[k];
   const parents = racines(o).filter((p) => enfantsDe(o, p.id).length);
   const plat = !parents.length;
-  const groupes = (plat ? feuilles(o).map((it) => ({ p: it, e: [it] })) : parents.map((p) => ({ p, e: enfantsDe(o, p.id) })))
+  const groupes = (plat ? feuilles(o, s.reappliquer).map((it) => ({ p: it, e: [it] })) : parents.map((p) => ({ p, e: enfantsDe(o, p.id) })))
     .map((x) => ({ ...x, taille: x.e.reduce((a, y) => a + (Number(y.size) || 0), 0), n: x.e.filter((y) => s.items[k][y.id]).length }))
     .sort((a, b) => b.taille - a.taille);
   const couleur = Object.fromEntries(groupes.map((x, i) => [x.p.id, serie(i)]));
@@ -1211,15 +1265,19 @@ function postesAction(m, mode = 'simple') {
     const d = o.def;
     if (d.scan) continue;
     const cacheOpt = !montre(d, mode);
+    // A part in place is offered only with « Réappliquer », and never ticked
+    // with its poste: in a poste of its own, it is ticked by hand.
+    const ouvert = (f) => f.state !== 'ok' || s.reappliquer;
     if (d.kind === 'multi') {
       for (const [c, f] of Object.entries(o.finds)) {
-        if (!(Number(f.size) > 0) && !(Number(f.count) > 0)) continue;
+        if (!ouvert(f) || (!(Number(f.size) > 0) && !(Number(f.count) > 0) && !f.state)) continue;
         const ch = choixDe(o, c);
-        ajouter(ch?.group || d.group || k, d, { k, choix: c, f, taille: Number(f.size) || 0, reco: true,
+        ajouter(ch?.group || d.group || k, d, { k, choix: c, f, taille: Number(f.size) || 0, reco: f.state !== 'ok',
+          reglage: !!f.state && !(Number(f.size) > 0),
           cache: cacheOpt || !montre(f, mode) || !montre(ch, mode), get: () => !!s.choix[k][c], set: (v) => { s.choix[k][c] = v; } });
       }
-    } else if (d.kind === 'bool' && o.find && o.find.state !== 'ok' && (Number(o.find.size) > 0 || Number(o.find.count) > 0 || o.find.state === 'todo')) {
-      ajouter(d.group || k, d, { k, f: o.find, taille: Number(o.find.size) || 0, reco: true, reglage: o.find.state === 'todo',
+    } else if (d.kind === 'bool' && o.find && ouvert(o.find) && (Number(o.find.size) > 0 || Number(o.find.count) > 0 || !!o.find.state)) {
+      ajouter(d.group || k, d, { k, f: o.find, taille: Number(o.find.size) || 0, reco: o.find.state !== 'ok', reglage: !!o.find.state,
         cache: cacheOpt || !montre(o.find, mode), get: () => !!s.bool[k], set: (v) => { s.bool[k] = v; } });
     } else if (d.kind === 'select' && Object.keys(o.finds).length) {
       const actuel = Object.entries(o.finds).find(([, f]) => f.current === 'true')?.[0];
@@ -1230,7 +1288,7 @@ function postesAction(m, mode = 'simple') {
       const t0 = aSupprimer(m, k).reduce((a, it) => a + (Number(it.size) || 0), 0) || o.items.reduce((a, it) => a + (Number(it.size) || 0), 0) / 2;
       if (o.items.length) ajouter(d.group || k, d, { k, garder: true, taille: t0, reco: true, cache: cacheOpt, get: () => !!s.supprimer[k], set: (v) => { s.supprimer[k] = v; } });
     } else if (d.kind === 'items') {
-      for (const it of feuilles(o)) {
+      for (const it of feuilles(o, s.reappliquer)) {
         const parent = o.items.find((x) => x.id === it.parent);
         ajouter(d.group || k, d, { k, it, taille: Number(it.size) || 0, reco: cocheItem(it),
           cache: cacheOpt || !montre(it, mode) || (!!parent && !montre(parent, mode)),
@@ -1293,7 +1351,8 @@ function detailPoste(p, couleur) {
     const d = m.options[x.k].def;
     const attr = x.choix ? attrs(m, x.k, `data-a-k="choix" data-a-choix="${esc(x.choix)}"`) : attrs(m, x.k, 'data-a-k="bool"');
     const n = Number(x.f.count) || 0;
-    const etat = x.reglage ? `<span class="badge acc">${esc(t('an.a_faire'))}</span>` : n ? `<span class="muted">${esc(pl('an.n_elements', n))}</span>` : '';
+    const etat = x.f.state === 'ok' ? `<span class="badge low">${esc(t('an.deja_en_place'))}</span>`
+      : x.reglage ? `<span class="badge acc">${esc(t('an.a_faire'))}</span>` : n ? `<span class="muted">${esc(pl('an.n_elements', n))}</span>` : '';
     html.push(`<label class="an-ligne${x.get() ? '' : ' decoche'}"><input type="checkbox" ${attr}${x.get() ? ' checked' : ''}>
       <span class="an-t"><b>${esc(x.choix ? libChoix(m.entree, d, x.choix) : libOption(m.entree, d))}</b><span class="an-badges">${etat}</span></span>
       <span class="an-v">${x.taille ? taille(x.taille) : ''}</span></label>`);
@@ -1493,8 +1552,11 @@ export function agir(ev, modeles) {
     const o = m.options[k];
     ev.preventDefault();
     if (d.aK === 'supprimer') { s.supprimer[k] = !s.supprimer[k]; return true; }
-    if (d.aTout === 'multi') { for (const [c, f] of Object.entries(o.finds)) if (Number(f.size) > 0 || Number(f.count) > 0) s.choix[k][c] = true; return true; }
-    if (d.aTout === 'items') { for (const it of o.items) if (!it.locked && it.state !== 'ok') s.items[k][it.id] = true; return true; }
+    if (d.aTout === 'multi') {
+      for (const [c, f] of Object.entries(o.finds)) if (!enPlace(m, f) && (Number(f.size) > 0 || Number(f.count) > 0 || f.state)) s.choix[k][c] = true;
+      return true;
+    }
+    if (d.aTout === 'items') { for (const it of o.items) if (!it.locked && !enPlace(m, it)) s.items[k][it.id] = true; return true; }
     if (d.aRien === 'items') { for (const it of o.items) s.items[k][it.id] = false; return true; }
     if (d.aFiltre) { s.filtre[k] = d.aFiltre; return true; }
     if (d.aPlier) { s.plie[`${k}/${d.aPlier}`] = !estPlie(m, k, d.aPlier); return true; }
@@ -1528,7 +1590,7 @@ export function agir(ev, modeles) {
     // du script : cocher Chrome en Simple ne coche pas ses cookies, invisibles.
     const mode = d.aMode || 'expert';
     if (enfants.length) {
-      for (const e of enfants) if (!e.locked && e.state !== 'ok') s.items[k][e.id] = el.checked && (montre(e, mode) || cocheItem(e));
+      for (const e of enfants) if (!e.locked && !enPlace(m, e)) s.items[k][e.id] = el.checked && (montre(e, mode) || cocheItem(e));
     } else if (el.checked && o.items.find((x) => x.id === d.aItem)?.advice === 'discouraged') {
       // A discouraged element is ticked only once confirmed, in its sheet.
       el.checked = false;
@@ -1571,7 +1633,7 @@ function groupesPlan(m, mode) {
       if (l.length) groupes.push({ titre: libOption(m.entree, d), lignes: l });
     }
     if (d.kind === 'items') {
-      const liste = (d.keep_one ? aSupprimer(m, k) : feuilles(o).filter((it) => s.items[k][it.id]))
+      const liste = (d.keep_one ? aSupprimer(m, k) : feuilles(o, s.reappliquer).filter((it) => s.items[k][it.id]))
         .sort((a, b) => avant(nomElement(m, a), nomElement(m, b)));
       if (liste.length) {
         groupes.push({

@@ -388,6 +388,9 @@ pub struct RunRequest {
     /// (HKLM) holds for this script — see `lib.rs::run_script`.
     #[serde(default)]
     pub resume_phase: Option<String>,
+    /// 2.3.0: the diagnostic log (setting 5.7) — `SINDRY_DIAG=1` for the script.
+    #[serde(default)]
+    pub diagnostic: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -421,6 +424,8 @@ pub struct Cible {
     /// 2.1.0: may this run ask for a restart? `resume : true`, and neither an
     /// analysis nor a simulation. Otherwise `[RESTART]` is only displayed.
     pub redemarrage_permis: bool,
+    /// 2.3.0: `SINDRY_DIAG=1`, the script writes the detail of its errors.
+    pub diagnostic: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -723,10 +728,18 @@ pub fn lancer(
     // --- Journal technique -------------------------------------------------
     let dossier_logs = base.join("logs");
     std::fs::create_dir_all(&dossier_logs).map_err(|e| e.to_string())?;
+    // 2.3.0: named after the script file (`705_IMPROVE_TASKBAR`), not its id:
+    // a folder of GUIDs said nothing of what had run.
+    let nom_script = cible
+        .chemin
+        .file_stem()
+        .map(|n| assainir(&n.to_string_lossy()))
+        .filter(|n| n != "script")
+        .unwrap_or_else(|| assainir(&cible.id));
     let fichier_log = dossier_logs.join(format!(
-        "{}-{}{}.log",
+        "{}_{}{}.log",
         horodatage_fichier(),
-        assainir(&cible.id),
+        nom_script.chars().take(80).collect::<String>(),
         if cible.analyse { "-analyse" } else { "" }
     ));
 
@@ -742,6 +755,7 @@ pub fn lancer(
          moteur     : {nom_moteur} — {exe}\n\
          politique  : {politique}\n\
          mode       : {}\n\
+         diagnostic : {}\n\
          debut      : {}\n\
          config     : {}\n\
          {}",
@@ -754,6 +768,11 @@ pub fn lancer(
             "analyse (SINDRY_MODE=scan)"
         } else {
             "action"
+        },
+        if cible.diagnostic {
+            "oui (SINDRY_DIAG=1)"
+        } else {
+            "non"
         },
         chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
         config_pour_journal(&config),
@@ -818,6 +837,12 @@ pub fn lancer(
         Some(phase) => commande.env("SINDRY_RESUME", phase),
         None => commande.env_remove("SINDRY_RESUME"),
     };
+    // 2.3.0: the diagnostic log. Same rule: set or removed, never inherited.
+    if cible.diagnostic {
+        commande.env("SINDRY_DIAG", "1");
+    } else {
+        commande.env_remove("SINDRY_DIAG");
+    }
 
     #[cfg(windows)]
     commande.creation_flags(CREATE_NO_WINDOW);
@@ -1168,6 +1193,7 @@ fn preparer(
         analyse,
         reprise: req.resume_phase.clone(),
         redemarrage_permis,
+        diagnostic: req.diagnostic,
     };
     Ok(cible)
 }
@@ -1745,6 +1771,7 @@ exit 0
             analyse: false,
             reprise: None,
             redemarrage_permis: false,
+            diagnostic: false,
         }
     }
 

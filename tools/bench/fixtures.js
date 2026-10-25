@@ -332,6 +332,25 @@
         }),
       },
     }),
+    // 2.3.0 (option B): settings in a [multi], all already in place — the case
+    // of 705_IMPROVE_TASKBAR: nothing to do, unless « Réappliquer ».
+    // `?enplace=0`: one of them still to do.
+    script('taskbar', 'Improve the taskbar', 'Hides what you do not use', 'performance', 'layout-grid', {
+      options: [
+        optA('Items', 'multi', 'What to change', '', ['websearch', 'taskview', 'widgets'], { choices: [
+          choixA('websearch', 'No web results in search'), choixA('taskview', 'Hide the Task View button'), choixA('widgets', 'Hide Widgets'),
+        ] }),
+        optA('SafeTest', 'bool', 'Simulate', 'shows what would be done, changes nothing', false),
+      ],
+      meta: {
+        scan: true, translations: trA('Améliorer la barre des tâches', 'Masque ce que vous n’utilisez pas', {
+          Items: ['Quoi modifier', ''], SafeTest: ['Simuler', 'montre ce qui serait fait, sans rien modifier'],
+        }, {
+          'Items/websearch': ['Pas de résultats web dans la recherche', ''], 'Items/taskview': ['Masquer le bouton Vue des tâches', ''],
+          'Items/widgets': ['Masquer les Widgets', ''],
+        }),
+      },
+    }),
     script('disk-health', 'Check disk health', 'Reads the drives’ health indicators', 'health', 'hard-drive', {
       options: [],
       meta: {
@@ -531,6 +550,14 @@
           { option: 'Duplicates', fields: { id: 'd2', group: 'g1', name: 'vacances-001.jpg', path: 'C:\\Users\\Buly\\Downloads', size: '4404019' } },
         ],
         metrics: [], notes: [], steps: ['Comparing contents'], anomalies: [], truncated: false,
+      },
+    },
+    taskbar: {
+      lignes: ['[STEP] 1/1 Reading current settings'],
+      analyse: {
+        finds: ['websearch', 'taskview', 'widgets'].map((c) => ({ option: 'Items', choice: c,
+          fields: { state: c === 'widgets' && new URLSearchParams(location.search).get('enplace') === '0' ? 'todo' : 'ok' } })),
+        items: [], metrics: [], notes: [], steps: ['Reading current settings'], anomalies: [], truncated: false,
       },
     },
     'privacy-check': {
@@ -782,10 +809,15 @@
 
     let seq = 0;
     // `?erreur`: the DNS action fails on a declared error code (2.0.3).
-    const enErreur = script_id === 'set-dns' && new URLSearchParams(location.search).has('erreur');
-    const lignes = enErreur
-      ? LIGNES.map((l) => (l[2] === 'ERR' ? [l[0], 'stdout', 'ERR', null, '[ERR] E104 HKLM\\SOFTWARE\\WRData (0x80070005)'] : l))
-      : LIGNES;
+    // `?erreur=brute` (2.3.0): the taskbar action fails on an error without a
+    // declared code, as written by 705 — its text becomes the reason.
+    const erreurBrute = script_id === 'taskbar' && new URLSearchParams(location.search).get('erreur') === 'brute';
+    const enErreur = erreurBrute || (script_id === 'set-dns' && new URLSearchParams(location.search).has('erreur'));
+    const lignes = erreurBrute
+      ? LIGNES.map((l) => (l[2] === 'ERR' ? [l[0], 'stdout', 'ERR', null, '[ERR]  TaskbarDa: Tentative d’exécution d’une opération non autorisée.'] : l))
+      : enErreur
+        ? LIGNES.map((l) => (l[2] === 'ERR' ? [l[0], 'stdout', 'ERR', null, '[ERR] E104 HKLM\\SOFTWARE\\WRData (0x80070005)'] : l))
+        : LIGNES;
     lignes.forEach(([at, stream, marker, step, text]) => {
       setTimeout(() => {
         if (!enCours || enCours.run_id !== run_id || enCours.arrete) return;
@@ -839,7 +871,7 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.2.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '2.3.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=refus refuse l'UAC ; ?maj=ok reste sur
     // l'installation ; ?maj=horsligne fait echouer la verification.
@@ -850,7 +882,7 @@
       if (!maj) return null;
       // A word (signature, refus, ok) names a scenario, not a version.
       const version = /^\d/.test(maj) ? maj : '2.2.1';
-      return { version, actuelle: '2.2.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '2.3.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -1056,6 +1088,8 @@
       return null;
     },
     set_app_icons: (a) => { reglages.icones_sans_telechargement = !a.value; return JSON.parse(JSON.stringify(reglages)); },
+    // 2.3.0: the diagnostic log (5.7).
+    set_diagnostic: (a) => { reglages.diagnostic = !!a.value; return JSON.parse(JSON.stringify(reglages)); },
     scan_script: (a) => analyserBanc(a?.req),
     disk_space: () => ({ lecteur: 'C:', total: 511_101_108_224, libre: 46_170_898_432 }),
     set_accent: (a) => { reglages.accent = a.accent; return JSON.parse(JSON.stringify(reglages)); },

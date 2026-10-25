@@ -204,6 +204,11 @@ pub struct Settings {
     /// someone else, it only brings up the Windows prompt.
     #[serde(default)]
     pub admin_au_demarrage: bool,
+    /// 5.7 (2.3.0): the diagnostic log. Every script receives
+    /// `SINDRY_DIAG=1` and may write the full detail of its errors. A
+    /// preference: it only makes scripts say more.
+    #[serde(default)]
+    pub diagnostic: bool,
 }
 
 /// The values of `numeros_options` (1.6).
@@ -336,6 +341,7 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         icones_sans_telechargement: false,
         numeros_options: "auto".to_string(),
         admin_au_demarrage: false,
+        diagnostic: false,
     }
 }
 

@@ -659,6 +659,49 @@ Write-Output "[ERR] E104 HKLM\SOFTWARE\WRData (0x80070005)"
   (`CODE_ERREUR_INUTILISE`). Une fonction d'aide qui écrit `[ERR] $Code` est permise : le
   code compte dès qu'il figure dans son appel (`Write-Err 'E104' $detail`).
 
+### Expliquer un échec : le détail et le mode diagnostic (2.3.0)
+
+Un `[ERR]` sans code devient lui aussi la raison de l'échec, **tel qu'il est écrit** : elle
+s'affiche sous le nom de l'action, au bilan. Un message comme « Tentative d'exécution d'une
+opération non autorisée » ne dit pourtant ni ce qui était visé, ni pourquoi. Dans un
+`catch`, écrivez donc trois choses : le **code**, la **cible** et le **type d'erreur** ; le
+message de Windows vient en dernier.
+
+```powershell
+try {
+    Set-ItemProperty -LiteralPath $Key -Name 'TaskbarDa' -Value 0 -Type DWord -ErrorAction Stop
+} catch {
+    Write-Host "[ERR] E705 $Key\TaskbarDa: $($_.Exception.GetType().Name) - $($_.Exception.Message)"
+    Write-Diag $_
+}
+```
+
+**Le mode diagnostic.** Le réglage 5.7 de Sindry, « Journal de diagnostic », pose
+`SINDRY_DIAG=1` pour chaque script, analyse comprise ; sinon la variable est absente. Un
+script peut alors écrire le détail complet d'une erreur, sur des lignes `[LOG] Diag` que
+l'utilisateur lit en « Étendu » ou dans le fichier journal. Une fonction suffit, à
+recopier telle quelle :
+
+```powershell
+# Ecrit le detail d'une erreur attrapee, en mode diagnostic seulement (SINDRY_DIAG=1).
+# Recoit l'enregistrement d'erreur ($_) ; ne renvoie rien.
+function Write-Diag($Erreur) {
+    if ($env:SINDRY_DIAG -ne '1') { return }
+    $e = $Erreur.Exception
+    Write-Host ("[LOG] Diag {0} HResult=0x{1:X8}" -f $e.GetType().FullName, $e.HResult)
+    Write-Host "[LOG] Diag $($Erreur.CategoryInfo)"
+    Write-Host "[LOG] Diag $($Erreur.InvocationInfo.PositionMessage -replace '\s+', ' ')"
+    if ($e.InnerException) { Write-Host "[LOG] Diag Inner: $($e.InnerException.Message)" }
+}
+```
+
+- **Rien de secret** dans une ligne de diagnostic : ni mot de passe, ni jeton, ni contenu
+  de fichier.
+- **Le diagnostic ne change rien à l'action** : mêmes gestes, même verdict. Il ne fait que
+  parler davantage.
+- Le fichier journal note en tête si le diagnostic était actif (`diagnostic : oui`), et
+  porte le nom du script (`2026-10-25_102200_705_IMPROVE_TASKBAR.log`).
+
 ### `[CKPT]`, le marqueur qui rend l'annulation sûre
 
 Au premier clic sur « Arrêter », Sindry laisse le script en cours aller au bout. Au
@@ -1148,6 +1191,15 @@ Une nouvelle analyse remet toutes les cases à l'avis du script.
 **Montrer sans cocher.** `checked=false` sert ce qui est gros mais peut encore servir : les
 mises à jour de Windows téléchargées, par exemple. Accompagnez-le d'une `[NOTE]` qui dit
 pourquoi la case n'est pas cochée.
+
+**Réappliquer ce qui est en place (2.3.0).** Ce qui est `state=ok` reste grisé, mais
+l'utilisateur peut cliquer sur « Réappliquer ce qui est en place » (Expert) ou
+« Réappliquer quand même » (Simple, quand rien d'autre n'est à faire) : ces cases
+redeviennent cochables, sans être cochées d'office, et ce qu'il coche part au script comme
+le reste. **Votre action doit donc accepter une valeur déjà en place**, et la réécrire sans
+dommage : c'est le cas de presque tout réglage, et c'est la règle d'idempotence de toute
+action. Pour un `[multi]`, un choix qui rapporte un `state=` s'affiche « À faire » ou
+« Déjà en place », comme un `[bool]`, et compte comme un réglage.
 
 ### Ce qui ne s'affiche que dans un mode
 

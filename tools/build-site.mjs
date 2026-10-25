@@ -275,9 +275,15 @@ function roadmapVersions() {
   for (const line of read('docs/ROADMAP.md').split('\n')) {
     const c = line.startsWith('|') ? cells(line) : null;
     const v = c?.[0].match(/^\*\*v?(\d+\.\d+(?:\.\d+)?)\*\*$/);
-    if (v) found.set(v[1], (current = { summary: c[1], items: [] }));
+    if (v) found.set(v[1], (current = { summary: c[1], items: [], avec: c[2]?.match(/^Publiée avec la (\d+\.\d+\.\d+)$/)?.[1] }));
     else if (current && c && c[0] === '' && c[1].startsWith('— ')) current.items.push(c[1].slice(2));
     else current = null;
+  }
+  // A version that never came out alone (« Publiée avec la 2.3.0 ») is told
+  // under the one that carried it.
+  for (const [num, n] of found) {
+    const hote = n.avec && found.get(n.avec);
+    if (hote) hote.items.push(`${num} — ${n.summary}`, ...n.items);
   }
   return found;
 }
