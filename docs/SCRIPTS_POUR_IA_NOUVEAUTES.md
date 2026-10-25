@@ -12,28 +12,16 @@
 
 ---
 
-## 2.3.0 — depuis la 2.1.0 : sections, échecs expliqués, réapplication
+## 2.3.0 — depuis la 2.2.0 : expliquer un échec, réappliquer ce qui est en place
 
-La 2.2.0 n'est pas sortie seule : ses consignes arrivent avec la 2.3.0. Trois nouveautés :
-- une action qui a beaucoup de réglages les range en **onglets** dans la fiche Expert ;
-- un échec s'**explique** : code, cible, type d'erreur, et un mode diagnostic ;
-- l'utilisateur peut **réappliquer** ce qui est déjà en place.
-
-Les règles 1 à 43 restent valables, aucune n'est remplacée.
+Deux nouveautés : un échec s'**explique** (code, cible, type d'erreur, et un mode
+diagnostic), et l'utilisateur peut **réappliquer** ce qui est déjà en place. Les règles 1
+à 44 restent valables, aucune n'est remplacée.
 
 ### Règles nouvelles
 
-À ajouter après la règle 43, dans deux nouvelles parties : « Les réglages nombreux (plus
-de 10) » pour la 44, « Les échecs et ce qui est déjà en place » pour les 45 et 46.
-
-44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
-    section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
-    dans l'onglet. Déclare chaque section **et** chaque sous-titre dans `REPORT`
-    (`## Cle : [section] Titre — sous-titre`, `## Cle.Sous : [section] Titre`) et
-    traduis-les dans `LANG fr`. Des onglets courts (3 à 8 réglages), nommés par ce que
-    l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
-    (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
-    (« Ranger les réglages en sections »).
+À ajouter après la règle 44, dans une nouvelle partie « Les échecs et ce qui est déjà en
+place ».
 
 45. **Dans un `catch`, écris le code, la cible et le type d'erreur**, puis le message :
     `[ERR] E705 $Key: $($_.Exception.GetType().Name) - $($_.Exception.Message)`, jamais le
@@ -67,6 +55,39 @@ function Write-Diag($Erreur) {
 | Variable | Valeur | Sens |
 |---|---|---|
 | `SINDRY_DIAG` | `1`, ou absente | **Nouveau** : le réglage 5.7 de Sindry, « Journal de diagnostic », est actif |
+
+### Dans la vérification finale
+
+À ajouter à la partie « Sortie » :
+
+- [ ] Chaque `catch` écrit un `[ERR]` avec code, cible et type d'erreur, puis appelle
+      `Write-Diag $_`.
+
+À la partie « Analyse » :
+
+- [ ] Refaire l'action sur ce qui est déjà en place (`state=ok`) ne casse rien.
+
+---
+
+## 2.2.0 — depuis la 2.1.0 : ranger les réglages en sections
+
+Une action qui a beaucoup de réglages les range maintenant en **onglets** dans la fiche
+Expert. Rien d'autre ne change : les règles 1 à 43 restent valables, aucune n'est
+remplacée.
+
+### Règle nouvelle
+
+À ajouter après la règle 43, dans une nouvelle partie « Les réglages nombreux (plus de
+10) ».
+
+44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
+    section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
+    dans l'onglet. Déclare chaque section **et** chaque sous-titre dans `REPORT`
+    (`## Cle : [section] Titre — sous-titre`, `## Cle.Sous : [section] Titre`) et
+    traduis-les dans `LANG fr`. Des onglets courts (3 à 8 réglages), nommés par ce que
+    l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
+    (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
+    (« Ranger les réglages en sections »).
 
 ### Dans les options et le bloc `REPORT`
 
@@ -115,15 +136,6 @@ utilisateur peut donc désigner un réglage par son numéro.
 
 - [ ] Au-delà de 10 réglages, chacun a sa `[section:Cle]`, et chaque section ou sous-titre
       est déclaré `[section]` dans `REPORT` et traduit.
-
-À la partie « Sortie » :
-
-- [ ] Chaque `catch` écrit un `[ERR]` avec code, cible et type d'erreur, puis appelle
-      `Write-Diag $_`.
-
-À la partie « Analyse » :
-
-- [ ] Refaire l'action sur ce qui est déjà en place (`state=ok`) ne casse rien.
 
 ---
 

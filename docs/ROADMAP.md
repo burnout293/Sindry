@@ -80,7 +80,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — reprise sans mot de passe par ARSO, sans qu'aucun mot de passe soit vu ni gardé ; plafond de redémarrages (réglage 4.5) | Fait |
 | | — le bilan propose enfin le redémarrage demandé à la fin (§6.5) | Fait |
 | | — guide pour IA en version courte (`SCRIPTS_POUR_IA_COURT.md`), et les consignes nouvelles de chaque version (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) | Fait |
-| **2.2.0** | Les demandes du 25/10/2026 : barre du haut, réglages en onglets, mise à jour dans Sindry, site | Publiée avec la 2.3.0 |
+| **2.2.0** | Les demandes du 25/10/2026 : barre du haut, réglages en onglets, mise à jour dans Sindry, site | Publiée le 25/10/2026 |
 | | — la barre du haut se resserre d'un cran à la fois, avec un menu « ⋯ » ; les boutons de la fenêtre ne disparaissent plus (maquette M38, variante C) | Fait |
 | | — les réglages d'une action en onglets : `[section:Clé]` et `[section:Clé.Sous]` déclarés par le script, sinon rangés par Sindry au-delà de 10 ; une colonne par onglet (maquette M39, variante B) | Fait |
 | | — les réglages d'une action numérotés « onglet.rang » : jamais, au-delà de 10 (par défaut), toujours — réglage 1.6 | Fait |
@@ -89,7 +89,7 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — la mise à jour se déroule dans une fenêtre de Sindry (téléchargement, signature, installation, redémarrage), l'installeur sans fenêtre ; un refus de l'autorisation est annoncé | Fait |
 | | — le journal des consignes pour IA (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) tenu par le générateur des guides : une consigne ne change plus sans son entrée | Fait |
 | | — un site GitHub Pages : présentation, téléchargement, guide des scripts, guides pour IA, catalogue, feuille de route | Fait |
-| **2.3.0** | Réappliquer ce qui est en place, des échecs expliqués, le nom du script dans les journaux — avec tout ce que préparait la 2.2.0 | Prête |
+| **2.3.0** | Réappliquer ce qui est en place, des échecs expliqués, le nom du script dans les journaux | Prête |
 | | — « Réappliquer quand même » : ce qui est déjà en place redevient cochable, sans rien cocher d'office ; en Simple et en Expert (option B) | Fait |
 | | — les réglages d'une liste à choix multiples (`state=`) s'affichent « À faire » ou « Déjà en place » et comptent comme réglages ; en Simple, ils ont enfin leur poste | Fait |
 | | — un échec expliqué : la raison sous le nom de l'action, même sans code d'erreur ; journal de diagnostic (réglage 5.7, `SINDRY_DIAG`), règles IA 45 et 46 | Fait |

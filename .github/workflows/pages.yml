@@ -33,8 +33,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Une publication a la fois, sans interrompre celle en cours.
 concurrency:
@@ -42,7 +40,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Une version publiee fait tourner ce workflow sur son tag, que
+  # l'environnement github-pages refuse : seul main y deploie (echec du
+  # 25/10/2026 sur v2.2.0). On le relance donc sur main.
+  relancer:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Relancer le site sur main
+        run: gh workflow run pages.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   construire:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -70,6 +83,9 @@ jobs:
   publier:
     needs: construire
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.publication.outputs.page_url }}
