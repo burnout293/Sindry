@@ -192,7 +192,7 @@
   // analyse est rejouee par `scan_script`, au format de `analyse::Analyse`.
   const optA = (key, kind, label, desc, def, extra = {}) => ({
     key, kind, label, desc, choices: [], default: def, hidden: false,
-    keep_one: false, scan: false, group: '', show: '', view: '', ...extra,
+    keep_one: false, scan: false, group: '', show: '', view: '', section: '', ...extra,
   });
   const choixA = (value, label, extra = {}) => ({ value, label, desc: '', group: '', show: '', ...extra });
   const trA = (title, desc, options = {}, choices = {}, report = {}) => ({ fr: { title, desc, options, choices, report } });
@@ -351,6 +351,41 @@
   ];
   // Each in the lot its category names (by position, an insertion shifted them).
   for (const s of ANALYSABLES) SCRIPTS[s.meta.category].push(s);
+
+  // 2.2.0 (M39 B): a script that ranges its settings in sections — one tab
+  // per section, a sub-heading for « View.Files ». [key, English, French, section, default].
+  const REGLAGES_EXPLORER = [
+    ['ShowExtensions', 'Show file extensions', 'Afficher les extensions des fichiers', 'View.Files'],
+    ['ShowHidden', 'Show hidden files', 'Afficher les fichiers cachés', 'View.Files', false],
+    ['ShowFullPath', 'Show the full path in the title', 'Afficher le chemin complet dans le titre', 'View.Files'],
+    ['CompactView', 'Compact view — less space between items', 'Vue compacte — moins d’espace entre les éléments', 'View'],
+    ['OpenThisPc', 'Open on « This PC »', 'Ouvrir sur « Ce PC »', 'View'],
+    ['ClassicMenu', 'Classic context menu', 'Menu contextuel classique', 'View'],
+    ['NoThumbnailsCache', 'Do not keep a thumbnail cache', 'Ne pas garder de cache des miniatures', 'Speed', false],
+    ['NoNetworkScan', 'Do not scan network drives at startup', 'Ne pas scanner les lecteurs réseau au démarrage', 'Speed'],
+    ['SeparateProcess', 'Open folders in a separate process', 'Ouvrir les dossiers dans un processus séparé', 'Speed', false],
+    ['FasterMenus', 'Faster menus', 'Menus plus rapides', 'Speed'],
+    ['NoRecentFiles', 'Do not list recent files', 'Ne pas lister les fichiers récents', 'Privacy'],
+    ['NoFrequentFolders', 'Do not list frequent folders', 'Ne pas lister les dossiers fréquents', 'Privacy'],
+    ['NoOfficeFiles', 'Hide Office cloud files', 'Masquer les fichiers Office du cloud', 'Privacy', false],
+    ['ClearHistoryOnExit', 'Clear the history on sign-out', 'Effacer l’historique à la déconnexion', 'Privacy', false],
+  ];
+  SCRIPTS.performance.push(script('explorer-tweaks', 'Tune File Explorer', 'Faster, clearer File Explorer', 'performance', 'folder-cog', {
+    options: REGLAGES_EXPLORER.map(([k, en, , section, d = true]) => optA(k, 'bool', en, '', d, { section })),
+    meta: {
+      report: {
+        View: { kind: 'section', level: '', label: 'Display', desc: 'What File Explorer shows' },
+        'View.Files': { kind: 'section', level: '', label: 'Files', desc: '' },
+        Speed: { kind: 'section', level: '', label: 'Speed', desc: 'Less waiting when browsing' },
+        Privacy: { kind: 'section', level: '', label: 'Privacy', desc: 'What File Explorer remembers' },
+      },
+      translations: trA('Régler l’Explorateur de fichiers', 'Un Explorateur plus rapide et plus clair',
+        Object.fromEntries(REGLAGES_EXPLORER.map(([k, , fr]) => [k, fr.split(' — ')])), {}, {
+          View: ['Affichage', 'Ce que l’Explorateur montre'], 'View.Files': ['Fichiers', ''],
+          Speed: ['Rapidité', 'Moins d’attente en naviguant'], Privacy: ['Confidentialité', 'Ce que l’Explorateur retient'],
+        }),
+    },
+  }));
 
   /** `?catalogue=reel` : ce que le moteur a vraiment lu du catalogue. Lecture
    *  synchrone : l'interface demande ses scripts des son demarrage. */
@@ -804,16 +839,18 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.1.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    app_info: () => ({ version: '2.2.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
-    // refuser a l'installation ; ?maj=horsligne fait echouer la verification.
+    // refuser a l'installation ; ?maj=refus refuse l'UAC ; ?maj=ok reste sur
+    // l'installation ; ?maj=horsligne fait echouer la verification.
     // Sans parametre, Sindry est a jour.
     check_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
       if (maj === 'horsligne') throw new Error('error sending request for url (https://github.com/...)');
       if (!maj) return null;
-      const version = maj === 'signature' ? '1.5.1' : maj;
-      return { version, actuelle: '2.1.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      // A word (signature, refus, ok) names a scenario, not a version.
+      const version = /^\d/.test(maj) ? maj : '2.2.1';
+      return { version, actuelle: '2.2.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -823,6 +860,14 @@
         await new Promise((r) => setTimeout(r, 250));
       }
       if (maj === 'signature') throw new Error('Signature verification failed');
+      // `?maj=refus`: « No » to Windows' request for the rights (2.2.0).
+      if (maj === 'refus') {
+        await new Promise((r) => setTimeout(r, 1200));
+        throw new Error('Io error: L’opération a été annulée par l’utilisateur. (os error 1223)');
+      }
+      // `?maj=ok`: the installer has started and Sindry is about to close —
+      // the update window stays on its last step (2.2.0).
+      if (maj === 'ok') await new Promise(() => {});
       // Le vrai greffon fermerait l'application ici ; le banc ne peut pas.
       throw new Error('banc : l’installeur aurait ete lance et Sindry ferme');
     },
@@ -1250,7 +1295,7 @@
   // `?css=` : une feuille d'essai par-dessus l'interface, pour comparer des
   // variantes en maquette avant d'en faire une regle.
   if (parametres.get('css')) document.head.append(Object.assign(document.createElement('style'), { textContent: parametres.get('css') }));
-  if (parametres.get('mode') === 'expert' || parametres.get('reglages')) {
+  if (parametres.get('mode') === 'expert' || parametres.get('reglages') || parametres.get('simple')) {
     const t = setInterval(() => {
       if (!document.documentElement.dataset.benchVisible) return;
       clearInterval(t);
@@ -1274,6 +1319,14 @@
           if (parametres.get('menu')) clic('.an-outils [data-a-menu]');
           if (parametres.get('onglet')) clic(`[data-a-onglet="${p('onglet')}"]`);
         }, 2600);
+      }
+      // `?simple=<n>` (2.2.0): the Simple wizard up to « Voici ce que j'ai
+      // trouvé », for the n-th lot — for the captures of the site.
+      const simple = parametres.get('simple');
+      if (simple) {
+        setTimeout(() => document.querySelectorAll('.buoy')[Number(simple)]?.click(), 150);
+        setTimeout(() => document.getElementById('btnContinuerChoix')?.click(), 450);
+        setTimeout(() => document.getElementById('btnSuivantVerifier')?.click(), 1300);
       }
       if (parametres.get('reglages')) {
         document.getElementById('btnSettings')?.click();

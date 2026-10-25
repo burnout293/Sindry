@@ -1,7 +1,7 @@
 # Sindry — écrire un script PowerShell conforme (version courte)
 
 > **Version courte, pour une IA à petite mémoire** (un modèle local, par exemple). Générée
-> par `tools/build-script-guides.mjs` (Sindry 2.1.0), comme la version complète
+> par `tools/build-script-guides.mjs` (Sindry 2.2.0), comme la version complète
 > `SCRIPTS_POUR_IA.md`. Ne la modifiez pas à la main.
 
 Ce document garde l'essentiel pour écrire un script que Sindry accepte : la mission, le
@@ -227,6 +227,17 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     `[REBOOT]` et `exit 0`, jamais `[RESTART]`. Les installeurs tiers reçoivent
     `/norestart` (MSI : `REBOOT=ReallySuppress`) ; traduis leur 3010 ou 1641 en `[REBOOT]`
     ou en `[RESTART]`.
+
+### Les réglages nombreux (plus de 10)
+
+44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
+    section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
+    dans l'onglet. Déclare chaque section **et** chaque sous-titre dans `REPORT`
+    (`## Cle : [section] Titre — sous-titre`, `## Cle.Sous : [section] Titre`) et
+    traduis-les dans `LANG fr`. Des onglets courts (3 à 8 réglages), nommés par ce que
+    l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
+    (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
+    (« Ranger les réglages en sections »).
 
 ---
 
@@ -731,10 +742,11 @@ déclare dans un bloc `REPORT`, placé entre `OPTIONS` et `LANG` :
 | `Clé : Libellé` | Nommer une mesure, ou la nature d'un élément | `[METRIC] Clé`, `[ITEM] … label=Clé` |
 | `Clé : [note:info] Phrase` ou `[note:warn]` | Une phrase neutre, ou un avertissement | `[NOTE] Clé` |
 | `Clé : [group] Libellé — sous-titre` | Un **poste** du résumé Simple | `[group:Clé]` sur une option ou un choix |
+| `Clé : [section] Titre — sous-titre` | Un **onglet** de la fiche Expert, ou un sous-titre (`Clé.Sous`) dans un onglet (2.2.0) — voir « Ranger les réglages en sections » | `[section:Clé]` sur une option |
 | `E104 : [error] Description — solution` | Expliquer une erreur, analyse ou non (2.0.3) — voir « Les codes d'erreur » | `[ERR] E104 …`, `[WARN] E104 …` |
 
 Le bloc `REPORT` n'est donc pas réservé au mode analyse : un script qui n'analyse rien peut
-n'y déclarer que ses codes d'erreur.
+n'y déclarer que ses codes d'erreur, ou ses sections.
 
 Chaque clé se traduit dans le bloc `LANG`, comme une option, sans répéter son étiquette :
 `## Junk : Fichiers inutiles — Fichiers temporaires et corbeille`. Une clé sans traduction
@@ -1049,6 +1061,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Chaque type est en minuscules ; chaque `select` ou `multi` a au moins deux choix.
 - [ ] Chaque valeur par défaut est du bon type : un choix déclaré pour un `select`, un
       tableau pour un `multi` ou un `items`, `$true`/`$false` pour un `bool` ou un `hidden`.
+- [ ] Au-delà de 10 réglages, chacun a sa `[section:Cle]`, et chaque section ou sous-titre
+      est déclaré `[section]` dans `REPORT` et traduit.
 - [ ] `$CONFIG = @{` tient sur une ligne et `}` est seule sur la sienne.
 - [ ] La ligne d'override est recopiée à l'identique, hors commentaire.
 

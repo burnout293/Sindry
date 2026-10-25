@@ -16,6 +16,8 @@ Avant de livrer, vérifie chaque point. Un « non » se corrige avant la livrais
 - [ ] Chaque type est en minuscules ; chaque `select` ou `multi` a au moins deux choix.
 - [ ] Chaque valeur par défaut est du bon type : un choix déclaré pour un `select`, un
       tableau pour un `multi` ou un `items`, `$true`/`$false` pour un `bool` ou un `hidden`.
+- [ ] Au-delà de 10 réglages, chacun a sa `[section:Cle]`, et chaque section ou sous-titre
+      est déclaré `[section]` dans `REPORT` et traduit.
 - [ ] `$CONFIG = @{` tient sur une ligne et `}` est seule sur la sienne.
 - [ ] La ligne d'override est recopiée à l'identique, hors commentaire.
 

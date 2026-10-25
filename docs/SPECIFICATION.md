@@ -93,6 +93,36 @@ la barre de titre l'ouvre et le ferme. Vide, il le dit (« Aucune exécution pou
 s'ouvrait qu'avec une exécution, et rien ne permettait de relire ce qui s'était passé une
 fois l'écran quitté.
 
+**Les réglages d'une action en onglets (2.2.0, maquette M39 B).** Au-delà de dix réglages,
+la fiche se lisait comme une liste sans fin. Un script qui déclare des **sections**
+(`[section:Clé]`, FORMAT_SCRIPT « Ranger les réglages en sections ») a un onglet par
+section, avec ses sous-titres : dans un onglet, ses réglages propres d'abord, puis chaque
+sous-titre avec les siens. Sans section, Sindry range lui-même une liste de plus de dix
+réglages : ce que fait l'action, les réglages de l'analyse, les réglages avancés. Le
+dernier onglet, « Sindry », garde ce que Sindry ajoute à chaque action (point de
+restauration, exceptions). **Une colonne par onglet**, comme avant : la maquette en
+proposait deux, mais l'œil hésitait entre lire en travers et lire en descendant. Les
+réglages se **numérotent** « onglet.rang » (« 2.3 ») selon le réglage 1.6 : jamais, au-delà
+de dix (par défaut), toujours. On peut ainsi désigner un réglage précis à quelqu'un.
+
+**La barre de titre se resserre (2.2.0, maquette M38 C).** Avant, sous 1 100 pixels de
+large environ, les boutons de la fenêtre (réduire, agrandir, fermer) sortaient de l'écran.
+La barre se resserre maintenant d'un cran à la fois, jusqu'à ce que tout tienne :
+
+| Cran | Ce qui change |
+|---|---|
+| 1 | La version passe sous le nom |
+| 2 | La recherche raccourcit |
+| 3 | Les pastilles prennent un libellé court : « Simu », « Admin », « Limité » |
+| 4 à 6 | Le thème, puis le journal, puis l'aide passent dans un menu **« ⋯ »** |
+| 7 | Les pastilles ne gardent que leur icône |
+| 8 | La recherche raccourcit encore |
+| 9 | Les réglages rejoignent « ⋯ » |
+
+Les boutons de la fenêtre ne quittent jamais l'écran ; la simulation et les droits restent
+toujours visibles. La barre se remesure quand la fenêtre change de taille et quand son
+contenu change (langue, mode, pastilles).
+
 ---
 
 ## 3. Règles de langage du mode Simple — non négociables
@@ -716,7 +746,7 @@ Avancé, seul l'historique s'y montre.
 
 | Section | Réglages | Mode |
 |---|---|---|
-| **1 Général** | 1.1 Langue · 1.2 Mises à jour : versions stables, bêta aussi (la release publiée la plus récente, pré-version comprise), jamais · 1.3 Rechercher une mise à jour · 1.4 Présentation de Sindry (revoir la bienvenue) · 1.5 Numéros des réglages | partout |
+| **1 Général** | 1.1 Langue · 1.2 Mises à jour : versions stables, bêta aussi (la release publiée la plus récente, pré-version comprise), jamais · 1.3 Rechercher une mise à jour · 1.4 Présentation de Sindry (revoir la bienvenue) · 1.5 Numéros des réglages · 1.6 Numéroter les réglages des actions : jamais, au-delà de 10 (par défaut), toujours (2.2.0, §2) · 1.7 Toujours démarrer en administrateur (2.2.0) | partout |
 | **2 Apparence** | 2.1 Thème : clair, sombre, Windows (aussi l'icône soleil / lune) · 2.2 Taille de l'interface · 2.3 Ambiance (§15.4, §15.7) · 2.4 Partager une ambiance : importer, exporter, retirer, ouvrir le dossier, guide du format | partout |
 | **3 Catalogues** | 3.1 Les catalogues en tableau (2.0.2, maquette M29) : les commandes dans une barre — ajouter, mettre à jour, rechercher des mises à jour, modifier, activer ou désactiver, retirer —, reprises au clic droit ; le détail et la liste des actions à cocher sous le tableau ; ajouter, modifier ou retirer en administrateur (§16) · 3.2 Rechercher des mises à jour (au démarrage, ou sur demande) · 3.3 Icônes des applications : les télécharger depuis le dépôt Sindry-Media-Library, ou rien (2.0.4, §17.4) | partout |
 | **4 Actions** | 4.1 En cas d'échec : continuer ou arrêter la série · 4.2 Politique d'exécution : Bypass, RemoteSigned, Unrestricted (§6.7) · 4.3 Dossier des scripts · 4.4 Ré-analyser tous les scripts (§5.5) | Expert |
@@ -725,6 +755,13 @@ Avancé, seul l'historique s'y montre.
 
 Les emplacements protégés **pour une seule action** (2.0) se règlent dans la configuration
 de l'action, en Expert et en administrateur (§12.4).
+
+**Toujours démarrer en administrateur (1.7, 2.2.0).** Sindry démarre sans droits
+(`asInvoker`). Avec ce réglage, au lancement, il se relance aussitôt avec les droits
+administrateur : Windows le demande à chaque fois (UAC). La relance porte l'argument
+`--relance-admin` : si l'on refuse, Sindry continue sans droits au lieu de redemander en
+boucle. Le réglage vit dans `settings.json`, inscriptible par l'utilisateur : ce n'est pas
+une faiblesse, puisqu'il ne fait que **demander** l'élévation, que Windows fait confirmer.
 
 Une personne à qui l'on a installé l'outil peut éclaircir ou agrandir son interface sans
 jamais croiser un réglage qu'elle pourrait casser.
@@ -744,6 +781,9 @@ changer de mode, puis les rouvrir.
 - **L'historique s'affiche directement** dans sa page.
 - **Retour** : le bouton, la roue dentée — allumée tant que la page est ouverte — ou Échap,
   qui referme d'abord la recherche, puis la page du plan du disque.
+- **Les bandeaux restent visibles** (2.2.0). La page commence sous les bandeaux de la
+  fenêtre (mise à jour disponible, simulation, catalogues) et suit leur hauteur. Avant, elle
+  les recouvrait : une mise à jour disponible ne se voyait pas depuis les réglages.
 - La section 3 s'appelle **« Exécution »** : « Mode Expert » nommait la section par son
   public, alors que le menu le dit déjà. Les numéros ne changent pas.
 
@@ -822,8 +862,21 @@ avant d'être retenu. Le détail des choix est en tête de `src-tauri/src/update
   Sous Windows, l'installeur ferme Sindry : il couperait le script en cours au milieu de
   ce qu'il fait. Entre deux scripts d'un lot, un drapeau dédié tient ce refus — ni l'état
   d'exécution, nul le temps de lancer le script suivant, ni l'état du bilan ne le disent.
-- **L'installeur ferme Sindry puis le rouvre.** Il demande l'élévation, l'installation
-  étant `perMachine` (§4.3).
+- **La mise à jour se déroule dans Sindry** (2.2.0). « Installer » ouvre une fenêtre de
+  Sindry qui suit quatre étapes : le téléchargement (avec sa progression), la vérification
+  de la signature, l'installation, le redémarrage de Sindry. L'installeur travaille sans
+  fenêtre (`installMode: quiet`) : il ferme Sindry, installe, puis le rouvre lui-même. Avant,
+  c'était la fenêtre de l'installeur Windows (`passive`), étrangère à Sindry.
+- **Windows demande l'autorisation** si Sindry n'est pas déjà administrateur :
+  l'installation est `perMachine` (§4.3). La fenêtre le dit avant ; élevé, Sindry annonce
+  au contraire qu'il n'y a rien à faire.
+- **Refuser l'autorisation ne ferme rien.** Windows la demande avant que l'installeur ne
+  démarre (`ShellExecuteW` attend la réponse) : un « Non » laisse Sindry ouvert, et la
+  fenêtre l'annonce (« Installation annulée… Rien n'a changé »). Un échec du téléchargement
+  ou de la signature s'y affiche de même, à son étape, avec « Fermer ».
+- **Limite assumée.** Une fois l'autorisation donnée, Sindry se ferme et l'installeur
+  travaille seul : s'il échoue, rien ne l'annonce, et Sindry ne se rouvre pas. Il faut le
+  relancer depuis le menu Démarrer.
 
 ### 11.2 Intégrité : une signature, pas une empreinte
 

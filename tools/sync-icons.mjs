@@ -85,6 +85,8 @@ const SPRITE = {
   file: 'file',
   globe: 'globe',
   power: 'power',
+  // La barre du haut qui se resserre (2.2.0) : ce qui ne tient plus.
+  ellipsis: 'ellipsis',
   'calendar-clock': 'calendar-clock',
   cpu: 'cpu',
   info: 'info',

@@ -74,17 +74,21 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — `[ITEM] … about=`, `why=`, `warn=` (des notes du `REPORT`), `advice=caution` ou `discouraged` (jamais coché d'office, confirmé dans la fiche), `reboot=true` ; la fiche à droite, le récapitulatif avec ses alertes (M35 B, M36) | Fait |
 | | — « Ce qui sera fait » complet (plus de limite à huit), groupé par option, avec les icônes ; aussi en Simple, sous l'analyse | Fait |
 | | — `icon=` : une icône Lucide par élément ; `appicon=` : l'icône officielle, téléchargée depuis le dépôt `Sindry-Media-Library` seulement ; réglage 3.3 pour couper | Fait |
-| **2.1.0** | Reprendre un entretien après un redémarrage (maquette M37) | Prête |
+| **2.1.0** | Reprendre un entretien après un redémarrage (maquette M37) | Publiée le 25/10/2026 |
 | | — `## resume : true`, `[RESTART] <phase>` puis `exit 3010`, `SINDRY_RESUME` au retour ; un script qui redémarre lui-même est une erreur (`REDEMARRAGE_DIRECT`) | Fait |
 | | — journal de reprise dans HKLM, tâche de relance élevée à l'ouverture de session, compte à rebours de 60 s, mode restreint, entretien interrompu retrouvé au lancement | Fait |
 | | — reprise sans mot de passe par ARSO, sans qu'aucun mot de passe soit vu ni gardé ; plafond de redémarrages (réglage 4.5) | Fait |
 | | — le bilan propose enfin le redémarrage demandé à la fin (§6.5) | Fait |
 | | — guide pour IA en version courte (`SCRIPTS_POUR_IA_COURT.md`), et les consignes nouvelles de chaque version (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) | Fait |
-| **2.x** | Demandé le 25/10/2026, à planifier avant la v3 | À faire |
-| | — la barre du haut ne cache plus rien quand la fenêtre rétrécit : version sous le nom, recherche et pastilles plus courtes, ou un menu (maquette M38) | Maquette |
-| | — les options à rallonge se rangent : sections, onglets, niveau d'abord, recherche ou sommaire (maquette M39) | Maquette |
-| | — les réglages d'une action se numérotent quand ils sont nombreux, réglage 1.6 (maquette M39) | Maquette |
-| | — une page GitHub Pages pour Sindry | À étudier |
+| **2.2.0** | Les demandes du 25/10/2026 : barre du haut, réglages en onglets, mise à jour dans Sindry, site | Prête |
+| | — la barre du haut se resserre d'un cran à la fois, avec un menu « ⋯ » ; les boutons de la fenêtre ne disparaissent plus (maquette M38, variante C) | Fait |
+| | — les réglages d'une action en onglets : `[section:Clé]` et `[section:Clé.Sous]` déclarés par le script, sinon rangés par Sindry au-delà de 10 ; une colonne par onglet (maquette M39, variante B) | Fait |
+| | — les réglages d'une action numérotés « onglet.rang » : jamais, au-delà de 10 (par défaut), toujours — réglage 1.6 | Fait |
+| | — réglage 1.7 : toujours démarrer en administrateur | Fait |
+| | — la page des réglages ne cache plus les bandeaux : une mise à jour disponible s'y voit | Fait |
+| | — la mise à jour se déroule dans une fenêtre de Sindry (téléchargement, signature, installation, redémarrage), l'installeur sans fenêtre ; un refus de l'autorisation est annoncé | Fait |
+| | — le journal des consignes pour IA (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) tenu par le générateur des guides : une consigne ne change plus sans son entrée | Fait |
+| | — un site GitHub Pages : présentation, téléchargement, guide des scripts, guides pour IA, catalogue, feuille de route | Fait |
 | **v3** | Le cap fixé le 24/10/2026 ; les versions 2.x y mènent pas à pas, et d'autres objectifs s'ajouteront | À étudier |
 | | — **version portable** : un exe sans installation, ses données à côté de lui | À étudier |
 | | — **un chat avec une IA générative** spécialisée pour Sindry, qui écrit un script sur demande — à voir si c'est possible | À étudier |

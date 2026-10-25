@@ -13,14 +13,20 @@
 // tools/lots.json, tools/lucide-icon-names.txt, and the hand-written parts in
 // tools/script-guides/ (the icons of the short version among them). Nothing
 // else: a rule changes in FORMAT_SCRIPT.md, and the guides follow at the next
-// build.
+// build. It also keeps the fingerprint of the rules in their changelog,
+// docs/SCRIPTS_POUR_IA_NOUVEAUTES.md, written by hand (2.2.0, see below).
 //
-//   node tools/build-script-guides.mjs           write the three files
+//   node tools/build-script-guides.mjs           write the three files, and the fingerprint
 //   node tools/build-script-guides.mjs --check   fail if one is out of date (CI)
+//   node tools/build-script-guides.mjs --sans-nouveaute
+//                                                accept a change of the rules
+//                                                without a changelog entry (a typo)
 
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { render } from './markdown.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n');
@@ -32,149 +38,54 @@ const lots = JSON.parse(read('tools/lots.json'));
 const icons = read('tools/lucide-icon-names.txt').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
 
 // ---------------------------------------------------------------------------
-// Markdown → HTML, for the subset FORMAT_SCRIPT.md uses: headings, paragraphs,
-// fenced code, tables, lists, block quotes, rules, and inline code, bold,
-// italic and links. Anything else stays text, escaped.
+// The changelog of the rules for an AI (2.2.0): docs/SCRIPTS_POUR_IA_NOUVEAUTES.md,
+// what changes from one version to the next, for a model that already has an
+// older guide. Nothing generates it, so nothing would remind anyone to write
+// it: it keeps a fingerprint of the rules (ai-intro.md, ai-checklist.md), and
+// the fingerprint only follows a change when the changelog has an entry for
+// the current version. The rules that entry quotes must also read exactly as
+// in ai-intro.md: a rule cannot change without its entry.
 // ---------------------------------------------------------------------------
 
-const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s) => escapeHtml(s).replace(/"/g, '&quot;');
+const CHANGELOG = 'docs/SCRIPTS_POUR_IA_NOUVEAUTES.md';
+const FINGERPRINT = /<!-- empreinte des consignes : ([0-9a-f]{16}) /;
+const ruleSources = read('tools/script-guides/ai-intro.md') + '\n' + read('tools/script-guides/ai-checklist.md');
+const fingerprint = createHash('sha256').update(ruleSources).digest('hex').slice(0, 16);
 
-function slugify(text, used) {
-  const base = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    .replace(/[`*]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
-  let id = base;
-  for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
-  used.add(id);
-  return id;
-}
-
-/** Inline markdown. Code spans are set aside first: nothing inside them is markup. */
-function inline(md) {
-  const codes = [];
-  let s = md.replace(/`([^`]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);
-  s = escapeHtml(s);
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => `<a href="${u.replace(/"/g, '&quot;')}">${t}</a>`);
-  s = s.replace(/\*\*((?:[^*]|\*[^*]+\*)+?)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/(^|[^*\w])\*([^*\s](?:[^*]*?[^*\s])?)\*(?![*\w])/g, '$1<em>$2</em>');
-  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codes[i])}</code>`);
-}
-
-const MARKERS = 'INFO|OK|WARN|ERR|STEP|PROGRESS|CKPT|REBOOT|DONE|FREED|LOG|FIND|ITEM|METRIC|NOTE';
-
-/** A light colouring of code: `##` metadata, comments, strings, output markers. */
-function highlight(code) {
-  return code.split('\n').map((line) => {
-    const t = line.trimStart();
-    if (t.startsWith('##')) return `<span class="k-meta">${escapeHtml(line)}</span>`;
-    if (t.startsWith('#') || t.startsWith('<#')) return `<span class="k-com">${escapeHtml(line)}</span>`;
-    let s = escapeHtml(line);
-    s = s.replace(/"(?:[^"\\`]|`.|\\.)*"|'[^']*'/g, (m) => `<span class="k-str">${m}</span>`);
-    return s.replace(new RegExp(`\\[(${MARKERS})\\]`, 'g'), '<span class="k-mark">[$1]</span>');
-  }).join('\n');
-}
-
-/** Splits a table row on `|`, but never inside a code span. */
-function cells(row) {
-  const r = row.trim().replace(/^\|/, '').replace(/\|$/, '');
-  const out = [];
-  let cur = '', inCode = false;
-  for (const ch of r) {
-    if (ch === '`') inCode = !inCode;
-    if (ch === '|' && !inCode) { out.push(cur.trim()); cur = ''; } else cur += ch;
+/** The numbered rules of a text: each first line, and the indented lines after it. */
+function numberedRules(md) {
+  const found = new Map();
+  let current = null;
+  for (const line of md.split('\n')) {
+    const n = line.match(/^(\d+)\. /);
+    if (n) found.set(n[1], (current = []));
+    else if (current && line.trim() && !/^\s/.test(line)) current = null;
+    if (current) current.push(line);
   }
-  out.push(cur.trim());
-  return out;
+  return new Map([...found].map(([k, lines]) => [k, lines.join('\n').trimEnd()]));
 }
 
-const SEVERITIES = new Set(['erreur', 'avertissement', 'note']);
-
-function render(src, ctx, { inQuote = false } = {}) {
-  const lines = src.split('\n');
-  const out = [];
-  let para = [];
-  const flush = () => {
-    if (para.length) out.push(`<p>${inline(para.join(' '))}</p>`);
-    para = [];
-  };
-  const marker = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
-  let i = 0;
-  while (i < lines.length) {
-    const l = lines[i];
-    if (/^\s*```/.test(l)) {
-      flush();
-      const indent = l.length - l.trimStart().length;
-      const buf = [];
-      for (i++; i < lines.length && !/^\s*```\s*$/.test(lines[i]); i++) buf.push(lines[i].slice(Math.min(indent, lines[i].length - lines[i].trimStart().length)));
-      i++;
-      out.push(`<pre><code>${highlight(buf.join('\n'))}</code></pre>`);
-      continue;
-    }
-    const h = /^(#{1,6})\s+(.*)$/.exec(l);
-    if (h) {
-      flush();
-      const level = h[1].length;
-      const text = h[2].trim();
-      const id = slugify(text, ctx.ids);
-      out.push(`<h${level} id="${id}">${inline(text)}</h${level}>`);
-      if (!inQuote && (level === 2 || level === 3)) ctx.toc.push({ level, id, html: inline(text) });
-      i++;
-      continue;
-    }
-    if (/^---+\s*$/.test(l)) { flush(); out.push('<hr>'); i++; continue; }
-    if (/^\s*\|/.test(l) && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1] || '')) {
-      flush();
-      const head = cells(l);
-      const rows = [];
-      for (i += 2; i < lines.length && /^\s*\|/.test(lines[i]); i++) rows.push(cells(lines[i]));
-      const td = (c) => (SEVERITIES.has(c) ? `<span class="sev ${c}">${c}</span>` : inline(c));
-      out.push(`<div class="tbl-wrap" data-rows="${rows.length}"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead>`
-        + `<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${td(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
-      continue;
-    }
-    if (/^>/.test(l)) {
-      flush();
-      const buf = [];
-      for (; i < lines.length && /^>/.test(lines[i]); i++) buf.push(lines[i].replace(/^> ?/, ''));
-      out.push(`<blockquote>${render(buf.join('\n'), ctx, { inQuote: true })}</blockquote>`);
-      continue;
-    }
-    const m = marker.exec(l);
-    if (m && m[1].length === 0) {
-      flush();
-      const ordered = /\d/.test(m[2]);
-      const items = [];
-      while (i < lines.length) {
-        const mm = marker.exec(lines[i]);
-        if (!mm || mm[1].length !== 0 || /\d/.test(mm[2]) !== ordered) break;
-        const body = [mm[3]];
-        for (i++; i < lines.length; i++) {
-          const n = lines[i];
-          if (n.trim() === '') {
-            // A blank line inside an item continues it only if indented text follows.
-            if (/^\s{2,}\S/.test(lines[i + 1] || '')) { body.push(''); continue; }
-            break;
-          }
-          if (!/^\s/.test(n)) break;
-          body.push(n.replace(/^\s{2,4}/, ''));
-        }
-        items.push(body.join('\n'));
-        if ((lines[i] || '').trim() === '' && marker.exec(lines[i + 1] || '')?.[1] === '') i++;
-      }
-      const tag = ordered ? 'ol' : 'ul';
-      out.push(`<${tag}>${items.map((b) => {
-        const html = render(b, ctx, { inQuote: true });
-        const single = /^<p>([\s\S]*)<\/p>$/.exec(html);
-        return `<li>${single && !html.includes('</p><') ? single[1] : html}</li>`;
-      }).join('')}</${tag}>`);
-      continue;
-    }
-    if (l.trim() === '') { flush(); i++; continue; }
-    para.push(l.trim());
-    i++;
+/** The changelog with the fingerprint of today's rules, or an error that says what to do. */
+function buildChangelog() {
+  const log = read(CHANGELOG);
+  const recorded = log.match(FINGERPRINT);
+  if (!recorded) throw new Error(`${CHANGELOG} : la ligne « <!-- empreinte des consignes : … --> » a disparu ; remettez-la sous l'introduction.`);
+  const heading = `## ${version} — `;
+  const start = log.indexOf(`\n${heading}`);
+  if (recorded[1] !== fingerprint && start < 0 && !process.argv.includes('--sans-nouveaute')) {
+    throw new Error(`Les consignes pour l'IA ont change (ai-intro.md, ai-checklist.md) sans entree « ${heading}» dans ${CHANGELOG}. `
+      + 'Ajoutez-la ; pour une retouche qui ne change aucune consigne (une coquille), lancez node tools/build-script-guides.mjs --sans-nouveaute.');
   }
-  flush();
-  return out.join('\n');
+  if (start >= 0) {
+    const end = log.indexOf('\n## ', start + 1);
+    const quoted = numberedRules(log.slice(start, end < 0 ? log.length : end));
+    const intro = read('tools/script-guides/ai-intro.md');
+    const current = numberedRules(intro.slice(intro.indexOf('\n## 3. '), intro.indexOf('\n## 4. ')));
+    for (const [n, text] of quoted) {
+      if (current.get(n) !== text) throw new Error(`${CHANGELOG}, entree ${version} : la regle ${n} n'est plus celle de ai-intro.md ; recopiez-la.`);
+    }
+  }
+  return log.replace(FINGERPRINT, `<!-- empreinte des consignes : ${fingerprint} `);
 }
 
 // ---------------------------------------------------------------------------
@@ -379,10 +290,18 @@ function buildHtml(ai, aiShort) {
 
 const ai = buildAi();
 const aiShort = buildAiShort();
+let changelog;
+try {
+  changelog = buildChangelog();
+} catch (e) {
+  console.log(`::error::${e.message}`);
+  process.exit(1);
+}
 const outputs = [
   ['docs/SCRIPTS_POUR_IA.md', ai],
   ['docs/SCRIPTS_POUR_IA_COURT.md', aiShort],
   ['docs/GUIDE_SCRIPTS.html', buildHtml(ai, aiShort)],
+  [CHANGELOG, changelog],
 ];
 
 if (process.argv.includes('--check')) {

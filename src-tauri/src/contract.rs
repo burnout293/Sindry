@@ -92,7 +92,8 @@ pub struct Choice {
 /// Une entree du bloc `REPORT` : ce que l'analyse nomme par un jeton.
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct ReportEntry {
-    /// `label` (un nom : `label=`, `[METRIC]`), `note`, `group` or `error`.
+    /// `label` (un nom : `label=`, `[METRIC]`), `note`, `group`, `error` or
+    /// `section` (2.2.0, the title of a tab of settings).
     pub kind: String,
     /// Pour une note : `info` ou `warn`.
     pub level: String,
@@ -144,6 +145,9 @@ pub struct Opt {
     pub group: String,
     pub show: String,
     pub view: String,
+    /// `[section:Cle]` or `[section:Cle.Sous]` (2.2.0): the tab of the Expert
+    /// sheet this setting belongs to, and its sub-heading. Titles in REPORT.
+    pub section: String,
 }
 
 /// Libelles traduits d'une langue : options, choix et bloc REPORT.
@@ -573,11 +577,12 @@ pub fn parse(source: &str) -> Script {
                         "group" => o.group = v,
                         "show" => o.show = v,
                         "view" => o.view = v,
+                        "section" => o.section = v,
                         _ => findings.push(constat(
                             no_ligne,
                             true,
                             "ETIQUETTE_INCONNUE",
-                            format!("Etiquette '[{e}]' inconnue ; admises : [scan] [group] [show] [view]."),
+                            format!("Etiquette '[{e}]' inconnue ; admises : [scan] [group] [show] [view] [section]."),
                         )),
                     }
                 }
@@ -616,6 +621,9 @@ pub fn parse(source: &str) -> Script {
             let texte = if let Some(r) = reste.strip_prefix("[group]") {
                 entree.kind = "group".into();
                 r.trim().to_string()
+            } else if let Some(r) = reste.strip_prefix("[section]") {
+                entree.kind = "section".into();
+                r.trim().to_string()
             } else if let Some(r) = reste.strip_prefix("[error]") {
                 entree.kind = "error".into();
                 if !is_error_code(&nom) {
@@ -646,7 +654,7 @@ pub fn parse(source: &str) -> Script {
             } else {
                 reste
             };
-            if entree.kind == "group" || entree.kind == "error" {
+            if matches!(entree.kind.as_str(), "group" | "error" | "section") {
                 let (l, d) = split_label(&texte);
                 entree.label = l;
                 entree.desc = d;
@@ -668,6 +676,26 @@ pub fn parse(source: &str) -> Script {
                     "GROUPE_INCONNU",
                     format!("[group:{g}] : le groupe n'est pas declare dans REPORT."),
                 ));
+            }
+        }
+        // 2.2.0: a section, and its parent for a sub-heading (`Cle.Sous`), are
+        // declared `[section]` in REPORT — their titles come from there.
+        if !o.section.is_empty() {
+            let parent = o.section.split('.').next().unwrap_or("");
+            let cles = if parent == o.section {
+                vec![parent]
+            } else {
+                vec![parent, o.section.as_str()]
+            };
+            for cle in cles {
+                if report.get(cle).map(|r| r.kind.as_str()) != Some("section") {
+                    findings.push(constat(
+                        1,
+                        true,
+                        "SECTION_INCONNUE",
+                        format!("[section:{}] : la section '{cle}' n'est pas declaree [section] dans REPORT.", o.section),
+                    ));
+                }
             }
         }
         for show in std::iter::once(&o.show).chain(o.choices.iter().map(|c| &c.show)) {
@@ -726,11 +754,12 @@ pub fn parse(source: &str) -> Script {
                     // Un texte du bloc REPORT : seul un groupe porte un
                     // sous-titre (an error code, its solution) ; une note ou
                     // un libelle se lit en entier.
-                    let (lab, de) = if matches!(report[&nom].kind.as_str(), "group" | "error") {
-                        split_label(&reste)
-                    } else {
-                        (reste, String::new())
-                    };
+                    let (lab, de) =
+                        if matches!(report[&nom].kind.as_str(), "group" | "error" | "section") {
+                            split_label(&reste)
+                        } else {
+                            (reste, String::new())
+                        };
                     tr.report.insert(nom.clone(), (lab, de));
                     derniere_option = String::new();
                 }
@@ -1284,6 +1313,49 @@ if ($env:SINDRY_CONFIG) { }
             .findings
             .iter()
             .any(|f| f.code == "GRAPHIQUE_INCONNU"));
+    }
+
+    #[test]
+    fn sections_group_the_settings_and_are_declared_in_report() {
+        let source = EXEMPLE
+            .replace(
+                "## FlushCache   : [hidden] Flush the cache afterwards",
+                "## FlushCache   : [hidden] [section:Net.Cache] Flush the cache afterwards",
+            )
+            .replace(
+                "## SINDRY:LANG fr\n",
+                "## SINDRY:REPORT\n## Net : [section] Network — How names are resolved\n## SINDRY:END\n\n## SINDRY:LANG fr\n## Net : Réseau — La résolution des noms\n",
+            );
+        let s = parse(&source);
+        let o = s.options.iter().find(|o| o.key == "FlushCache").unwrap();
+        assert_eq!(o.section, "Net.Cache");
+        assert_eq!(s.report["Net"].kind, "section");
+        assert_eq!(s.report["Net"].desc, "How names are resolved");
+        assert_eq!(
+            s.translations["fr"].report["Net"],
+            ("Réseau".to_string(), "La résolution des noms".to_string())
+        );
+        // The sub-heading Net.Cache is not declared, its parent is: one finding.
+        let manque: Vec<_> = s
+            .findings
+            .iter()
+            .filter(|f| f.code == "SECTION_INCONNUE")
+            .collect();
+        assert_eq!(manque.len(), 1, "{manque:?}");
+        assert!(manque[0].message.contains("'Net.Cache'"));
+
+        // Declared, the sub-heading is a REPORT key like any other: no finding.
+        let complet = source.replace(
+            "## Net : [section] Network — How names are resolved\n",
+            "## Net : [section] Network — How names are resolved\n## Net.Cache : [section] Cache\n",
+        );
+        let s = parse(&complet);
+        assert_eq!(s.report["Net.Cache"].kind, "section");
+        assert!(
+            !s.findings.iter().any(|f| f.code.starts_with("SECTION")),
+            "{:?}",
+            s.findings
+        );
     }
 
     #[test]

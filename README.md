@@ -13,6 +13,9 @@ vous pouvez lire, modifier et ajouter vous-même.
 L'application ne fait rien d'autre que lancer des scripts. Ce qu'ils font est écrit dans
 leur fichier, en clair, et vous pouvez le lire avant de cliquer.
 
+**Le site : [burnout293.github.io/Sindry](https://burnout293.github.io/Sindry/)** —
+présentation, téléchargement, catalogue, guides pour écrire un script (2.2.0).
+
 **Sindry est livré sans aucun script.** Au premier lancement, il propose d'installer le
 [catalogue officiel](https://github.com/burnout293/Sindry-Catalogue) — publié à part, sous licence MIT, et signé : chaque script est
 vérifié contre un index signé avant d'être écrit sur le disque. Vous choisissez les actions
@@ -195,6 +198,8 @@ Ce banc ne part jamais dans le binaire : les fixtures vivent dans `tools/bench/`
 | [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) | Ce que l'application doit faire, et pourquoi. Fait autorité en cas de doute. |
 | [`docs/FORMAT_SCRIPT.md`](docs/FORMAT_SCRIPT.md) | Écrire un script : squelette, règles, codes du validateur. |
 | [`docs/GUIDE_SCRIPTS.html`](docs/GUIDE_SCRIPTS.html) · [`docs/SCRIPTS_POUR_IA.md`](docs/SCRIPTS_POUR_IA.md) · [`docs/SCRIPTS_POUR_IA_COURT.md`](docs/SCRIPTS_POUR_IA_COURT.md) | Le même, généré : en guide interactif, pour une IA, et en version courte pour un modèle local. |
+| [`docs/SCRIPTS_POUR_IA_NOUVEAUTES.md`](docs/SCRIPTS_POUR_IA_NOUVEAUTES.md) | Le journal des consignes pour IA : ce qui change d'une version à l'autre. Le générateur des guides refuse une consigne changée sans son entrée. |
+| [`site/`](site/) · [`tools/build-site.mjs`](tools/build-site.mjs) | Le site GitHub Pages : l'accueil s'écrit dans `site/accueil.html`, le reste vient de la documentation, des versions publiées et de l'index signé du catalogue. |
 | [`docs/PRESENTATION.md`](docs/PRESENTATION.md) | Modifier la présentation du premier démarrage sans toucher au code. |
 | [Sindry-Catalogue](https://github.com/burnout293/Sindry-Catalogue) | Les scripts officiels, leur licence (MIT) et la liste des scripts prévus. |
 

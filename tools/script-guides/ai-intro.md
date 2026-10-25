@@ -229,6 +229,17 @@ Chacune est détaillée dans le contrat (section 6), sous le titre indiqué entr
     `/norestart` (MSI : `REBOOT=ReallySuppress`) ; traduis leur 3010 ou 1641 en `[REBOOT]`
     ou en `[RESTART]`.
 
+### Les réglages nombreux (plus de 10)
+
+44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
+    section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
+    dans l'onglet. Déclare chaque section **et** chaque sous-titre dans `REPORT`
+    (`## Cle : [section] Titre — sous-titre`, `## Cle.Sous : [section] Titre`) et
+    traduis-les dans `LANG fr`. Des onglets courts (3 à 8 réglages), nommés par ce que
+    l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
+    (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
+    (« Ranger les réglages en sections »).
+
 ---
 
 ## 4. La méthode

@@ -1,0 +1,96 @@
+<!-- L'accueil du site (2.2.0). Fragment repris par tools/build-site.mjs :
+     {{telechargement}} devient le bouton et la version publiée,
+     {{empreinte}} l'empreinte SHA-256 de l'installeur, {{icone:nom}} une
+     icône Lucide. Le reste s'écrit ici, à la main. -->
+
+<section class="hero">
+  <div>
+    <h1>L'entretien de Windows, <em>expliqué avant d'être fait.</em></h1>
+    <p class="lead">Sindry nettoie, accélère et protège votre PC avec des scripts PowerShell
+      que vous pouvez lire. Il montre ce qu'il a trouvé, vous cochez ce qu'il traite.
+      Gratuit, sans compte, sans publicité, sans télémétrie.</p>
+    {{telechargement}}
+  </div>
+  <figure>
+    <img class="shot" src="images/simple.webp" width="1280" height="800"
+         alt="Le mode Simple de Sindry : « Que souhaitez-vous faire ? », l'entretien complet recommandé, et six domaines au choix.">
+  </figure>
+</section>
+
+<h2>Deux modes, un seul outil</h2>
+<div class="modes">
+  <div class="mode">
+    <figure><img class="shot" src="images/simple-analyse.webp" width="1280" height="800" loading="lazy"
+         alt="Le mode Simple : « Voici ce que j'ai trouvé », 1,4 Go à libérer, chaque poste à cocher avec sa taille."></figure>
+    <h3>Simple, pour tout le monde</h3>
+    <p>Un assistant en quatre étapes, sans un seul terme technique : choisir, vérifier ce qui
+      sera fait, voir ce que Sindry a trouvé et cocher ce qu'on veut traiter, puis le laisser
+      faire. Conçu pour quelqu'un qui n'a jamais ouvert un terminal.</p>
+  </div>
+  <div class="mode">
+    <figure><img class="shot" src="images/expert-analyse.webp" width="1280" height="800" loading="lazy"
+         alt="Le mode Expert : la fiche d'une action, sa configuration et le résultat de son analyse, élément par élément."></figure>
+    <h3>Expert, pour tout régler</h3>
+    <p>Vous composez les lots, réglez chaque action, et lisez la sortie réelle de PowerShell
+      pendant qu'elle défile. Les réglages nombreux se rangent en onglets, numérotés pour
+      qu'on puisse en désigner un.</p>
+  </div>
+</div>
+
+<h2>Ce qui le rend sûr</h2>
+<div class="cards">
+  <div class="card"><h3>{{icone:scan-search}}Montrer avant d'agir</h3>
+    <p>L'analyse mesure et décrit, sans rien modifier. Vous voyez chaque fichier, chaque
+      programme, chaque réglage, et vous décidez.</p></div>
+  <div class="card"><h3>{{icone:file-code}}Des scripts lisibles</h3>
+    <p>Chaque action est un fichier PowerShell en clair. Ce qu'il fait est écrit dedans, et
+      vous pouvez le lire avant de cliquer.</p></div>
+  <div class="card"><h3>{{icone:badge-check}}Un catalogue signé</h3>
+    <p>Chaque script est vérifié contre un index signé avant d'être écrit sur le disque. Un
+      script modifié perd son approbation.</p></div>
+  <div class="card"><h3>{{icone:history}}Un point de restauration</h3>
+    <p>Avant une action qui ne se défait pas, Sindry propose un point de restauration de
+      Windows, coché d'office.</p></div>
+  <div class="card"><h3>{{icone:flask-conical}}La simulation</h3>
+    <p>Voir ce qui serait fait, sans rien modifier, pour chaque action qui sait se
+      simuler.</p></div>
+  <div class="card"><h3>{{icone:rotate-ccw}}La reprise après un redémarrage</h3>
+    <p>Une action qui exige un redémarrage le demande ; Sindry redémarre le PC, se relance
+      seul et reprend là où il en était.</p></div>
+  <div class="card"><h3>{{icone:lock}}Des emplacements protégés</h3>
+    <p>Un chemin saisi dans un réglage ne peut pas viser un emplacement protégé, comme
+      Windows ou Program Files. La liste se règle en administrateur.</p></div>
+  <div class="card"><h3>{{icone:refresh-cw}}Des mises à jour signées</h3>
+    <p>Proposées, jamais imposées. Sindry vérifie leur signature avant d'installer quoi que
+      ce soit.</p></div>
+</div>
+
+<h2>Installer</h2>
+<p>Téléchargez l'installeur, puis lancez-le. Sindry fonctionne sous Windows 10 et 11, en
+  64 bits.</p>
+<div class="note">
+  <p><b>« Windows a protégé votre PC »</b> : cet écran bleu apparaîtra. Sindry n'est pas signé
+    numériquement : un certificat coûte plusieurs centaines d'euros par an, et ce projet n'en a
+    pas. SmartScreen ne dit pas que le programme est dangereux, il dit qu'il ne le reconnaît
+    pas. Pour continuer :</p>
+  <ol>
+    <li>cliquez sur <b>Informations complémentaires</b> ;</li>
+    <li>cliquez sur <b>Exécuter quand même</b>.</li>
+  </ol>
+</div>
+{{empreinte}}
+<p>Sindry s'ouvre <b>sans</b> droits administrateur. Il vous le dit, et propose de se relancer
+  en administrateur : une seule autorisation Windows, dont toutes les actions héritent
+  ensuite. Au premier lancement, il propose d'installer le <a href="catalogue.html">catalogue
+  officiel</a> ; vous pouvez aussi n'utiliser que vos propres scripts.</p>
+
+<h2>Écrire ses propres scripts</h2>
+<div class="cards">
+  <div class="card"><h3>{{icone:book-open}}<a href="guide-scripts.html">Le guide des scripts</a></h3>
+    <p>Le contrat complet, avec une recherche et un générateur de squelette.</p></div>
+  <div class="card"><h3>{{icone:bot}}<a href="ia.html">Le faire écrire par une IA</a></h3>
+    <p>Un fichier à donner à ChatGPT, Claude ou un modèle local, pour qu'il écrive un script
+      conforme du premier coup.</p></div>
+  <div class="card"><h3>{{icone:map}}<a href="feuille-de-route.html">La feuille de route</a></h3>
+    <p>Ce qui est fait, ce qui vient, et le cap de la version 3.</p></div>
+</div>

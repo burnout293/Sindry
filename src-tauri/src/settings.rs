@@ -195,7 +195,19 @@ pub struct Settings {
     /// Stored the other way round so that the default, `false`, means "on".
     #[serde(default)]
     pub icones_sans_telechargement: bool,
+    /// 1.6 (2.2.0): number the settings of an action — `jamais`, `auto` (beyond
+    /// ten settings, the default, `""` included) or `toujours`.
+    #[serde(default)]
+    pub numeros_options: String,
+    /// 1.7 (2.2.0): started without rights, Sindry relaunches itself as
+    /// administrator (Windows asks). A preference, not a trust decision: set by
+    /// someone else, it only brings up the Windows prompt.
+    #[serde(default)]
+    pub admin_au_demarrage: bool,
 }
+
+/// The values of `numeros_options` (1.6).
+pub const NUMEROS_OPTIONS: [&str; 3] = ["jamais", "auto", "toujours"];
 
 /// Valeurs admises pour `catalogue_source` une fois la decision prise.
 pub const SOURCES_CATALOGUE: [&str; 2] = ["official", "none"];
@@ -322,6 +334,8 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         accent: String::new(),
         ambiances_fichiers: false,
         icones_sans_telechargement: false,
+        numeros_options: "auto".to_string(),
+        admin_au_demarrage: false,
     }
 }
 

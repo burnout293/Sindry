@@ -1,0 +1,78 @@
+# Le site de Sindry, sur GitHub Pages (2.2.0) : construit par
+# tools/build-site.mjs, qui lit les versions publiees et l'index signe du
+# catalogue au moment de la construction. Les pages, elles, ne chargent rien.
+#
+# Reconstruit a chaque poussee sur main qui touche ce qu'il montre, a chaque
+# version publiee, et une fois par jour : le catalogue se publie dans un autre
+# depot, et cette relecture quotidienne le fait apparaitre sans jeton partage
+# entre les deux depots.
+#
+# A activer une fois dans le depot : Settings > Pages > Source : GitHub Actions.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'site/**'
+      - 'tools/build-site.mjs'
+      - 'tools/markdown.mjs'
+      - 'tools/minisign.mjs'
+      - 'tools/categories.json'
+      - 'src/fonts/**'
+      - 'src-tauri/icons/**'
+      - 'src-tauri/catalogue.pub'
+      - 'package.json'
+      - '.github/workflows/pages.yml'
+  release:
+    types: [published]
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une publication a la fois, sans interrompre celle en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      # lucide-static : les icones, inserees dans les pages.
+      - name: Installer les dependances
+        run: npm ci
+
+      # --strict : si GitHub ne repond pas, ou si une signature ne tient pas,
+      # rien n'est publie et le site en ligne reste celui d'avant.
+      - name: Construire le site
+        run: node tools/build-site.mjs --strict --out _site
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publication.outputs.page_url }}
+    steps:
+      - id: publication
+        uses: actions/deploy-pages@v4

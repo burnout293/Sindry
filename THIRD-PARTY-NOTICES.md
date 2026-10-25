@@ -487,6 +487,10 @@ Sindry embarque **2 113 fichiers SVG** dans `src/icons/`, copiés depuis le paqu
 partir des mêmes fichiers. Ces icônes sont redistribuées telles quelles dans
 l'application.
 
+**Le site** (2.2.0, `tools/build-site.mjs`) en insère aussi quelques-unes dans ses pages,
+et sert les polices du §8. Ce fichier y est publié tel quel, sous
+`licences/THIRD-PARTY-NOTICES.txt`, et chaque page y renvoie.
+
 | | |
 |---|---|
 | Composant | `lucide-static` 1.47.0 |

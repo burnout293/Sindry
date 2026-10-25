@@ -15,8 +15,11 @@
     <header class="titlebar" data-tauri-drag-region>
       <!-- La marque : l'icone de Sindry (engrenage dans les flammes). -->
       <img class="brand-mark" src="marque.png" alt="" draggable="false">
-      <span class="brand-name" data-tauri-drag-region>Sindry</span>
-      <span class="brand-ver" id="version">…</span>
+      <!-- 2.2.0 : le nom et la version, qui s'empilent quand la barre se resserre. -->
+      <span class="brand-txt" data-tauri-drag-region>
+        <span class="brand-name" data-tauri-drag-region>Sindry</span>
+        <span class="brand-ver" id="version">…</span>
+      </span>
 
       <div class="tb-search only-expert" data-guide="recherche">
         <svg class="ico i14" aria-hidden="true"><use href="#search" /></svg>
@@ -45,6 +48,7 @@
         <button class="pill test" id="testPill" type="button" aria-pressed="false" data-guide="simulation">
           <svg class="ico i14" aria-hidden="true"><use href="#shield" /></svg>
           <span id="testPillText"></span>
+          <span class="pill-court" id="testPillCourt"></span>
         </button>
 
         <button class="pill ok" id="adminPill" type="button" data-guide="droits">
@@ -52,6 +56,7 @@
           <span class="balise" aria-hidden="true"></span>
           <svg class="ico i14" aria-hidden="true"><use href="#shield" /></svg>
           <span id="adminPillText"></span>
+          <span class="pill-court" id="adminPillCourt"></span>
         </button>
 
         <!-- Le centre d'aide (1.7) : visites, guides, bienvenue. Son contenu
@@ -70,6 +75,12 @@
 
         <button class="iconbtn" id="btnSettings" type="button" aria-pressed="false">
           <svg class="ico i17" aria-hidden="true"><use href="#settings" /></svg>
+        </button>
+
+        <!-- 2.2.0 (maquette M38 C) : ce qui ne tient plus dans la barre passe
+             ici — le theme, puis le journal, puis l'aide, puis les reglages. -->
+        <button class="iconbtn" id="btnPlus" type="button" aria-haspopup="menu" aria-expanded="false" hidden>
+          <svg class="ico i17" aria-hidden="true"><use href="#ellipsis" /></svg>
         </button>
 
         <div class="winctl">
@@ -410,6 +421,19 @@
                   <span class="setrow-txt"><span class="num">1.5</span><span class="rg-libelle"><b id="setNumerosLabel"></b><span class="desc" data-i18n="reglages.d_numeros"></span></span></span>
                   <button class="switch" type="button" role="switch" id="setNumerosToggle" aria-checked="false"></button>
                 </div>
+                <!-- 2.2.0 : numeroter les reglages d'une action, et toujours demarrer en administrateur. -->
+                <div class="setrow" data-num="1.6">
+                  <span class="setrow-txt"><span class="num">1.6</span><span class="rg-libelle"><b data-i18n="reglages.numeros_options"></b><span class="desc" data-i18n="reglages.d_numeros_options"></span></span></span>
+                  <select class="cat-select" id="setNumerosOptions">
+                    <option value="jamais" data-i18n="reglages.numeros_jamais"></option>
+                    <option value="auto" data-i18n="reglages.numeros_auto"></option>
+                    <option value="toujours" data-i18n="reglages.numeros_toujours"></option>
+                  </select>
+                </div>
+                <div class="setrow" data-num="1.7">
+                  <span class="setrow-txt"><span class="num">1.7</span><span class="rg-libelle"><b data-i18n="reglages.admin_demarrage"></b><span class="desc" data-i18n="reglages.d_admin_demarrage"></span></span></span>
+                  <button class="switch" type="button" role="switch" id="setAdminDemarrage" aria-checked="false"></button>
+                </div>
               </div>
             </section>
 
@@ -732,6 +756,8 @@
 
   <!-- 2.1.0 (§6.10, M37) : le redemarrage au milieu d'un entretien, l'entretien
        retrouve au lancement, et le mode restreint apres le redemarrage. -->
+  <!-- 2.2.0 : la mise a jour se deroule dans Sindry, pas dans l'installeur. -->
+  <div class="backdrop" id="majOverlay" hidden></div>
   <div class="backdrop" id="redemarrageOverlay" hidden></div>
   <div class="backdrop" id="repriseDialogue" hidden></div>
   <div class="restreint" id="restreintOverlay" role="dialog" aria-modal="true" hidden></div>

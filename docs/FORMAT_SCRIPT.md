@@ -384,6 +384,123 @@ foreach ($target in $CONFIG.CleanTargets) {
 }
 ```
 
+### Ranger les réglages en sections (2.2.0)
+
+Au-delà d'une dizaine de réglages, la fiche d'une action devient une longue liste.
+L'étiquette `[section:Clé]` range une option dans un **onglet** de la fiche Expert ;
+`[section:Clé.Sous]` la range sous un **sous-titre** de cet onglet. Chaque section, et
+chaque sous-titre, se déclare dans le bloc `REPORT` sous la forme
+`## Clé : [section] Titre — sous-titre`, puis se traduit dans `LANG` :
+
+```powershell
+## SINDRY:START
+## id            : 5b9e2c41-6d3f-4a8e-b7c2-0f1d4e6a9b35
+## lang          : en
+## title         : Tune File Explorer
+## desc          : Clearer and more private File Explorer, for the current user
+## category      : performance
+## icon          : folder-cog
+## tags          : explorer, files, privacy
+## version       : 1.0
+## author        : Your name
+## created       : 2026-10-25
+## updated       : 2026-10-25
+## admin         : false
+## risk          : low
+## duration      : fast
+## reversible    : true
+## interruptible : true
+## reboot        : false
+## engine        : auto
+## SINDRY:END
+
+## SINDRY:OPTIONS
+## CompactView    : [bool] [section:View] Compact view — less space between items
+## ShowExtensions : [bool] [section:View.Files] Show file extensions
+## ShowHidden     : [bool] [section:View.Files] Show hidden files
+## NoRecentFiles  : [bool] [section:Privacy] Do not list recent files
+## SafeTest       : [bool] Simulate — shows what would be done, changes nothing
+## SINDRY:END
+
+## SINDRY:REPORT
+## View       : [section] Display — What File Explorer shows
+## View.Files : [section] Files
+## Privacy    : [section] Privacy — What File Explorer remembers
+## SINDRY:END
+
+## SINDRY:LANG fr
+## title          : Régler l'Explorateur de fichiers
+## desc           : Un Explorateur plus clair et plus discret, pour l'utilisateur courant
+## CompactView    : Vue compacte — moins d'espace entre les éléments
+## ShowExtensions : Afficher les extensions des fichiers
+## ShowHidden     : Afficher les fichiers cachés
+## NoRecentFiles  : Ne pas lister les fichiers récents
+## SafeTest       : Simuler — montre ce qui serait fait, sans rien modifier
+## View           : Affichage — Ce que l'Explorateur montre
+## View.Files     : Fichiers
+## Privacy        : Confidentialité — Ce que l'Explorateur retient
+## SINDRY:END
+
+$CONFIG = @{
+    CompactView    = $true
+    ShowExtensions = $true
+    ShowHidden     = $false
+    NoRecentFiles  = $true
+    SafeTest       = $false
+}
+
+# --- Sindry override (ne pas supprimer) ---
+if ($env:SINDRY_CONFIG) {
+    ($env:SINDRY_CONFIG | ConvertFrom-Json).PSObject.Properties |
+        ForEach-Object { $CONFIG[$_.Name] = $_.Value }
+}
+
+# ==============================================================================
+
+# Comparaison de CHAINE, pas de booleen : la valeur arrive par JSON.
+$SafeTest = ("$($CONFIG.SafeTest)" -eq 'True')
+# La cle des reglages avances de l'Explorateur, pour l'utilisateur courant.
+$ADVANCED = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+
+# Ecrit une valeur DWORD sous la cle des reglages avances, ou dit ce qu'il ferait.
+# Recoit le nom de la valeur et son contenu ; ne renvoie rien.
+function Set-ExplorerValue([string]$Name, [int]$Value) {
+    if ($SafeTest) {
+        Write-Host "[INFO] SafeTest - would set $Name to $Value"
+        return
+    }
+    Set-ItemProperty -LiteralPath $ADVANCED -Name $Name -Value $Value -Type DWord
+    Write-Host "[OK]   $Name = $Value"
+}
+
+Write-Host "[STEP] 1/1 Applying the settings"
+Set-ExplorerValue 'UseCompactMode' ([int]("$($CONFIG.CompactView)" -eq 'True'))
+Set-ExplorerValue 'HideFileExt' ([int]("$($CONFIG.ShowExtensions)" -ne 'True'))
+Set-ExplorerValue 'Hidden' $(if ("$($CONFIG.ShowHidden)" -eq 'True') { 1 } else { 2 })
+Set-ExplorerValue 'Start_TrackDocs' ([int]("$($CONFIG.NoRecentFiles)" -ne 'True'))
+Write-Host "[DONE] Done"
+exit 0
+```
+
+Ce que l'utilisateur voit :
+
+| Où | Effet |
+|---|---|
+| Les onglets | Un par section, dans l'ordre où le script les utilise ; le nombre de réglages de chacun ; le sous-titre de la section sous la barre |
+| Dans un onglet | Ses réglages propres d'abord, puis chaque sous-titre avec tous les siens, dans l'ordre du script |
+| Les réglages sans section | Un dernier onglet « Autres réglages » |
+| Le dernier onglet | « Sindry » : ce que Sindry ajoute à chaque action, comme le point de restauration et les exceptions |
+| Les numéros | « 2.3 » = 2ᵉ onglet, 3ᵉ réglage. Réglage 1.6 de Sindry : jamais, **au-delà de 10 réglages** (par défaut), ou toujours |
+
+**Sans section**, une action de plus de 10 réglages est rangée par Sindry lui-même : ce
+que fait l'action, les réglages de l'analyse (`[scan]`), les réglages avancés
+(`[hidden]`). C'est un repli : des sections nommées par le script disent mieux de quoi il
+s'agit, et le validateur le conseille (`SECTIONS_CONSEILLEES`, une note).
+
+Les sections ne concernent que la fiche Expert. Le mode Simple montre les **postes**
+(`[group:]`, voir « Les étiquettes ») ; les deux étiquettes se posent ensemble sans se
+gêner.
+
 ---
 
 ## Le bloc de traduction
@@ -894,10 +1011,11 @@ déclare dans un bloc `REPORT`, placé entre `OPTIONS` et `LANG` :
 | `Clé : Libellé` | Nommer une mesure, ou la nature d'un élément | `[METRIC] Clé`, `[ITEM] … label=Clé` |
 | `Clé : [note:info] Phrase` ou `[note:warn]` | Une phrase neutre, ou un avertissement | `[NOTE] Clé` |
 | `Clé : [group] Libellé — sous-titre` | Un **poste** du résumé Simple | `[group:Clé]` sur une option ou un choix |
+| `Clé : [section] Titre — sous-titre` | Un **onglet** de la fiche Expert, ou un sous-titre (`Clé.Sous`) dans un onglet (2.2.0) — voir « Ranger les réglages en sections » | `[section:Clé]` sur une option |
 | `E104 : [error] Description — solution` | Expliquer une erreur, analyse ou non (2.0.3) — voir « Les codes d'erreur » | `[ERR] E104 …`, `[WARN] E104 …` |
 
 Le bloc `REPORT` n'est donc pas réservé au mode analyse : un script qui n'analyse rien peut
-n'y déclarer que ses codes d'erreur.
+n'y déclarer que ses codes d'erreur, ou ses sections.
 
 Chaque clé se traduit dans le bloc `LANG`, comme une option, sans répéter son étiquette :
 `## Junk : Fichiers inutiles — Fichiers temporaires et corbeille`. Une clé sans traduction
@@ -985,7 +1103,7 @@ qu'il montre l'écran de liste, déclarez une vue : `## view : tree`.
 Expert, c'est un panneau ; en Simple, il s'affiche aussi, sous l'analyse, replié s'il dépasse
 quinze lignes — sauf quand l'écran de liste, qui a son récapitulatif, est affiché.
 
-### Les étiquettes : `[group:]`, `[show:]`, `[view:]`, `[scan]`
+### Les étiquettes : `[group:]`, `[show:]`, `[view:]`, `[scan]`, `[section:]`
 
 Elles se placent entre le type et le libellé d'une option ; `[group:]` et `[show:]` se
 posent aussi sur un choix, avant son libellé :
@@ -1004,6 +1122,7 @@ posent aussi sur un choix, avant son libellé :
 | `[group:Clé]` | option, choix | Range la case dans un **poste** du résumé Simple : le groupe `Clé`, déclaré dans `REPORT`. Sans groupe, une option fait un poste à elle seule. |
 | `[show:simple]`, `[show:expert]` | option, choix | La case ne s'affiche que dans ce mode |
 | `[view:x]` | option | La présentation de cette seule option : `bars` ou `donut` pour un `[multi]`, `chart` pour un `[select]`, `tree` `table` `tiles` `treemap` pour un `[items]` |
+| `[section:Clé]`, `[section:Clé.Sous]` | option | Range la case dans un **onglet** de la fiche Expert, sous un sous-titre s'il y en a un (2.2.0) — voir « Ranger les réglages en sections » |
 | `[scan]` | option | Un réglage **de l'analyse elle-même** — une ancienneté minimale, un dossier à examiner. Ce n'est pas une case : Sindry le transmet tel qu'il est configuré, à l'analyse comme à l'action. |
 
 Les étiquettes ne se traduisent pas : le bloc `LANG` ne reprend que le libellé.
@@ -1580,6 +1699,9 @@ validateur sans l'ajouter ici est un défaut.**
 | `ETIQUETTE_INCONNUE` | erreur | Étiquette inconnue sur une option, un choix ou une entrée de `REPORT` |
 | `GROUPE_INCONNU` | erreur | `[group:Clé]` vise un groupe que `REPORT` ne déclare pas |
 | `GROUPE_ORPHELIN` | avertissement | Groupe déclaré dans `REPORT` où aucune option ni aucun choix ne se range |
+| `SECTION_INCONNUE` | erreur | `[section:Clé]` ou `[section:Clé.Sous]` vise une section, ou un sous-titre, que `REPORT` ne déclare pas `[section]` (2.2.0) |
+| `SECTION_ORPHELINE` | avertissement | Section déclarée dans `REPORT` où aucune option ne se range |
+| `SECTIONS_CONSEILLEES` | note | Plus de 10 réglages sans aucune section : Sindry les range lui-même, moins bien |
 | `CODE_ERREUR_FORME` | erreur | Clé `[error]` qui n'est pas un code : une à trois majuscules, puis deux à quatre chiffres (2.0.3) |
 | `CODE_ERREUR_INCONNU` | avertissement | `[ERR] X123 …` ou `[WARN] X123 …` littéral dont le code n'est pas déclaré `[error]` dans `REPORT` |
 | `CODE_ERREUR_INUTILISE` | avertissement | Code déclaré `[error]` qui n'apparaît nulle part ailleurs dans le script |

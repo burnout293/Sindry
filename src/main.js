@@ -579,7 +579,7 @@ function rendreCommande(entree, opt) {
   return `<input type="text" data-opt="${esc(opt.key)}" data-kind="string" value="${esc(v ?? '')}" />`;
 }
 
-function rendreOption(entree, opt) {
+function rendreOption(entree, opt, numero = '') {
   const { label, desc } = libelleOption(entree, opt);
   const marqueur = opt.hidden ? ` <span class="chip">${esc(t('opt.avancee'))}</span>` : '';
   const commande = rendreCommande(entree, opt);
@@ -597,7 +597,7 @@ function rendreOption(entree, opt) {
   return `
     <div class="opt${figee ? ' figee' : ''}${large ? ' empilee' : ''}" data-cle="${esc(opt.key)}">
       <div class="opt-body">
-        <div class="opt-label" data-tip="${esc(info)}">${esc(label)}${marqueur}${
+        <div class="opt-label" data-tip="${esc(info)}">${numero ? `<span class="opt-num">${esc(numero)}</span>` : ''}${esc(label)}${marqueur}${
           figee ? `<i class="fige-dot" data-tip="${esc(t('opt.figee_tip'))}"></i>` : ''
         }</div>
         ${desc ? `<div class="opt-desc">${esc(desc)}</div>` : ''}
@@ -643,6 +643,66 @@ function rendreReglagesSindry(entree) {
     .join('');
 }
 
+/* -------------------------------------------------------------------------
+   The settings of an action in tabs (2.2.0, mockup M39 B)
+
+   A script that declares sections ([section:Cle], titles in REPORT) gets one
+   tab per section, with its sub-headings ([section:Cle.Sous]). Without
+   sections, a long list (more than SEUIL_NUMEROS settings) is split by Sindry
+   itself: what the action does, the settings of its analysis ([scan]), the
+   advanced ones. Sindry's own settings get the last tab. One column per tab,
+   as before: two columns made the eye hesitate between reading across or down.
+   Numbers (setting 1.6): « tab.rank » with tabs, « rank » without.
+   ------------------------------------------------------------------------- */
+
+const SEUIL_NUMEROS = 10;
+/** The open tab, per action. Nothing here goes to the script. */
+const ongletsConfig = new Map();
+
+/** Number the settings? Setting 1.6: never, beyond ten (the default), always. */
+function numerosOptions(n) {
+  const v = reglagesActuels?.numeros_options || 'auto';
+  return v === 'toujours' || (v === 'auto' && n > SEUIL_NUMEROS);
+}
+
+/** The title and subtitle of a REPORT key, translated. */
+function titreRapport(entree, cle) {
+  const r = entree.meta.report?.[cle];
+  const tr = entree.meta.translations?.[currentLang()]?.report?.[cle];
+  return { titre: tr?.[0] || r?.label || cle, sous: (tr && tr[1]) || r?.desc || '' };
+}
+
+/** The tabs of an action: [{ cle, titre, sous, options: [{ opt, sous }] }]. */
+function ongletsOptions(entree) {
+  const options = entree.meta.options || [];
+  if (options.some((o) => o.section)) {
+    const parCle = new Map();
+    for (const o of options) {
+      const [cle] = (o.section || '').split('.');
+      if (!parCle.has(cle)) {
+        parCle.set(cle, cle ? { cle, ...titreRapport(entree, cle), options: [] } : { cle: '', titre: t('opt.section_autres'), sous: '', options: [] });
+      }
+      parCle.get(cle).options.push({ opt: o, sous: o.section?.includes('.') ? o.section : '' });
+    }
+    // In a tab, its own settings first, then each sub-heading with all of its
+    // settings, in the order of the script: a setting never lands under a
+    // sub-heading it does not belong to, and the numbers follow what is shown.
+    for (const onglet of parCle.values()) {
+      const ordre = [...new Set(onglet.options.map((x) => x.sous))].sort((a, b) => (a ? 1 : 0) - (b ? 1 : 0));
+      onglet.options = ordre.flatMap((s) => onglet.options.filter((x) => x.sous === s));
+    }
+    // The settings without a section come last.
+    return [...parCle.values()].sort((a, b) => (a.cle ? 0 : 1) - (b.cle ? 0 : 1));
+  }
+  if (options.length <= SEUIL_NUMEROS) return null;
+  const groupes = [
+    { cle: '@action', titre: t('opt.groupe_action'), sous: '', options: options.filter((o) => !o.scan && !o.hidden).map((opt) => ({ opt, sous: '' })) },
+    { cle: '@analyse', titre: t('opt.groupe_analyse'), sous: '', options: options.filter((o) => o.scan && !o.hidden).map((opt) => ({ opt, sous: '' })) },
+    { cle: '@avance', titre: t('opt.groupe_avance'), sous: '', options: options.filter((o) => o.hidden).map((opt) => ({ opt, sous: '' })) },
+  ].filter((g) => g.options.length);
+  return groupes.length > 1 ? groupes : null;
+}
+
 /** Bloc CONFIGURATION de la maquette : le compte d'options, de quoi tout rendre
  *  au script, puis les reglages eux-memes. */
 function rendreConfiguration(entree) {
@@ -659,18 +719,49 @@ function rendreConfiguration(entree) {
     ? `<button class="conf-reinit" type="button" data-reinit="${esc(entree.id)}">${esc(t('opt.reinitialiser'))}</button>`
     : '';
 
-  return `
-    <div class="conf">
+  const tete = `
       <div class="conf-h">
         <span>${esc(t('opt.configuration'))}</span>
         <span class="conf-compte">${esc(compte)}</span>
         ${reinit}
-      </div>
+      </div>`;
+  const numeroter = numerosOptions(options.length);
+  const onglets = ongletsOptions(entree);
+  if (!onglets) {
+    return `
+    <div class="conf">${tete}
       <div class="opts">
-        ${options.map((o) => rendreOption(entree, o)).join('')}
+        ${options.map((o, i) => rendreOption(entree, o, numeroter ? String(i + 1) : '')).join('')}
         ${rendreReglagesSindry(entree)}
         ${rendreExceptionsScript(entree)}
       </div>
+    </div>`;
+  }
+
+  // Sindry's own settings: the last tab.
+  const tous = [...onglets, { cle: '@sindry', titre: t('opt.groupe_sindry'), sous: t('opt.reglage_sindry'), options: [] }];
+  const ouvert = tous.find((o) => o.cle === ongletsConfig.get(entree.id)) || tous[0];
+  const figee = (o) => o.options.some((x) => optionFigee(entree, x.opt.key));
+  const barre = tous.map((o, i) => `<button type="button" role="tab" data-conf-onglet="${esc(o.cle)}" data-conf-script="${esc(entree.id)}" aria-selected="${o === ouvert}">${
+    numeroter && o.cle !== '@sindry' ? `<span class="opt-num">${i + 1}</span>` : ''}${esc(o.titre)}${
+    o.options.length ? `<span class="conf-onglet-n">${o.options.length}</span>` : ''}${figee(o) ? '<i class="fige-dot"></i>' : ''}</button>`).join('');
+  let corps;
+  if (ouvert.cle === '@sindry') {
+    corps = `${rendreReglagesSindry(entree)}${rendreExceptionsScript(entree)}`;
+  } else {
+    const rang = tous.indexOf(ouvert) + 1;
+    let sousCourant = '';
+    corps = ouvert.options.map((x, i) => {
+      const titre = x.sous && x.sous !== sousCourant ? `<div class="conf-sous">${esc(titreRapport(entree, x.sous).titre)}</div>` : '';
+      sousCourant = x.sous;
+      return `${titre}${rendreOption(entree, x.opt, numeroter ? `${rang}.${i + 1}` : '')}`;
+    }).join('');
+  }
+  return `
+    <div class="conf">${tete}
+      <div class="conf-onglets" role="tablist">${barre}</div>
+      ${ouvert.sous ? `<p class="conf-onglet-sous">${esc(ouvert.sous)}</p>` : ''}
+      <div class="opts">${corps}</div>
     </div>`;
 }
 
@@ -1537,6 +1628,8 @@ let majDisponible = null;
 let majRepoussee = false;
 /** Telechargement lance : le bandeau n'accepte plus d'autre geste. */
 let majInstallation = false;
+/** The step the update window shows (2.2.0): where a failure is placed. */
+let etapeMaj = 'telecharger';
 
 function executionEnCours() {
   return course !== null || entretienActif;
@@ -1552,6 +1645,9 @@ function messageErreurMaj(e) {
   // Serveur joint, mais aucun manifeste lisible : aucune version publiee, ou
   // une release sans latest.json. Ce n'est pas une panne de l'utilisateur.
   if (/release JSON/i.test(texte)) return t('maj.introuvable');
+  // 2.2.0: Windows asked for the rights and got « No » (ERROR_CANCELLED). The
+  // installer never started, and Sindry stays open.
+  if (/os error 1223\b/.test(texte)) return t('maj.autorisation_refusee');
   return t('maj.echec', { e: texte });
 }
 
@@ -1607,22 +1703,55 @@ async function verifierMaj({ silencieux = false } = {}) {
   }
 }
 
+/**
+ * The update window (2.2.0): the steps in Sindry itself — download, signature,
+ * installation, restart — instead of the installer's own window, which now
+ * works silently (`installMode: quiet`). Windows may still ask for the rights:
+ * the installer needs them, and Sindry says so beforehand.
+ */
+function rendreFenetreMaj(etape, { pourcent = null, erreur = null } = {}) {
+  if (!erreur) etapeMaj = etape;
+  const zone = document.getElementById('majOverlay');
+  const v = majDisponible?.version || '';
+  const actuelle = document.getElementById('version')?.textContent || '';
+  const ETAPES = ['telecharger', 'verifier', 'installer', 'redemarrer'];
+  const rang = ETAPES.indexOf(etape);
+  const ligne = (cle, i) => {
+    const etat = erreur && i === rang ? 'err' : i < rang ? 'ok' : i === rang ? 'run' : '';
+    const detail = cle === 'telecharger' && i === rang && pourcent != null ? ` · ${pourcent} %` : '';
+    const symbole = etat === 'ok' ? '<svg class="ico" aria-hidden="true"><use href="#check"/></svg>' : etat === 'err' ? '!' : String(i + 1);
+    return `<li class="${etat}"><span class="dt">${symbole}</span><span><b>${esc(t(`maj.etape_${cle}`))}${detail}</b><small>${esc(t(`maj.etape_${cle}_d`))}</small></span></li>`;
+  };
+  const barre = etape === 'telecharger' && pourcent != null
+    ? `<div class="maj-prog"><i style="width:${pourcent}%"></i></div>` : etape !== 'telecharger' && !erreur ? '<div class="maj-prog indefini"><i></i></div>' : '';
+  zone.innerHTML = `<div class="onb-card maj-carte" role="dialog" aria-labelledby="majFenetreTitre">
+      <img class="onb-logo" src="marque.png" alt="" draggable="false">
+      <h1 id="majFenetreTitre">${esc(t('maj.fenetre_titre'))}</h1>
+      <p class="onb-text">${esc(t('maj.fenetre_versions', { actuelle, v }))}</p>
+      ${barre}
+      <ol class="maj-etapes">${ETAPES.map(ligne).join('')}</ol>
+      ${erreur ? `<p class="maj-erreur">${esc(erreur)}</p><div class="s-nav center"><button class="btn" type="button" data-maj-fermer>${esc(t('maj.fermer'))}</button></div>`
+        : `<p class="maj-note">${esc(t(estEleve ? 'maj.fenetre_note_eleve' : 'maj.fenetre_note'))}</p>`}
+    </div>`;
+  zone.hidden = false;
+}
+
 async function installerMaj() {
   if (majInstallation || executionEnCours()) return;
   majInstallation = true;
-  const texte = document.getElementById('majTexte');
-  document.getElementById('majInstaller').hidden = true;
-  document.getElementById('majPlusTard').hidden = true;
-  texte.textContent = t('maj.telechargement_debut');
+  document.getElementById('majBanner').hidden = true;
+  rendreFenetreMaj('telecharger', { pourcent: 0 });
 
-  // Une fois tout recu, le texte annonce la suite plutot que de rester sur
-  // « 100 % » : la verification de signature puis l'installeur prennent encore
-  // quelques secondes, et c'est la que Sindry va se fermer.
+  // Once everything is received, the plugin checks the signature, then starts
+  // the installer and closes Sindry: the window says what comes next.
   const arreterEcoute = await ecouter('update:progress', (ev) => {
     const { recu, total } = ev.payload;
-    if (total && recu >= total) texte.textContent = t('maj.lancement');
-    else if (total) texte.textContent = t('maj.telechargement', { p: Math.round((recu / total) * 100) });
-    else texte.textContent = t('maj.telechargement_debut');
+    if (total && recu >= total) {
+      rendreFenetreMaj('verifier');
+      setTimeout(() => majInstallation && rendreFenetreMaj('installer'), 900);
+    } else {
+      rendreFenetreMaj('telecharger', { pourcent: total ? Math.round((recu / total) * 100) : null });
+    }
   });
 
   try {
@@ -1632,7 +1761,9 @@ async function installerMaj() {
   } catch (e) {
     console.error('Installation de mise a jour :', e);
     majInstallation = false;
-    rendreBandeauMaj(messageErreurMaj(e));
+    // A bad signature is found once everything is received, whatever the window shows.
+    const etape = /signature|minisign|signed for version/i.test(String(e)) ? 'verifier' : etapeMaj;
+    rendreFenetreMaj(etape, { erreur: messageErreurMaj(e) });
   } finally {
     arreterEcoute();
   }
@@ -1648,6 +1779,12 @@ function cablerMaj() {
     document.getElementById('majBanner').hidden = true;
   });
   document.getElementById('btnVerifierMaj').addEventListener('click', () => verifierMaj());
+  // 2.2.0: the update window closes only after a failure.
+  document.getElementById('majOverlay').addEventListener('click', (ev) => {
+    if (!ev.target.closest('[data-maj-fermer]')) return;
+    document.getElementById('majOverlay').hidden = true;
+    rendreBandeauMaj();
+  });
 }
 
 /* -------------------------------------------------------------------------
@@ -2627,6 +2764,7 @@ function appliquerSimulation(bilan) {
     pastille.setAttribute('aria-pressed', etat === 'activee' ? 'true' : etat === 'partielle' ? 'mixed' : 'false');
     pastille.dataset.tip = t(`simulation.infobulle_${etat}`, { n: simules, total: simulables });
     document.getElementById('testPillText').textContent = t(`simulation.pastille_${etat}`, { n: simules, total: simulables });
+    document.getElementById('testPillCourt').textContent = t('chrome.simu_court');
   }
 
   const bandeau = document.getElementById('testBanner');
@@ -2680,6 +2818,7 @@ function appliquerDroits(eleve) {
   p.classList.toggle('manquant', !estEleve);
   document.getElementById('adminPillText').textContent =
     t(estEleve ? 'chrome.administrateur' : 'chrome.sans_droits');
+  document.getElementById('adminPillCourt').textContent = t(estEleve ? 'chrome.admin_court' : 'chrome.sans_droits_court');
   p.dataset.tip = t(estEleve ? 'droits.tip_ok' : 'droits.tip_manquant');
 }
 
@@ -2786,6 +2925,91 @@ function guiderVersDroits() {
 
 /* --- Le centre d'aide « ? » ------------------------------------------------- */
 
+/* -------------------------------------------------------------------------
+   The title bar tightens (2.2.0, mockup M38 C)
+
+   One level at a time until everything fits: the version under the name, a
+   shorter search, short labels on the pills, then the theme, the journal, the
+   help go into « ⋯ », the pills become icons, the search narrows again, and
+   the settings go into « ⋯ » last. The window buttons never leave the screen;
+   the simulation and the rights never disappear.
+   ------------------------------------------------------------------------- */
+
+const NIVEAUX_BARRE = 9;
+/** Folded from this level on: [level, button, icon, label]. */
+const REPLIS_BARRE = [[4, 'themeBtn', 'sun', 'barre.theme'], [5, 'btnJournal', 'sec-execution', 'barre.journal'],
+  [6, 'btnAide', 'help', 'barre.aide'], [9, 'btnSettings', 'settings', 'barre.reglages']];
+let niveauBarre = 0;
+let barrePrevue = false;
+
+function compacterBarre() {
+  barrePrevue = false;
+  const tb = document.querySelector('.titlebar');
+  const fen = tb?.querySelector('.winctl');
+  const plus = document.getElementById('btnPlus');
+  if (!tb || !fen || !plus) return;
+  const deborde = () => tb.scrollWidth > tb.clientWidth + 0.5
+    || fen.getBoundingClientRect().right > tb.getBoundingClientRect().right + 0.5;
+  for (let n = 1; n <= NIVEAUX_BARRE; n++) tb.classList.remove(`c${n}`);
+  let n = 0;
+  plus.hidden = true;
+  while (n < NIVEAUX_BARRE && deborde()) {
+    n += 1;
+    tb.classList.add(`c${n}`);
+    plus.hidden = !REPLIS_BARRE.some(([k]) => n >= k);
+  }
+  niveauBarre = n;
+  if (plus.hidden) fermerMenuPlus();
+}
+function prevoirCompacterBarre() {
+  if (barrePrevue) return;
+  barrePrevue = true;
+  requestAnimationFrame(compacterBarre);
+}
+
+function fermerMenuPlus() {
+  document.getElementById('menuPlus')?.remove();
+  document.getElementById('btnPlus')?.setAttribute('aria-expanded', 'false');
+}
+function ouvrirMenuPlus() {
+  if (document.getElementById('menuPlus')) return fermerMenuPlus();
+  const bouton = document.getElementById('btnPlus');
+  const menu = document.createElement('div');
+  menu.className = 'menu-plus';
+  menu.id = 'menuPlus';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = REPLIS_BARRE.filter(([k]) => niveauBarre >= k).map(([, id, icone, cle]) =>
+    `<button type="button" role="menuitem" data-plus-cible="${id}"><svg class="ico i17" aria-hidden="true"><use href="#${icone}"/></svg>${esc(t(cle))}</button>`).join('');
+  document.body.appendChild(menu);
+  const z = echelleCourante();
+  const r = bouton.getBoundingClientRect();
+  menu.style.top = `${r.bottom / z + 8}px`;
+  menu.style.left = `${Math.max(8, Math.min(innerWidth / z - menu.offsetWidth - 8, r.right / z - menu.offsetWidth))}px`;
+  bouton.setAttribute('aria-expanded', 'true');
+  menu.querySelector('button')?.focus();
+  menu.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-plus-cible]');
+    if (!b) return;
+    fermerMenuPlus();
+    if (b.dataset.plusCible === 'btnAide') return void ouvrirMenuAide();
+    document.getElementById(b.dataset.plusCible)?.click();
+  });
+}
+
+function cablerBarre() {
+  const tb = document.querySelector('.titlebar');
+  if (!tb) return;
+  document.getElementById('btnPlus').onclick = (ev) => { ev.stopPropagation(); ouvrirMenuPlus(); };
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('#menuPlus, #btnPlus')) fermerMenuPlus();
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') fermerMenuPlus(); });
+  // The width of the window, and what the bar holds (labels, mode, settings).
+  new ResizeObserver(prevoirCompacterBarre).observe(tb);
+  new MutationObserver(prevoirCompacterBarre).observe(tb, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+  prevoirCompacterBarre();
+}
+
 function fermerMenuAide() {
   document.getElementById('menuAide')?.remove();
   document.getElementById('btnAide')?.setAttribute('aria-expanded', 'false');
@@ -2816,7 +3040,9 @@ function ouvrirMenuAide() {
   document.body.appendChild(menu);
   // Sous le bouton, aligne a sa droite, en pixels CSS (echelle de rendu).
   const z = echelleCourante();
-  const r = bouton.getBoundingClientRect();
+  // Its button folded into « ⋯ » (2.2.0): the menu hangs under « ⋯ ».
+  const ancre = bouton.offsetParent ? bouton : document.getElementById('btnPlus') || bouton;
+  const r = ancre.getBoundingClientRect();
   menu.style.top = `${r.bottom / z + 8}px`;
   menu.style.left = `${Math.max(8, Math.min(innerWidth / z - menu.offsetWidth - 8, r.right / z - menu.offsetWidth))}px`;
   bouton.setAttribute('aria-expanded', 'true');
@@ -3777,6 +4003,13 @@ function cablerInteractions() {
     if (run && !run.disabled) return void lancerDepuisExpert({ type: 'script', id: run.dataset.run });
     const lancerLot = ev.target.closest('[data-lancer-lot]');
     if (lancerLot && !lancerLot.disabled) return void lancerDepuisExpert({ type: 'lot', id: lancerLot.dataset.lancerLot });
+
+    // 2.2.0: the tabs of an action's settings.
+    const onglet = ev.target.closest('[data-conf-onglet]');
+    if (onglet) {
+      ongletsConfig.set(onglet.dataset.confScript, onglet.dataset.confOnglet);
+      return void rendreDetail();
+    }
 
     const reinit = ev.target.closest('[data-reinit]');
     if (reinit) {
@@ -6230,6 +6463,9 @@ function remplirFormulaireReglages(reglages) {
   document.getElementById('setEchelleSelect').value = String(reglages.ui_scale ?? 1);
   appliquerNumerosReglages(reglages.show_setting_numbers);
   appliquerEchelle(reglages.ui_scale ?? 1);
+  // 2.2.0: 1.6 and 1.7.
+  document.getElementById('setNumerosOptions').value = reglages.numeros_options || 'auto';
+  document.getElementById('setAdminDemarrage').setAttribute('aria-checked', String(!!reglages.admin_au_demarrage));
 }
 
 /** La numerotation des reglages (« 2.3 ») se pose sur <body> : une seule
@@ -6279,6 +6515,28 @@ function ouvrirReglages() {
   document.body.classList.add('reglages-ouverts');
   document.getElementById('btnSettings').setAttribute('aria-pressed', 'true');
   afficherSectionReglages(sectionReglages);
+}
+
+/** 2.2.0: the settings page starts under the banners — simulation, update,
+ *  catalogue — instead of covering them. A ResizeObserver follows them as they
+ *  appear, go, or wrap on two lines. */
+function placerPageReglages() {
+  const page = document.getElementById('settingsPage');
+  if (!page) return;
+  let h = 0;
+  for (const id of ['testBanner', 'majBanner', 'catBanner']) {
+    const b = document.getElementById(id);
+    if (b && !b.hidden) h += b.offsetHeight;
+  }
+  page.style.top = `${h}px`;
+}
+function suivreBandeaux() {
+  const ro = new ResizeObserver(placerPageReglages);
+  for (const id of ['testBanner', 'majBanner', 'catBanner']) {
+    const b = document.getElementById(id);
+    if (b) ro.observe(b);
+  }
+  placerPageReglages();
 }
 
 function fermerReglages() {
@@ -6960,6 +7218,17 @@ function cablerReglages() {
     appliquerNumerosReglages(actif);
     reglagesActuels = await invoke('set_show_setting_numbers', { value: actif });
   };
+  // 1.6 (2.2.0): number the settings of an action.
+  document.getElementById('setNumerosOptions').onchange = async (ev) => {
+    reglagesActuels = await invoke('set_option_numbers', { value: ev.currentTarget.value });
+    rendreDetail();
+  };
+  // 1.7 (2.2.0): always start as administrator — from the next launch.
+  document.getElementById('setAdminDemarrage').onclick = async (ev) => {
+    const actif = ev.currentTarget.getAttribute('aria-checked') !== 'true';
+    ev.currentTarget.setAttribute('aria-checked', String(actif));
+    reglagesActuels = await invoke('set_admin_startup', { value: actif });
+  };
 
   document.getElementById('btnOuvrirDossierReglages').onclick = async () => {
     try {
@@ -7157,6 +7426,21 @@ async function demarrer() {
   reglagesActuels = reglages;
   setLang(reglages.lang);
   document.documentElement.lang = currentLang();
+
+  // 1.7 (2.2.0): always start as administrator. Before anything is drawn; the
+  // relaunched instance carries `--relance-admin` and never relaunches again.
+  // Windows' prompt refused: Sindry goes on without the rights.
+  if (reglages.admin_au_demarrage) {
+    const infos = await invoke('app_info').catch(() => null);
+    if (infos && !infos.elevated && !infos.relance_admin) {
+      try {
+        await invoke('relaunch_elevated', { auDemarrage: true });
+        return void laFenetre.close();
+      } catch (e) {
+        console.error('Relance en administrateur refusee :', e);
+      }
+    }
+  }
   appliquerTheme(reglages.theme, false);
   await chargerAmbiances();
   appliquerAccent(reglages.accent);
@@ -7177,6 +7461,8 @@ async function demarrer() {
   cablerConsole();
   cablerReglagesSimples();
   cablerReprise();
+  suivreBandeaux();
+  cablerBarre();
   document.getElementById('testPill').onclick = basculerSimulation;
   document.getElementById('adminPill').onclick = ouvrirFenetreDroits;
   document.getElementById('btnFermerDroits').onclick = () => {

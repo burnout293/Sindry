@@ -36,13 +36,21 @@ pub struct AppInfo {
     /// Expose quand meme, parce que l'interface l'affiche et qu'une pastille
     /// qui mentirait serait pire que pas de pastille du tout.
     elevated: bool,
+    /// 2.2.0 : cette instance est la relance en administrateur du reglage 1.7.
+    /// Elle ne se relance jamais a son tour, meme si la detection des droits se
+    /// trompait : pas de boucle d'invites UAC.
+    relance_admin: bool,
 }
+
+/// L'argument que porte la relance en administrateur du reglage 1.7.
+const ARGUMENT_RELANCE_ADMIN: &str = "--relance-admin";
 
 #[tauri::command]
 fn app_info() -> AppInfo {
     AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         elevated: is_elevated(),
+        relance_admin: std::env::args().any(|a| a == ARGUMENT_RELANCE_ADMIN),
     }
 }
 
@@ -166,9 +174,20 @@ fn script_approuve(entree: &discovery::ScriptEntry) -> Result<bool, String> {
 /// `reprendre` (2.1.0) : la nouvelle instance reprend l'entretien en attente
 /// (`--reprendre`) — le seul argument qu'elle puisse recevoir d'ici.
 #[tauri::command]
-async fn relaunch_elevated(reprendre: Option<bool>) -> Result<(), String> {
+async fn relaunch_elevated(
+    reprendre: Option<bool>,
+    au_demarrage: Option<bool>,
+) -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| format!("executable introuvable : {e}"))?;
-    let args = reprendre.unwrap_or(false).then_some(reprise::ARGUMENT);
+    // Deux arguments possibles, et seulement ceux-la : rien de ce que
+    // l'interface passe n'arrive tel quel a la nouvelle instance.
+    let args = if reprendre.unwrap_or(false) {
+        Some(reprise::ARGUMENT)
+    } else if au_demarrage.unwrap_or(false) {
+        Some(ARGUMENT_RELANCE_ADMIN)
+    } else {
+        None
+    };
     tauri::async_runtime::spawn_blocking(move || relancer_en_administrateur(&exe, args))
         .await
         .map_err(|e| e.to_string())?
@@ -1781,6 +1800,28 @@ fn set_app_icons(app: tauri::AppHandle, value: bool) -> Result<Settings, String>
     })
 }
 
+/// 1.6 (2.2.0) : numeroter les reglages d'une action — jamais, au-dela de dix,
+/// toujours.
+#[tauri::command]
+fn set_option_numbers(app: tauri::AppHandle, value: String) -> Result<Settings, String> {
+    if !settings::NUMEROS_OPTIONS.contains(&value.as_str()) {
+        return Err(format!("valeur inconnue : {value}"));
+    }
+    with_settings(&app, |s| {
+        s.numeros_options = value;
+        Ok(())
+    })
+}
+
+/// 1.7 (2.2.0) : toujours demarrer en administrateur.
+#[tauri::command]
+fn set_admin_startup(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
+    with_settings(&app, |s| {
+        s.admin_au_demarrage = value;
+        Ok(())
+    })
+}
+
 /// Affiche ou masque la numerotation des reglages (« 2.3 »).
 #[tauri::command]
 fn set_show_setting_numbers(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
@@ -2104,6 +2145,8 @@ pub fn run() {
             hide_catalogue_reminder,
             set_failure_policy,
             set_show_setting_numbers,
+            set_option_numbers,
+            set_admin_startup,
             app_icons,
             set_app_icons,
             set_ui_scale,

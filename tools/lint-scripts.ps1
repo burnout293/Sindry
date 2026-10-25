@@ -436,13 +436,16 @@ function Test-Rapport {
             }
         } elseif ($reste -match '^\[group\]\s*(.*)$') {
             $genre = 'group'; $reste = $Matches[1]
+        } elseif ($reste -match '^\[section\]\s*(.*)$') {
+            # 2.2.0 : le titre d'un onglet de réglages de la fiche Expert.
+            $genre = 'section'; $reste = $Matches[1]
         } elseif ($reste -match '^\[error\]\s*(.*)$') {
             $genre = 'error'; $reste = $Matches[1]
             if (-not (Test-CodeErreur $cle)) {
                 Add-Constat $Fichier ($i + 1) 'erreur' 'CODE_ERREUR_FORME' "'$cle' : un code d'erreur s'écrit d'une à trois majuscules, puis deux à quatre chiffres (E104, SVC12)."
             }
         } elseif ($reste -match '^\[([a-z]+)[:\]]') {
-            Add-Constat $Fichier ($i + 1) 'erreur' 'ETIQUETTE_INCONNUE' "Étiquette '[$($Matches[1])]' inconnue dans REPORT ; admises : [note:info], [note:warn], [group], [error]."
+            Add-Constat $Fichier ($i + 1) 'erreur' 'ETIQUETTE_INCONNUE' "Étiquette '[$($Matches[1])]' inconnue dans REPORT ; admises : [note:info], [note:warn], [group], [section], [error]."
         }
         if (-not $reste) {
             Add-Constat $Fichier ($i + 1) 'erreur' 'LIBELLE_VIDE' "'$cle' est déclarée dans REPORT sans texte."
@@ -472,7 +475,7 @@ function Test-Options {
 
         # Les étiquettes d'une option, puis celles de ses choix. Elles quittent le
         # libellé : c'est le libellé nu qui s'affiche.
-        $lu = Split-Etiquettes $Fichier $o.Ligne $o.Libelle @('scan', 'group', 'show', 'view')
+        $lu = Split-Etiquettes $Fichier $o.Ligne $o.Libelle @('scan', 'group', 'show', 'view', 'section')
         $o.Etiquettes = $lu.Etiquettes
         $o.Libelle = $lu.Texte
         foreach ($c in @($o.Choix.Keys)) {
@@ -1025,6 +1028,33 @@ function Test-Presentation {
         if ($Rapport[$cle].Genre -eq 'group' -and -not $utilises.ContainsKey($cle)) {
             Add-Constat $Fichier $Rapport[$cle].Ligne 'avertissement' 'GROUPE_ORPHELIN' "Le groupe '$cle' est déclaré dans REPORT mais aucune option ni aucun choix ne s'y range."
         }
+    }
+
+    # Les sections (2.2.0) : un onglet de la fiche Expert, [section:Cle] ou
+    # [section:Cle.Sous] pour un sous-titre. La section, et son parent, ont leur
+    # titre dans REPORT ; une section que rien n'utilise est sans doute un reste.
+    $sections = @{}
+    $reglages = 0
+    foreach ($nom in $Options.Keys) {
+        $o = $Options[$nom]
+        if ($o.Type -ne 'items') { $reglages++ }
+        if (-not $o.Etiquettes -or -not $o.Etiquettes.ContainsKey('section')) { continue }
+        $s = $o.Etiquettes['section']
+        $parent = ($s -split '\.', 2)[0]
+        foreach ($cle in @($parent, $s) | Select-Object -Unique) {
+            $sections[$cle] = $true
+            if (-not $Rapport.Contains($cle) -or $Rapport[$cle].Genre -ne 'section') {
+                Add-Constat $Fichier $o.Ligne 'erreur' 'SECTION_INCONNUE' "[section:$s] : la section '$cle' n'est pas déclarée dans REPORT ('## $cle : [section] Titre — sous-titre')."
+            }
+        }
+    }
+    foreach ($cle in $Rapport.Keys) {
+        if ($Rapport[$cle].Genre -eq 'section' -and -not $sections.ContainsKey($cle)) {
+            Add-Constat $Fichier $Rapport[$cle].Ligne 'avertissement' 'SECTION_ORPHELINE' "La section '$cle' est déclarée dans REPORT mais aucune option ne s'y range."
+        }
+    }
+    if ($reglages -gt 10 -and $sections.Count -eq 0) {
+        Add-Constat $Fichier 1 'note' 'SECTIONS_CONSEILLEES' "$reglages réglages sans section : rangez-les en onglets avec [section:Cle] (voir « Ranger les réglages en sections »)."
     }
 }
 

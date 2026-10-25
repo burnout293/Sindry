@@ -2691,3 +2691,65 @@ body.restreint-actif .ambiance, body.restreint-actif .water, body.restreint-acti
 .stepper span { min-width: 40px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
 .stepper.off { opacity: .5; }
 .setrow-fin { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* --- Les reglages d'une action en onglets, et leurs numeros (2.2.0, M39 B) --- */
+.conf-onglets { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px 12px 0; border-bottom: 1px solid var(--surface-2); }
+.conf-onglets button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; margin-bottom: -1px;
+  border-bottom: 2px solid transparent; font-size: 12px; font-weight: 700; color: var(--text-2); }
+.conf-onglets button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--acc); }
+.conf-onglets .fige-dot { margin-left: 0; }
+.conf-onglet-n { font-family: var(--mono, Consolas, monospace); font-size: 10.5px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.conf-onglets button[aria-selected="true"] .conf-onglet-n { background: var(--acc-soft); color: var(--acc-on); }
+.conf-onglet-sous { margin: 10px 18px 0; font-size: 12px; color: var(--text-3); }
+.conf-sous { display: flex; align-items: center; gap: 10px; margin: 6px 2px 0; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); }
+.conf-sous::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.opt-num { font-family: var(--mono, Consolas, monospace); font-size: 10.5px; font-weight: 600; color: var(--text-3); margin-right: 8px; }
+
+/* --- La barre du haut se resserre (2.2.0, maquette M38 C) -----------------
+   Sindry ajoute un niveau a la fois (c1, c2…) jusqu'a ce que tout tienne : les
+   boutons de fenetre ne sortent plus jamais de l'ecran. Ce qui disparait passe
+   dans « ⋯ » ; la simulation et les droits ne disparaissent jamais. */
+.brand-txt { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.titlebar .pill-court { display: none; }
+.titlebar.c1 .brand-txt { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.1; }
+.titlebar.c2 .tb-search { width: 200px; }
+.titlebar.c3 #testPillText, .titlebar.c3 #adminPillText { display: none; }
+.titlebar.c3 .pill-court { display: inline; }
+.titlebar.c4 #themeBtn { display: none; }
+.titlebar.c5 #btnJournal { display: none; }
+.titlebar.c6 #btnAide { display: none; }
+.titlebar.c7 .pill-court { display: none; }
+.titlebar.c7 .pill { padding: 5px 8px; }
+.titlebar.c8 .tb-search { width: 140px; }
+.titlebar.c9 #btnSettings { display: none; }
+.winctl { flex-shrink: 0; }
+#btnPlus[aria-expanded="true"] { background: var(--acc-soft); color: var(--acc-on); }
+.menu-plus { position: fixed; z-index: 60; min-width: 220px; padding: 6px; border-radius: 14px; background: var(--surface);
+  border: 1px solid var(--border-2); box-shadow: var(--sh-2, 0 12px 34px rgba(0, 0, 0, .3)); }
+.menu-plus button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 10px;
+  font-size: 12.5px; font-weight: 650; color: var(--text); text-align: left; }
+.menu-plus button:hover, .menu-plus button:focus-visible { background: var(--surface-2); outline: none; }
+.menu-plus button .ico { color: var(--text-2); }
+
+/* --- La fenetre de mise a jour (2.2.0) ------------------------------------ */
+#majOverlay { z-index: 96; }
+.maj-carte { padding: 26px 26px 20px; }
+.maj-prog { height: 7px; border-radius: 4px; background: var(--surface-3); overflow: hidden; margin: 16px 0 4px; }
+.maj-prog i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--acc), var(--acc-2)); transition: width .3s; }
+.maj-prog.indefini i { width: 35%; animation: maj-va-et-vient 1.2s ease-in-out infinite alternate; }
+@keyframes maj-va-et-vient { from { margin-left: 0; } to { margin-left: 65%; } }
+@media (prefers-reduced-motion: reduce) { .maj-prog.indefini i { animation: none; width: 100%; opacity: .5; } }
+.maj-etapes { list-style: none; margin: 14px 0 0; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.maj-etapes li { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--text-3); }
+.maj-etapes li b { display: block; color: var(--text-2); }
+.maj-etapes li small { font-size: 11.5px; }
+.maj-etapes .dt { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; font-size: 11px; font-weight: 800;
+  background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+.maj-etapes .dt .ico { width: 13px; height: 13px; }
+.maj-etapes li.ok .dt { background: var(--ok-s); color: var(--ok); border-color: transparent; }
+.maj-etapes li.run b { color: var(--text); }
+.maj-etapes li.run .dt { background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: var(--ink); border-color: transparent; }
+.maj-etapes li.err .dt { background: var(--err-s); color: var(--err); border-color: transparent; }
+.maj-note { margin: 14px 0 0; font-size: 11.5px; color: var(--text-3); }
+.maj-erreur { margin: 14px 0 0; font-size: 12.5px; color: var(--err); }

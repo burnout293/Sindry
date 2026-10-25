@@ -4,6 +4,81 @@
 > version courte) : seules les consignes **nouvelles ou modifiées**, sans le reste. Donnez
 > ce fichier en plus de l'ancien guide. En cas de doute, la version complète à jour fait
 > foi.
+>
+> Les versions les plus récentes viennent en premier. Une IA restée sur une version plus
+> ancienne lit toutes les entrées jusqu'à la sienne, de bas en haut.
+
+<!-- empreinte des consignes : 6013d300101e32f2 — tenue par tools/build-script-guides.mjs, ne pas modifier -->
+
+---
+
+## 2.2.0 — depuis la 2.1.0 : ranger les réglages en sections
+
+Une action qui a beaucoup de réglages les range maintenant en **onglets** dans la fiche
+Expert. Rien d'autre ne change : les règles 1 à 43 restent valables, aucune n'est
+remplacée.
+
+### Règle nouvelle
+
+À ajouter après la règle 43, dans une nouvelle partie « Les réglages nombreux (plus de
+10) ».
+
+44. **Range-les en sections** : `[section:Cle]` entre le type et le libellé fait de chaque
+    section un **onglet** de la fiche Expert ; `[section:Cle.Sous]` ajoute un sous-titre
+    dans l'onglet. Déclare chaque section **et** chaque sous-titre dans `REPORT`
+    (`## Cle : [section] Titre — sous-titre`, `## Cle.Sous : [section] Titre`) et
+    traduis-les dans `LANG fr`. Des onglets courts (3 à 8 réglages), nommés par ce que
+    l'utilisateur cherche (Affichage, Confidentialité…), jamais par la technique
+    (Registre…). Un réglage sans section finit dans un dernier onglet « Autres réglages »
+    (« Ranger les réglages en sections »).
+
+### Dans les options et le bloc `REPORT`
+
+```
+## SINDRY:OPTIONS
+## CompactView    : [bool] [section:View] Compact view — less space between items
+## ShowExtensions : [bool] [section:View.Files] Show file extensions
+## NoRecentFiles  : [bool] [section:Privacy] Do not list recent files
+## SINDRY:END
+
+## SINDRY:REPORT
+## View       : [section] Display — What File Explorer shows
+## View.Files : [section] Files
+## Privacy    : [section] Privacy — What File Explorer remembers
+## SINDRY:END
+
+## SINDRY:LANG fr
+## View       : Affichage — Ce que l'Explorateur montre
+## View.Files : Fichiers
+## Privacy    : Confidentialité — Ce que l'Explorateur retient
+## SINDRY:END
+```
+
+| Forme | Où | Sens |
+|---|---|---|
+| `[section:Cle]` | Étiquette d'une option | **Nouveau** : la range dans l'onglet `Cle` |
+| `[section:Cle.Sous]` | Étiquette d'une option | **Nouveau** : la range sous le sous-titre `Cle.Sous` de l'onglet `Cle` |
+| `Cle : [section] Titre — sous-titre` | Bloc `REPORT` | **Nouveau** : le titre de l'onglet ou du sous-titre, traduit dans `LANG` |
+
+Sans section, Sindry range lui-même une action de plus de 10 réglages : ce que fait
+l'action, les réglages de l'analyse (`[scan]`), les réglages avancés (`[hidden]`). Il
+numérote aussi les réglages (« 2.3 » = 2ᵉ onglet, 3ᵉ réglage) au-delà de 10 : un
+utilisateur peut donc désigner un réglage par son numéro.
+
+### Ce que le validateur relève désormais
+
+| Code | Niveau | Quand |
+|---|---|---|
+| `SECTION_INCONNUE` | erreur | `[section:…]` vise une section, ou un sous-titre, que `REPORT` ne déclare pas `[section]` |
+| `SECTION_ORPHELINE` | avertissement | Section déclarée dans `REPORT` où aucune option ne se range |
+| `SECTIONS_CONSEILLEES` | note | Plus de 10 réglages sans aucune section |
+
+### Dans la vérification finale
+
+À ajouter à la partie « Options » :
+
+- [ ] Au-delà de 10 réglages, chacun a sa `[section:Cle]`, et chaque section ou sous-titre
+      est déclaré `[section]` dans `REPORT` et traduit.
 
 ---
 
