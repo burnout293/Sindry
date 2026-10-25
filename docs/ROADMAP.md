@@ -89,6 +89,12 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — la mise à jour se déroule dans une fenêtre de Sindry (téléchargement, signature, installation, redémarrage), l'installeur sans fenêtre ; un refus de l'autorisation est annoncé | Fait |
 | | — le journal des consignes pour IA (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) tenu par le générateur des guides : une consigne ne change plus sans son entrée | Fait |
 | | — un site GitHub Pages : présentation, téléchargement, guide des scripts, guides pour IA, catalogue, feuille de route | Fait |
+| **2.3.0** | Demandé le 25/10/2026, après un essai de la 2.1.0 en VM | À faire |
+| | — une analyse qui ne trouve rien à faire n'arrête plus l'action : on peut la lancer quand même (à maquetter) | À faire |
+| | — un échec mieux expliqué : type d'erreur, code et chemin visé dans le journal ; un mode diagnostic pour les scripts | À faire |
+| | — le nom du script dans le journal : fichiers `<date>_<NNN_NOM>.log` au lieu de l'identifiant, et une ligne d'en-tête par action dans le panneau | À faire |
+| | — les accents d'un message d'erreur de Windows arrivent cassés (« ex�cution ») sur la VM, pas sur le PC de développement : à diagnostiquer | À étudier |
+| | — un bilan où tout a échoué ne dit plus « Tout est terminé » avec un soleil à 100 % | À faire |
 | **v3** | Le cap fixé le 24/10/2026 ; les versions 2.x y mènent pas à pas, et d'autres objectifs s'ajouteront | À étudier |
 | | — **version portable** : un exe sans installation, ses données à côté de lui | À étudier |
 | | — **un chat avec une IA générative** spécialisée pour Sindry, qui écrit un script sur demande — à voir si c'est possible | À étudier |
