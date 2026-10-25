@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Options à rallonge</title>
+<!--
+  Mockup M39: a script with 79 settings — « Nettoyage profond du PC » (150)
+  — in the Expert sheet. Today: one long column of switches. Five ways to
+  organise them: A sections that fold, B tabs, C the preset first, D a
+  dense grid with search and filters, E a side index. Each can number the
+  settings (setting 1.6: never, beyond 12 settings, always). A short script
+  stays as it is. Code in English, visible text in French. Fictitious values.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grid: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-2: #F0782A; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A;
+  --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  --shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grid: #ECE8E0;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F;
+  --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC;
+  --shadow: 0 16px 40px rgba(20, 26, 36, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.topbar p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 260px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; padding: 6px 11px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.reglages { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; width: 100%; font-size: 12px; color: var(--text-2); }
+
+.stage { max-width: 1060px; margin: 18px auto 30px; padding: 0 20px; }
+.fiche { border: 1px solid var(--border); border-radius: 18px; background: var(--bg); overflow: hidden;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.fiche-h { display: flex; gap: 14px; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 85%, transparent); }
+.fiche-h .tuile { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: var(--ink); }
+.fiche-h .tuile .ico { width: 24px; height: 24px; }
+.fiche-h h2 { margin: 0; font-size: 19px; }
+.fiche-h p { margin: 2px 0 0; color: var(--text-2); }
+.fiche-h .grow { flex: 1; }
+.corps { padding: 18px 22px 24px; }
+.bloc-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.bloc-h b { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.bloc-h .grow { flex: 1; }
+.compte { font-size: 12px; color: var(--text-3); }
+.lien { border: 0; background: none; padding: 0; color: var(--acc-on); font-weight: 700; font-size: 12px; white-space: nowrap; }
+.lien.discret { color: var(--text-3); font-weight: 600; }
+
+/* One setting */
+.opt { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt .num { font-family: var(--mono); font-size: 11px; color: var(--text-3); min-width: 34px; }
+.opt .lib { flex: 1; min-width: 0; }
+.opt .lib b { font-weight: 650; display: block; }
+.opt .lib small { color: var(--text-3); font-size: 12px; }
+.opt.modif { border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+.opt .modif-pt { width: 7px; height: 7px; border-radius: 50%; background: var(--acc); flex-shrink: 0; }
+.sensible { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warn-s); color: var(--warn); margin-left: 6px; vertical-align: 1px; }
+.switch { width: 38px; height: 22px; border-radius: 999px; border: 0; background: var(--border-2); position: relative; padding: 0; flex-shrink: 0; }
+.switch::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+.switch[aria-checked="true"] { background: var(--ok); }
+.switch[aria-checked="true"]::after { left: 19px; }
+.choix { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface-2); font-weight: 650; max-width: 260px; }
+.nombre { width: 76px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface-2); font-family: var(--mono); text-align: right; }
+.texte { width: 240px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface-2); }
+
+/* A: sections that fold */
+.sec { border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--surface) 70%, transparent); margin-bottom: 10px; overflow: hidden; }
+.sec-h { display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; }
+.sec-h .chev { transition: transform .2s; color: var(--text-3); }
+.sec.ferme .sec-h .chev { transform: rotate(-90deg); }
+.sec-h .t { flex: 1; min-width: 0; }
+.sec-h .t b { font-size: 14px; display: block; }
+.sec-h .t small { color: var(--text-3); }
+.sec-h .num-sec { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+.etat-sec { font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.etat-sec .m { color: var(--acc-on); font-weight: 700; }
+.sec-c { padding: 0 16px 14px; }
+.sec.ferme .sec-c { display: none; }
+.sous { margin: 12px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); display: flex; gap: 10px; align-items: center; }
+.sous::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.actions-sec { display: flex; gap: 12px; margin: 2px 0 10px; }
+
+/* B: tabs */
+.onglets { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.onglets button { border: 0; background: none; padding: 9px 12px; font-weight: 700; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 7px; align-items: center; }
+.onglets button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--acc); }
+.onglets .n { font-family: var(--mono); font-size: 10.5px; padding: 0 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.onglets .pt { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); }
+.deux { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+/* C: the preset first */
+.echelle { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.echelle button { border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 8px; text-align: left; }
+.echelle button b { display: block; font-size: 13px; }
+.echelle button small { color: var(--text-3); font-size: 11px; line-height: 1.3; display: block; margin-top: 3px; }
+.echelle button[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); }
+.echelle button.fort { border-color: color-mix(in srgb, var(--err) 35%, var(--border)); }
+.resume { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.puce { display: inline-flex; gap: 6px; align-items: center; padding: 4px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12px; font-weight: 650; color: var(--text-2); }
+.puce.ok { background: var(--ok-s); color: var(--ok); border-color: transparent; }
+.puce.warn { background: var(--warn-s); color: var(--warn); border-color: transparent; }
+.ecarts { margin-top: 16px; padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+
+/* D: dense grid */
+.outils { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.cherche { position: relative; flex: 1 1 260px; display: flex; }
+.cherche .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+.cherche input { flex: 1; height: 36px; padding: 0 12px 0 34px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface-2); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 650; color: var(--text-2); }
+.chip[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-on); }
+.trois { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.dense { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; }
+.dense .num { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); min-width: 30px; }
+.dense span.l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dense .switch { width: 30px; height: 18px; }
+.dense .switch::after { width: 12px; height: 12px; }
+.dense .switch[aria-checked="true"]::after { left: 15px; }
+.dense.modif { border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+.dense-h { grid-column: 1 / -1; margin: 10px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+
+/* E: side index */
+.indexe { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; align-items: start; }
+.sommaire { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.sommaire a { display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 9px; color: var(--text-2); text-decoration: none; font-weight: 600; font-size: 12.5px; }
+.sommaire a.on { background: var(--acc-soft); color: var(--acc-on); }
+.sommaire a .n { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.titre-sec { position: sticky; top: 64px; z-index: 2; display: flex; align-items: baseline; gap: 10px; padding: 10px 0 8px; margin-top: 8px;
+  background: var(--bg); border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.titre-sec b { font-size: 15px; }
+.titre-sec small { color: var(--text-3); }
+
+.notes { max-width: 1060px; margin: 0 auto 60px; padding: 0 20px; color: var(--text-2); display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.notes .carte { padding: 16px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+.notes h3 { margin: 0 0 8px; color: var(--text); font-size: 15px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li + li { margin-top: 4px; }
+.notes code { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
+.notes pre { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-soft); border: 1px solid var(--border); font-family: var(--mono); font-size: 11px; color: var(--text); white-space: pre-wrap; }
+.setrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); margin-top: 8px; }
+.setrow .l { min-width: 180px; }
+.setrow .num { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+.setrow .l { flex: 1; } .setrow .l b { display: block; color: var(--text); } .setrow .l small { color: var(--text-3); }
+@media (max-width: 760px) { .deux, .trois, .echelle { grid-template-columns: 1fr; } .indexe { grid-template-columns: 1fr; } .sommaire { position: static; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sparkles" viewBox="0 0 24 24"><path d="M9.94 14.06 4 16l5.94 1.94L12 24l2.06-6.06L20 16l-5.94-1.94L12 8z"/><path d="M19 3v4M17 5h4"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+</svg>
+
+<header class="topbar">
+  <h1>Options à rallonge</h1>
+  <p>« Nettoyage profond du PC » : 79 réglages en une seule colonne aujourd'hui. Cinq façons de les ranger, et la numérotation (réglage 1.6). Valeurs fictives.</p>
+  <div class="seg" id="variantes"></div>
+  <div class="seg" id="theme"><button type="button" data-t="dark" aria-pressed="true">Sombre</button><button type="button" data-t="light" aria-pressed="false">Clair</button></div>
+  <div class="reglages">
+    <span>Numérotation (1.6)</span>
+    <span class="seg" id="numero"><button type="button" data-n="jamais">Jamais</button><button type="button" data-n="auto">Au-delà de 12 réglages</button><button type="button" data-n="toujours">Toujours</button></span>
+    <span class="seg" id="script"><button type="button" data-s="long" aria-pressed="true">Script 150 · 79 réglages</button><button type="button" data-s="court" aria-pressed="false">Script court · 5 réglages</button></span>
+  </div>
+</header>
+
+<div class="stage"><div class="fiche" id="fiche"></div></div>
+<section class="notes" id="notes"></section>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ico = (n) => `<svg class="ico" aria-hidden="true"><use href="#${n}"/></svg>`;
+
+  // The settings of script 150, grouped as the script would declare them.
+  // [key, label, type, default, value, sensitive?]; « b » bool, « s » select, « n » number, « t » text.
+  const B = (k, l, d = true, v = d, sens = false) => ({ k, l, type: 'b', d, v, sens });
+  const SECTIONS = [
+    { id: 'Nettoyer', t: 'Ce qui est nettoyé', st: 'Les familles que l’analyse examine', sous: [{ t: '', o: [
+      B('DoStartup', 'Entrées de démarrage — ce qui se lance à l’ouverture de session'), B('DoScheduledTasks', 'Tâches planifiées — travaux de fond laissés par des logiciels'),
+      B('DoServices', 'Services et pilotes — seulement les orphelins ou les morts'), B('DoRegistryLeftovers', 'Traces de désinstallation — restes de logiciels retirés'),
+      B('DoLeftoverFolders', 'Dossiers résiduels — fichiers que plus rien n’utilise'), B('DoShellExtensions', 'Extensions shell — entrées de menu mortes'),
+      B('DoGhostDevices', 'Périphériques fantômes — matériel débranché depuis'), B('DoCaches', 'Caches et journaux — données temporaires')] }] },
+    { id: 'Niveau', t: 'Jusqu’où aller', st: 'Agressivité, protection, ancienneté', sous: [{ t: '', o: [
+      { k: 'Aggressivity', l: 'Jusqu’où aller — plus haut, plus il retire', type: 's', d: 'standard', v: 'standard', choix: ['Audit', 'Prudent', 'Standard', 'Agressif', 'Extrême', 'Maximum'] },
+      { k: 'ProtectionProfile', l: 'Niveau de protection — ce qui doit être épargné', type: 's', d: 'standard', v: 'standard', choix: ['Strict', 'Standard', 'Permissif', 'Aucun'] },
+      { k: 'MinAgeDays', l: 'Ne toucher qu’aux éléments plus vieux que — en jours', type: 'n', d: 30, v: 60 },
+      { k: 'MaxItemsPerList', l: 'Nombre maximal d’éléments listés par famille', type: 'n', d: 200, v: 200 }] }] },
+    { id: 'Proteger', t: 'Protections', st: 'Ce qui doit être épargné, quoi qu’il arrive', sous: [
+      { t: 'Windows et composants', o: [B('ProtectMicrosoftSigned', 'Garder les fichiers signés Microsoft'), B('ProtectMicrosoftRecent', 'Garder les fichiers signés Microsoft récents'),
+        B('ProtectWindowsComponents', 'Garder Windows, System32 et WinSxS'), B('ProtectVCRedist', 'Garder les Visual C++ Redistributables'), B('ProtectDotNet', 'Garder .NET Framework et son moteur'),
+        B('ProtectWebView2', 'Garder Edge WebView2'), B('ProtectDirectX', 'Garder DirectX et les moteurs graphiques'), B('ProtectStoreApps', 'Garder les applications du Store installées'),
+        B('ProtectWSL', 'Garder WSL, Hyper-V et la plateforme de machines virtuelles')] },
+      { t: 'Pilotes', o: [B('ProtectGpuDrivers', 'Garder les pilotes graphiques'), B('ProtectAudioDrivers', 'Garder les pilotes audio'), B('ProtectNetworkDrivers', 'Garder les pilotes réseau et Wi-Fi'), B('ProtectPrintDrivers', 'Garder les pilotes d’impression')] },
+      { t: 'Services de Windows', o: [B('ProtectCriticalServices', 'Garder les services indispensables à Windows'), B('ProtectWindowsUpdate', 'Garder la chaîne de mise à jour'),
+        B('ProtectDefender', 'Garder Defender et le centre de sécurité'), B('ProtectStore', 'Garder le Store et App Installer'), B('ProtectXboxGaming', 'Garder Xbox et Gaming Services', true, false),
+        B('ProtectSearchIndex', 'Garder la recherche Windows'), B('ProtectNetworkStack', 'Garder Winsock, les LSP et les profils réseau')] },
+      { t: 'Démarrage et sécurité', o: [B('ProtectBitLocker', 'Garder BitLocker et le TPM'), B('ProtectSecureBoot', 'Garder l’UEFI, le démarrage sécurisé et le BCD'),
+        B('ProtectRestorePoints', 'Garder les points de restauration existants'), B('ProtectEventLogs', 'Garder les journaux d’événements'), B('ProtectHostsFile', 'Garder le fichier hosts'),
+        B('ProtectFirewallRules', 'Garder les règles du pare-feu'), B('ProtectCertificates', 'Garder les magasins de certificats')] },
+      { t: 'Système et utilisateurs', o: [B('ProtectEnvironmentVariables', 'Garder les variables d’environnement et le PATH'), B('ProtectFonts', 'Garder les polices installées'),
+        B('ProtectScheduledDefaults', 'Garder les tâches planifiées de Windows'), B('ProtectActiveSoftware', 'Garder les éditeurs dont un produit est encore installé'),
+        B('ProtectThirdPartyAV', 'Garder un antivirus tiers actif'), B('ProtectUserConfigs', 'Garder les réglages utilisateur, par opposition au cache'),
+        B('ProtectUserProfiles', 'Garder les profils utilisateurs, y compris non chargés'), B('ProtectPinnedFavorites', 'Garder les raccourcis épinglés et les favoris'),
+        B('ProtectPendingReboot', 'Ne rien faire si un redémarrage est déjà en attente')] }] },
+    { id: 'Autoriser', t: 'Autorisations', st: 'Les gestes forts que le script a le droit de faire', sous: [
+      { t: 'Droits', o: [B('AllowAdminElevation', 'Relancer avec les droits administrateur'), B('AllowSystemExecution', 'Exécuter en SYSTEM les étapes récalcitrantes', false, false, true),
+        B('AllowTrustedInstaller', 'Prendre possession en TrustedInstaller', false, false, true), B('AllowAclRewrite', 'Prendre possession et réécrire les droits d’accès', false, false, true)] },
+      { t: 'Programmes et fichiers', o: [B('AllowProcessShutdown', 'Fermer les programmes qui verrouillent, via Restart Manager'), B('AllowLockedDeletion', 'Supprimer les fichiers verrouillés au prochain redémarrage'),
+        B('AllowServiceStop', 'Arrêter un service le temps d’un retrait'), B('AllowDefenderPause', 'Suspendre un instant la protection en temps réel', false, true, true)] },
+      { t: 'Système', o: [B('AllowDriverRemoval', 'Retirer les pilotes fantômes avec pnputil', false, false, true), B('AllowOfflineRegistry', 'Monter les ruches des profils non chargés', false, false, true),
+        B('AllowComponentCleanup', 'Lancer le nettoyage de composants DISM', false), B('AllowWindowsOldRemoval', 'Retirer Windows.old', false, false, true),
+        B('AllowMidRunRestart', 'Accepter un redémarrage au milieu du traitement', false)] },
+      { t: 'Réseau', o: [B('AllowToolDownload', 'Télécharger les outils d’appoint dans l’espace de travail', false), B('AllowRulesDownload', 'Récupérer le fichier de règles supplémentaires', false)] }] },
+    { id: 'Sauver', t: 'Sauvegardes et retour arrière', st: 'De quoi revenir en arrière', sous: [{ t: '', o: [
+      B('CreateRestorePoint', 'Créer d’abord un point de restauration'), B('ExportRegistryBackup', 'Sauvegarder chaque clé de registre touchée'), B('ExportTaskBackup', 'Sauvegarder chaque tâche retirée'),
+      B('ExportServiceBackup', 'Sauvegarder chaque service touché'), B('UseRecycleBin', 'Envoyer les fichiers à la corbeille au lieu de les supprimer'),
+      B('Rollback', 'Restaurer un passage précédent au lieu de nettoyer', false), B('RollbackKeepBackups', 'Garder les sauvegardes après un retour en arrière')] }] },
+    { id: 'Regles', t: 'Règles', st: 'Ce sur quoi le script s’appuie pour décider', sous: [{ t: '', o: [
+      B('UseKnowledgeBase', 'Utiliser la base de connaissance intégrée'), B('UseExternalRules', 'Utiliser le fichier de règles supplémentaires du dépôt', false),
+      { k: 'RulesUrl', l: 'Adresse du fichier de règles — vide, il est sauté', type: 't', d: '', v: '' }] }] },
+    { id: 'Journal', t: 'Journal et rapport', st: 'Ce qui est écrit pendant et après', sous: [{ t: '', o: [
+      B('ExportReport', 'Écrire un rapport JSON et HTML dans l’espace de travail'), B('DetailedLog', 'Écrire chaque action dans le journal'), B('KeepWorkspace', 'Garder l’espace de travail après le passage', false)] }] },
+    { id: 'Comportement', t: 'Comportement', st: 'En cas d’erreur, et la simulation', sous: [{ t: '', o: [
+      B('ContinueOnItemError', 'Continuer quand un élément échoue'), { k: 'RetryCount', l: 'Nombre de tentatives avant de renoncer à un retrait', type: 'n', d: 3, v: 3 },
+      B('SafeTest', 'Simuler — montre ce qui serait fait, sans rien modifier', false)] }] },
+  ];
+  const COURT = [{ id: 'x', t: '', st: '', sous: [{ t: '', o: [
+    { k: 'DnsProvider', l: 'Fournisseur DNS — le service qui traduit les adresses des sites', type: 's', d: 'cloudflare', v: 'cloudflare', choix: ['Cloudflare', 'Google', 'Quad9'] },
+    B('ApplyToIPv6', 'Appliquer à l’IPv6 — résolveurs équivalents'), B('FlushCache', 'Vider le cache de résolution ensuite'),
+    B('KeepOld', 'Garder l’ancien réglage pour un retour en arrière'), B('SafeTest', 'Simuler — montre ce qui serait fait, sans rien modifier', false)] }] }];
+
+  const ui = { v: 'a', num: 'auto', script: 'long', ouvertes: new Set(['Nettoyer']), onglet: 'Proteger', filtre: 'toutes', q: '', perso: false };
+  const sections = () => (ui.script === 'long' ? SECTIONS : COURT);
+  const tout = () => sections().flatMap((s, i) => s.sous.flatMap((ss) => ss.o.map((o) => ({ o, s, i }))));
+  const total = () => tout().length;
+  const numeroter = () => ui.num === 'toujours' || (ui.num === 'auto' && total() > 12);
+  // A number for each setting: « section.rank » when there are sections, else « rank ».
+  const NUM = new Map();
+  function numeros() {
+    NUM.clear();
+    sections().forEach((s, i) => { let r = 0; s.sous.forEach((ss) => ss.o.forEach((o) => { r += 1; NUM.set(o.k, ui.script === 'long' ? `${i + 1}.${r}` : String(r)); })); });
+  }
+  const modifie = (o) => o.v !== o.d;
+  const valeur = (o) => {
+    if (o.type === 'b') return `<button class="switch" type="button" role="switch" aria-checked="${o.v}" data-k="${o.k}"></button>`;
+    if (o.type === 's') return `<select class="choix">${o.choix.map((c) => `<option${c.toLowerCase() === String(o.v) ? ' selected' : ''}>${c}</option>`).join('')}</select>`;
+    if (o.type === 'n') return `<input class="nombre" value="${o.v}">`;
+    return `<input class="texte" value="${o.v}" placeholder="(vide)">`;
+  };
+  const [lib1, lib2] = [(o) => o.l.split(' — ')[0], (o) => o.l.split(' — ')[1] || ''];
+  const opt = (o) => `<div class="opt ${modifie(o) ? 'modif' : ''}">${numeroter() ? `<span class="num">${NUM.get(o.k)}</span>` : ''}
+    <span class="lib"><b>${lib1(o)}${o.sens ? '<span class="sensible">sensible</span>' : ''}</b>${lib2(o) ? `<small>${lib2(o)}</small>` : ''}</span>
+    ${modifie(o) ? '<span class="modif-pt" title="Modifié"></span>' : ''}${valeur(o)}</div>`;
+  const etatSec = (s) => {
+    const o = s.sous.flatMap((x) => x.o);
+    const b = o.filter((x) => x.type === 'b');
+    const m = o.filter(modifie).length;
+    return `${b.length ? `${b.filter((x) => x.v).length} / ${b.length} activés` : `${o.length} réglages`}${m ? ` · <span class="m">${m} modifié${m > 1 ? 's' : ''}</span>` : ''}`;
+  };
+  const sousListe = (ss, classe = 'opts') => `${ss.t ? `<div class="sous">${ss.t}</div>` : ''}<div class="${classe}">${ss.o.map(opt).join('')}</div>`;
+
+  function enTete() {
+    const m = tout().filter((x) => modifie(x.o)).length;
+    return `<div class="fiche-h"><span class="tuile">${ico('sparkles')}</span><div class="grow"><h2>${ui.script === 'long' ? 'Nettoyage profond du PC' : 'Utiliser un Internet plus rapide'}</h2>
+      <p>${ui.script === 'long' ? '150 · Nettoyage · risque élevé · analyse avant d’agir' : '201 · Performance · risque moyen'}</p></div>
+      <span class="compte">${total()} réglages${m ? ` · ${m} modifiés` : ''}</span><button class="lien discret" type="button">${ico('reset')} Tout remettre par défaut</button></div>`;
+  }
+
+  // Today, and the short script: one column, as now.
+  const colonne = () => `<div class="bloc-h"><b>Configuration</b><span class="grow"></span></div><div class="opts">${tout().map((x) => opt(x.o)).join('')}</div>`;
+
+  function vA() {
+    return sections().map((s, i) => {
+      const ouverte = ui.ouvertes.has(s.id);
+      return `<div class="sec ${ouverte ? '' : 'ferme'}"><div class="sec-h" data-sec="${s.id}">${ico('chev')}${numeroter() ? `<span class="num-sec">${i + 1}</span>` : ''}
+        <span class="t"><b>${s.t}</b><small>${s.st}</small></span><span class="etat-sec">${etatSec(s)}</span></div>
+        <div class="sec-c"><div class="actions-sec"><button class="lien" type="button">Tout activer</button><button class="lien" type="button">Tout couper</button><button class="lien discret" type="button">Par défaut</button></div>
+        ${s.sous.map((ss) => sousListe(ss)).join('')}</div></div>`;
+    }).join('');
+  }
+  function vB() {
+    const s = sections().find((x) => x.id === ui.onglet) || sections()[0];
+    const onglets = sections().map((x) => {
+      const n = x.sous.reduce((a, ss) => a + ss.o.length, 0);
+      const m = x.sous.flatMap((ss) => ss.o).some(modifie);
+      return `<button type="button" role="tab" data-onglet="${x.id}" aria-selected="${x.id === s.id}">${x.t}<span class="n">${n}</span>${m ? '<span class="pt" title="Modifié"></span>' : ''}</button>`;
+    }).join('');
+    return `<div class="onglets" role="tablist">${onglets}</div>
+      <div class="bloc-h"><b>${s.st}</b><span class="grow"></span><span class="compte">${etatSec(s)}</span><button class="lien" type="button">Tout activer</button><button class="lien" type="button">Tout couper</button></div>
+      ${s.sous.map((ss) => sousListe(ss, 'deux')).join('')}`;
+  }
+  function vC() {
+    const ag = SECTIONS[1].sous[0].o[0];
+    const descr = { Audit: 'rapporte, ne touche à rien', Prudent: 'orphelins prouvés, corbeille', Standard: 'coupe mises à jour et télémétrie', Agressif: 'retire, prend possession', Extrême: 'SYSTEM, pilotes, registre hors ligne', Maximum: 'tout, avec un redémarrage' };
+    const ecarts = tout().filter((x) => modifie(x.o));
+    return `<div class="bloc-h"><b>Jusqu’où aller</b><span class="grow"></span><span class="compte">Choisissez un niveau : il règle les 52 interrupteurs ci-dessous</span></div>
+      <div class="echelle">${ag.choix.map((c, i) => `<button type="button" class="${i >= 4 ? 'fort' : ''}" aria-pressed="${c === 'Standard'}"><b>${c}</b><small>${descr[c]}</small></button>`).join('')}</div>
+      <div class="resume"><span class="puce ok">35 protections actives sur 36</span><span class="puce">5 autorisations sur 15</span><span class="puce warn">1 autorisation sensible : protection en temps réel suspendue</span><span class="puce">Plus vieux que 60 jours</span></div>
+      <div class="ecarts"><div class="bloc-h"><b>Écarts au niveau « Standard »</b><span class="grow"></span><button class="lien" type="button" data-perso>${ui.perso ? 'Masquer les 79 réglages' : 'Personnaliser les 79 réglages'}</button></div>
+        <div class="opts">${ecarts.map((x) => opt(x.o)).join('')}</div></div>
+      ${ui.perso ? `<div style="margin-top:14px">${vA()}</div>` : ''}`;
+  }
+  function vD() {
+    const q = ui.q.trim().toLowerCase();
+    const garder = (o) => (!q || o.l.toLowerCase().includes(q) || o.k.toLowerCase().includes(q))
+      && (ui.filtre === 'toutes' || (ui.filtre === 'modif' && modifie(o)) || (ui.filtre === 'on' && o.v === true) || (ui.filtre === 'off' && o.v === false) || (ui.filtre === 'sens' && o.sens));
+    const n = (f) => tout().filter((x) => (f === 'modif' ? modifie(x.o) : f === 'sens' ? x.o.sens : true)).length;
+    const dense = (o) => `<div class="dense ${modifie(o) ? 'modif' : ''}" title="${o.l}">${numeroter() ? `<span class="num">${NUM.get(o.k)}</span>` : ''}<span class="l">${lib1(o)}</span>${o.sens ? '<span class="sensible">!</span>' : ''}${o.type === 'b' ? valeur(o) : `<span class="compte">${o.type === 's' ? o.choix.find((c) => c.toLowerCase() === String(o.v)) || o.v : o.v || '—'}</span>`}</div>`;
+    const corps = sections().map((s) => {
+      const o = s.sous.flatMap((ss) => ss.o).filter(garder);
+      return o.length ? `<div class="dense-h">${s.t}</div>${o.map(dense).join('')}` : '';
+    }).join('');
+    return `<div class="outils"><span class="cherche">${ico('search')}<input placeholder="Chercher un réglage (nom, clé : ProtectDefender…)" value="${ui.q}" data-q></span>
+      <span class="chips">${[['toutes', 'Tous', total()], ['modif', 'Modifiés', n('modif')], ['on', 'Activés'], ['off', 'Coupés'], ['sens', 'Sensibles', n('sens')]]
+        .map(([k, l, c]) => `<button class="chip" type="button" data-filtre="${k}" aria-pressed="${ui.filtre === k}">${l}${c !== undefined ? ` ${c}` : ''}</button>`).join('')}</span></div>
+      <div class="trois">${corps || '<div class="compte">Aucun réglage ne correspond.</div>'}</div>`;
+  }
+  function vE() {
+    return `<div class="indexe"><nav class="sommaire">${sections().map((s, i) => `<a href="#s-${s.id}" class="${i === 0 ? 'on' : ''}">${numeroter() ? `<span class="num-sec" style="font-family:var(--mono);font-size:11px">${i + 1}</span>` : ''}${s.t}<span class="n">${s.sous.reduce((a, ss) => a + ss.o.length, 0)}</span></a>`).join('')}</nav>
+      <div>${sections().map((s, i) => `<div id="s-${s.id}" class="titre-sec">${numeroter() ? `<span style="font-family:var(--mono);color:var(--text-3)">${i + 1}</span>` : ''}<b>${s.t}</b><small>${s.st} · ${etatSec(s)}</small></div>
+        ${s.sous.map((ss) => sousListe(ss)).join('')}`).join('')}</div></div>`;
+  }
+
+  const VARIANTES = {
+    actuel: { nom: 'Aujourd’hui', f: colonne, note: ['Une seule colonne : 79 interrupteurs les uns sous les autres, sans titre ni repère. Retrouver « Garder Defender » demande de tout parcourir.'] },
+    a: { nom: 'A · Sections repliables', f: vA, note: ['Des sections titrées, repliées sauf la première ; chacune dit où elle en est (« 35 / 36 activés · 1 modifié »).', 'Des sous-titres dans les grandes sections (Protections : Windows, Pilotes, Services…).', 'Tout activer, tout couper, ou remettre par défaut une section d’un clic.', 'La plus proche d’aujourd’hui : rien ne disparaît, tout se range.'] },
+    b: { nom: 'B · Onglets', f: vB, note: ['Une section à la fois, par onglet ; un point orange signale un onglet modifié.', 'Deux colonnes : deux fois moins de défilement.', 'Rapide à parcourir, mais on ne voit jamais tout d’un coup.'] },
+    c: { nom: 'C · Le niveau d’abord', f: vC, note: ['Le choix qui compte vient en premier : un niveau, d’« Audit » à « Maximum », expliqué en une ligne.', 'Un résumé de ce qu’il implique, puis seulement les <b>écarts</b> à ce niveau.', 'Les 79 réglages restent derrière « Personnaliser ».', 'Demande au script de dire ce que chaque niveau règle (une nouveauté du contrat) : la plus lourde à mettre en place, la plus simple à lire.'] },
+    d: { nom: 'D · Grille, recherche, filtres', f: vD, note: ['Dense : trois colonnes, une ligne par réglage.', 'Une recherche (par libellé ou par clé), et des filtres : Modifiés, Activés, Coupés, Sensibles.', 'Pour l’Expert qui sait ce qu’il cherche ; moins lisible pour découvrir un script.'] },
+    e: { nom: 'E · Sommaire latéral', f: vE, note: ['Un sommaire à gauche, la liste complète à droite ; les titres de section restent collés en haut pendant le défilement.', 'Comme une page de réglages : on voit tout, on saute où l’on veut.', 'Prend de la largeur : sous 900 px, le sommaire passe au-dessus.'] },
+  };
+
+  function dessiner() {
+    numeros();
+    const v = VARIANTES[ui.v];
+    const corps = ui.script === 'court' ? colonne() : v.f();
+    $('fiche').innerHTML = `${enTete()}<div class="corps">${corps}</div>`;
+    $('variantes').innerHTML = Object.entries(VARIANTES).map(([k, x]) => `<button type="button" data-v="${k}" aria-pressed="${k === ui.v}">${x.nom}</button>`).join('');
+    document.querySelectorAll('#numero button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.n === ui.num)));
+    document.querySelectorAll('#script button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.s === ui.script)));
+    $('notes').innerHTML = `<div class="carte"><h3>${v.nom}</h3><ul>${(ui.script === 'court' ? ['Un script court (5 réglages) garde sa colonne d’aujourd’hui, sans section ni numéro : le rangement ne sert qu’aux longues listes.'] : v.note).map((n) => `<li>${n}</li>`).join('')}</ul></div>
+      <div class="carte"><h3>La numérotation (réglage 1.6)</h3><ul>
+        <li>« Section.rang » quand le script a des sections (3.21 = Protections, 21<sup>e</sup>), sinon le rang seul.</li>
+        <li>Utile pour se parler : « coupe le 4.7 », et dans le journal, l’historique, l’export de la configuration.</li></ul>
+        <div class="setrow"><span class="num">1.6</span><span class="l"><b>Numéroter les réglages des actions</b><small>Comme les réglages de Sindry (1.5), pour les longues listes d’options.</small></span>
+          <select class="choix"><option>Jamais</option><option selected>Au-delà de 12 réglages</option><option>Toujours</option></select></div></div>
+      <div class="carte"><h3>Comment le script déclare ses sections</h3><ul>
+        <li>Une étiquette sur chaque option, et le titre dans <code>REPORT</code>, traduit dans <code>LANG</code> comme le reste :</li></ul>
+<pre>## ProtectDefender : [bool] [section:Protect] Keep Defender…
+## SINDRY:REPORT
+## Protect : [section] Protections — What must be spared</pre>
+        <ul><li>Les sous-titres : <code>[section:Protect.Services]</code>.</li>
+        <li>Sans section déclarée, Sindry range seul : ce que fait le script, les réglages de l’analyse (<code>[scan]</code>), la simulation.</li>
+        <li>Le validateur relève une section inconnue ou sans traduction.</li></ul></div>`;
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    const v = t.closest('[data-v]'); if (v) { ui.v = v.dataset.v; return dessiner(); }
+    const n = t.closest('[data-n]'); if (n) { ui.num = n.dataset.n; return dessiner(); }
+    const s = t.closest('#script [data-s]'); if (s) { ui.script = s.dataset.s; return dessiner(); }
+    const sec = t.closest('[data-sec]'); if (sec) { const id = sec.dataset.sec; ui.ouvertes.has(id) ? ui.ouvertes.delete(id) : ui.ouvertes.add(id); return dessiner(); }
+    const o = t.closest('[data-onglet]'); if (o) { ui.onglet = o.dataset.onglet; return dessiner(); }
+    const f = t.closest('[data-filtre]'); if (f) { ui.filtre = f.dataset.filtre; return dessiner(); }
+    if (t.closest('[data-perso]')) { ui.perso = !ui.perso; return dessiner(); }
+    const sw = t.closest('.switch[data-k]');
+    if (sw) { const x = tout().find((y) => y.o.k === sw.dataset.k); if (x) { x.o.v = !x.o.v; dessiner(); } return; }
+    const th = t.closest('#theme [data-t]');
+    if (th) { document.documentElement.dataset.theme = th.dataset.t; document.querySelectorAll('#theme button').forEach((b) => b.setAttribute('aria-pressed', String(b === th))); }
+  });
+  document.addEventListener('input', (e) => {
+    if (!e.target.matches('[data-q]')) return;
+    ui.q = e.target.value; dessiner();
+    const q = document.querySelector('[data-q]'); q.focus(); q.setSelectionRange(q.value.length, q.value.length);
+  });
+  // `?s=b,toujours,court,clair`: a state, for captures.
+  const etat = (location.hash.slice(1) || new URLSearchParams(location.search).get('s') || '').split(',');
+  for (const x of etat) {
+    if (VARIANTES[x]) ui.v = x;
+    else if (['jamais', 'auto', 'toujours'].includes(x)) ui.num = x;
+    else if (x === 'court') ui.script = 'court';
+    else if (x === 'perso') ui.perso = true;
+    else if (x === 'modif') ui.filtre = 'modif';
+    else if (x === 'tout') SECTIONS.forEach((s) => ui.ouvertes.add(s.id));
+    else if (x === 'clair') document.documentElement.dataset.theme = 'light';
+  }
+  dessiner();
+})();
+</script>
+</body>
+</html>

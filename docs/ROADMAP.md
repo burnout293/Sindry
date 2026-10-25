@@ -80,11 +80,16 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — reprise sans mot de passe par ARSO, sans qu'aucun mot de passe soit vu ni gardé ; plafond de redémarrages (réglage 4.5) | Fait |
 | | — le bilan propose enfin le redémarrage demandé à la fin (§6.5) | Fait |
 | | — guide pour IA en version courte (`SCRIPTS_POUR_IA_COURT.md`), et les consignes nouvelles de chaque version (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) | Fait |
+| **2.x** | Demandé le 25/10/2026, à planifier avant la v3 | À faire |
+| | — la barre du haut ne cache plus rien quand la fenêtre rétrécit : version sous le nom, recherche et pastilles plus courtes, ou un menu (maquette M38) | Maquette |
+| | — les options à rallonge se rangent : sections, onglets, niveau d'abord, recherche ou sommaire (maquette M39) | Maquette |
+| | — les réglages d'une action se numérotent quand ils sont nombreux, réglage 1.6 (maquette M39) | Maquette |
+| | — une page GitHub Pages pour Sindry | À étudier |
 | **v3** | Le cap fixé le 24/10/2026 ; les versions 2.x y mènent pas à pas, et d'autres objectifs s'ajouteront | À étudier |
 | | — **version portable** : un exe sans installation, ses données à côté de lui | À étudier |
 | | — **un chat avec une IA générative** spécialisée pour Sindry, qui écrit un script sur demande — à voir si c'est possible | À étudier |
 | | — **piloter le Sindry d'un autre PC à distance**, en ligne de commande seulement (pas de prise en main de l'écran), avec l'accord explicite de l'utilisateur de ce PC et toutes les sécurités possibles | À étudier |
-| | — les formats publics changent d'un coup : l'ancien contrat `WINTOOL:START` n'est plus lu (reporté de la 2.1) | Prévu |
+| | — le renommage en Sindry est **terminé avant la 3.0** : en 3.0, un script qui mentionne encore WinTool (`WINTOOL:START`, `$env:WINTOOL_CONFIG`, `WINTOOL_MODE`) n'est plus reconnu ; les formats publics changent d'un coup | Prévu |
 | après la 2.0 | Ambiance Star Wars, style Nouvelle République — une fois que la communauté peut construire et partager les siennes | Plus tard |
 | en continu | Améliorations graphiques et d'organisation | Glissées dans chaque version |
 

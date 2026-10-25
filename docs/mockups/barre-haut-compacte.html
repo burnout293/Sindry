@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barre du haut compacte</title>
+<!--
+  Mockup M38: the title bar when the window narrows. Today, below about
+  1100 px, the window buttons (minimise, maximise, close) are pushed out of
+  sight. Five ways to keep everything reachable, to compare at any width:
+  A compact, B a menu on the left, C an overflow « ⋯ », D a status bar,
+  E icons only. Drag the width; switch Simple / Expert, simulation on / off.
+  Code in English, visible text in French. Fictitious data.
+-->
+<style>
+@font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../src/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Sindry Mono'; font-weight: 400; src: url('../../src/fonts/sindry-mono-400.woff2') format('woff2'); }
+:root {
+  --bg: #0B0F16; --surface: #0F1520; --surface-2: #141C2A; --surface-3: #1B2536; --surface-soft: #0D121B;
+  --border: #2A3445; --border-2: #42506A; --grid: #161E2B;
+  --text: #E9EEF5; --text-2: #8C9AAE; --text-3: #8190A5; --ink: #1A0B06;
+  --acc: #FD7D26; --acc-2: #F0782A; --acc-on: #FF9A55; --acc-soft: #2A1A10;
+  --ok: #3FD69B; --warn: #FFC24D; --err: #FF6B7A;
+  --ok-s: #0C2620; --warn-s: #2A2210; --err-s: #2E141C;
+  --ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --mono: 'Sindry Mono', Consolas, monospace;
+  --shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F6F4EF; --surface: #FFFFFF; --surface-2: #EFECE5; --surface-3: #E4E0D6; --surface-soft: #FAF9F6;
+  --border: #DCD7CC; --border-2: #B6AE9F; --grid: #ECE8E0;
+  --text: #141A24; --text-2: #5C6778; --text-3: #5F6A7B;
+  --acc: #E2640F; --acc-2: #F0782A; --acc-on: #A84A08; --acc-soft: #FCEBDD;
+  --ok: #0E7550; --warn: #8F5D0C; --err: #C0263F;
+  --ok-s: #E6F5EC; --warn-s: #FBF3E2; --err-s: #FBEAEC;
+  --shadow: 0 16px 40px rgba(20, 26, 36, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--ui); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 700; }
+.topbar p { margin: 0; color: var(--text-3); font-size: 12px; flex: 1 1 260px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; padding: 6px 11px; border-radius: 7px; font-weight: 650; color: var(--text-2); }
+.seg button[aria-pressed="true"] { background: var(--acc); color: var(--ink); }
+.reglages { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; width: 100%; font-size: 12px; color: var(--text-2); }
+.reglages label { display: inline-flex; align-items: center; gap: 8px; }
+.reglages input[type="range"] { width: 220px; accent-color: var(--acc); }
+.reglages b { font-family: var(--mono); color: var(--text); min-width: 58px; display: inline-block; }
+
+.stage { padding: 22px 20px 30px; overflow-x: auto; }
+.cadre { margin: 0 auto; }
+.etat { display: flex; align-items: center; gap: 8px; margin: 0 auto 10px; font-size: 12px; font-weight: 650; }
+.etat.ko { color: var(--err); } .etat.ok { color: var(--ok); }
+
+/* The window */
+.win { position: relative; container-type: inline-size; border: 1px solid var(--border-2); border-radius: 10px; overflow: hidden; background: var(--bg);
+  box-shadow: var(--shadow); height: 470px; display: flex; flex-direction: column; }
+.win-corps { flex: 1; display: grid; grid-template-columns: 250px 1fr; min-height: 0;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+.side { border-right: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 80%, transparent); padding: 14px 10px; }
+.side i { display: block; height: 11px; margin: 10px 8px; border-radius: 6px; background: var(--surface-3); }
+.side i:nth-child(3n) { width: 70%; } .side i:nth-child(4n) { width: 55%; }
+.page { padding: 22px; }
+.page i { display: block; height: 54px; margin-bottom: 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+
+/* The title bar: the same pieces for every variant, arranged differently */
+.tb { display: flex; align-items: center; gap: 12px; height: 50px; padding: 0 0 0 12px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0; white-space: nowrap; }
+.tb .marque { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tb .marque img { width: 24px; height: 24px; }
+.tb .nom { display: flex; align-items: baseline; gap: 6px; }
+.tb .nom b { font-size: 16px; font-weight: 800; letter-spacing: -.2px; }
+.tb .ver { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.tb .cherche { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; border-radius: 999px; background: var(--surface-2);
+  border: 1px solid var(--border); color: var(--text-3); width: 280px; flex-shrink: 0; min-width: 0; height: 34px; }
+.tb .cherche span { overflow: hidden; text-overflow: ellipsis; }
+.tb .fil { display: flex; gap: 12px; font-size: 12px; font-weight: 650; color: var(--text-3); }
+.tb .fil span::after { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 6px; background: var(--border-2); vertical-align: 1px; }
+.tb .fil .on { color: var(--text); } .tb .fil .on::after { background: var(--acc); }
+.tb .espace { flex: 1; min-width: 8px; }
+.tb .droite { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tb .mode { display: flex; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.tb .mode span { padding: 6px 17px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-2); }
+.tb .mode .on { background: var(--acc); color: var(--ink); }
+.pastille { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px; font-size: 12px; font-weight: 650;
+  border: 1px solid var(--border); color: var(--text-3); background: none; position: relative; }
+.pastille.admin { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-s); }
+.pastille.simu-on { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); background: var(--warn-s); }
+.ib { width: 36px; height: 36px; border-radius: 9px; border: 0; background: none; color: var(--text-2); display: grid; place-items: center; position: relative; }
+.ib:hover { background: var(--surface-2); }
+.ib.ouvert { background: var(--acc-soft); color: var(--acc-on); }
+.ib .point { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--surface); }
+.point.vert { background: var(--ok); } .point.orange { background: var(--warn); }
+.fenetre { display: flex; flex-shrink: 0; margin-left: 4px; }
+.fenetre span { width: 46px; height: 50px; display: grid; place-items: center; color: var(--text-2); }
+.fenetre span.x:hover { background: #C42B1C; color: #fff; }
+
+/* The menus that some variants open */
+.menu { position: absolute; z-index: 5; top: 50px; width: 270px; padding: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow); }
+.menu .ligne { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; font-weight: 600; }
+.menu .ligne:hover { background: var(--surface-2); }
+.menu .ligne small { margin-left: auto; color: var(--text-3); font-weight: 600; font-size: 11.5px; }
+.menu .ligne .ok { color: var(--ok); } .menu .ligne .warn { color: var(--warn); }
+.menu hr { border: 0; border-top: 1px solid var(--border); margin: 6px 4px; }
+.mini-switch { width: 30px; height: 18px; border-radius: 999px; background: var(--border-2); position: relative; margin-left: auto; }
+.mini-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+.mini-switch.on { background: var(--warn); } .mini-switch.on::after { left: 15px; }
+
+/* D: the status bar */
+.statut { display: flex; align-items: center; gap: 14px; height: 30px; padding: 0 12px; border-top: 1px solid var(--border); background: var(--surface);
+  font-size: 11.5px; color: var(--text-2); flex-shrink: 0; white-space: nowrap; }
+.statut .bloc { display: inline-flex; align-items: center; gap: 6px; }
+.statut .bloc.ok { color: var(--ok); } .statut .bloc.warn { color: var(--warn); font-weight: 700; }
+.statut .espace { flex: 1; }
+.bandeau-simu { display: flex; align-items: center; justify-content: center; gap: 8px; height: 24px; font-size: 11.5px; font-weight: 700;
+  color: var(--ink); background: repeating-linear-gradient(135deg, var(--warn), var(--warn) 12px, color-mix(in srgb, var(--warn) 80%, #fff) 12px, color-mix(in srgb, var(--warn) 80%, #fff) 24px); }
+
+.notes { max-width: 1180px; margin: 0 auto 60px; padding: 0 20px; color: var(--text-2); display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.notes .carte { padding: 16px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+.notes h3 { margin: 0 0 8px; color: var(--text); font-size: 15px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li + li { margin-top: 4px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="flask" viewBox="0 0 24 24"><path d="M10 2v7.5L4.5 19A2 2 0 0 0 6.2 22h11.6a2 2 0 0 0 1.7-3L14 9.5V2"/><path d="M8.5 2h7M7 16h10"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+  <symbol id="term" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6M12 19h8"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+  <symbol id="warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+
+<header class="topbar">
+  <h1>Barre du haut compacte</h1>
+  <p>Fenêtre étroite : aujourd'hui, les boutons réduire, agrandir, fermer disparaissent. Cinq façons de tout garder accessible. Faites varier la largeur.</p>
+  <div class="seg" id="variantes"></div>
+  <div class="seg" id="theme"><button type="button" data-t="dark" aria-pressed="true">Sombre</button><button type="button" data-t="light" aria-pressed="false">Clair</button></div>
+  <div class="reglages">
+    <label>Largeur de la fenêtre <input type="range" id="largeur" min="920" max="1400" step="10" value="1040"><b id="largeurVal">1040 px</b></label>
+    <span class="seg" id="presets"><button type="button" data-l="920">920 (minimum)</button><button type="button" data-l="1040">1040</button><button type="button" data-l="1180">1180</button><button type="button" data-l="1400">1400</button></span>
+    <span class="seg" id="mode"><button type="button" data-m="expert" aria-pressed="true">Expert</button><button type="button" data-m="simple" aria-pressed="false">Simple</button></span>
+    <label><input type="checkbox" id="simu"> Simulation activée</label>
+    <label><input type="checkbox" id="ouvrir"> Ouvrir le menu (B, C)</label>
+  </div>
+</header>
+
+<div class="stage"><div class="cadre" id="cadre"></div></div>
+<section class="notes" id="notes"></section>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ico = (n) => `<svg class="ico" aria-hidden="true"><use href="#${n}"/></svg>`;
+  const LOGO = 'sindry-256.png';
+  const ui = { v: 'actuel', w: 1040, mode: 'expert', simu: false, menu: false };
+
+  const VARIANTES = {
+    actuel: { nom: 'Aujourd’hui', note: ['La barre ne se resserre pas : sous 1100 px environ, la droite déborde et les trois boutons de fenêtre sortent de l’écran.'] },
+    a: { nom: 'A · Compacte', note: [
+      'La version passe <b>sous le nom</b>.',
+      'La recherche rétrécit (280 → 180 px), puis devient une loupe qui s’ouvre au clic sous 1000 px.',
+      '« Administrateur » devient « Admin », « Simulation » « Simu », puis des icônes seules sous 1000 px.',
+      'Les boutons de fenêtre ne rétrécissent <b>jamais</b> : c’est la règle commune à toutes les variantes.'] },
+    b: { nom: 'B · Menu à gauche', note: [
+      'Un bouton menu, <b>à gauche du logo</b>, rassemble Simulation, Droits, Aide, Journal, Thème et Réglages.',
+      'À droite ne restent que Simple / Expert et les boutons de fenêtre : la barre tient à 920 px.',
+      'La simulation reste <b>visible</b> quand elle est active : une pastille orange sur le bouton menu et le mot « Simulation » dans la barre (la spécification l’exige).',
+      'Un clic de plus pour l’aide et les réglages.'] },
+    c: { nom: 'C · Débordement « ⋯ »', note: [
+      'Tout reste à sa place tant que ça tient ; ce qui ne tient plus passe, dans l’ordre, dans un bouton « ⋯ » : Thème, puis Journal, puis Aide, puis Réglages.',
+      'Les pastilles Admin et Simulation passent en icônes avant de disparaître : elles ne disparaissent jamais.',
+      'Comme les navigateurs et Office : familier, mais l’emplacement d’un bouton change avec la taille.'] },
+    d: { nom: 'D · Barre d’état', note: [
+      'Les <b>états</b> (Administrateur, Simulation) et le Journal descendent dans une barre d’état en bas de la fenêtre, comme dans VS Code.',
+      'La barre du haut ne garde que les actions : recherche, mode, aide, thème, réglages.',
+      'Simulation activée : un bandeau rayé sous la barre du haut, impossible à rater.',
+      'Gagne de la place en haut, en coûte 30 px en bas.'] },
+    e: { nom: 'E · Icônes seules', note: [
+      'Toutes les commandes deviennent des icônes avec infobulle ; Admin et Simulation gardent leur couleur et un point d’état.',
+      'Version sous le nom, recherche qui rétrécit.',
+      'La plus compacte à toutes les largeurs, mais un débutant lit moins vite une icône qu’un mot.'] },
+  };
+
+  const marque = (versionDessous) => `<span class="marque"><img src="${LOGO}" alt="">
+    <span class="nom" style="${versionDessous ? 'flex-direction:column;gap:0;line-height:1.05' : ''}"><b>Sindry</b><span class="ver">2.1.0</span></span></span>`;
+  const recherche = (largeur) => (ui.mode === 'simple'
+    ? '<span class="fil"><span>Choisir</span><span class="on">Vérifier</span><span>Analyser</span><span>Entretien</span></span>'
+    : largeur === 'loupe' ? `<button class="ib" type="button" title="Filtrer">${ico('search')}</button>`
+      : `<span class="cherche" style="width:${largeur}px">${ico('search')}<span>Filtrer…</span></span>`);
+  const mode = () => '<span class="mode"><span class="' + (ui.mode === 'simple' ? 'on' : '') + '">Simple</span><span class="' + (ui.mode === 'expert' ? 'on' : '') + '">Expert</span></span>';
+  const pSimu = (forme) => {
+    const on = ui.simu;
+    if (forme === 'icone') return `<button class="ib" type="button" title="Simulation ${on ? 'activée' : 'désactivée'}" style="${on ? 'color:var(--warn)' : ''}">${ico('flask')}${on ? '<i class="point orange"></i>' : ''}</button>`;
+    return `<span class="pastille ${on ? 'simu-on' : ''}">${ico('flask')}${forme === 'court' ? 'Simu' : 'Simulation'}</span>`;
+  };
+  const pAdmin = (forme) => (forme === 'icone'
+    ? `<button class="ib" type="button" title="Administrateur" style="color:var(--ok)">${ico('shield')}<i class="point vert"></i></button>`
+    : `<span class="pastille admin">${ico('shield')}${forme === 'court' ? 'Admin' : 'Administrateur'}</span>`);
+  const ib = (n, t) => `<button class="ib" type="button" title="${t}">${ico(n)}</button>`;
+  const fenetre = '<span class="fenetre"><span>—</span><span>☐</span><span class="x">✕</span></span>';
+  const corps = '<div class="win-corps"><div class="side">' + '<i></i>'.repeat(14) + '</div><div class="page">' + '<i></i>'.repeat(5) + '</div></div>';
+  const ligneMenu = (icone, texte, fin = '') => `<div class="ligne">${ico(icone)}<span>${texte}</span>${fin}</div>`;
+
+  function tbActuel() {
+    return `<div class="tb">${marque(false)}${recherche(320)}<span class="espace"></span><span class="droite" style="flex-shrink:0">${mode()}${pSimu('long')}${pAdmin('long')}
+      ${ib('help', 'Aide')}${ib('term', 'Journal')}${ib('sun', 'Thème')}${ib('settings', 'Réglages')}${fenetre}</span></div>`;
+  }
+  function tbA(w) {
+    const etroit = w < 1000, moyen = w < 1180;
+    return `<div class="tb">${marque(true)}${recherche(etroit ? 'loupe' : moyen ? 180 : 280)}<span class="espace"></span><span class="droite">${mode()}
+      ${pSimu(etroit ? 'icone' : moyen ? 'court' : 'long')}${pAdmin(etroit ? 'icone' : moyen ? 'court' : 'long')}
+      ${ib('help', 'Aide')}${ib('term', 'Journal')}${ib('sun', 'Thème')}${ib('settings', 'Réglages')}${fenetre}</span></div>`;
+  }
+  function tbB(w) {
+    const menu = ui.menu ? `<div class="menu" style="left:8px">
+        ${ligneMenu('flask', 'Simulation', `<span class="mini-switch ${ui.simu ? 'on' : ''}"></span>`)}
+        ${ligneMenu('shield', 'Droits', '<small class="ok">Administrateur</small>')}
+        <hr>${ligneMenu('help', 'Aide et visites')}${ligneMenu('term', 'Journal')}${ligneMenu('sun', 'Thème', '<small>Sombre</small>')}
+        <hr>${ligneMenu('settings', 'Réglages')}</div>` : '';
+    const btn = `<button class="ib ${ui.menu ? 'ouvert' : ''}" type="button" title="Menu" style="margin-left:-4px">${ico('menu')}${ui.simu ? '<i class="point orange"></i>' : ''}</button>`;
+    return `<div class="tb">${btn}${marque(true)}${recherche(w < 1000 ? 200 : 280)}<span class="espace"></span><span class="droite">
+      ${ui.simu ? pSimu('long') : ''}${mode()}${fenetre}</span></div>${menu}`;
+  }
+  // C: what folds into « ⋯ », in this order, as the width shrinks.
+  function tbC(w) {
+    const plie = [];
+    if (w < 1320) plie.push(['sun', 'Thème']);
+    if (w < 1200) plie.push(['term', 'Journal']);
+    if (w < 1080) plie.push(['help', 'Aide']);
+    if (w < 980) plie.push(['settings', 'Réglages']);
+    const visible = (n) => !plie.some((p) => p[0] === n);
+    const formes = w < 1040 ? 'icone' : w < 1260 ? 'court' : 'long';
+    const menu = ui.menu && plie.length ? `<div class="menu" style="right:140px">${plie.map(([i, t]) => ligneMenu(i, t)).join('')}</div>` : '';
+    return `<div class="tb">${marque(w < 1200)}${recherche(w < 1080 ? 170 : 260)}<span class="espace"></span><span class="droite">${mode()}${pSimu(formes)}${pAdmin(formes)}
+      ${visible('help') ? ib('help', 'Aide') : ''}${visible('term') ? ib('term', 'Journal') : ''}${visible('sun') ? ib('sun', 'Thème') : ''}${visible('settings') ? ib('settings', 'Réglages') : ''}
+      ${plie.length ? `<button class="ib ${ui.menu ? 'ouvert' : ''}" type="button" title="Plus">${ico('plus')}</button>` : ''}${fenetre}</span></div>${menu}`;
+  }
+  function tbD(w) {
+    return `<div class="tb">${marque(true)}${recherche(w < 1000 ? 200 : 280)}<span class="espace"></span><span class="droite">${mode()}${ib('help', 'Aide')}${ib('sun', 'Thème')}${ib('settings', 'Réglages')}${fenetre}</span></div>
+      ${ui.simu ? `<div class="bandeau-simu">${ico('flask')}Simulation activée — rien ne sera modifié</div>` : ''}`;
+  }
+  function statutD() {
+    return `<div class="statut"><span class="bloc ok">${ico('shield')}Administrateur</span>
+      <span class="bloc ${ui.simu ? 'warn' : ''}">${ico('flask')}Simulation : ${ui.simu ? 'activée' : 'désactivée'}</span>
+      <span class="espace"></span><span class="bloc">${ico('term')}Journal</span><span class="bloc">Aucune exécution pour l’instant</span></div>`;
+  }
+  function tbE(w) {
+    return `<div class="tb">${marque(true)}${recherche(w < 1080 ? 160 : 260)}<span class="espace"></span><span class="droite">${mode()}${pSimu('icone')}${pAdmin('icone')}
+      ${ib('help', 'Aide')}${ib('term', 'Journal')}${ib('sun', 'Thème')}${ib('settings', 'Réglages')}${fenetre}</span></div>`;
+  }
+
+  function dessiner() {
+    const w = ui.w;
+    const tb = { actuel: tbActuel, a: tbA, b: tbB, c: tbC, d: tbD, e: tbE }[ui.v](w);
+    $('cadre').style.width = `${w}px`;
+    $('cadre').innerHTML = `<div class="etat" id="verdict"></div><div class="win" id="win">${tb}${corps}${ui.v === 'd' ? statutD() : ''}</div>`;
+    // Are the window buttons really in sight?
+    const win = $('win').getBoundingClientRect();
+    const f = $('win').querySelector('.fenetre').getBoundingClientRect();
+    const visibles = f.right <= win.right + 1;
+    $('verdict').className = `etat ${visibles ? 'ok' : 'ko'}`;
+    $('verdict').innerHTML = visibles ? `${ico('check')}Boutons de fenêtre visibles à ${w} px` : `${ico('warn')}Boutons de fenêtre cachés à ${w} px`;
+    $('largeurVal').textContent = `${w} px`;
+    $('variantes').innerHTML = Object.entries(VARIANTES).map(([k, x]) => `<button type="button" data-v="${k}" aria-pressed="${k === ui.v}">${x.nom}</button>`).join('');
+    $('notes').innerHTML = `<div class="carte"><h3>${VARIANTES[ui.v].nom}</h3><ul>${VARIANTES[ui.v].note.map((n) => `<li>${n}</li>`).join('')}</ul></div>
+      <div class="carte"><h3>Commun à toutes les variantes</h3><ul>
+        <li>Les boutons de fenêtre ne rétrécissent jamais et restent toujours à droite.</li>
+        <li>La simulation active reste toujours visible (spécification : « un mode test qu’on oublie est pire que pas de mode test »).</li>
+        <li>La fenêtre garde son minimum de 920 px ; tout doit tenir à cette largeur.</li></ul></div>`;
+  }
+
+  $('variantes').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) { ui.v = b.dataset.v; dessiner(); } });
+  $('largeur').addEventListener('input', (e) => { ui.w = Number(e.target.value); dessiner(); });
+  $('presets').addEventListener('click', (e) => { const b = e.target.closest('[data-l]'); if (b) { ui.w = Number(b.dataset.l); $('largeur').value = ui.w; dessiner(); } });
+  $('mode').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-m]'); if (!b) return;
+    ui.mode = b.dataset.m; document.querySelectorAll('#mode button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); dessiner();
+  });
+  $('simu').addEventListener('change', (e) => { ui.simu = e.target.checked; dessiner(); });
+  $('ouvrir').addEventListener('change', (e) => { ui.menu = e.target.checked; dessiner(); });
+  $('theme').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    document.documentElement.dataset.theme = b.dataset.t;
+    document.querySelectorAll('#theme button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  // `?s=b,920,simu,menu,simple,clair`: a state, for captures.
+  const etat = (location.hash.slice(1) || new URLSearchParams(location.search).get('s') || '').split(',');
+  for (const x of etat) {
+    if (VARIANTES[x]) ui.v = x;
+    else if (/^\d+$/.test(x)) ui.w = Number(x);
+    else if (x === 'simu') ui.simu = true;
+    else if (x === 'menu') ui.menu = true;
+    else if (x === 'simple') ui.mode = 'simple';
+    else if (x === 'clair') document.documentElement.dataset.theme = 'light';
+  }
+  $('largeur').value = ui.w; $('simu').checked = ui.simu; $('ouvrir').checked = ui.menu;
+  dessiner();
+})();
+</script>
+</body>
+</html>
