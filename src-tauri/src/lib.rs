@@ -10,6 +10,7 @@ mod garde;
 mod history;
 mod icon;
 mod migration;
+mod portable;
 mod preconfiguration;
 mod reprise;
 mod restore;
@@ -40,6 +41,9 @@ pub struct AppInfo {
     /// Elle ne se relance jamais a son tour, meme si la detection des droits se
     /// trompait : pas de boucle d'invites UAC.
     relance_admin: bool,
+    /// 2.4.0 : une version portable (`portable.rs`) — ses donnees a cote de
+    /// l'exe, ni mise a jour par l'installeur, ni relance apres redemarrage.
+    portable: bool,
 }
 
 /// L'argument que porte la relance en administrateur du reglage 1.7.
@@ -51,6 +55,7 @@ fn app_info() -> AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         elevated: is_elevated(),
         relance_admin: std::env::args().any(|a| a == ARGUMENT_RELANCE_ADMIN),
+        portable: portable::actif(),
     }
 }
 
@@ -700,6 +705,79 @@ fn open_scripts_folder(app: tauri::AppHandle) -> Result<(), String> {
     ouvrir_dans_l_explorateur(dossier)
 }
 
+/// 2.4.0 : « Ajouter un script » — copie dans le dossier des scripts de
+/// l'utilisateur un fichier `.ps1` qu'il a choisi. L'interface n'envoie que le
+/// nom et le contenu (une lecture de fichier du navigateur, sans chemin) :
+/// Rust choisit le dossier et filtre le nom. Le script reste un script
+/// personnel, approuve avant sa premiere execution (§12.1).
+///
+/// Sindry peut tourner en administrateur et ce dossier est inscriptible sans
+/// elevation : il refuse un dossier qui serait un lien, et supprime un fichier
+/// deja la avant d'en creer un neuf, pour ne jamais ecrire a travers un lien.
+#[tauri::command]
+fn add_script(
+    app: tauri::AppHandle,
+    nom: String,
+    contenu: Vec<u8>,
+    remplacer: bool,
+) -> Result<String, String> {
+    const TAILLE_MAX: usize = 2 * 1024 * 1024;
+    if contenu.is_empty() || contenu.len() > TAILLE_MAX {
+        return Err(format!("TAILLE_SCRIPT:{}", contenu.len()));
+    }
+    let nom = nom_de_script(&nom)?;
+    let dossier = discovery::scripts_root(&app)?;
+    std::fs::create_dir_all(&dossier).map_err(|e| format!("{} : {e}", dossier.display()))?;
+    ambiance::dossier_sur(&dossier)?;
+    let cible = dossier.join(&nom);
+    if let Ok(m) = std::fs::symlink_metadata(&cible) {
+        if !remplacer {
+            return Err(format!("SCRIPT_EXISTE:{nom}"));
+        }
+        if !m.is_file() || m.file_type().is_symlink() {
+            return Err(format!("{} n'est pas un simple fichier.", cible.display()));
+        }
+        std::fs::remove_file(&cible).map_err(|e| format!("{} : {e}", cible.display()))?;
+    }
+    let mut f = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&cible)
+        .map_err(|e| format!("{} : {e}", cible.display()))?;
+    std::io::Write::write_all(&mut f, &contenu)
+        .map_err(|e| format!("{} : {e}", cible.display()))?;
+    Ok(cible.display().to_string())
+}
+
+/// Un nom de fichier de script acceptable : un nom seul (aucun dossier), en
+/// `.ps1`, des lettres, chiffres, espaces et `_-.()`, et pas un nom reserve de
+/// Windows (`CON.ps1`, `NUL.ps1`…).
+fn nom_de_script(nom: &str) -> Result<String, String> {
+    let nom = nom.trim();
+    let tronc = nom.get(..nom.len().saturating_sub(4)).unwrap_or("");
+    let reserve = {
+        let t = tronc.to_ascii_uppercase();
+        ["CON", "PRN", "AUX", "NUL"].contains(&t.as_str())
+            || ((t.starts_with("COM") || t.starts_with("LPT"))
+                && t.len() == 4
+                && t.as_bytes()[3].is_ascii_digit())
+    };
+    let valide = nom.len() <= 120
+        && nom.to_ascii_lowercase().ends_with(".ps1")
+        && !tronc.is_empty()
+        && !nom.starts_with('.')
+        && !nom.contains("..")
+        && nom
+            .chars()
+            .all(|c| c.is_alphanumeric() || " _-.()".contains(c))
+        && !reserve;
+    if valide {
+        Ok(nom.to_string())
+    } else {
+        Err(format!("NOM_SCRIPT:{nom}"))
+    }
+}
+
 /// Remet un chemin en forme courte avant de le confier au shell.
 ///
 /// `canonicalize` renvoie un chemin prefixe long ; ShellExecute ne sait pas
@@ -1317,8 +1395,24 @@ async fn install_update(
     if state.snapshot().is_some() {
         return Err(MAJ_PENDANT_EXECUTION.to_string());
     }
+    // 2.4.0 : l'installeur installerait dans Program Files ; une version
+    // portable se remplace par la nouvelle archive (`open_release_page`).
+    if portable::actif() {
+        return Err("MAJ_PORTABLE".to_string());
+    }
     let beta = settings::load(&app)?.update_policy == "beta";
     update::installer(&app, beta).await
+}
+
+/// 2.4.0 : la page des versions, pour telecharger la nouvelle archive
+/// portable. Une adresse fixe, rien d'autre.
+#[tauri::command]
+fn open_release_page() -> Result<(), String> {
+    tauri_plugin_opener::open_url(
+        "https://github.com/burnout293/Sindry/releases/latest",
+        None::<String>,
+    )
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1822,6 +1916,23 @@ fn set_admin_startup(app: tauri::AppHandle, value: bool) -> Result<Settings, Str
     })
 }
 
+/// 2.4.0 : les nouveautes de cette version ont ete montrees.
+#[tauri::command]
+fn set_news_seen(app: tauri::AppHandle, version: String) -> Result<Settings, String> {
+    let forme = version.len() <= 20
+        && version.split('.').count() == 3
+        && version
+            .split('.')
+            .all(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
+    if !forme {
+        return Err(format!("Version illisible : {version}"));
+    }
+    with_settings(&app, |s| {
+        s.nouveautes_vues = version;
+        Ok(())
+    })
+}
+
 /// 5.7 (2.3.0) : le journal de diagnostic (`SINDRY_DIAG=1` pour chaque script).
 #[tauri::command]
 fn set_diagnostic(app: tauri::AppHandle, value: bool) -> Result<Settings, String> {
@@ -1964,6 +2075,31 @@ fn contexte() -> tauri::Context {
     tauri::generate_context!()
 }
 
+/// 2.4.0 : la fenetre s'ouvre sur 90 % de la zone de travail de l'ecran ou
+/// elle apparait (l'ecran moins la barre des taches), centree. Jamais sous la
+/// taille minimale de `tauri.conf.json`. Elle est encore cachee : rien ne
+/// saute a l'ecran.
+fn dimensionner_fenetre(fenetre: &tauri::WebviewWindow) {
+    const PART: f64 = 0.9;
+    let ecran = fenetre
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| fenetre.primary_monitor().ok().flatten());
+    let Some(ecran) = ecran else {
+        return;
+    };
+    let zone = ecran.work_area();
+    let echelle = ecran.scale_factor();
+    let (l, h) = (f64::from(zone.size.width), f64::from(zone.size.height));
+    let largeur = (l * PART / echelle).max(920.0);
+    let hauteur = (h * PART / echelle).max(640.0);
+    let _ = fenetre.set_size(tauri::LogicalSize::new(largeur, hauteur));
+    let x = f64::from(zone.position.x) + (l - largeur * echelle).max(0.0) / 2.0;
+    let y = f64::from(zone.position.y) + (h - hauteur * echelle).max(0.0) / 2.0;
+    let _ = fenetre.set_position(tauri::PhysicalPosition::new(x as i32, y as i32));
+}
+
 /// Point d'entree de `sindry.com`, la ligne de commande (2.0, §19).
 pub fn ligne_de_commande() -> i32 {
     cli::principal()
@@ -1977,7 +2113,7 @@ fn assainir_processus() -> Vec<String> {
     // Ce que l'ancienne installation laisserait : sans droits, le dossier
     // local ; avec, le registre et l'ancienne installation. Deja fait : sans
     // effet. Jamais sur un dossier d'essai (version de developpement).
-    if discovery::dossier_essai().is_none() {
+    if discovery::dossier_essai().is_none() && !portable::actif() {
         for fait in migration::donnees_utilisateur() {
             messages.push(format!("Migration depuis WinTool : {fait}."));
         }
@@ -2077,7 +2213,15 @@ pub fn run() {
                 .first()
                 .cloned()
                 .ok_or("fenetre absente de tauri.conf.json")?;
-            tauri::WebviewWindowBuilder::from_config(app.handle(), &fenetre)?.build()?;
+            let mut constructeur =
+                tauri::WebviewWindowBuilder::from_config(app.handle(), &fenetre)?;
+            // 2.4.0 : la version portable garde aussi les donnees de WebView2
+            // (onglet ouvert, tri…) a cote d'elle, pas sur le PC.
+            if let Some(d) = portable::dossier() {
+                constructeur = constructeur.data_directory(d.join("WebView2"));
+            }
+            let fenetre = constructeur.build()?;
+            dimensionner_fenetre(&fenetre);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -2104,6 +2248,7 @@ pub fn run() {
             run_status,
             open_log,
             open_scripts_folder,
+            add_script,
             preparer_approbation,
             approve_script,
             create_restore_point,
@@ -2157,6 +2302,8 @@ pub fn run() {
             set_option_numbers,
             set_admin_startup,
             set_diagnostic,
+            set_news_seen,
+            open_release_page,
             app_icons,
             set_app_icons,
             set_ui_scale,
@@ -2172,4 +2319,31 @@ pub fn run() {
         ])
         .run(contexte())
         .expect("erreur au lancement de l'application Tauri");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::nom_de_script;
+
+    /// 2.4.0: « Ajouter un script » keeps a bare file name, never a path.
+    #[test]
+    fn un_nom_de_script_reste_un_nom_seul() {
+        for bon in ["705_IMPROVE_TASKBAR.ps1", "mon script (v2).PS1", "a.ps1"] {
+            assert_eq!(nom_de_script(bon).as_deref(), Ok(bon), "{bon}");
+        }
+        for mauvais in [
+            "../evil.ps1",
+            r"C:\Windows\x.ps1",
+            "dossier/x.ps1",
+            ".ps1",
+            "x.ps1.exe",
+            "x.bat",
+            "CON.ps1",
+            "com1.ps1",
+            "nom:flux.ps1",
+            "",
+        ] {
+            assert!(nom_de_script(mauvais).is_err(), "{mauvais}");
+        }
+    }
 }

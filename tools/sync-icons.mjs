@@ -87,6 +87,13 @@ const SPRITE = {
   power: 'power',
   // La barre du haut qui se resserre (2.2.0) : ce qui ne tient plus.
   ellipsis: 'ellipsis',
+  // 2.4.0 : le menu « ⋮ » de la barre et de la liste des scripts, le tri,
+  // l'ajout d'un script, les nouveautes, la version portable.
+  'ellipsis-vertical': 'ellipsis-vertical',
+  'arrow-up-down': 'arrow-up-down',
+  'folder-open': 'folder-open',
+  'file-plus': 'file-plus',
+  usb: 'usb',
   'calendar-clock': 'calendar-clock',
   cpu: 'cpu',
   info: 'info',

@@ -2712,17 +2712,15 @@ body.restreint-actif .ambiance, body.restreint-actif .water, body.restreint-acti
    dans « ⋯ » ; la simulation et les droits ne disparaissent jamais. */
 .brand-txt { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
 .titlebar .pill-court { display: none; }
+/* 2.4.0: help, log, theme and settings always live in « ⋮ ». */
+.titlebar .tb-replie { display: none; }
 .titlebar.c1 .brand-txt { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.1; }
 .titlebar.c2 .tb-search { width: 200px; }
 .titlebar.c3 #testPillText, .titlebar.c3 #adminPillText { display: none; }
 .titlebar.c3 .pill-court { display: inline; }
-.titlebar.c4 #themeBtn { display: none; }
-.titlebar.c5 #btnJournal { display: none; }
-.titlebar.c6 #btnAide { display: none; }
-.titlebar.c7 .pill-court { display: none; }
-.titlebar.c7 .pill { padding: 5px 8px; }
-.titlebar.c8 .tb-search { width: 140px; }
-.titlebar.c9 #btnSettings { display: none; }
+.titlebar.c4 .pill-court { display: none; }
+.titlebar.c4 .pill { padding: 5px 8px; }
+.titlebar.c5 .tb-search { width: 140px; }
 .winctl { flex-shrink: 0; }
 #btnPlus[aria-expanded="true"] { background: var(--acc-soft); color: var(--acc-on); }
 .menu-plus { position: fixed; z-index: 60; min-width: 220px; padding: 6px; border-radius: 14px; background: var(--surface);
@@ -2763,3 +2761,29 @@ body.restreint-actif .ambiance, body.restreint-actif .water, body.restreint-acti
 /* The summary title follows the outcome. */
 .bilan-echec { color: var(--err); }
 .bilan-partiel { color: var(--warn); }
+
+/* --- 2.4.0 ----------------------------------------------------------------- */
+/* The « ⋮ » menu: what is open carries a check. */
+.menu-plus button.on { color: var(--acc-on); }
+.menu-plus .menu-plus-coche { margin-left: auto; padding-left: 12px; }
+/* The tools of the scripts list: sort and « ⋮ ». */
+.scripts-outils { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 8px; }
+.scripts-outils .btn { gap: 6px; }
+.scripts-note { margin: -2px 14px 8px; font-size: 12.5px; line-height: 1.4; color: var(--text-2); }
+.scripts-note.err { color: var(--err); }
+/* The news window: one block per version, the newest open. */
+.nouv-carte { width: min(720px, calc(100vw - 48px)); max-height: calc(100vh - 80px); display: flex; flex-direction: column; text-align: left; }
+.nouv-carte h1, .nouv-carte > .onb-text { text-align: center; }
+.nouv-liste { overflow-y: auto; margin: 6px -6px 14px; padding: 0 6px; display: grid; gap: 8px; }
+.nouv-version { border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.nouv-version > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 11px 14px; }
+.nouv-version > summary::-webkit-details-marker { display: none; }
+.nouv-version > summary .nouv-chev { margin-left: auto; transition: transform .15s; }
+.nouv-version[open] > summary .nouv-chev { transform: rotate(180deg); }
+.nouv-notes { padding: 0 16px 12px; font-size: 14px; line-height: 1.55; color: var(--text); }
+.nouv-notes h3 { font-size: 14.5px; margin: 14px 0 4px; }
+.nouv-notes p { margin: 6px 0; }
+.nouv-notes ul { margin: 6px 0; padding-left: 20px; }
+.nouv-notes code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-3); padding: 1px 5px; border-radius: 5px; }
+/* A portable version says so, beside its number. */
+.brand-portable { font: 600 10.5px var(--mono); color: var(--acc-on); border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent); border-radius: 999px; padding: 0 6px; margin-left: 6px; }

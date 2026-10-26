@@ -19,6 +19,8 @@
       <span class="brand-txt" data-tauri-drag-region>
         <span class="brand-name" data-tauri-drag-region>Sindry</span>
         <span class="brand-ver" id="version">…</span>
+        <!-- 2.4.0 : la version portable (portable.rs) se signale. -->
+        <span class="brand-portable" id="badgePortable" hidden data-tauri-drag-region></span>
       </span>
 
       <div class="tb-search only-expert" data-guide="recherche">
@@ -61,26 +63,28 @@
 
         <!-- Le centre d'aide (1.7) : visites, guides, bienvenue. Son contenu
              vient de src/guide.json. -->
-        <button class="iconbtn" id="btnAide" type="button" aria-haspopup="menu" aria-expanded="false" data-guide="aide">
+        <!-- 2.4.0 : l'aide, le journal, le theme et les reglages vivent dans le
+             menu « ⋮ » ; ces boutons restent, caches, pour ce qui les commande. -->
+        <button class="iconbtn tb-replie" id="btnAide" type="button" aria-haspopup="menu" aria-expanded="false">
           <svg class="ico i17" aria-hidden="true"><use href="#help" /></svg>
         </button>
 
         <!-- Le journal s'ouvre toujours, meme vide, en Simple comme en Expert. -->
-        <button class="iconbtn" id="btnJournal" type="button" aria-pressed="false" data-guide="journal">
+        <button class="iconbtn tb-replie" id="btnJournal" type="button" aria-pressed="false">
           <svg class="ico i17" aria-hidden="true"><use href="#sec-execution" /></svg>
         </button>
-        <button class="iconbtn" id="themeBtn" type="button">
+        <button class="iconbtn tb-replie" id="themeBtn" type="button">
           <svg class="ico i17" aria-hidden="true"><use href="#sun" /></svg>
         </button>
 
-        <button class="iconbtn" id="btnSettings" type="button" aria-pressed="false">
+        <button class="iconbtn tb-replie" id="btnSettings" type="button" aria-pressed="false">
           <svg class="ico i17" aria-hidden="true"><use href="#settings" /></svg>
         </button>
 
-        <!-- 2.2.0 (maquette M38 C) : ce qui ne tient plus dans la barre passe
-             ici — le theme, puis le journal, puis l'aide, puis les reglages. -->
-        <button class="iconbtn" id="btnPlus" type="button" aria-haspopup="menu" aria-expanded="false" hidden>
-          <svg class="ico i17" aria-hidden="true"><use href="#ellipsis" /></svg>
+        <!-- 2.2.0 (maquette M38 C), 2.4.0 : toujours la, l'aide, le journal, le
+             theme et les reglages y sont ranges. -->
+        <button class="iconbtn" id="btnPlus" type="button" aria-haspopup="menu" aria-expanded="false" data-guide="menu">
+          <svg class="ico i17" aria-hidden="true"><use href="#ellipsis-vertical" /></svg>
         </button>
 
         <div class="winctl">
@@ -294,6 +298,8 @@
       <section class="expert">
         <aside class="lots">
           <div class="lots-rows" id="lotsRows"></div>
+          <!-- 2.4.0 : « Ajouter un script » du menu ⋮ de la liste. -->
+          <input type="file" id="fichierAjoutScript" accept=".ps1" hidden />
 
           <!-- Journal compact, ancre au pied de la colonne. Toujours visible,
                meme sans execution : c'est lui qui dit si quelque chose tourne.
@@ -765,6 +771,8 @@
        retrouve au lancement, et le mode restreint apres le redemarrage. -->
   <!-- 2.2.0 : la mise a jour se deroule dans Sindry, pas dans l'installeur. -->
   <div class="backdrop" id="majOverlay" hidden></div>
+  <!-- 2.4.0 : les nouveautes de chaque version (src/nouveautes.json). -->
+  <div class="backdrop" id="nouveautesOverlay" hidden></div>
   <div class="backdrop" id="redemarrageOverlay" hidden></div>
   <div class="backdrop" id="repriseDialogue" hidden></div>
   <div class="restreint" id="restreintOverlay" role="dialog" aria-modal="true" hidden></div>

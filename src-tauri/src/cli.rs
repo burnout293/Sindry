@@ -68,6 +68,8 @@ fn langue_initiale() -> String {
         return l.to_ascii_lowercase();
     }
     discovery::dossier_essai()
+        // 2.4.0 : la version portable lit ses propres reglages.
+        .or_else(crate::portable::dossier)
         .or_else(|| std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("Sindry")))
         .map(|d| d.join("settings.json"))
         .and_then(|p| std::fs::read_to_string(p).ok())

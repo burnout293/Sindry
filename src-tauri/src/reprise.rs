@@ -380,6 +380,9 @@ pub fn exe_relancable() -> Result<std::path::PathBuf, String> {
     let sous = |racine: &Path| exe.starts_with(racine);
     if sous(&e.program_files) || e.program_files_x86.as_deref().is_some_and(sous) {
         Ok(exe)
+    } else if crate::portable::actif() {
+        // 2.4.0 : le journal reste ; rouvert a la main, Sindry propose de reprendre.
+        Err("PORTABLE_RELANCE".into())
     } else {
         Err("La relance automatique demande Sindry installe dans Program Files.".into())
     }

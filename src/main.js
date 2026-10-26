@@ -364,6 +364,8 @@ let course = null;
 let simulation = { etat: 'desactivee', simulables: 0, simules: 0 };
 /** Vrai si le processus a les droits administrateur. */
 let estEleve = false;
+/** 2.4.0: a portable version (its data next to the exe, no installer). */
+let estPortable = false;
 /** Heure de depart de l'execution en cours, pour horodater les lignes du journal. */
 let departCourse = 0;
 
@@ -1058,6 +1060,9 @@ function choisirOnglet(onglet) {
 /** L'onglet « Scripts » : une rubrique par categorie, dans l'ordre de
  *  tools/categories.json, « Autres » en dernier. */
 async function rendreOngletScripts() {
+  if (triScripts !== 'categorie') {
+    return outilsScripts() + (catalogue.size ? rubriquesTriees() : `<div class="empty">${esc(t('chrome.aucun_script'))}</div>`);
+  }
   const rubriques = await Promise.all(
     (etatGroupes.categories || []).map(async (b) => {
       const icone = (await iconeSVG(b.category.icon)) || '';
@@ -1076,7 +1081,197 @@ async function rendreOngletScripts() {
         </div>`;
     })
   );
-  return rubriques.join('') || `<div class="empty">${esc(t('chrome.aucun_script'))}</div>`;
+  return outilsScripts() + (rubriques.join('') || `<div class="empty">${esc(t('chrome.aucun_script'))}</div>`);
+}
+
+/* -------------------------------------------------------------------------
+   The list of scripts: sort and manage (2.4.0)
+
+   « Trier »: by category (the default, in sections), A → Z, the most
+   recently run first, or by number. « ⋮ »: open the scripts folder, refresh
+   the list, update the catalogues, add a script or a catalogue. The sort is
+   remembered on this PC, like the open tab.
+   ------------------------------------------------------------------------- */
+
+const TRIS_SCRIPTS = ['categorie', 'az', 'recents', 'id'];
+const ICONES_TRI = { categorie: 'folder', az: 'arrow-up-down', recents: 'clock', id: 'list-checks' };
+let triScripts = (() => {
+  try {
+    const v = localStorage.getItem('sindry.tri');
+    return TRIS_SCRIPTS.includes(v) ? v : 'categorie';
+  } catch {
+    return 'categorie';
+  }
+})();
+/** The last word of a « ⋮ » action, under the tools; it fades after a while. */
+let noteScripts = null;
+let minuterieNoteScripts = 0;
+
+const titreScript = (e) => e.meta.translations?.[currentLang()]?.title || e.meta.title || e.path;
+
+function outilsScripts() {
+  return `<div class="scripts-outils">
+      <button class="btn compact" type="button" id="btnTrierScripts" aria-haspopup="menu" aria-expanded="false">${ico('arrow-up-down', 'i14')}<span>${esc(t('tri.bouton', { tri: t(`tri.${triScripts}`) }))}</span></button>
+      <button class="iconbtn" type="button" id="btnMenuScripts" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(t('scripts.menu'))}" data-tip="${esc(t('scripts.menu'))}">${ico('ellipsis-vertical', 'i17')}</button>
+    </div>
+    <p class="scripts-note${noteScripts?.erreur ? ' err' : ''}" id="scriptsNote"${noteScripts ? '' : ' hidden'}>${esc(noteScripts?.texte || '')}</p>`;
+}
+
+/** The last run of each script, from the history: id → time. */
+function derniersPassages() {
+  const m = new Map();
+  for (const r of historiqueActuel.scripts || []) {
+    const at = Date.parse(r.at) || 0;
+    if (at > (m.get(r.script_id) || 0)) m.set(r.script_id, at);
+  }
+  return m;
+}
+
+/** The list when not by category: one list, or, by recent use, those run
+ *  (latest first), then those never run. */
+function rubriquesTriees() {
+  const tous = [...catalogue.values()];
+  const az = (a, b) => titreScript(a).localeCompare(titreScript(b), currentLang(), { sensitivity: 'base', numeric: true });
+  const rubrique = (cle, titre, liste) => (liste.length ? `<div class="rubrique" data-rubrique="${cle}">${titre
+    ? `<div class="ghead rubrique-h"><span class="rubrique-t">${esc(titre)}</span><span class="rc">${liste.length}</span></div>` : ''}${
+    liste.map((s) => rendreRowScript(s)).join('')}</div>` : '');
+  if (triScripts === 'az') return rubrique('az', '', tous.sort(az));
+  if (triScripts === 'id') {
+    // Without a number, at the end.
+    const num = (s) => numeroFichier(s) || '99999';
+    return rubrique('id', '', tous.sort((a, b) => num(a).localeCompare(num(b), undefined, { numeric: true }) || az(a, b)));
+  }
+  const passages = derniersPassages();
+  const lances = tous.filter((s) => passages.has(s.id)).sort((a, b) => passages.get(b.id) - passages.get(a.id));
+  const jamais = tous.filter((s) => !passages.has(s.id)).sort(az);
+  return rubrique('recents', t('tri.lances'), lances) + rubrique('jamais', t('tri.jamais'), jamais);
+}
+
+function noterScripts(texte, erreur = false) {
+  noteScripts = texte ? { texte, erreur } : null;
+  const el = document.getElementById('scriptsNote');
+  if (el) {
+    el.hidden = !noteScripts;
+    el.textContent = texte || '';
+    el.classList.toggle('err', !!erreur);
+  }
+  clearTimeout(minuterieNoteScripts);
+  if (noteScripts) minuterieNoteScripts = setTimeout(() => noterScripts(''), 8000);
+}
+
+function fermerMenusListe() {
+  document.querySelectorAll('#menuTri, #menuScripts').forEach((m) => m.remove());
+  document.querySelectorAll('#btnTrierScripts, #btnMenuScripts').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+}
+
+/** A small menu under its button: [key, icon, label, ticked]. */
+function ouvrirMenuListe(bouton, id, items) {
+  fermerMenusListe();
+  const menu = document.createElement('div');
+  menu.className = 'menu-plus';
+  menu.id = id;
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = items.map(([cle, icone, label, coche]) => `<button type="button" role="menuitem" data-menu-liste="${cle}"${coche ? ' class="on"' : ''}>${
+    ico(icone, 'i17')}${esc(label)}${coche ? ico('check', 'i14 menu-plus-coche') : ''}</button>`).join('');
+  document.body.appendChild(menu);
+  const z = echelleCourante();
+  const r = bouton.getBoundingClientRect();
+  menu.style.top = `${r.bottom / z + 6}px`;
+  menu.style.left = `${Math.max(8, Math.min(innerWidth / z - menu.offsetWidth - 8, r.left / z))}px`;
+  bouton.setAttribute('aria-expanded', 'true');
+  menu.querySelector('button')?.focus();
+}
+
+async function actualiserScripts() {
+  await chargerLots();
+  noterScripts(t('scripts.actualise', { n: catalogue.size }));
+}
+
+/** « Mettre à jour les catalogues »: what the Catalogues page does in two
+ *  clicks — look for updates, then install them. Nothing new is added: a
+ *  catalogue not installed yet stays so. */
+async function mettreAJourCatalogues() {
+  if (executionEnCours() || catalogueInstallation) return void noterScripts(t('scripts.occupe'), true);
+  noterScripts(t('scripts.maj_en_cours'));
+  await chargerSources();
+  const installees = () => (etatSources?.sources || []).filter((x) => x.active && x.cle && x.installe);
+  for (const x of installees()) {
+    if (x.officielle) await verifierCatalogue({ silencieux: true });
+    else await verifierSource(x.id, { silencieux: true });
+  }
+  const aMettre = installees().filter((x) => catUpdate(x));
+  for (const x of aMettre) await installerSource(x.id);
+  if (aMettre.length) await chargerLots();
+  noterScripts(aMettre.length ? PLURIEL('scripts.maj_faites', aMettre.length) : t('scripts.maj_aucune'));
+}
+
+/** « Ajouter un script »: the chosen file goes into the scripts folder. The
+ *  page sends its name and its bytes, never a path; Rust picks the folder. */
+async function ajouterScript(champ) {
+  const fichier = champ.files?.[0];
+  champ.value = '';
+  if (!fichier) return;
+  const contenu = Array.from(new Uint8Array(await fichier.arrayBuffer()));
+  const envoyer = (remplacer) => invoke('add_script', { nom: fichier.name, contenu, remplacer });
+  try {
+    try {
+      await envoyer(false);
+    } catch (e) {
+      if (!String(e).includes('SCRIPT_EXISTE') || !confirm(t('scripts.remplacer', { nom: fichier.name }))) throw e;
+      await envoyer(true);
+    }
+    await chargerLots();
+    const nouveau = [...catalogue.values()].find((s) => s.path.split('/').pop() === fichier.name);
+    if (nouveau) {
+      selection = { type: 'script', id: nouveau.id };
+      await rendreLots();
+      await rendreDetail();
+    }
+    noterScripts(t('scripts.ajoute', { nom: fichier.name }));
+  } catch (e) {
+    const m = String(e);
+    noterScripts(m.includes('NOM_SCRIPT') ? t('scripts.nom_invalide') : m.includes('TAILLE_SCRIPT') ? t('scripts.trop_gros')
+      : m.includes('SCRIPT_EXISTE') ? t('scripts.existe', { nom: fichier.name }) : t('scripts.ajout_echec', { e: m }), true);
+  }
+}
+
+function cablerOutilsScripts() {
+  document.addEventListener('click', (ev) => {
+    const tri = ev.target.closest('#btnTrierScripts');
+    const plus = ev.target.closest('#btnMenuScripts');
+    const choix = ev.target.closest('[data-menu-liste]');
+    if (!tri && !plus && !choix) return void fermerMenusListe();
+    if (tri || plus) {
+      const ouvert = document.getElementById(tri ? 'menuTri' : 'menuScripts');
+      fermerMenusListe();
+      if (ouvert) return;
+      if (tri) return void ouvrirMenuListe(tri, 'menuTri', TRIS_SCRIPTS.map((k) => [`tri:${k}`, ICONES_TRI[k], t(`tri.${k}`), k === triScripts]));
+      return void ouvrirMenuListe(plus, 'menuScripts', [
+        ['dossier', 'folder-open', t('scripts.ouvrir_dossier')],
+        ['actualiser', 'relancer', t('scripts.actualiser')],
+        ['catalogues', 'download', t('scripts.maj_catalogues')],
+        ['ajouter', 'file-plus', t('scripts.ajouter')],
+        ['catalogue', 'sec-catalogue', t('scripts.ajouter_catalogue')],
+      ]);
+    }
+    const cle = choix.dataset.menuListe;
+    fermerMenusListe();
+    if (cle.startsWith('tri:')) {
+      triScripts = cle.slice(4);
+      try { localStorage.setItem('sindry.tri', triScripts); } catch { /* sans memoire, le tri vaut pour la session */ }
+      return void rendreLots();
+    }
+    if (cle === 'dossier') return void invoke('open_scripts_folder').catch((e) => noterScripts(String(e), true));
+    if (cle === 'actualiser') return void actualiserScripts();
+    if (cle === 'catalogues') return void mettreAJourCatalogues();
+    if (cle === 'ajouter') return void document.getElementById('fichierAjoutScript').click();
+    if (cle === 'catalogue') {
+      ouvrirReglages();
+      afficherSectionReglages('catalogue');
+    }
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') fermerMenusListe(); });
+  document.getElementById('fichierAjoutScript').onchange = (ev) => ajouterScript(ev.target);
 }
 
 /** L'onglet « Lots » : les lots, puis ceux qui ne sont dans aucun. */
@@ -1675,7 +1870,8 @@ function rendreBandeauMaj(erreur) {
   texte.textContent = t('maj.disponible', { v: majDisponible.version });
   installer.hidden = false;
   plusTard.hidden = false;
-  installer.textContent = t('maj.installer');
+  // 2.4.0: a portable version is replaced by the new archive, not installed.
+  installer.textContent = t(estPortable ? 'maj.telecharger' : 'maj.installer');
   plusTard.textContent = t('maj.plus_tard');
   // L'installeur ferme Sindry : pendant un entretien, il couperait le script
   // en cours au milieu de ce qu'il fait. Le moteur refuse aussi de son cote.
@@ -1738,6 +1934,14 @@ function rendreFenetreMaj(etape, { pourcent = null, erreur = null } = {}) {
 
 async function installerMaj() {
   if (majInstallation || executionEnCours()) return;
+  // 2.4.0: a portable version opens the releases page; the user replaces the
+  // folder's files with those of the new archive, and keeps « Donnees ».
+  if (estPortable) {
+    invoke('open_release_page').catch((e) => console.error('Page des versions :', e));
+    document.getElementById('majTexte').textContent = t('maj.portable_consigne', { v: majDisponible?.version || '' });
+    document.getElementById('majInstaller').hidden = true;
+    return;
+  }
   majInstallation = true;
   document.getElementById('majBanner').hidden = true;
   rendreFenetreMaj('telecharger', { pourcent: 0 });
@@ -2928,38 +3132,33 @@ function guiderVersDroits() {
 /* -------------------------------------------------------------------------
    The title bar tightens (2.2.0, mockup M38 C)
 
-   One level at a time until everything fits: the version under the name, a
-   shorter search, short labels on the pills, then the theme, the journal, the
-   help go into « ⋯ », the pills become icons, the search narrows again, and
-   the settings go into « ⋯ » last. The window buttons never leave the screen;
-   the simulation and the rights never disappear.
+   2.4.0: the help, the journal, the theme and the settings always live in a
+   « ⋮ » menu, room or not. What is left tightens one level at a time until
+   everything fits: the version under the name, a shorter search, short
+   labels on the pills, the pills as icons, the search narrower still. The
+   window buttons never leave the screen; the simulation and the rights never
+   disappear.
    ------------------------------------------------------------------------- */
 
-const NIVEAUX_BARRE = 9;
-/** Folded from this level on: [level, button, icon, label]. */
-const REPLIS_BARRE = [[4, 'themeBtn', 'sun', 'barre.theme'], [5, 'btnJournal', 'sec-execution', 'barre.journal'],
-  [6, 'btnAide', 'help', 'barre.aide'], [9, 'btnSettings', 'settings', 'barre.reglages']];
-let niveauBarre = 0;
+const NIVEAUX_BARRE = 5;
+/** The « ⋮ » menu, in this order: [button it stands for, icon, label]. */
+const MENU_BARRE = [['btnAide', 'help', 'barre.aide'], ['btnJournal', 'sec-execution', 'barre.journal'],
+  ['themeBtn', 'sun', 'barre.theme'], ['btnSettings', 'settings', 'barre.reglages']];
 let barrePrevue = false;
 
 function compacterBarre() {
   barrePrevue = false;
   const tb = document.querySelector('.titlebar');
   const fen = tb?.querySelector('.winctl');
-  const plus = document.getElementById('btnPlus');
-  if (!tb || !fen || !plus) return;
+  if (!tb || !fen) return;
   const deborde = () => tb.scrollWidth > tb.clientWidth + 0.5
     || fen.getBoundingClientRect().right > tb.getBoundingClientRect().right + 0.5;
   for (let n = 1; n <= NIVEAUX_BARRE; n++) tb.classList.remove(`c${n}`);
   let n = 0;
-  plus.hidden = true;
   while (n < NIVEAUX_BARRE && deborde()) {
     n += 1;
     tb.classList.add(`c${n}`);
-    plus.hidden = !REPLIS_BARRE.some(([k]) => n >= k);
   }
-  niveauBarre = n;
-  if (plus.hidden) fermerMenuPlus();
 }
 function prevoirCompacterBarre() {
   if (barrePrevue) return;
@@ -2978,8 +3177,14 @@ function ouvrirMenuPlus() {
   menu.className = 'menu-plus';
   menu.id = 'menuPlus';
   menu.setAttribute('role', 'menu');
-  menu.innerHTML = REPLIS_BARRE.filter(([k]) => niveauBarre >= k).map(([, id, icone, cle]) =>
-    `<button type="button" role="menuitem" data-plus-cible="${id}"><svg class="ico i17" aria-hidden="true"><use href="#${icone}"/></svg>${esc(t(cle))}</button>`).join('');
+  // The theme shows its current icon; the journal and the settings, whether open.
+  menu.innerHTML = MENU_BARRE.map(([id, icone, cle]) => {
+    const b = document.getElementById(id);
+    const ic = id === 'themeBtn' ? (b?.querySelector('use')?.getAttribute('href') || '#sun').slice(1) : icone;
+    const ouvert = b?.getAttribute('aria-pressed') === 'true';
+    return `<button type="button" role="menuitem" data-plus-cible="${id}"${ouvert ? ' class="on"' : ''}><svg class="ico i17" aria-hidden="true"><use href="#${ic}"/></svg>${esc(t(cle))}${
+      ouvert ? '<svg class="ico i14 menu-plus-coche" aria-hidden="true"><use href="#check"/></svg>' : ''}</button>`;
+  }).join('');
   document.body.appendChild(menu);
   const z = echelleCourante();
   const r = bouton.getBoundingClientRect();
@@ -2990,6 +3195,9 @@ function ouvrirMenuPlus() {
   menu.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-plus-cible]');
     if (!b) return;
+    // The same click would reach the document, whose « click elsewhere »
+    // closes the help menu it is opening (2.4.0: help always lives here).
+    ev.stopPropagation();
     fermerMenuPlus();
     if (b.dataset.plusCible === 'btnAide') return void ouvrirMenuAide();
     document.getElementById(b.dataset.plusCible)?.click();
@@ -3015,6 +3223,85 @@ function fermerMenuAide() {
   document.getElementById('btnAide')?.setAttribute('aria-expanded', 'false');
 }
 
+/* -------------------------------------------------------------------------
+   The news of Sindry (2.4.0)
+
+   The notes of every version of the current major, newest first, from
+   src/nouveautes.json (docs/notes, by tools/build-nouveautes.mjs). After an
+   update, once, with what is new since the version seen before open; at any
+   time from the help menu.
+   ------------------------------------------------------------------------- */
+
+let contenuNouveautes = null;
+
+async function chargerNouveautes() {
+  if (contenuNouveautes) return contenuNouveautes;
+  try {
+    const r = await fetch('nouveautes.json');
+    contenuNouveautes = r.ok ? await r.json() : { versions: [] };
+  } catch {
+    contenuNouveautes = { versions: [] };
+  }
+  return contenuNouveautes;
+}
+
+/** Is version a newer than version b? (« 2.10.0 » after « 2.9.1 ».) */
+function plusRecenteQue(a, b) {
+  const [x, y] = [a, b].map((v) => String(v).split('.').map(Number));
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+}
+
+/** `depuis`: the version seen before an update — what came after is open. */
+async function ouvrirNouveautes({ depuis = '' } = {}) {
+  const { versions = [], majeure = 2 } = await chargerNouveautes();
+  if (!versions.length) return;
+  const zone = document.getElementById('nouveautesOverlay');
+  zone.innerHTML = `<div class="onb-card nouv-carte" role="dialog" aria-labelledby="nouvTitre">
+      <h1 id="nouvTitre">${esc(t('nouv.titre'))}</h1>
+      <p class="onb-text">${esc(t('nouv.sous', { majeure }))}</p>
+      <div class="nouv-liste">${versions.map((x, i) => `<details class="nouv-version"${
+        i === 0 || (depuis && plusRecenteQue(x.version, depuis)) ? ' open' : ''}>
+        <summary><b>Sindry ${esc(x.version)}</b>${i === 0 ? `<span class="badge acc">${esc(t('nouv.actuelle'))}</span>` : ''}${
+          ico('chevron', 'i14 nouv-chev')}</summary>
+        <div class="nouv-notes">${x.html}</div></details>`).join('')}</div>
+      <div class="s-nav center"><button class="btn primary" type="button" data-nouv-fermer>${esc(t('action.fermer'))}</button></div>
+    </div>`;
+  zone.hidden = false;
+  zone.querySelector('[data-nouv-fermer]')?.focus();
+}
+
+function fermerNouveautes() {
+  const zone = document.getElementById('nouveautesOverlay');
+  zone.hidden = true;
+  zone.innerHTML = '';
+}
+
+/** After an update, its news, once. A first launch has the welcome pages
+ *  instead: the news then count as seen. */
+async function annoncerNouveautes(reglages) {
+  const version = document.getElementById('version').textContent;
+  if (!/^\d+\.\d+\.\d+$/.test(version) || reglages.nouveautes_vues === version) return;
+  const avant = reglages.nouveautes_vues || '';
+  try {
+    reglagesActuels = await invoke('set_news_seen', { version });
+  } catch (e) {
+    console.error('Nouveautes :', e);
+    return;
+  }
+  if (reglages.onboarded) ouvrirNouveautes({ depuis: avant });
+}
+
+function cablerNouveautes() {
+  const zone = document.getElementById('nouveautesOverlay');
+  zone.addEventListener('click', (ev) => {
+    if (ev.target === zone || ev.target.closest('[data-nouv-fermer]')) fermerNouveautes();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !zone.hidden) fermerNouveautes();
+  });
+}
+
 function ouvrirMenuAide() {
   const bouton = document.getElementById('btnAide');
   if (document.getElementById('menuAide')) return fermerMenuAide();
@@ -3036,6 +3323,7 @@ function ouvrirMenuAide() {
   menu.setAttribute('role', 'menu');
   menu.innerHTML = `<h3>${esc(t('aide.visites'))}</h3>${visites}
     ${guides ? `<h3>${esc(t('aide.guides'))}</h3>${guides}` : ''}<hr>
+    ${item('data-aide-nouveautes', 'sparkles', t('aide.nouveautes'), t('aide.nouveautes_resume'))}
     ${item('data-aide-bienvenue', 'livre', t('aide.bienvenue'), t('aide.bienvenue_resume'))}`;
   document.body.appendChild(menu);
   // Sous le bouton, aligne a sa droite, en pixels CSS (echelle de rendu).
@@ -3051,6 +3339,10 @@ function ouvrirMenuAide() {
     const v = ev.target.closest('[data-aide-visite]');
     if (v) return void demarrerVisite(v.dataset.aideVisite);
     if (ev.target.closest('[data-aide-droits]')) return guiderVersDroits();
+    if (ev.target.closest('[data-aide-nouveautes]')) {
+      fermerMenuAide();
+      return void ouvrirNouveautes();
+    }
     if (ev.target.closest('[data-aide-bienvenue]')) {
       fermerMenuAide();
       if (reglagesOuverts()) fermerReglages();
@@ -4287,7 +4579,7 @@ function ouvrirRedemarrage({ titre, restantes, n, avert }) {
       <p class="onb-text">${esc(t('reprise.redemarrage_texte', { titre }))} <b>${esc(t('reprise.restantes', { n: restantes }))}</b></p>
       <p class="onb-text">${esc(t('reprise.enregistrez'))}</p>
       <span class="arso-pastille ${arso ? 'ok' : ''}">${ico(arso ? 'lock' : 'info', 'i14')}${esc(t(arso ? 'reprise.session_seule' : 'reprise.session_ouvrir'))}</span>
-      ${avert ? `<p class="reprise-avert">${esc(t('reprise.non_relancable'))}</p>` : ''}
+      ${avert ? `<p class="reprise-avert">${esc(t(String(avert).includes('PORTABLE_RELANCE') ? 'reprise.non_relancable_portable' : 'reprise.non_relancable'))}</p>` : ''}
       <p class="reprise-erreur" id="redemarrageErreur" hidden></p>
       <div class="s-nav center"><button class="btn primary" type="button" data-reprise-redemarrer>${ico('power', 'i16')}${esc(t('reprise.redemarrer'))}</button>
         <button class="btn" type="button" data-reprise-plus-tard>${esc(t('reprise.plus_tard'))}</button></div>
@@ -7546,6 +7838,8 @@ async function demarrer() {
   cablerReprise();
   suivreBandeaux();
   cablerBarre();
+  cablerOutilsScripts();
+  cablerNouveautes();
   document.getElementById('testPill').onclick = basculerSimulation;
   document.getElementById('adminPill').onclick = ouvrirFenetreDroits;
   document.getElementById('btnFermerDroits').onclick = () => {
@@ -7599,6 +7893,11 @@ async function demarrer() {
   try {
     const infos = await invoke('app_info');
     document.getElementById('version').textContent = infos.version;
+    estPortable = !!infos.portable;
+    const badge = document.getElementById('badgePortable');
+    badge.hidden = !estPortable;
+    badge.textContent = t('portable.badge');
+    badge.title = t('portable.badge_tip');
     appliquerDroits(infos.elevated);
   } catch (e) {
     console.error('app_info a echoue :', e);
@@ -7647,6 +7946,8 @@ async function demarrer() {
   basculerMode('simple');
 
   if (!reglages.onboarded && !reprise) ouvrirVisite();
+  // 2.4.0: after an update, its news (once).
+  if (!reprise) annoncerNouveautes(reglages);
 
   // La fenetre est creee invisible pour eviter un flash blanc avant la peinture.
   await laFenetre.show();

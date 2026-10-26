@@ -1247,7 +1247,7 @@ pub fn lister_dans(dossier: &Path) -> Liste {
 /// Le dossier est inscriptible sans elevation, et Sindry peut tourner en
 /// administrateur : une jonction posee a la place du dossier lui ferait ecrire
 /// ou effacer ailleurs. Sindry refuse de toucher un dossier qui en est une.
-fn dossier_sur(dossier: &Path) -> Result<(), String> {
+pub(crate) fn dossier_sur(dossier: &Path) -> Result<(), String> {
     for d in [Some(dossier), dossier.parent()].into_iter().flatten() {
         if let Ok(m) = fs::symlink_metadata(d) {
             if m.file_type().is_symlink() {

@@ -1,6 +1,7 @@
 <!-- L'accueil du site (2.2.0). Fragment repris par tools/build-site.mjs :
      {{telechargement}} devient le bouton et la version publiée,
-     {{empreinte}} l'empreinte SHA-256 de l'installeur, {{icone:nom}} une
+     {{empreinte}} l'empreinte SHA-256 de l'installeur, {{portable}} le lien
+     de l'archive portable (2.4.0), {{icone:nom}} une
      icône Lucide. Le reste s'écrit ici, à la main. -->
 
 <section class="hero">
@@ -83,6 +84,12 @@
   en administrateur : une seule autorisation Windows, dont toutes les actions héritent
   ensuite. Au premier lancement, il propose d'installer le <a href="catalogue.html">catalogue
   officiel</a> ; vous pouvez aussi n'utiliser que vos propres scripts.</p>
+
+<h3>{{icone:usb}}La version portable</h3>
+<p>Sans installation, sur une clé USB ou dans un dossier : décompressez l'archive, puis
+  lancez <code>Sindry.exe</code>. Réglages, catalogues et journaux restent dans le dossier
+  <code>Donnees</code>, à côté ; ce qui protège le PC reste dans le PC.</p>
+{{portable}}
 
 <h2>Écrire ses propres scripts</h2>
 <div class="cards">

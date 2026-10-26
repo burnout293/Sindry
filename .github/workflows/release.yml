@@ -77,6 +77,7 @@ jobs:
         run: node tools/verifier-mentions-tierces.mjs
 
       - name: Construire et publier
+        id: tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -120,6 +121,15 @@ jobs:
             ```
 
             Comparez avec l'empreinte publiee dans le commentaire ci-dessous.
+
+      # 2.4.0 : la version portable, jointe a la release : les memes binaires,
+      # et le marqueur qui fait de leur dossier une version portable
+      # (src-tauri/src/portable.rs). Son empreinte rejoint empreintes.txt.
+      - name: Joindre la version portable
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./tools/construire-portable.ps1 -Version '${{ github.ref_name }}' -ReleaseId '${{ steps.tauri.outputs.releaseId }}'
 
       - name: Publier l'empreinte de l'installeur
         shell: pwsh

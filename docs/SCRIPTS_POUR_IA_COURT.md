@@ -1,7 +1,7 @@
 # Sindry — écrire un script PowerShell conforme (version courte)
 
 > **Version courte, pour une IA à petite mémoire** (un modèle local, par exemple). Générée
-> par `tools/build-script-guides.mjs` (Sindry 2.3.0), comme la version complète
+> par `tools/build-script-guides.mjs` (Sindry 2.4.0), comme la version complète
 > `SCRIPTS_POUR_IA.md`. Ne la modifiez pas à la main.
 
 Ce document garde l'essentiel pour écrire un script que Sindry accepte : la mission, le

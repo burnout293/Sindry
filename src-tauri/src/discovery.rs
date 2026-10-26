@@ -80,6 +80,10 @@ pub fn base_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
     if let Some(essai) = dossier_essai() {
         return Ok(essai);
     }
+    // 2.4.0 : la version portable, `Donnees\` a cote de l'exe (portable.rs).
+    if let Some(d) = crate::portable::dossier() {
+        return Ok(d);
+    }
     let base = app
         .path()
         .local_data_dir()

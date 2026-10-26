@@ -49,6 +49,14 @@ Comparez-la avec :
 Get-FileHash .\Sindry_*_x64-setup.exe -Algorithm SHA256
 ```
 
+### Version portable (2.4.0)
+
+Chaque release publie aussi `Sindry_<version>_x64-portable.zip` : décompressez-le sur une clé
+USB ou dans un dossier, puis lancez `Sindry.exe`. Rien ne s'installe sur le PC : réglages,
+catalogues, scripts et journaux vont dans le dossier `Donnees`, à côté. Ce qui protège le PC
+(approbations, emplacements protégés) reste dans le PC, en administrateur. Pour mettre à jour,
+remplacez les fichiers par ceux de la nouvelle archive, en gardant `Donnees`.
+
 ### Droits administrateur
 
 Sindry **s'ouvre normalement, sans élévation**. Il vous le dira s'il n'a pas les droits, et

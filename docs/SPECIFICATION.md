@@ -78,6 +78,21 @@ Colonne gauche filtrable à deux onglets, détail à droite, journal ancré en b
 L'onglet choisi est retenu d'une session à l'autre. La fiche d'une action dit sa catégorie
 et les lots qui la contiennent.
 
+**Trier et gérer la liste (2.4.0).** En tête de l'onglet Scripts :
+- **« Trier »** : par catégorie (par défaut, en rubriques), de A à Z, les plus récentes
+  d'abord (« Déjà lancées » d'après l'historique, puis « Jamais lancées »), ou par numéro
+  (ID). Le choix est retenu sur ce PC, comme l'onglet.
+- **« ⋮ »** : ouvrir le dossier des scripts, actualiser la liste, mettre à jour les
+  catalogues, ajouter un script, ajouter un catalogue (la page Catalogues des réglages).
+  - « Mettre à jour les catalogues » fait ce que la page Catalogues fait en deux clics :
+    chercher, puis installer ce qui a changé. Un catalogue pas encore installé le reste.
+  - « Ajouter un script » copie un fichier `.ps1` choisi dans le dossier des scripts de
+    l'utilisateur. L'interface n'envoie que son nom et son contenu, jamais un chemin : Rust
+    choisit le dossier, filtre le nom (un nom seul, en `.ps1`, aucun nom réservé de
+    Windows), refuse un dossier qui serait un lien, et recrée le fichier plutôt que d'écrire
+    à travers un lien existant. Le script reste un script personnel, approuvé avant sa
+    première exécution (§12.1).
+
 **Les faits d'une fiche (1.6).** Sous la description, une ligne de faits : une icône neutre
 et **une seule valeur** par information — le risque (un indicateur à trois barres et
 « Risque faible »), la durée (« Quelques secondes »), « Réversible » ou « Irréversible »,
@@ -105,19 +120,25 @@ proposait deux, mais l'œil hésitait entre lire en travers et lire en descendan
 réglages se **numérotent** « onglet.rang » (« 2.3 ») selon le réglage 1.6 : jamais, au-delà
 de dix (par défaut), toujours. On peut ainsi désigner un réglage précis à quelqu'un.
 
-**La barre de titre se resserre (2.2.0, maquette M38 C).** Avant, sous 1 100 pixels de
-large environ, les boutons de la fenêtre (réduire, agrandir, fermer) sortaient de l'écran.
-La barre se resserre maintenant d'un cran à la fois, jusqu'à ce que tout tienne :
+**La barre de titre (2.2.0, maquette M38 C ; 2.4.0).** Depuis la 2.4.0, l'aide, le
+journal, le thème et les réglages vivent **toujours** dans un menu **« ⋮ »**, qu'il y ait la
+place ou non : la barre ne garde que la marque, la recherche, Simple / Expert, la simulation
+et les droits. Le menu coche ce qui est ouvert (le journal, les réglages). Quand la fenêtre
+rétrécit, ce qui reste se resserre d'un cran à la fois, jusqu'à ce que tout tienne :
 
 | Cran | Ce qui change |
 |---|---|
 | 1 | La version passe sous le nom |
 | 2 | La recherche raccourcit |
 | 3 | Les pastilles prennent un libellé court : « Simu », « Admin », « Limité » |
-| 4 à 6 | Le thème, puis le journal, puis l'aide passent dans un menu **« ⋯ »** |
-| 7 | Les pastilles ne gardent que leur icône |
-| 8 | La recherche raccourcit encore |
-| 9 | Les réglages rejoignent « ⋯ » |
+| 4 | Les pastilles ne gardent que leur icône |
+| 5 | La recherche raccourcit encore |
+
+En 2.2.0, ces quatre boutons ne passaient dans « ⋯ » qu'aux crans 4 à 6 et 9.
+
+**La fenêtre s'ouvre sur 90 % de l'écran (2.4.0)** : 90 % de la zone de travail (l'écran
+moins la barre des tâches) de l'écran où elle apparaît, centrée, jamais sous sa taille
+minimale (920 × 640).
 
 Les boutons de la fenêtre ne quittent jamais l'écran ; la simulation et les droits restent
 toujours visibles. La barre se remesure quand la fenêtre change de taille et quand son
@@ -864,6 +885,18 @@ Aucune chaîne de caractères en dur dans le code de l'interface.
 
 ## 11. Mises à jour
 
+**Les nouveautés (2.4.0).** Après une mise à jour, Sindry montre une fois ce qu'elle
+apporte : la fenêtre « Les nouveautés de Sindry » liste chaque version de la version majeure
+en cours, de la plus récente à la plus ancienne. Celles venues depuis la version vue avant
+la mise à jour sont ouvertes. L'aide la propose à tout moment (« Les nouveautés »). Au premier
+lancement, la bienvenue en tient lieu : les nouveautés comptent comme vues.
+- Les notes s'écrivent à la main, une par version (`docs/notes/<version>.md`) ;
+  `tools/build-nouveautes.mjs` en fait `src/nouveautes.json`, embarqué dans l'application.
+  La CI refuse une version sans ses notes, et un fichier généré pas à jour.
+- La dernière version montrée est retenue dans `settings.json` (`nouveautes_vues`) : une
+  préférence, rien qui touche à la sécurité.
+- Les notes sont en français, y compris dans l'interface anglaise, qui le dit.
+
 **Par défaut : détecter et proposer. Rien n'est téléchargé ni installé sans un clic.**
 Cohérent avec un outil élevé en administrateur qui se présente comme respectueux de la vie
 privée.
@@ -1197,6 +1230,35 @@ s'installer durablement, et **le dire dans le bilan**.
 **Ce que le témoin n'est pas.** Il ne voit que ces familles, et seulement ce qui a changé
 pendant le script : un script peut agir ailleurs, ou programmer un changement pour plus
 tard. Comme les points d'attention, c'est un regard, jamais une garantie.
+
+---
+
+## 12bis. La version portable (2.4.0)
+
+Sindry sans installation, sur une clé USB ou dans un dossier : l'archive
+`Sindry_<version>_x64-portable.zip` de chaque release contient `Sindry.exe`, `sindry.com`, les
+ressources, un mode d'emploi et le fichier **`sindry-portable`**. Ce fichier, lu **à côté de
+l'exe**, en fait une version portable (`src-tauri/src/portable.rs`) :
+
+| | Installation | Version portable |
+|---|---|---|
+| Données (réglages, catalogues, scripts, journaux, historique, ambiances) | `%LOCALAPPDATA%\Sindry` | `Donnees\`, à côté de l'exe |
+| Données de WebView2 (onglet, tri…) | profil de l'utilisateur | `Donnees\WebView2` |
+| Confiance : approbations, garde, catalogues ajoutés, plafond de redémarrages | HKLM du PC | **HKLM du PC**, inchangé |
+| Migration depuis WinTool | à chaque lancement | **jamais** : elle déplacerait les données du PC et désinstallerait son ancienne version |
+| Préconfiguration d'installation (§19.3) | lue | ignorée : elle est propre au PC |
+| Mise à jour | l'installeur, dans Sindry (§11.1) | « Télécharger » ouvre la page des versions ; on remplace les fichiers, en gardant `Donnees` |
+| Reprise après un redémarrage (§6.10) | tâche de relance automatique | journal gardé ; rouvert à la main depuis la clé, Sindry propose de reprendre |
+
+- **Ce qui ne change pas de place, c'est la confiance.** Une clé USB est inscriptible par
+  quiconque la tient : rien de ce qui fonde une décision de sécurité n'y est lu. Les
+  catalogues qu'elle porte sont revérifiés par leur signature à chaque découverte.
+- **Le marqueur se lit à côté de l'exe**, jamais dans une variable d'environnement : un
+  Sindry installé dans Program Files ne devient pas portable sans les droits d'y écrire.
+- La barre de titre l'annonce : « portable », à côté du numéro de version.
+- La tâche de relance n'accepte qu'un exe de Program Files (§6.10) : une tâche élevée à
+  l'ouverture de session qui lancerait un exe sur une clé serait un escalier vers
+  l'administrateur.
 
 ---
 

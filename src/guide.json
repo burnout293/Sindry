@@ -5,7 +5,7 @@
       "id": "accueil",
       "ecran": "simple",
       "titre": { "fr": "Visite de l’accueil", "en": "Tour of the home screen" },
-      "resume": { "fr": "6 étapes, une minute", "en": "6 steps, one minute" },
+      "resume": { "fr": "5 étapes, une minute", "en": "5 steps, one minute" },
       "etapes": [
         {
           "cible": "mode",
@@ -40,19 +40,11 @@
           }
         },
         {
-          "cible": "journal",
-          "titre": { "fr": "Le journal", "en": "The log" },
+          "cible": "menu",
+          "titre": { "fr": "Le menu", "en": "The menu" },
           "texte": {
-            "fr": "Tout ce que font les actions s’écrit ici. Il s’ouvre à tout moment, même quand rien n’a encore été lancé.",
-            "en": "Everything the actions do is written here. It opens at any time, even when nothing has run yet."
-          }
-        },
-        {
-          "cible": "aide",
-          "titre": { "fr": "Besoin d’aide ?", "en": "Need help?" },
-          "texte": {
-            "fr": "Ce bouton retrouve cette visite, celle du mode Expert, et la bienvenue.",
-            "en": "This button brings back this tour, the Expert mode tour, and the welcome pages."
+            "fr": "Le journal, l’aide, le thème et les réglages sont rangés ici. Le journal s’ouvre à tout moment ; l’aide retrouve cette visite, celle du mode Expert et la bienvenue.",
+            "en": "The log, help, theme and settings live here. The log opens at any time; help brings back this tour, the Expert mode tour and the welcome pages."
           }
         }
       ]

@@ -697,6 +697,8 @@
     catalogue_reminder_hidden: false,
     sources_inactives: [],
     sources_exclus: {},
+    // 2.4.0: the news are seen, unless `?nouveautes=<version seen before>`.
+    nouveautes_vues: new URLSearchParams(location.search).get('nouveautes') ?? '2.4.0',
     // Le banc saute l'accueil par defaut ; `?onboarding=1` le rejoue.
     onboarded: !new URLSearchParams(location.search).has('onboarding'),
     // `?accent=synthwave&theme=dark` : une ambiance et un mode d'office, pour
@@ -871,7 +873,9 @@
   }
 
   const REPONSES = {
-    app_info: () => ({ version: '2.3.0', elevated: !new URLSearchParams(location.search).has('sansadmin') }),
+    // `?portable` (2.4.0): a portable version.
+    app_info: () => ({ version: '2.4.0', elevated: !new URLSearchParams(location.search).has('sansadmin'),
+      portable: new URLSearchParams(location.search).has('portable') }),
     // Mise a jour. ?maj=1.1.1 annonce une version ; ?maj=signature la fait
     // refuser a l'installation ; ?maj=refus refuse l'UAC ; ?maj=ok reste sur
     // l'installation ; ?maj=horsligne fait echouer la verification.
@@ -882,7 +886,7 @@
       if (!maj) return null;
       // A word (signature, refus, ok) names a scenario, not a version.
       const version = /^\d/.test(maj) ? maj : '2.2.1';
-      return { version, actuelle: '2.3.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
+      return { version, actuelle: '2.4.0', notes: 'Notes de version', date: '2026-10-01 10:00:00 +00:00:00' };
     },
     install_update: async () => {
       const maj = new URLSearchParams(location.search).get('maj');
@@ -1088,6 +1092,16 @@
       return null;
     },
     set_app_icons: (a) => { reglages.icones_sans_telechargement = !a.value; return JSON.parse(JSON.stringify(reglages)); },
+    // 2.4.0: « Ajouter un script » — the same name rules as lib.rs::nom_de_script.
+    add_script: (a) => {
+      if (!/^[A-Za-z0-9 _().-]{1,116}\.ps1$/i.test(a.nom || '') || /^\./.test(a.nom)) throw new Error(`NOM_SCRIPT:${a.nom}`);
+      if (!a.contenu?.length || a.contenu.length > 2 * 1024 * 1024) throw new Error(`TAILLE_SCRIPT:${a.contenu?.length || 0}`);
+      return `C:/Users/Buly/AppData/Local/Sindry/scripts/${a.nom}`;
+    },
+    // 2.4.0: the news seen (`?nouveautes=2.3.0`: as after an update), and the
+    // releases page of a portable version.
+    set_news_seen: (a) => { reglages.nouveautes_vues = a.version; return JSON.parse(JSON.stringify(reglages)); },
+    open_release_page: () => null,
     // 2.3.0: the diagnostic log (5.7).
     set_diagnostic: (a) => { reglages.diagnostic = !!a.value; return JSON.parse(JSON.stringify(reglages)); },
     scan_script: (a) => analyserBanc(a?.req),
@@ -1329,7 +1343,7 @@
   // `?css=` : une feuille d'essai par-dessus l'interface, pour comparer des
   // variantes en maquette avant d'en faire une regle.
   if (parametres.get('css')) document.head.append(Object.assign(document.createElement('style'), { textContent: parametres.get('css') }));
-  if (parametres.get('mode') === 'expert' || parametres.get('reglages') || parametres.get('simple')) {
+  if (parametres.get('mode') === 'expert' || parametres.get('reglages') || parametres.get('simple') || parametres.get('ouvrir')) {
     const t = setInterval(() => {
       if (!document.documentElement.dataset.benchVisible) return;
       clearInterval(t);
@@ -1354,6 +1368,9 @@
           if (parametres.get('onglet')) clic(`[data-a-onglet="${p('onglet')}"]`);
         }, 2600);
       }
+      // `?ouvrir=barre|tri|scripts` (2.4.0): a menu open, for the captures.
+      const ouvrir = { barre: 'btnPlus', tri: 'btnTrierScripts', scripts: 'btnMenuScripts' }[parametres.get('ouvrir')];
+      if (ouvrir) setTimeout(() => document.getElementById(ouvrir)?.click(), 900);
       // `?simple=<n>` (2.2.0): the Simple wizard up to « Voici ce que j'ai
       // trouvé », for the n-th lot — for the captures of the site.
       const simple = parametres.get('simple');

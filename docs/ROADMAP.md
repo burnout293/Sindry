@@ -89,19 +89,23 @@ d'un cran (1.1, 1.2…), une version de corrections seules prend un troisième c
 | | — la mise à jour se déroule dans une fenêtre de Sindry (téléchargement, signature, installation, redémarrage), l'installeur sans fenêtre ; un refus de l'autorisation est annoncé | Fait |
 | | — le journal des consignes pour IA (`SCRIPTS_POUR_IA_NOUVEAUTES.md`) tenu par le générateur des guides : une consigne ne change plus sans son entrée | Fait |
 | | — un site GitHub Pages : présentation, téléchargement, guide des scripts, guides pour IA, catalogue, feuille de route | Fait |
-| **2.3.0** | Réappliquer ce qui est en place, des échecs expliqués, le nom du script dans les journaux | Prête |
+| **2.3.0** | Réappliquer ce qui est en place, des échecs expliqués, le nom du script dans les journaux | Publiée le 26/10/2026 |
 | | — « Réappliquer quand même » : ce qui est déjà en place redevient cochable, sans rien cocher d'office ; en Simple et en Expert (option B) | Fait |
 | | — les réglages d'une liste à choix multiples (`state=`) s'affichent « À faire » ou « Déjà en place » et comptent comme réglages ; en Simple, ils ont enfin leur poste | Fait |
 | | — un échec expliqué : la raison sous le nom de l'action, même sans code d'erreur ; journal de diagnostic (réglage 5.7, `SINDRY_DIAG`), règles IA 45 et 46 | Fait |
 | | — le nom du script dans les journaux : fichiers `<date>_<NNN_NOM>.log`, et une ligne d'en-tête par action dans le panneau | Fait |
 | | — les accents d'un message de Windows : décodage strict, puis page de la langue, 850 et 437 (cause probable, à confirmer dans la VM) | Fait |
 | | — le bilan suit l'issue : « Terminé, avec des échecs », « Rien n'a abouti » | Fait |
-| **2.4.0** | Demandé le 25/10/2026 | À faire |
-| | — les nouveautés dans Sindry : celles de la dernière version majeure et de toutes les versions mineures qui ont suivi | À faire |
-| | — **version portable**, démarrable depuis une clé USB (avancée depuis la v3) | À faire |
+| **2.4.0** | Une version portable, les nouveautés dans Sindry, une liste des scripts qu'on trie et qu'on gère | Prête |
+| | — **version portable**, sur une clé USB : `Sindry_<v>_x64-portable.zip`, données dans `Donnees\` à côté de l'exe, confiance toujours dans le HKLM du PC (avancée depuis la v3) | Fait |
+| | — les nouveautés dans Sindry : chaque version de la 2.x, montrées une fois après une mise à jour, et dans l'aide ; notes dans `docs/notes/`, une par version, exigées par la CI | Fait |
+| | — la fenêtre s'ouvre sur 90 % de l'écran | Fait |
+| | — l'aide, le journal, le thème et les réglages toujours dans un menu « ⋮ » | Fait |
+| | — la liste des scripts : « Trier » (catégorie, A à Z, récentes, ID) et un menu « ⋮ » (dossier, actualiser, mettre à jour les catalogues, ajouter un script ou un catalogue) | Fait |
+| | — le site : l'archive portable, et les notes de chaque version | Fait |
 | **SindryOS** | Un système démarrable pour soigner Windows sans le démarrer : étude dans [`ETUDE_SINDRYOS.md`](ETUDE_SINDRYOS.md) | Étude faite, à décider |
 | **v3** | Le cap fixé le 24/10/2026 ; les versions 2.x y mènent pas à pas, et d'autres objectifs s'ajouteront | À étudier |
-| | — **version portable** : un exe sans installation, ses données à côté de lui — avancée en 2.4.0 | Prévu en 2.4.0 |
+| | — **version portable** : un exe sans installation, ses données à côté de lui — livrée en 2.4.0 | Fait (2.4.0) |
 | | — **un chat avec une IA générative** spécialisée pour Sindry, qui écrit un script sur demande — à voir si c'est possible | À étudier |
 | | — **piloter le Sindry d'un autre PC à distance**, en ligne de commande seulement (pas de prise en main de l'écran), avec l'accord explicite de l'utilisateur de ce PC et toutes les sécurités possibles | À étudier |
 | | — le renommage en Sindry est **terminé avant la 3.0** : en 3.0, un script qui mentionne encore WinTool (`WINTOOL:START`, `$env:WINTOOL_CONFIG`, `WINTOOL_MODE`) n'est plus reconnu ; les formats publics changent d'un coup | Prévu |

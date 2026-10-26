@@ -209,6 +209,10 @@ pub struct Settings {
     /// preference: it only makes scripts say more.
     #[serde(default)]
     pub diagnostic: bool,
+    /// 2.4.0: the last version whose news were shown (« Nouveautés »). After
+    /// an update, Sindry shows them once; `""` before 2.4.0.
+    #[serde(default)]
+    pub nouveautes_vues: String,
 }
 
 /// The values of `numeros_options` (1.6).
@@ -342,6 +346,7 @@ pub fn default_settings(factory: Vec<Lot>) -> Settings {
         numeros_options: "auto".to_string(),
         admin_au_demarrage: false,
         diagnostic: false,
+        nouveautes_vues: String::new(),
     }
 }
 
@@ -708,7 +713,9 @@ pub fn load<R: Runtime>(app: &AppHandle<R>) -> Result<Settings, String> {
     // silencieuse (§19.3), s'il y en a une. Un compte qui a deja ses reglages
     // — repris de l'ancien nom compris — les garde.
     if !chemin.exists() {
-        if let Some(pre) = crate::preconfiguration::lire() {
+        // Pas pour une version portable (2.4.0) : la preconfiguration est
+        // celle d'une installation sur ce PC, pas de la cle.
+        if let Some(pre) = crate::preconfiguration::lire().filter(|_| !crate::portable::actif()) {
             let s = pre.appliquer(default_settings(read_factory_lots(app)?));
             save_to(&chemin, &s)?;
             return Ok(s);

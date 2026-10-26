@@ -49,7 +49,7 @@ jobs:
       - name: Verifier la syntaxe du frontend
         shell: bash
         run: |
-          for f in src/main.js src/analyse.js src/guide.js src/i18n.js tools/bench/fixtures.js tools/bench/serve.mjs tools/sync-icons.mjs tools/verifier-presentation.mjs tools/verifier-guide.mjs tools/verifier-selection.mjs tools/archiver-maquettes.mjs tools/build-script-guides.mjs tools/markdown.mjs tools/minisign.mjs tools/build-site.mjs tools/verifier-minisign.mjs; do
+          for f in src/main.js src/analyse.js src/guide.js src/i18n.js tools/bench/fixtures.js tools/bench/serve.mjs tools/sync-icons.mjs tools/verifier-presentation.mjs tools/verifier-guide.mjs tools/verifier-selection.mjs tools/archiver-maquettes.mjs tools/build-script-guides.mjs tools/markdown.mjs tools/minisign.mjs tools/build-site.mjs tools/verifier-minisign.mjs tools/build-nouveautes.mjs; do
             node --check "$f"
           done
           node tools/verifier-traductions.mjs
@@ -58,6 +58,9 @@ jobs:
           # Une consigne pour IA changee sans son entree dans le journal
           # (SCRIPTS_POUR_IA_NOUVEAUTES.md) aussi (2.2.0).
           node tools/build-script-guides.mjs --check
+          # Les nouveautes (2.4.0) : chaque version a ses notes (docs/notes), et
+          # src/nouveautes.json, que l'application embarque, les suit.
+          node tools/build-nouveautes.mjs --check
           # Le site (2.2.0) : sa verification de signature, puis une
           # construction hors ligne, pour qu'une page cassee se voie ici et
           # non a la publication.

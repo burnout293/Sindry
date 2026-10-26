@@ -181,12 +181,24 @@ function fingerprintBlock(release) {
 <div class="md"><pre><code>Get-FileHash .\\${escapeHtml(asset.name)} -Algorithm SHA256</code></pre></div>`;
 }
 
+/** 2.4.0: the portable archive of the latest stable release, if it has one. */
+function portableBlock(release) {
+  const asset = release?.assets?.find((a) => /_x64-portable\.zip$/.test(a.name));
+  if (!asset) {
+    return `<p>Elle est publiée à partir de la 2.4.0, sur la <a href="https://github.com/${REPO}/releases">page des versions</a>.</p>`;
+  }
+  const sha = asset.digest?.match(/^sha256:([0-9a-f]{64})$/)?.[1];
+  return `<div class="dl">${icon('usb')}<div><b>${escapeHtml(asset.name)}</b><span>${mo(asset.size)}</span>${
+    sha ? `<span class="empreinte">SHA-256 ${sha}</span>` : ''}</div><a class="btn" href="${escapeAttr(asset.browser_download_url)}">${icon('download')}Télécharger</a></div>`;
+}
+
 function homePage(releases) {
   const stable = releases?.find((r) => !r.prerelease) || null;
   const body = read('site/accueil.html')
     .replace(/<!--[\s\S]*?-->\s*/, '')
     .replace('{{telechargement}}', () => downloadBlock(stable))
     .replace('{{empreinte}}', () => fingerprintBlock(stable))
+    .replace('{{portable}}', () => portableBlock(stable))
     .replace(/\{\{icone:([a-z0-9-]+)\}\}/g, (_, n) => icon(n));
   return page('index.html', 'Sindry : l\'entretien de Windows, expliqué avant d\'être fait',
     'Outil gratuit de maintenance Windows : des scripts PowerShell lisibles, une analyse avant chaque action, un catalogue signé.', body);
@@ -291,14 +303,20 @@ function releasesPage(releases) {
     const items = releases.map((r) => {
       const v = r.tag_name.replace(/^v/, '');
       const n = notes.get(v) || notes.get(v.replace(/\.0$/, ''));
-      const asset = r.assets?.find((a) => /_x64-setup\.exe$/.test(a.name));
-      const sha = asset?.digest?.match(/^sha256:([0-9a-f]{64})$/)?.[1];
-      const content = n
-        ? `<p>${inline(n.summary)}</p>${n.items.length ? `<ul>${n.items.map((x) => `<li>${inline(x)}</li>`).join('')}</ul>` : ''}`
-        : `<p>Le détail de cette version est sur <a href="${escapeAttr(r.html_url)}">GitHub</a>.</p>`;
-      const dl = asset
-        ? `<div class="dl">${icon('download')}<div><b>${escapeHtml(asset.name)}</b><span>${mo(asset.size)}</span>${sha ? `<span class="empreinte">SHA-256 ${sha}</span>` : ''}</div><a class="btn" href="${escapeAttr(asset.browser_download_url)}">Télécharger</a></div>`
-        : '';
+      // 2.4.0: the notes the application shows (docs/notes), when the version
+      // has them; the roadmap otherwise.
+      const fichierNotes = `docs/notes/${v}.md`;
+      const content = existsSync(join(ROOT, fichierNotes))
+        ? render(read(fichierNotes).replace(/^## Nouveautés\s*\n/, ''), { ids: new Set(), toc: [] })
+        : n
+          ? `<p>${inline(n.summary)}</p>${n.items.length ? `<ul>${n.items.map((x) => `<li>${inline(x)}</li>`).join('')}</ul>` : ''}`
+          : `<p>Le détail de cette version est sur <a href="${escapeAttr(r.html_url)}">GitHub</a>.</p>`;
+      // The installer, and the portable archive from 2.4.0 on.
+      const dl = (r.assets || []).filter((a) => /_x64-(setup\.exe|portable\.zip)$/.test(a.name)).map((asset) => {
+        const sha = asset.digest?.match(/^sha256:([0-9a-f]{64})$/)?.[1];
+        return `<div class="dl">${icon(asset.name.endsWith('.zip') ? 'usb' : 'download')}<div><b>${escapeHtml(asset.name)}</b><span>${mo(asset.size)}</span>${
+          sha ? `<span class="empreinte">SHA-256 ${sha}</span>` : ''}</div><a class="btn" href="${escapeAttr(asset.browser_download_url)}">Télécharger</a></div>`;
+      }).join('');
       return `<section class="release"><header><h2 id="${escapeAttr(r.tag_name)}">Sindry ${escapeHtml(v)}</h2><span>${frDate(r.published_at)}${r.prerelease ? ' · bêta' : ''}</span><a href="${escapeAttr(r.html_url)}">Sur GitHub</a></header>
 <div class="md">${content}</div>${dl}</section>`;
     }).join('\n');
